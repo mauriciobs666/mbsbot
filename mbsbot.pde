@@ -24,6 +24,12 @@ void setup()
 
 void loop()
 {
+	char linha[17];
+	sprintf(linha," %04d %04d %04d",analogRead(0),analogRead(1),analogRead(2));
 	lcd.setCursor(0, 0);
-	lcd.print(analogRead(0), DEC);
+	lcd.print(linha);
+
+	sprintf(linha," %04d %04d %04d",analogRead(3),analogRead(4),analogRead(5));
+	lcd.setCursor(0, 1);
+	lcd.print(linha);
 }
