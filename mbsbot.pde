@@ -24,12 +24,26 @@ void setup()
 
 void loop()
 {
+	unsigned short analogSensor[6];	// analog sensors cache
+
+	// read sensor data
+	for(int x=0; x<6; x++)
+		analogSensor[x]=analogRead(x);
+
+	// display them
+	displayAnalogSensors(analogSensor);
+}
+
+void displayAnalogSensors(unsigned short sensors[])
+{
 	char linha[17];
-	sprintf(linha," %04d %04d %04d",analogRead(0),analogRead(1),analogRead(2));
+
+	sprintf(linha," %04d %04d %04d", sensors[0], sensors[1], sensors[2]);
 	lcd.setCursor(0, 0);
 	lcd.print(linha);
 
-	sprintf(linha," %04d %04d %04d",analogRead(3),analogRead(4),analogRead(5));
+	sprintf(linha," %04d %04d %04d", sensors[3], sensors[4], sensors[5]);
 	lcd.setCursor(0, 1);
+
 	lcd.print(linha);
 }
