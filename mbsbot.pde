@@ -28,8 +28,11 @@ char linha[17];
 
 void setup()
 {
-	unsigned short sensorTrack[NUM_IR_TRACK] = { 0, 0, 0 };
-	unsigned short sensorOut[NUM_IR_TRACK] = { 0, 0, 0 };
+	unsigned short sensorTrack[NUM_IR_TRACK];
+	unsigned short sensorOut[NUM_IR_TRACK];
+
+	for(int y=0; y < NUM_IR_TRACK; y++)
+		sensorTrack[y] = sensorOut[y] = 0;
 
 	Serial.begin(9600);
 
@@ -37,7 +40,7 @@ void setup()
 
 	lcd.setCursor(0, 0); // ( columm , line )
 
-	lcd.print("Calibra TRILHA");
+	lcd.print("Calibra TRILHA  ");
 	Serial.println("Calibra TRILHA");
 
 	// read all sensors at TRACK position several times
@@ -56,13 +59,13 @@ void setup()
 
 	// pause so the user can move the sensors outside the track
 	lcd.setCursor(0, 0);
-	lcd.print("Calibra FORA");
+	lcd.print("Calibra FORA    ");
 	Serial.println("Calibra FORA");
 
 	for(int x=5; x>0; x--)
 	{
 		lcd.setCursor(0, 1);
-		sprintf(linha, "Inicio em %ds", x);
+		sprintf(linha, "Inicio em %ds    ", x);
 		lcd.print(linha);
 		Serial.println(linha);
 
@@ -108,9 +111,9 @@ void loop()
 	for(int x=0; x<6; x++)
 		analogSensor[x]=analogRead(x);
 
-	sprintf(linha, "%c%04d%c%04d%c%04d", 	(analogSensor[0] > IRSensorThreshold[0]) && reverseTrackColor ? '|' : '-', analogSensor[0],
-											(analogSensor[1] > IRSensorThreshold[1]) && reverseTrackColor ? '|' : '-', analogSensor[1],
-											(analogSensor[2] > IRSensorThreshold[2]) && reverseTrackColor ? '|' : '-', analogSensor[2]);
+	sprintf(linha, "%c%04d%c%04d%c%04d", 	(analogSensor[0] > IRSensorThreshold[0]) ^ reverseTrackColor ? '|' : '-', analogSensor[0],
+											(analogSensor[1] > IRSensorThreshold[1]) ^ reverseTrackColor ? '|' : '-', analogSensor[1],
+											(analogSensor[2] > IRSensorThreshold[2]) ^ reverseTrackColor ? '|' : '-', analogSensor[2]);
 	lcd.setCursor(0, 1);
 	lcd.print(linha);
 
