@@ -93,8 +93,15 @@ void displayAnalogSensors()
 
 void autoCalibrate()
 {
+	unsigned short sensorTemp[NUM_IR_TRACK];
+
 	unsigned short sensorTrack[NUM_IR_TRACK];
+	unsigned short sensorTrackMax[NUM_IR_TRACK];
+	unsigned short sensorTrackMin[NUM_IR_TRACK];
+
 	unsigned short sensorOut[NUM_IR_TRACK];
+	unsigned short sensorOutMax[NUM_IR_TRACK];
+	unsigned short sensorOutMin[NUM_IR_TRACK];
 
 	lcd.setCursor(0, 0); // ( columm , line )
 
@@ -104,12 +111,19 @@ void autoCalibrate()
 	// read all sensors at TRACK position several times
 
 	memset(sensorTrack, 0, sizeof(sensorTrack));
+	memset(sensorTrackMax, 0, sizeof(sensorTrackMax));
+	memset(sensorTrackMin, 1023, sizeof(sensorTrackMin));
+
 	for(int x=0; x < CAL_READS_NUM; x++)
 	{
 		for(int y=0; y < NUM_IR_TRACK; y++)
-			sensorTrack[y] += analogRead(FIRST_IR_SENSOR_INDEX + y);
+		{
+			sensorTrack[y] += sensorTemp[y] = analogRead(FIRST_IR_SENSOR_INDEX + y);
+			sensorTrackMax[y] = max(sensorTrack[y],sensorTrackMax[y]);
+			sensorTrackMin[y] = min(sensorTrack[y],sensorTrackMin[y]);
+		}
 
-		sprintf(linha," %04d %04d %04d", sensorTrack[0], sensorTrack[1], sensorTrack[2]);
+		sprintf(linha," %04d %04d %04d", sensorTemp[0], sensorTemp[1], sensorTemp[2]);
 		lcd.setCursor(0, 1);
 		lcd.print(linha);
 
@@ -119,6 +133,7 @@ void autoCalibrate()
 	}
 
 	// pause so the user can move the sensors outside the track
+
 	lcd.setCursor(0, 0);
 	lcd.print("Calibrate OUTSIDE");
 	Serial.println("Calibrate OUTSIDE");
@@ -129,7 +144,7 @@ void autoCalibrate()
 		sprintf(linha, "Start in %ds    ", x);
 		lcd.print(linha);
 
-		Serial.println(linha);
+		//Serial.println(linha);
 
 		delay(1000);
 	}
@@ -137,12 +152,18 @@ void autoCalibrate()
 	// read all sensors at OUTSIDE position several times
 
 	memset(sensorOut, 0, sizeof(sensorOut));
+	memset(sensorOutMax, 0, sizeof(sensorOut));
+	memset(sensorOutMin, 1023, sizeof(sensorOut));
 	for(int x=0; x < CAL_READS_NUM; x++)
 	{
 		for(int y=0; y < NUM_IR_TRACK; y++)
-			sensorOut[y] += analogRead(FIRST_IR_SENSOR_INDEX + y);
+		{
+			sensorOut[y] += sensorTemp[y] = analogRead(FIRST_IR_SENSOR_INDEX + y);
+			sensorOutMax[y] = max(sensorOut[y], sensorOutMax[y]);
+			sensorOutMin[y] = min(sensorOut[y], sensorOutMin[y]);
+		}
 
-		sprintf(linha," %04d %04d %04d ", sensorOut[0], sensorOut[1], sensorOut[2]);
+		sprintf(linha," %04d %04d %04d", sensorTemp[0], sensorTemp[1], sensorTemp[2]);
 		lcd.setCursor(0, 1);
 		lcd.print(linha);
 
