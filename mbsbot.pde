@@ -16,6 +16,7 @@
  */
 
 #include <LiquidCrystal.h>
+#include <Servo.h>
 
 /*
 LCD connection:
@@ -30,8 +31,13 @@ LCD connection:
 
 http://www.arduino.cc/en/Tutorial/LiquidCrystal
 */
-
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+
+/*
+
+*/
+Servo rightWheel;
+Servo leftWheel;
 
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
 #define NUM_IR_TRACK 3
@@ -54,16 +60,19 @@ void setup()
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
 	autoCalibrate();
+
+	rightWheel.attach(8);
+	rightWheel.write(89); // center it
+
+	leftWheel.attach(9);
+	leftWheel.write(89);
 }
 
 void loop()
 {
 	// read IR sensor data and map into IRSensor[]
 	for(int x = 0; x < NUM_IR_TRACK; x++)
-	{
-//		delay(1);
 		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
-	}
 
 	sprintf(linha, "%c%04d%c%04d%c%04d", 	(IRSensor[0] > IRSensorThreshold[0]) ^ reverseTrackColor ? '|' : '-', IRSensor[0],
 											(IRSensor[1] > IRSensorThreshold[1]) ^ reverseTrackColor ? '|' : '-', IRSensor[1],
@@ -103,6 +112,7 @@ void autoCalibrate()
 	unsigned short sensorOutMax[NUM_IR_TRACK];
 	unsigned short sensorOutMin[NUM_IR_TRACK];
 
+	lcd.clear();
 	lcd.setCursor(0, 0); // ( columm , line )
 
 	lcd.print("Calibrate TRACK");
@@ -134,14 +144,15 @@ void autoCalibrate()
 
 	// pause so the user can move the sensors outside the track
 
+	lcd.clear();
 	lcd.setCursor(0, 0);
-	lcd.print("Calibrate OUTSIDE");
+	lcd.print("Cal. OUTSIDE");
 	Serial.println("Calibrate OUTSIDE");
 
 	for(int x=5; x>0; x--)
 	{
 		lcd.setCursor(0, 1);
-		sprintf(linha, "Start in %ds    ", x);
+		sprintf(linha, "Start in %ds", x);
 		lcd.print(linha);
 
 		//Serial.println(linha);
@@ -172,14 +183,64 @@ void autoCalibrate()
 		delay(CAL_READS_INTERVAL);
 	}
 
+	bool reverseSensor[NUM_IR_TRACK];
+
 	for(int y=0; y < NUM_IR_TRACK; y++)
 	{
 		unsigned short mediumTrack = (sensorTrack[y] / CAL_READS_NUM);
 		unsigned short mediumOut = (sensorOut[y] / CAL_READS_NUM);
 
-		reverseTrackColor = ( mediumOut > mediumTrack );
+		reverseSensor[y] = ( mediumOut > mediumTrack );
 
 		IRSensorThreshold[y] = ( mediumTrack + mediumOut ) / 2;
+	}
+
+	// if one sensor is reversed then all others must also be!
+	lcd.clear();
+	reverseTrackColor = reverseSensor[0];
+
+	if(reverseTrackColor)
+		Serial.println("Reversed Track Color");
+	else
+		Serial.println("Normal Track Color");
+
+	for(int x=1; x < NUM_IR_TRACK; x++)
+		if (reverseSensor[x] ^ reverseTrackColor)
+		{
+			sprintf(linha, "BAD Reverse %d", x);
+			lcd.setCursor(0, 0);
+			lcd.print(linha);
+
+			Serial.println(linha);
+			return;
+		}
+
+	for(int x=0; x < NUM_IR_TRACK; x++)
+	{
+		if(reverseTrackColor)
+		{
+			if(sensorOutMin[x] <= sensorTrackMax[x])
+			{
+				sprintf(linha, "BAD limits %d", x);
+				lcd.setCursor(0, 0);
+				lcd.print(linha);
+
+				Serial.println(linha);
+				return;
+			}
+		}
+		else
+		{
+			if(sensorOutMax[x] >= sensorTrackMin[x])
+			{
+				sprintf(linha, "BAD limits %d", x);
+				lcd.setCursor(0, 0);
+				lcd.print(linha);
+
+				Serial.println(linha);
+				return;
+			}
+		}
 	}
 
 	Serial.println("Thresholds:");
