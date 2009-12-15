@@ -20,8 +20,8 @@
 
 /*
 LCD connection:
-* LCD RS pin to digital pin 12
-* LCD Enable pin to digital pin 11
+* LCD RS pin to digital pin 7
+* LCD Enable pin to digital pin 6
 * LCD D4 pin 11 to digital pin 5
 * LCD D5 pin 12 to digital pin 4
 * LCD D6 pin 13 to digital pin 3
@@ -31,13 +31,31 @@ LCD connection:
 
 http://www.arduino.cc/en/Tutorial/LiquidCrystal
 */
-LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
 /*
 
 */
-Servo rightWheel;
-Servo leftWheel;
+
+class Wheel
+{
+public:
+	Wheel(int pin)
+	{
+		servo.attach(pin);
+		center();
+	}
+	void center()
+	{
+		servo.writeMicroseconds(1500);
+	}
+private:
+	Servo servo;
+	bool reverse;
+};
+
+Wheel leftWheel(8);
+Wheel rightWheel(9);
 
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
 #define NUM_IR_TRACK 3
@@ -60,12 +78,6 @@ void setup()
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
 	autoCalibrate();
-
-	rightWheel.attach(8);
-	rightWheel.write(89); // center it
-
-	leftWheel.attach(9);
-	leftWheel.write(89);
 }
 
 void loop()
