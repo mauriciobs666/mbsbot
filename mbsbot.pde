@@ -1,5 +1,4 @@
-/*
- *	Copyright (C) 2009 - Mauricio Bieze Stefani
+/*	Copyright (C) 2009 - Mauricio Bieze Stefani
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -15,11 +14,8 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <LiquidCrystal.h>
-#include <Servo.h>
+/* LCD Display
 
-/*
-LCD connection:
 * LCD RS pin to digital pin 7
 * LCD Enable pin to digital pin 6
 * LCD D4 pin 11 to digital pin 5
@@ -31,32 +27,55 @@ LCD connection:
 
 http://www.arduino.cc/en/Tutorial/LiquidCrystal
 */
+#include <LiquidCrystal.h>
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
+char linha[32]; //string temp to use with sprintf
 
-/*
-
-*/
+#include <Servo.h>
 
 class Wheel
 {
 public:
-	Wheel(int pin)
+	void init(int pin, short centerAng=90, bool reverseDirection=false)
 	{
 		servo.attach(pin);
-		center();
+		centerAngle=centerAng;
+		reverse=reverseDirection;
+		stop();
 	}
-	void center()
+	void stop()
 	{
-		servo.writeMicroseconds(1500);
+		current=centerAngle;
+		refresh();
+	}
+	void refresh()
+	{
+		servo.write(current);
+	}
+	void move(char percent)
+	{
+		current = reverse ? (centerAngle - percent) : (centerAngle + percent);
+		refresh();
 	}
 private:
 	Servo servo;
 	bool reverse;
-};
+	short centerAngle;
+	short current;
 
-Wheel leftWheel(8);
-Wheel rightWheel(9);
+} leftWheel, rightWheel;
 
+/*
+class Server
+{
+public:
+	char command[10];
+	char pos;
+	Server() : pos(0) {}
+private:
+} server;
+*/
+/*
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
 #define NUM_IR_TRACK 3
 #define FIRST_IR_SENSOR_INDEX 0
@@ -68,8 +87,7 @@ unsigned short IRSensorThreshold[NUM_IR_TRACK];
 #define CAL_READS_INTERVAL 200
 
 bool reverseTrackColor = false;
-
-char linha[32];
+*/
 
 void setup()
 {
@@ -77,11 +95,15 @@ void setup()
 
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
-	autoCalibrate();
+	leftWheel.init(8,86);
+	rightWheel.init(9,83,true);
+
+	//autoCalibrateIR();
 }
 
 void loop()
 {
+/*
 	// read IR sensor data and map into IRSensor[]
 	for(int x = 0; x < NUM_IR_TRACK; x++)
 		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
@@ -89,14 +111,52 @@ void loop()
 	sprintf(linha, "%c%04d%c%04d%c%04d", 	(IRSensor[0] > IRSensorThreshold[0]) ^ reverseTrackColor ? '|' : '-', IRSensor[0],
 											(IRSensor[1] > IRSensorThreshold[1]) ^ reverseTrackColor ? '|' : '-', IRSensor[1],
 											(IRSensor[2] > IRSensorThreshold[2]) ^ reverseTrackColor ? '|' : '-', IRSensor[2]);
-
 	lcd.setCursor(0, 1);
 	lcd.print(linha);
+*/
+
+//	rightWheel.write();
+//	leftWheel.write();
+
+//	lcd.setCursor(0, 0);
+//	lcd.print(val, DEC);
+
+	photovore();
+
+	delay(15);
 
 	// display all analog sensors
-	//displayAnalogSensors();
+//	displayAnalogSensors();
 }
 
+void photovore()
+{
+	int left = analogRead(0);
+	int right = analogRead(1);
+
+	const int threshold = 25;
+	const int power=100;
+
+	//smaller numbers mean more light
+
+	if ( (right - left) > threshold ) // turn left
+	{
+		leftWheel.move(-power);
+		rightWheel.move(power);
+	}
+	else if ( (left - right) > threshold ) //turn right
+	{
+		leftWheel.move(power);
+		rightWheel.move(-power);
+	}
+	else // go ahead
+	{
+		leftWheel.move(power);
+		rightWheel.move(power);
+	}
+}
+
+/*
 void displayAnalogSensors()
 {
 	sprintf(linha, " %04d %04d %04d", analogRead(0), analogRead(1), analogRead(2));
@@ -111,8 +171,9 @@ void displayAnalogSensors()
 
 	Serial.println(linha);
 }
-
-void autoCalibrate()
+*/
+/*
+void autoCalibrateIR()
 {
 	unsigned short sensorTemp[NUM_IR_TRACK];
 
@@ -262,3 +323,4 @@ void autoCalibrate()
 
 	Serial.println(linha);
 }
+*/
