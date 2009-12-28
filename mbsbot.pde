@@ -65,19 +65,19 @@ private:
 
 } leftWheel, rightWheel;
 
-/*
+
 class Server
 {
 public:
-	char command[10];
-	char pos;
 	Server() : pos(0) {}
 private:
+	char command[10];
+	char pos;
 } server;
-*/
-/*
+
+
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
-#define NUM_IR_TRACK 3
+#define NUM_IR_TRACK 2
 #define FIRST_IR_SENSOR_INDEX 0
 unsigned short IRSensor[NUM_IR_TRACK];
 unsigned short IRSensorThreshold[NUM_IR_TRACK];
@@ -87,10 +87,38 @@ unsigned short IRSensorThreshold[NUM_IR_TRACK];
 #define CAL_READS_INTERVAL 200
 
 bool reverseTrackColor = false;
-*/
+
+#define PRG_SEL_0 11
+#define PRG_SEL_1 12
+#define PRG_SEL_2 13
+
+char selectedProgram=0;
+
+#define PRG_LINEFOLLOWER	0x05
+#define PRG_PHOTOVORE 		0x06
+#define PRG_SHOW_SENSORS 	0x07
 
 void setup()
 {
+	// program selection pins
+	pinMode(PRG_SEL_0, INPUT);
+	pinMode(PRG_SEL_1, INPUT);
+	pinMode(PRG_SEL_2, INPUT);
+
+	// enable pull-ups
+	digitalWrite(PRG_SEL_0, HIGH);
+	digitalWrite(PRG_SEL_1, HIGH);
+	digitalWrite(PRG_SEL_2, HIGH);
+
+	if(digitalRead(PRG_SEL_2))
+		selectedProgram |= 0x04;
+
+	if(digitalRead(PRG_SEL_1))
+		selectedProgram |= 0x02;
+
+	if(digitalRead(PRG_SEL_0))
+		selectedProgram |= 0x01;
+
 	Serial.begin(9600);
 
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
@@ -98,7 +126,8 @@ void setup()
 	leftWheel.init(8,86);
 	rightWheel.init(9,83,true);
 
-	//autoCalibrateIR();
+	if(selectedProgram == PRG_LINEFOLLOWER)
+		autoCalibrateLineFollower();
 }
 
 void loop()
@@ -121,12 +150,14 @@ void loop()
 //	lcd.setCursor(0, 0);
 //	lcd.print(val, DEC);
 
-	photovore();
-
-	delay(15);
+	if(selectedProgram == PRG_PHOTOVORE)
+		photovore();
 
 	// display all analog sensors
-//	displayAnalogSensors();
+	if(selectedProgram == PRG_SHOW_SENSORS)
+		displayAnalogSensors();
+
+	delay(15);
 }
 
 void photovore()
@@ -156,14 +187,13 @@ void photovore()
 	}
 }
 
-/*
 void displayAnalogSensors()
 {
 	sprintf(linha, " %04d %04d %04d", analogRead(0), analogRead(1), analogRead(2));
 	lcd.setCursor(0, 0);
 	lcd.print(linha);
 
-	Serial.println(linha);
+	Serial.print(linha);
 
 	sprintf(linha, " %04d %04d %04d", analogRead(3), analogRead(4), analogRead(5));
 	lcd.setCursor(0, 1);
@@ -171,9 +201,8 @@ void displayAnalogSensors()
 
 	Serial.println(linha);
 }
-*/
-/*
-void autoCalibrateIR()
+
+void autoCalibrateLineFollower()
 {
 	unsigned short sensorTemp[NUM_IR_TRACK];
 
@@ -323,4 +352,3 @@ void autoCalibrateIR()
 
 	Serial.println(linha);
 }
-*/
