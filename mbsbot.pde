@@ -63,13 +63,66 @@ private:
 	short centerAngle;
 	short current;
 
-} leftWheel, rightWheel;
+};
 
+class Drive
+{
+public:
+	Wheel leftWheel;
+	Wheel rightWheel;
+	void forward(char percent=100)
+	{
+		leftWheel.move(percent);
+		rightWheel.move(percent);
+	}
+	void backward(char percent=100)
+	{
+		leftWheel.move(-percent);
+		rightWheel.move(-percent);
+	}
+	void left(char percent=100)
+	{
+		leftWheel.move(-percent);
+		rightWheel.move(percent);
+	}
+	void leftSmooth(char percent=100)
+	{
+		leftWheel.stop();
+		rightWheel.move(percent);
+	}
+	void right(char percent=100)
+	{
+		leftWheel.move(percent);
+		rightWheel.move(-percent);
+	}
+	void rightSmooth(char percent=100)
+	{
+		leftWheel.move(percent);
+		rightWheel.stop();
+	}
+	void stop()
+	{
+		leftWheel.stop();
+		rightWheel.stop();
+	}
+} drive;
 
 class Server
 {
 public:
 	Server() : pos(0) {}
+	char * loop()
+	{
+		if(Serial.available() > 0)
+		{
+			char c = Serial.read();
+			if(c == 'n')
+				digitalWrite(13, HIGH);
+			if(c == 'f')
+				digitalWrite(13, LOW);
+		}
+		return NULL;
+	}
 private:
 	char command[10];
 	char pos;
@@ -102,24 +155,27 @@ void setup()
 	// program selection pins
 	pinMode(PRG_SEL_0, INPUT);
 	pinMode(PRG_SEL_1, INPUT);
-	pinMode(PRG_SEL_2, INPUT);
+//	pinMode(PRG_SEL_2, INPUT);
 
 	// enable pull-ups
 	digitalWrite(PRG_SEL_0, HIGH);
 	digitalWrite(PRG_SEL_1, HIGH);
-	digitalWrite(PRG_SEL_2, HIGH);
+//	digitalWrite(PRG_SEL_2, HIGH);
 
 	// read selected program
 	if(digitalRead(PRG_SEL_0)) selectedProgram |= 0x01;
 	if(digitalRead(PRG_SEL_1)) selectedProgram |= 0x02;
-	if(digitalRead(PRG_SEL_2)) selectedProgram |= 0x04;
+//	if(digitalRead(PRG_SEL_2)) selectedProgram |= 0x04;
+
+	pinMode(13, OUTPUT);
+	digitalWrite(13, LOW);
 
 	Serial.begin(9600);
 
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
-	leftWheel.init(8,86);
-	rightWheel.init(9,83,true);
+	drive.leftWheel.init(8,86);
+	drive.rightWheel.init(9,83,true);
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
 		autoCalibrateLineFollower();
@@ -127,6 +183,8 @@ void setup()
 
 void loop()
 {
+	server.loop();
+
 	if(selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower();
 
@@ -142,8 +200,6 @@ void loop()
 
 void lineFollower()
 {
-	const int power=100; // % motor power
-
 	unsigned short IRSensor[NUM_IR_TRACK];
 	bool IRSensorOverLine[NUM_IR_TRACK];		// true if sensor is over the line
 
@@ -162,52 +218,30 @@ void lineFollower()
 	lcd.print(linha);
 */
 	if (IRSensorOverLine[0] && IRSensorOverLine[1])	// end of line, stop
-	{
-		leftWheel.stop();
-		rightWheel.stop();
-	}
-	else if( IRSensorOverLine[0] ) // turn right
-	{
-		leftWheel.move(power);
-		rightWheel.stop();
-	}
-	else if( IRSensorOverLine[1] ) // turn left
-	{
-		leftWheel.stop();
-		rightWheel.move(power);
-	}
-	else	// go ahead
-	{
-		leftWheel.move(power);
-		rightWheel.move(power);
-	}
+		drive.stop();
+	else if( IRSensorOverLine[0] )	// turn right
+		drive.rightSmooth();
+	else if( IRSensorOverLine[1] )	// turn left
+		drive.leftSmooth();
+	else							// go ahead
+		drive.forward();
 }
 
 void photovore()
 {
+	const int threshold = 25;
+
 	int left = analogRead(0);
 	int right = analogRead(1);
 
-	const int threshold = 25;
-	const int power=100;
+	// smaller numbers mean more light
 
-	//smaller numbers mean more light
-
-	if ( (right - left) > threshold ) // turn left
-	{
-		leftWheel.move(-power);
-		rightWheel.move(power);
-	}
-	else if ( (left - right) > threshold ) //turn right
-	{
-		leftWheel.move(power);
-		rightWheel.move(-power);
-	}
-	else // go ahead
-	{
-		leftWheel.move(power);
-		rightWheel.move(power);
-	}
+	if ( (right - left) > threshold )		// turn left
+		drive.left();
+	else if ( (left - right) > threshold )	//turn right
+		drive.right();
+	else 									// go ahead
+		drive.forward();
 }
 
 void displayAnalogSensors()
