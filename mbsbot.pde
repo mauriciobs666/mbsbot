@@ -78,8 +78,7 @@ private:
 
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
 #define NUM_IR_TRACK 2
-#define FIRST_IR_SENSOR_INDEX 0
-unsigned short IRSensor[NUM_IR_TRACK];
+#define FIRST_IR_SENSOR_INDEX 2
 unsigned short IRSensorThreshold[NUM_IR_TRACK];
 
 // define number of redundant reads during autocalibration
@@ -110,14 +109,10 @@ void setup()
 	digitalWrite(PRG_SEL_1, HIGH);
 	digitalWrite(PRG_SEL_2, HIGH);
 
-	if(digitalRead(PRG_SEL_2))
-		selectedProgram |= 0x04;
-
-	if(digitalRead(PRG_SEL_1))
-		selectedProgram |= 0x02;
-
-	if(digitalRead(PRG_SEL_0))
-		selectedProgram |= 0x01;
+	// read selected program
+	if(digitalRead(PRG_SEL_0)) selectedProgram |= 0x01;
+	if(digitalRead(PRG_SEL_1)) selectedProgram |= 0x02;
+	if(digitalRead(PRG_SEL_2)) selectedProgram |= 0x04;
 
 	Serial.begin(9600);
 
@@ -132,23 +127,8 @@ void setup()
 
 void loop()
 {
-/*
-	// read IR sensor data and map into IRSensor[]
-	for(int x = 0; x < NUM_IR_TRACK; x++)
-		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
-
-	sprintf(linha, "%c%04d%c%04d%c%04d", 	(IRSensor[0] > IRSensorThreshold[0]) ^ reverseTrackColor ? '|' : '-', IRSensor[0],
-											(IRSensor[1] > IRSensorThreshold[1]) ^ reverseTrackColor ? '|' : '-', IRSensor[1],
-											(IRSensor[2] > IRSensorThreshold[2]) ^ reverseTrackColor ? '|' : '-', IRSensor[2]);
-	lcd.setCursor(0, 1);
-	lcd.print(linha);
-*/
-
-//	rightWheel.write();
-//	leftWheel.write();
-
-//	lcd.setCursor(0, 0);
-//	lcd.print(val, DEC);
+	if(selectedProgram == PRG_LINEFOLLOWER)
+		lineFollower();
 
 	if(selectedProgram == PRG_PHOTOVORE)
 		photovore();
@@ -158,6 +138,49 @@ void loop()
 		displayAnalogSensors();
 
 	delay(15);
+}
+
+void lineFollower()
+{
+	const int power=100; // % motor power
+
+	unsigned short IRSensor[NUM_IR_TRACK];
+	bool IRSensorOverLine[NUM_IR_TRACK];		// true if sensor is over the line
+
+	// read IR sensor data and map into IRSensor[]
+	for(int x = 0; x < NUM_IR_TRACK; x++)
+	{
+		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
+		IRSensorOverLine[x] = (IRSensor[x] > IRSensorThreshold[x]) ^ reverseTrackColor;
+	}
+
+/*
+	sprintf(linha, "%c%04d%c%04d%c%04d", 	(IRSensorOverLine[0] ? '|' : '-', IRSensor[0],
+											(IRSensorOverLine[1] ? '|' : '-', IRSensor[1],
+											(IRSensorOverLine[2] ? '|' : '-', IRSensor[2]);
+	lcd.setCursor(0, 1);
+	lcd.print(linha);
+*/
+	if (IRSensorOverLine[0] && IRSensorOverLine[1])	// end of line, stop
+	{
+		leftWheel.stop();
+		rightWheel.stop();
+	}
+	else if( IRSensorOverLine[0] ) // turn right
+	{
+		leftWheel.move(power);
+		rightWheel.stop();
+	}
+	else if( IRSensorOverLine[1] ) // turn left
+	{
+		leftWheel.stop();
+		rightWheel.move(power);
+	}
+	else	// go ahead
+	{
+		leftWheel.move(power);
+		rightWheel.move(power);
+	}
 }
 
 void photovore()
