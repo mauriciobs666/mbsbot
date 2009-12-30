@@ -165,7 +165,8 @@ void setup()
 	// read selected program
 	if(digitalRead(PRG_SEL_0)) selectedProgram |= 0x01;
 	if(digitalRead(PRG_SEL_1)) selectedProgram |= 0x02;
-//	if(digitalRead(PRG_SEL_2)) selectedProgram |= 0x04;
+//	if(digitalRead(PRG_SEL_2))
+	selectedProgram |= 0x04;
 
 	pinMode(13, OUTPUT);
 	digitalWrite(13, LOW);
@@ -308,7 +309,7 @@ void autoCalibrateLineFollower()
 	lcd.print("Cal. OUTSIDE");
 	Serial.println("Calibrate OUTSIDE");
 
-	for(int x=5; x>0; x--)
+	for(int x=10; x>0; x--)
 	{
 		lcd.setCursor(0, 1);
 		sprintf(linha, "Start in %ds", x);
