@@ -32,7 +32,6 @@ LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 char linha[32]; //string temp to use with sprintf
 
 #include <Servo.h>
-
 class Wheel
 {
 public:
@@ -128,17 +127,21 @@ private:
 	char pos;
 } server;
 
-
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
 #define NUM_IR_TRACK 2
 #define FIRST_IR_SENSOR_INDEX 2
-unsigned short IRSensorThreshold[NUM_IR_TRACK];
 
-// define number of redundant reads during autocalibration
-#define CAL_READS_NUM 5
-#define CAL_READS_INTERVAL 200
-
-bool reverseTrackColor = false;
+class LineFollower
+{
+public:
+	void init();
+	void autoCalibrate();
+	void loop();
+	void readSensors(bool * isIRSensorOverLine);
+private:
+	unsigned short IRSensorThreshold[NUM_IR_TRACK];
+	bool reverseTrackColor;
+} lineFollower;
 
 #define PRG_SEL_0 11
 #define PRG_SEL_1 12
@@ -179,7 +182,7 @@ void setup()
 	drive.rightWheel.init(9,83,true);
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
-		autoCalibrateLineFollower();
+		lineFollower.autoCalibrate();
 }
 
 void loop()
@@ -187,7 +190,7 @@ void loop()
 	server.loop();
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
-		lineFollower();
+		lineFollower.loop();
 
 	if(selectedProgram == PRG_PHOTOVORE)
 		photovore();
@@ -199,25 +202,12 @@ void loop()
 	delay(15);
 }
 
-void lineFollower()
+void LineFollower::loop()
 {
-	unsigned short IRSensor[NUM_IR_TRACK];
 	bool IRSensorOverLine[NUM_IR_TRACK];		// true if sensor is over the line
 
-	// read IR sensor data and map into IRSensor[]
-	for(int x = 0; x < NUM_IR_TRACK; x++)
-	{
-		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
-		IRSensorOverLine[x] = (IRSensor[x] > IRSensorThreshold[x]) ^ reverseTrackColor;
-	}
+	readSensors(IRSensorOverLine);
 
-/*
-	sprintf(linha, "%c%04d%c%04d%c%04d", 	(IRSensorOverLine[0] ? '|' : '-', IRSensor[0],
-											(IRSensorOverLine[1] ? '|' : '-', IRSensor[1],
-											(IRSensorOverLine[2] ? '|' : '-', IRSensor[2]);
-	lcd.setCursor(0, 1);
-	lcd.print(linha);
-*/
 	if (IRSensorOverLine[0] && IRSensorOverLine[1])	// end of line, stop
 		drive.stop();
 	else if( IRSensorOverLine[0] )	// turn right
@@ -226,6 +216,25 @@ void lineFollower()
 		drive.leftSmooth();
 	else							// go ahead
 		drive.forward();
+}
+
+void LineFollower::readSensors(bool * isIRSensorOverLine)
+{
+	unsigned short IRSensor[NUM_IR_TRACK];
+
+	// read IR sensor data and map into IRSensor[]
+	for(int x = 0; x < NUM_IR_TRACK; x++)
+	{
+		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
+		isIRSensorOverLine[x] = (IRSensor[x] > IRSensorThreshold[x]) ^ reverseTrackColor;
+	}
+/*
+	sprintf(linha, "%c%04d%c%04d%c%04d", 	(IRSensorOverLine[0] ? '|' : '-', IRSensor[0],
+											(IRSensorOverLine[1] ? '|' : '-', IRSensor[1],
+											(IRSensorOverLine[2] ? '|' : '-', IRSensor[2]);
+	lcd.setCursor(0, 1);
+	lcd.print(linha);
+*/
 }
 
 void photovore()
@@ -260,8 +269,12 @@ void displayAnalogSensors()
 	Serial.println(linha);
 }
 
-void autoCalibrateLineFollower()
+void LineFollower::autoCalibrate()
 {
+	// configure number of redundant reads during autocalibration
+	#define CAL_READS_NUM 5
+	#define CAL_READS_INTERVAL 200
+
 	unsigned short sensorTemp[NUM_IR_TRACK];
 
 	unsigned short sensorTrack[NUM_IR_TRACK];
