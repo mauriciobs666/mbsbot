@@ -41,13 +41,13 @@ public:
 	void init(int pin, short centerAng=90, bool reverseDirection=false)
 	{
 		servo.attach(pin);
-		centerAngle=centerAng;
-		reverse=reverseDirection;
+		setCenter(centerAng);
+		setReverse(reverseDirection);
 		stop();
 	}
 	void stop()
 	{
-		current=centerAngle;
+		current = centerAngle;
 		refresh();
 	}
 	void refresh()
@@ -63,6 +63,18 @@ public:
 	{
 		current = value;
 		refresh();
+	}
+	short read()
+	{
+		return current;
+	}
+	void setCenter(short value)
+	{
+		centerAngle = value;
+	}
+	void setReverse(bool rev)
+	{
+		reverse = rev;
 	}
 private:
 	Servo servo;
@@ -111,6 +123,11 @@ public:
 		leftWheel.stop();
 		rightWheel.stop();
 	}
+	void refresh()
+	{
+		leftWheel.refresh();
+		rightWheel.refresh();
+	}
 } drive;
 
 class Server
@@ -126,7 +143,7 @@ public:
 		while(Serial.available() > 0)
 		{
 			char c = Serial.read();
-			if(c == '\n')
+			if(c == '#')
 			{
 				command[pos]=0;
 				pos=0;
@@ -160,7 +177,6 @@ public:
 private:
 	unsigned short IRSensorThreshold[NUM_IR_TRACK];
 	bool reverseTrackColor;
-//	Drive *drive;
 } lineFollower;
 
 #define PRG_SEL_0 11
@@ -169,6 +185,7 @@ private:
 
 char selectedProgram=0;
 
+#define PRG_RC				0x00
 #define PRG_LINEFOLLOWER	0x05
 #define PRG_PHOTOVORE 		0x06
 #define PRG_SHOW_SENSORS 	0x07
@@ -210,9 +227,11 @@ void loop()
 	if(char * cmd = server.receive())
 	{
 		char *cmdPos = cmd;
-		if(toupper(*cmdPos) == 'S')	// Set command
+		char action = toupper(*cmdPos);
+		cmdPos++;
+
+		if( action == 'S')	// Set command
 		{
-			cmdPos++;
 			char dest = toupper(*cmdPos);	// dest: L = left motor, R = right motor
 			cmdPos++;
 			int value = atoi(cmdPos);
@@ -231,7 +250,24 @@ void loop()
 				break;
 			}
 		}
+		else if( action == 'G')	// Get command
+		{
+			switch(toupper(*cmdPos))
+			{
+				case 'L':
+					Serial.println(drive.leftWheel.read());
+				break;
+				case 'R':
+					Serial.println(drive.rightWheel.read());
+				break;
+				default:
+				break;
+			}
+		}
 	}
+
+	if(selectedProgram == PRG_RC)
+		drive.refresh();
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.loop();
