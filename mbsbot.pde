@@ -14,6 +14,9 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <ctype.h>
+#include <string.h>
+
 /* LCD Display
 
 * LCD RS pin to digital pin 7
@@ -29,7 +32,7 @@ http://www.arduino.cc/en/Tutorial/LiquidCrystal
 */
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
-char linha[32]; //string temp to use with sprintf
+char linha[32]; // string temp to use with sprintf
 
 #include <Servo.h>
 class Wheel
@@ -56,12 +59,16 @@ public:
 		current = reverse ? (centerAngle - percent) : (centerAngle + percent);
 		refresh();
 	}
+	void write(int value)
+	{
+		current = value;
+		refresh();
+	}
 private:
 	Servo servo;
 	bool reverse;
 	short centerAngle;
 	short current;
-
 };
 
 class Drive
@@ -110,18 +117,30 @@ class Server
 {
 public:
 	Server() : pos(0) {}
-	char * loop()
+	int send(char *data)
 	{
-		if(Serial.available() > 0)
+		return 0;
+	}
+	char * receive()
+	{
+		while(Serial.available() > 0)
 		{
 			char c = Serial.read();
-			if(c == 'n')
-				digitalWrite(13, HIGH);
-			if(c == 'f')
-				digitalWrite(13, LOW);
+			if(c == '\n')
+			{
+				command[pos]=0;
+				pos=0;
+				return command;
+			}
+			else
+			{
+				command[pos]=c;
+				pos++;
+			}
 		}
 		return NULL;
 	}
+	char *getCommand() { return command; }
 private:
 	char command[10];
 	char pos;
@@ -141,6 +160,7 @@ public:
 private:
 	unsigned short IRSensorThreshold[NUM_IR_TRACK];
 	bool reverseTrackColor;
+//	Drive *drive;
 } lineFollower;
 
 #define PRG_SEL_0 11
@@ -187,7 +207,31 @@ void setup()
 
 void loop()
 {
-	server.loop();
+	if(char * cmd = server.receive())
+	{
+		char *cmdPos = cmd;
+		if(toupper(*cmdPos) == 'S')	// Set command
+		{
+			cmdPos++;
+			char dest = toupper(*cmdPos);	// dest: L = left motor, R = right motor
+			cmdPos++;
+			int value = atoi(cmdPos);
+			switch(dest)
+			{
+				case 'L':
+					drive.leftWheel.write(value);
+				break;
+				case 'R':
+					drive.rightWheel.write(value);
+				break;
+				case 'P':
+					selectedProgram = value;
+				break;
+				default:
+				break;
+			}
+		}
+	}
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.loop();
@@ -195,7 +239,6 @@ void loop()
 	if(selectedProgram == PRG_PHOTOVORE)
 		photovore();
 
-	// display all analog sensors
 	if(selectedProgram == PRG_SHOW_SENSORS)
 		displayAnalogSensors();
 
@@ -248,7 +291,7 @@ void photovore()
 
 	if ( (right - left) > threshold )		// turn left
 		drive.left();
-	else if ( (left - right) > threshold )	//turn right
+	else if ( (left - right) > threshold )	// turn right
 		drive.right();
 	else 									// go ahead
 		drive.forward();
