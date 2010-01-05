@@ -38,7 +38,7 @@ char linha[32]; // string temp to use with sprintf
 class Wheel
 {
 public:
-	void init(int pin, short centerAng=90, bool reverseDirection=false)
+	void init(int pin, short centerAng=1500, bool reverseDirection=false)
 	{
 		servo.attach(pin);
 		setCenter(centerAng);
@@ -52,11 +52,12 @@ public:
 	}
 	void refresh()
 	{
-		servo.write(current);
+		servo.writeMicroseconds(current);
 	}
 	void move(char percent)
 	{
-		current = reverse ? (centerAngle - percent) : (centerAngle + percent);
+		// typical servos use from 1000-2000us
+		current = reverse ? (centerAngle - percent*5) : (centerAngle + percent*5);
 		refresh();
 	}
 	void write(int value)
@@ -212,8 +213,8 @@ void setup()
 
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
-	drive.leftWheel.init(8,85);
-	drive.rightWheel.init(9,82,true);
+	drive.leftWheel.init(8,1500);
+	drive.rightWheel.init(9,1500,true);
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
