@@ -136,6 +136,7 @@ public:
 	Server() : pos(0) {}
 	int send(char *data)
 	{
+		Serial.print(data);
 		return 0;
 	}
 	char * receive()
@@ -164,7 +165,7 @@ private:
 } server;
 
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
-#define NUM_IR_TRACK 2
+#define NUM_IR_TRACK 3
 #define FIRST_IR_SENSOR_INDEX 2
 
 class LineFollower
@@ -195,28 +196,24 @@ void setup()
 	// program selection pins
 	pinMode(PRG_SEL_0, INPUT);
 	pinMode(PRG_SEL_1, INPUT);
-//	pinMode(PRG_SEL_2, INPUT);
+	pinMode(PRG_SEL_2, INPUT);
 
 	// enable pull-ups
 	digitalWrite(PRG_SEL_0, HIGH);
 	digitalWrite(PRG_SEL_1, HIGH);
-//	digitalWrite(PRG_SEL_2, HIGH);
+	digitalWrite(PRG_SEL_2, HIGH);
 
 	// read selected program
 	if(digitalRead(PRG_SEL_0)) selectedProgram |= 0x01;
 	if(digitalRead(PRG_SEL_1)) selectedProgram |= 0x02;
-//	if(digitalRead(PRG_SEL_2))
-	selectedProgram |= 0x04;
-
-	pinMode(13, OUTPUT);
-	digitalWrite(13, LOW);
+	if(digitalRead(PRG_SEL_2)) selectedProgram |= 0x04;
 
 	Serial.begin(9600);
 
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
-	drive.leftWheel.init(8,86);
-	drive.rightWheel.init(9,83,true);
+	drive.leftWheel.init(8,85);
+	drive.rightWheel.init(9,82,true);
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
@@ -287,11 +284,11 @@ void LineFollower::loop()
 
 	readSensors(IRSensorOverLine);
 
-	if (IRSensorOverLine[0] && IRSensorOverLine[1])	// end of line, stop
+	if (IRSensorOverLine[0] && IRSensorOverLine[2])	// end of line, stop
 		drive.stop();
 	else if( IRSensorOverLine[0] )	// turn right
 		drive.rightSmooth();
-	else if( IRSensorOverLine[1] )	// turn left
+	else if( IRSensorOverLine[2] )	// turn left
 		drive.leftSmooth();
 	else							// go ahead
 		drive.forward();
