@@ -41,23 +41,6 @@ public:
 	}
 } eeprom;
 
-/* LCD Display
-
-* LCD RS pin to digital pin 7
-* LCD Enable pin to digital pin 6
-* LCD D4 pin 11 to digital pin 5
-* LCD D5 pin 12 to digital pin 4
-* LCD D6 pin 13 to digital pin 3
-* LCD D7 pin 14 to digital pin 2
-* ends to +5V and ground
-* wiper to LCD VO pin (pin 3)
-
-http://www.arduino.cc/en/Tutorial/LiquidCrystal
-*/
-#include <LiquidCrystal.h>
-LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
-char linha[32]; // string temp to use with sprintf
-
 #include <Servo.h>
 class Wheel
 {
@@ -231,11 +214,10 @@ void setup()
 	// read selected program
 	if(digitalRead(PRG_SEL_0)) selectedProgram |= 0x01;
 	if(digitalRead(PRG_SEL_1)) selectedProgram |= 0x02;
-	if(digitalRead(PRG_SEL_2)) selectedProgram |= 0x04;
+	//if(digitalRead(PRG_SEL_2))
+	selectedProgram |= 0x04;
 
 	Serial.begin(9600);
-
-	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
 	drive.leftWheel.init(8,1410);
 	drive.rightWheel.init(9,1384,true);
@@ -329,13 +311,6 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
 		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
 		isIRSensorOverLine[x] = (IRSensor[x] > IRSensorThreshold[x]) ^ reverseTrackColor;
 	}
-/*
-	sprintf(linha, "%c%04d%c%04d%c%04d", 	(IRSensorOverLine[0] ? '|' : '-', IRSensor[0],
-											(IRSensorOverLine[1] ? '|' : '-', IRSensor[1],
-											(IRSensorOverLine[2] ? '|' : '-', IRSensor[2]);
-	lcd.setCursor(0, 1);
-	lcd.print(linha);
-*/
 }
 
 void photovore()
@@ -357,16 +332,12 @@ void photovore()
 
 void displayAnalogSensors()
 {
-	sprintf(linha, " %04d %04d %04d", analogRead(0), analogRead(1), analogRead(2));
-//	lcd.setCursor(0, 0);
-//	lcd.print(linha);
+	char linha[32]; // string temp to use with sprintf
 
+	sprintf(linha, " %04d %04d %04d", analogRead(0), analogRead(1), analogRead(2));
 	Serial.print(linha);
 
 	sprintf(linha, " %04d %04d %04d", analogRead(3), analogRead(4), analogRead(5));
-//	lcd.setCursor(0, 1);
-//	lcd.print(linha);
-
 	Serial.println(linha);
 }
 
@@ -386,10 +357,8 @@ void LineFollower::autoCalibrate()
 	unsigned short sensorOutMax[NUM_IR_TRACK];
 	unsigned short sensorOutMin[NUM_IR_TRACK];
 
-	lcd.clear();
-	lcd.setCursor(0, 0); // ( columm , line )
+	char linha[32]; // string temp to use with sprintf
 
-	lcd.print("Calibrate TRACK");
 	Serial.println("Calibrating TRACK");
 
 	// read all sensors at TRACK position several times
@@ -408,9 +377,6 @@ void LineFollower::autoCalibrate()
 		}
 
 		sprintf(linha," %04d %04d %04d", sensorTemp[0], sensorTemp[1], sensorTemp[2]);
-		lcd.setCursor(0, 1);
-		lcd.print(linha);
-
 		Serial.println(linha);
 
 		delay(CAL_READS_INTERVAL);
@@ -418,17 +384,11 @@ void LineFollower::autoCalibrate()
 
 	// pause so the user can move the sensors outside the track
 
-	lcd.clear();
-	lcd.setCursor(0, 0);
-	lcd.print("Cal. OUTSIDE");
 	Serial.println("Calibrate OUTSIDE");
 
 	for(int x=10; x>0; x--)
 	{
-		lcd.setCursor(0, 1);
 		sprintf(linha, "Start in %ds", x);
-		lcd.print(linha);
-
 		//Serial.println(linha);
 
 		delay(1000);
@@ -449,9 +409,6 @@ void LineFollower::autoCalibrate()
 		}
 
 		sprintf(linha," %04d %04d %04d", sensorTemp[0], sensorTemp[1], sensorTemp[2]);
-		lcd.setCursor(0, 1);
-		lcd.print(linha);
-
 		Serial.println(linha);
 
 		delay(CAL_READS_INTERVAL);
@@ -470,7 +427,6 @@ void LineFollower::autoCalibrate()
 	}
 
 	// if one sensor is reversed then all others must also be!
-	lcd.clear();
 	reverseTrackColor = reverseSensor[0];
 
 	if(reverseTrackColor)
@@ -482,9 +438,6 @@ void LineFollower::autoCalibrate()
 		if (reverseSensor[x] ^ reverseTrackColor)
 		{
 			sprintf(linha, "BAD Reverse %d", x);
-			lcd.setCursor(0, 0);
-			lcd.print(linha);
-
 			Serial.println(linha);
 			return;
 		}
@@ -496,9 +449,6 @@ void LineFollower::autoCalibrate()
 			if(sensorOutMin[x] <= sensorTrackMax[x])
 			{
 				sprintf(linha, "BAD limits %d", x);
-				lcd.setCursor(0, 0);
-				lcd.print(linha);
-
 				Serial.println(linha);
 				return;
 			}
@@ -508,9 +458,6 @@ void LineFollower::autoCalibrate()
 			if(sensorOutMax[x] >= sensorTrackMin[x])
 			{
 				sprintf(linha, "BAD limits %d", x);
-				lcd.setCursor(0, 0);
-				lcd.print(linha);
-
 				Serial.println(linha);
 				return;
 			}
@@ -519,8 +466,5 @@ void LineFollower::autoCalibrate()
 
 	Serial.println("Thresholds:");
 	sprintf(linha," %04d %04d %04d", IRSensorThreshold[0], IRSensorThreshold[1], IRSensorThreshold[2]);
-	lcd.setCursor(0, 0);
-	lcd.print(linha);
-
 	Serial.println(linha);
 }
