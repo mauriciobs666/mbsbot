@@ -17,6 +17,30 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <EEPROM.h>
+
+class Eeprom
+{
+public:
+	struct sConfigurationData
+	{
+		short leftWheelCenter;
+		short rightWheelCenter;
+	} data;
+	void load()
+	{
+		char * dest = (char*) &data;
+		for(int addr = 0; addr < sizeof(data); addr++, dest++ )
+			*dest = EEPROM.read(addr);
+	}
+	void save()
+	{
+		char * dest = (char*) &data;
+		for(int addr = 0; addr < sizeof(data); addr++, dest++ )
+			EEPROM.write(addr, *dest);
+	}
+} eeprom;
+
 /* LCD Display
 
 * LCD RS pin to digital pin 7
@@ -213,8 +237,8 @@ void setup()
 
 	lcd.begin(16, 2); // LCD's number of (columns, rows)
 
-	drive.leftWheel.init(8,1500);
-	drive.rightWheel.init(9,1500,true);
+	drive.leftWheel.init(8,1410);
+	drive.rightWheel.init(9,1384,true);
 
 	if(selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
@@ -334,14 +358,14 @@ void photovore()
 void displayAnalogSensors()
 {
 	sprintf(linha, " %04d %04d %04d", analogRead(0), analogRead(1), analogRead(2));
-	lcd.setCursor(0, 0);
-	lcd.print(linha);
+//	lcd.setCursor(0, 0);
+//	lcd.print(linha);
 
 	Serial.print(linha);
 
 	sprintf(linha, " %04d %04d %04d", analogRead(3), analogRead(4), analogRead(5));
-	lcd.setCursor(0, 1);
-	lcd.print(linha);
+//	lcd.setCursor(0, 1);
+//	lcd.print(linha);
 
 	Serial.println(linha);
 }
