@@ -1,4 +1,4 @@
-/*	Copyright (C) 2009 - Mauricio Bieze Stefani
+/*	Copyright (C) 2009-2010 - Mauricio Bieze Stefani
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -14,16 +14,26 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 
-#include <EEPROM.h>
+/******************************************************************************
+ *	EEPROM - PERSISTENT CONFIGURATION
+ ******************************************************************************/
 
+#define PRG_RC				0x00
+#define PRG_LINEFOLLOWER	0x01
+#define PRG_PHOTOVORE 		0x02
+#define PRG_SHOW_SENSORS	0x03
+
+#include <EEPROM.h>
 class Eeprom
 {
 public:
 	struct sConfigurationData
 	{
+		char selectedProgram;
 		short leftWheelCenter;
 		short rightWheelCenter;
 	} data;
@@ -40,6 +50,10 @@ public:
 			EEPROM.write(addr, *dest);
 	}
 } eeprom;
+
+/******************************************************************************
+ *	WHEELS CONTROLER
+ ******************************************************************************/
 
 #include <Servo.h>
 class Wheel
@@ -138,39 +152,44 @@ public:
 	}
 } drive;
 
-class Server
+/******************************************************************************
+ *	PHOTOVORE
+ ******************************************************************************/
+
+void photovore()
 {
-public:
-	Server() : pos(0) {}
-	int send(char *data)
+	const int threshold = 25;
+
+	int left = analogRead(0);
+	int right = analogRead(1);
+
+	// smaller numbers mean more light
+
+	if ( (right - left) > threshold )		// turn left
+		drive.left();
+	else if ( (left - right) > threshold )	// turn right
+		drive.right();
+	else 									// go ahead
+		drive.forward();
+}
+
+/******************************************************************************
+ *	DEBUG SENSORS
+ ******************************************************************************/
+
+void displayAnalogSensors()
+{
+	for (int x = 0; x < 6; x++)
 	{
-		Serial.print(data);
-		return 0;
+		Serial.print(analogRead(x));
+		Serial.print(" ");
 	}
-	char * receive()
-	{
-		while(Serial.available() > 0)
-		{
-			char c = Serial.read();
-			if(c == '#')
-			{
-				command[pos]=0;
-				pos=0;
-				return command;
-			}
-			else
-			{
-				command[pos]=c;
-				pos++;
-			}
-		}
-		return NULL;
-	}
-	char *getCommand() { return command; }
-private:
-	char command[10];
-	char pos;
-} server;
+	Serial.println("");
+}
+
+/******************************************************************************
+ *	LINE FOLLOWER
+ ******************************************************************************/
 
 // NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
 #define NUM_IR_TRACK 3
@@ -187,103 +206,6 @@ private:
 	unsigned short IRSensorThreshold[NUM_IR_TRACK];
 	bool reverseTrackColor;
 } lineFollower;
-
-#define PRG_SEL_0 11
-#define PRG_SEL_1 12
-#define PRG_SEL_2 13
-
-char selectedProgram=0;
-
-#define PRG_RC				0x00
-#define PRG_LINEFOLLOWER	0x05
-#define PRG_PHOTOVORE 		0x06
-#define PRG_SHOW_SENSORS 	0x07
-
-void setup()
-{
-	// program selection pins
-	pinMode(PRG_SEL_0, INPUT);
-	pinMode(PRG_SEL_1, INPUT);
-	pinMode(PRG_SEL_2, INPUT);
-
-	// enable pull-ups
-	digitalWrite(PRG_SEL_0, HIGH);
-	digitalWrite(PRG_SEL_1, HIGH);
-	digitalWrite(PRG_SEL_2, HIGH);
-
-	// read selected program
-	if(digitalRead(PRG_SEL_0)) selectedProgram |= 0x01;
-	if(digitalRead(PRG_SEL_1)) selectedProgram |= 0x02;
-	//if(digitalRead(PRG_SEL_2))
-	selectedProgram |= 0x04;
-
-	Serial.begin(9600);
-
-	drive.leftWheel.init(8,1410);
-	drive.rightWheel.init(9,1384,true);
-
-	if(selectedProgram == PRG_LINEFOLLOWER)
-		lineFollower.autoCalibrate();
-}
-
-void loop()
-{
-	if(char * cmd = server.receive())
-	{
-		char *cmdPos = cmd;
-		char action = toupper(*cmdPos);
-		cmdPos++;
-
-		if( action == 'S')	// Set command
-		{
-			char dest = toupper(*cmdPos);	// dest: L = left motor, R = right motor
-			cmdPos++;
-			int value = atoi(cmdPos);
-			switch(dest)
-			{
-				case 'L':
-					drive.leftWheel.write(value);
-				break;
-				case 'R':
-					drive.rightWheel.write(value);
-				break;
-				case 'P':
-					selectedProgram = value;
-				break;
-				default:
-				break;
-			}
-		}
-		else if( action == 'G')	// Get command
-		{
-			switch(toupper(*cmdPos))
-			{
-				case 'L':
-					Serial.println(drive.leftWheel.read());
-				break;
-				case 'R':
-					Serial.println(drive.rightWheel.read());
-				break;
-				default:
-				break;
-			}
-		}
-	}
-
-	if(selectedProgram == PRG_RC)
-		drive.refresh();
-
-	if(selectedProgram == PRG_LINEFOLLOWER)
-		lineFollower.loop();
-
-	if(selectedProgram == PRG_PHOTOVORE)
-		photovore();
-
-	if(selectedProgram == PRG_SHOW_SENSORS)
-		displayAnalogSensors();
-
-	delay(15);
-}
 
 void LineFollower::loop()
 {
@@ -311,34 +233,6 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
 		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
 		isIRSensorOverLine[x] = (IRSensor[x] > IRSensorThreshold[x]) ^ reverseTrackColor;
 	}
-}
-
-void photovore()
-{
-	const int threshold = 25;
-
-	int left = analogRead(0);
-	int right = analogRead(1);
-
-	// smaller numbers mean more light
-
-	if ( (right - left) > threshold )		// turn left
-		drive.left();
-	else if ( (left - right) > threshold )	// turn right
-		drive.right();
-	else 									// go ahead
-		drive.forward();
-}
-
-void displayAnalogSensors()
-{
-	char linha[32]; // string temp to use with sprintf
-
-	sprintf(linha, " %04d %04d %04d", analogRead(0), analogRead(1), analogRead(2));
-	Serial.print(linha);
-
-	sprintf(linha, " %04d %04d %04d", analogRead(3), analogRead(4), analogRead(5));
-	Serial.println(linha);
 }
 
 void LineFollower::autoCalibrate()
@@ -467,4 +361,162 @@ void LineFollower::autoCalibrate()
 	Serial.println("Thresholds:");
 	sprintf(linha," %04d %04d %04d", IRSensorThreshold[0], IRSensorThreshold[1], IRSensorThreshold[2]);
 	Serial.println(linha);
+}
+
+/******************************************************************************
+ *	TELNET SERVER
+ ******************************************************************************/
+
+class Server
+{
+public:
+	Server() : pos(0) {}
+	void send(char *data)
+		{ Serial.print(data); }
+	char * receive();
+	void loop();
+	char *getCommand()
+		{ return command; }
+private:
+	char command[50];
+	char pos;
+} server;
+
+char * Server::receive()
+{
+	while(Serial.available() > 0)
+	{
+		char c = Serial.read();
+		if(c == ';')
+		{
+			command[pos]=0;
+			pos=0;
+			return command;
+		}
+		else
+		{
+			command[pos]=c;
+			pos++;
+		}
+	}
+	return NULL;
+}
+
+void Server::loop()
+{
+	if( server.receive() )
+	{
+		char * tok = strtok (command, " ");
+
+		if (tok)	// first token is the ACTION
+		{
+			if(strcmp(tok, "set") == 0)	// action SET is meant to assign a value to some variable
+			{
+				tok = strtok (NULL, " =");
+				if (tok)			// second token is the DESTINATION VAR
+				{
+					char dest[10];
+					strcpy(dest,tok);
+
+					tok = strtok (NULL, " ");
+					if (tok)		// third token is the actual value
+					{
+						int value = atoi(tok);
+
+						if(strcmp(dest, "l") == 0)			// left motor
+							drive.leftWheel.write(value);
+						else if(strcmp(dest, "lc") == 0)	// left motor center
+						{
+							drive.leftWheel.setCenter(value);
+							eeprom.data.leftWheelCenter = value;
+						}
+						else if(strcmp(dest, "r") == 0)		// right motor
+							drive.rightWheel.write(value);
+						else if(strcmp(dest, "rc") == 0)	// right motor center
+						{
+							drive.rightWheel.setCenter(value);
+							eeprom.data.rightWheelCenter = value;
+						}
+						else if(strcmp(dest,"p") == 0)		// program
+							eeprom.data.selectedProgram = value;
+					}
+				}
+			}
+			else if(strcmp(tok, "get") == 0)	// action GET reads a variable
+			{
+				tok = strtok (NULL, " ");
+				if (tok)			// second token is the VAR to be read
+				{
+					if(strcmp(tok, "l") == 0)				// left motor
+						Serial.println(drive.leftWheel.read());
+					else if(strcmp(tok, "lc") == 0)			// left motor center
+						Serial.println(eeprom.data.leftWheelCenter);
+					else if(strcmp(tok, "r") == 0)			// right motor
+						Serial.println(drive.rightWheel.read());
+					else if(strcmp(tok, "rc") == 0)			// right motor center
+						Serial.println(eeprom.data.rightWheelCenter);
+					else if(strcmp(tok,"p") == 0)			// program
+						Serial.println(eeprom.data.selectedProgram);
+					else if(strcmp(tok,"all") == 0)			// all analog sensors
+						displayAnalogSensors();
+				}
+			}
+			else if(strcmp(tok, "save") == 0)	// save stuff to eeprom
+				eeprom.save();
+			else if(strcmp(tok, "load") == 0)	// discard changes and reload from eeprom
+				eeprom.load();
+			else if(strcmp(tok, "cal") == 0)	// re-calibrate line following IR sensors
+				lineFollower.autoCalibrate();
+			else if(strcmp(tok, "default") == 0)
+			{
+				eeprom.data.leftWheelCenter = 1410;
+				eeprom.data.rightWheelCenter = 1384;
+				eeprom.data.selectedProgram = 0;
+				eeprom.save();
+			}
+		}
+	}
+}
+
+/******************************************************************************
+ *	SETUP
+ ******************************************************************************/
+
+void setup()
+{
+	Serial.begin(9600);
+
+	eeprom.load();
+
+	drive.leftWheel.init(8, eeprom.data.leftWheelCenter);
+	drive.rightWheel.init(9, eeprom.data.rightWheelCenter, true);
+
+	if(eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
+		lineFollower.autoCalibrate();
+}
+
+/******************************************************************************
+ *	MAIN LOOP
+ ******************************************************************************/
+
+void loop()
+{
+	server.loop();
+
+	switch(eeprom.data.selectedProgram)
+	{
+		case PRG_RC:
+			drive.refresh();
+		break;
+		case PRG_LINEFOLLOWER:
+			lineFollower.loop();
+		break;
+		case PRG_PHOTOVORE:
+			photovore();
+		break;
+		case PRG_SHOW_SENSORS:
+			displayAnalogSensors();
+		break;
+	}
+	delay(15);
 }
