@@ -406,19 +406,20 @@ void Server::loop()
 {
 	if( server.receive() )
 	{
-		char * tok = strtok (command, " ");
+		char *pqp;
+		char * tok = strtok_r(command, " ", &pqp);
 
 		if (tok)	// first token is the ACTION
 		{
 			if(strcmp(tok, "set") == 0)	// action SET is meant to assign a value to some variable
 			{
-				tok = strtok (NULL, " =");
+				tok = strtok_r(NULL, " =", &pqp);
 				if (tok)			// second token is the DESTINATION VAR
 				{
 					char dest[10];
 					strcpy(dest,tok);
 
-					tok = strtok (NULL, " ");
+					tok = strtok_r(NULL, " ", &pqp);
 					if (tok)		// third token is the actual value
 					{
 						int value = atoi(tok);
@@ -444,7 +445,7 @@ void Server::loop()
 			}
 			else if(strcmp(tok, "get") == 0)	// action GET reads a variable
 			{
-				tok = strtok (NULL, " ");
+				tok = strtok_r(NULL, " ", &pqp);
 				if (tok)			// second token is the VAR to be read
 				{
 					if(strcmp(tok, "l") == 0)				// left motor
