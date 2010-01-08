@@ -49,7 +49,6 @@ const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
 const long serialcomFrame::idMenuQuit = wxNewId();
 const long serialcomFrame::idMenuAbout = wxNewId();
 const long serialcomFrame::ID_STATUSBAR1 = wxNewId();
-const long serialcomFrame::ID_TIMER1 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(serialcomFrame,wxFrame)
@@ -68,7 +67,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxMenuBar* MenuBar1;
     wxMenu* Menu2;
 
-    Create(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
+    Create(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK1"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
@@ -80,7 +79,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2->SetSizeHints(Panel1);
     Notebook1->AddPage(Panel1, _("Log"), false);
     BoxSizer1->Add(Notebook1, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
-    SendCommandText = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL1"));
+    SendCommandText = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL1"));
     BoxSizer1->Add(SendCommandText, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SetSizer(BoxSizer1);
     MenuBar1 = new wxMenuBar();
@@ -99,15 +98,12 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StatusBar1->SetFieldsCount(1,__wxStatusBarWidths_1);
     StatusBar1->SetStatusStyles(1,__wxStatusBarStyles_1);
     SetStatusBar(StatusBar1);
-    Timer1.SetOwner(this, ID_TIMER1);
-    Timer1.Start(1, false);
     BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
 
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnAbout);
-    Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
 
     serialPort.init("COM1");
@@ -138,15 +134,12 @@ void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 	SendCommandText->Clear();
 }
 
-void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
-{
-	int available;
-	char response[100];
+//	int available;
+//	char response[100];
 //	do
 //	{
-		available = serialPort.Read(response, sizeof(response));
-		if(available > 0)
-			Log->AppendText(wxString(response,wxConvUTF8));
+//		available = serialPort.Read(response, sizeof(response));
+//		if(available > 0)
+//			Log->AppendText(wxString(response,wxConvUTF8));
 //	}
 //	while(available>0);
-}
