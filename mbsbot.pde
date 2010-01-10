@@ -150,6 +150,12 @@ public:
 		leftWheel.refresh();
 		rightWheel.refresh();
 	}
+	void pulse(int period, char percent=100)
+	{
+		forward(percent);
+		delay(period);
+		stop();
+	}
 } drive;
 
 /******************************************************************************
@@ -205,6 +211,7 @@ public:
 private:
 	unsigned short IRSensorThreshold[NUM_IR_TRACK];
 	bool reverseTrackColor;
+	char lastCorrection;
 } lineFollower;
 
 void LineFollower::loop()
@@ -213,14 +220,27 @@ void LineFollower::loop()
 
 	readSensors(IRSensorOverLine);
 
-	if (IRSensorOverLine[0] && IRSensorOverLine[2])	// end of line, stop
+	if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, stop
 		drive.stop();
 	else if( IRSensorOverLine[0] )	// turn right
-		drive.rightSmooth();
+	{
+		lastCorrection=1;
+		drive.right();
+	}
 	else if( IRSensorOverLine[2] )	// turn left
-		drive.leftSmooth();
-	else							// go ahead
+	{
+		lastCorrection=-1;
+		drive.left();
+	}
+	else if( IRSensorOverLine[1] )	// go ahead
 		drive.forward();
+	else 							// lost track, redo last correction in the hope the track is just a bit ahead
+	{
+		if(lastCorrection == 1)
+			drive.right();
+		else if (lastCorrection == -1)
+			drive.left();
+	}
 }
 
 void LineFollower::readSensors(bool * isIRSensorOverLine)
@@ -283,7 +303,7 @@ void LineFollower::autoCalibrate()
 	for(int x=10; x>0; x--)
 	{
 		sprintf(linha, "Start in %ds", x);
-		//Serial.println(linha);
+		Serial.println(linha);
 
 		delay(1000);
 	}
@@ -367,6 +387,9 @@ void LineFollower::autoCalibrate()
  *	TELNET SERVER
  ******************************************************************************/
 
+#define MAX_COMMAND_SIZE 20
+#define COMMAND_END ';'
+
 class Server
 {
 public:
@@ -378,7 +401,7 @@ public:
 	char *getCommand()
 		{ return command; }
 private:
-	char command[50];
+	char command[MAX_COMMAND_SIZE];
 	char pos;
 } server;
 
@@ -387,7 +410,13 @@ char * Server::receive()
 	while(Serial.available() > 0)
 	{
 		char c = Serial.read();
-		if(c == ';')
+
+		if (pos == MAX_COMMAND_SIZE)
+		{
+			pos=0;
+			Serial.println("ERR: MAX_CMD_SIZ");
+		}
+		else if(c == COMMAND_END)
 		{
 			command[pos]=0;
 			pos=0;
