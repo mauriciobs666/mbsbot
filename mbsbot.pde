@@ -19,13 +19,23 @@
 #include <string.h>
 
 /******************************************************************************
- *	EEPROM - PERSISTENT CONFIGURATION
+ *	DEFINES AND SETUP
  ******************************************************************************/
 
+// eeprom.data.selectedProgram
 #define PRG_RC				0x00
 #define PRG_LINEFOLLOWER	0x01
 #define PRG_PHOTOVORE 		0x02
 #define PRG_SHOW_SENSORS	0x03
+
+// LINE FOLLOWER SETUP
+#define NUM_IR_TRACK 3
+#define FIRST_IR_SENSOR_INDEX 2
+// where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
+
+/******************************************************************************
+ *	EEPROM - PERSISTENT CONFIGURATION
+ ******************************************************************************/
 
 #include <EEPROM.h>
 class Eeprom
@@ -34,8 +44,14 @@ public:
 	struct sConfigurationData
 	{
 		char selectedProgram;
+
 		short leftWheelCenter;
 		short rightWheelCenter;
+
+		short inch;
+
+		unsigned short LF_threshold[NUM_IR_TRACK];
+		bool LF_reverseColor;
 	} data;
 	void load()
 	{
@@ -156,6 +172,10 @@ public:
 		delay(period);
 		stop();
 	}
+	void inch(bool forward=true)
+	{
+		pulse(eeprom.data.inch, forward ? 100 : -100);
+	}
 } drive;
 
 /******************************************************************************
@@ -197,10 +217,6 @@ void displayAnalogSensors()
  *	LINE FOLLOWER
  ******************************************************************************/
 
-// NUM_IR_TRACK=3 FIRST_IR_SENSOR_INDEX=0 means pins A0, A1 and A2 are connected
-#define NUM_IR_TRACK 3
-#define FIRST_IR_SENSOR_INDEX 2
-
 class LineFollower
 {
 public:
@@ -209,8 +225,6 @@ public:
 	void loop();
 	void readSensors(bool * isIRSensorOverLine);
 private:
-	unsigned short IRSensorThreshold[NUM_IR_TRACK];
-	bool reverseTrackColor;
 	char lastCorrection;
 } lineFollower;
 
@@ -251,7 +265,7 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
 	for(int x = 0; x < NUM_IR_TRACK; x++)
 	{
 		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
-		isIRSensorOverLine[x] = (IRSensor[x] > IRSensorThreshold[x]) ^ reverseTrackColor;
+		isIRSensorOverLine[x] = (IRSensor[x] > eeprom.data.LF_threshold[x]) ^ eeprom.data.LF_reverseColor;
 	}
 }
 
@@ -337,19 +351,19 @@ void LineFollower::autoCalibrate()
 
 		reverseSensor[y] = ( mediumOut > mediumTrack );
 
-		IRSensorThreshold[y] = ( mediumTrack + mediumOut ) / 2;
+		eeprom.data.LF_threshold[y] = ( mediumTrack + mediumOut ) / 2;
 	}
 
 	// if one sensor is reversed then all others must also be!
-	reverseTrackColor = reverseSensor[0];
+	eeprom.data.LF_reverseColor = reverseSensor[0];
 
-	if(reverseTrackColor)
+	if(eeprom.data.LF_reverseColor)
 		Serial.println("Reversed Track Color");
 	else
 		Serial.println("Normal Track Color");
 
 	for(int x=1; x < NUM_IR_TRACK; x++)
-		if (reverseSensor[x] ^ reverseTrackColor)
+		if (reverseSensor[x] ^ eeprom.data.LF_reverseColor)
 		{
 			sprintf(linha, "BAD Reverse %d", x);
 			Serial.println(linha);
@@ -358,7 +372,7 @@ void LineFollower::autoCalibrate()
 
 	for(int x=0; x < NUM_IR_TRACK; x++)
 	{
-		if(reverseTrackColor)
+		if(eeprom.data.LF_reverseColor)
 		{
 			if(sensorOutMin[x] <= sensorTrackMax[x])
 			{
@@ -379,7 +393,7 @@ void LineFollower::autoCalibrate()
 	}
 
 	Serial.println("Thresholds:");
-	sprintf(linha," %04d %04d %04d", IRSensorThreshold[0], IRSensorThreshold[1], IRSensorThreshold[2]);
+	sprintf(linha," %04d %04d %04d", eeprom.data.LF_threshold[0], eeprom.data.LF_threshold[1], eeprom.data.LF_threshold[2]);
 	Serial.println(linha);
 }
 
@@ -469,6 +483,8 @@ void Server::loop()
 						}
 						else if(strcmp(dest,"p") == 0)		// program
 							eeprom.data.selectedProgram = value;
+						else if(strcmp(dest,"i") == 0)		// inch delay
+							eeprom.data.inch = value;
 					}
 				}
 			}
@@ -487,6 +503,8 @@ void Server::loop()
 						Serial.println(eeprom.data.rightWheelCenter);
 					else if(strcmp(tok,"p") == 0)			// program
 						Serial.println(eeprom.data.selectedProgram);
+					else if(strcmp(tok,"i") == 0)			// inch delay
+						Serial.println(eeprom.data.inch);
 					else if(strcmp(tok,"all") == 0)			// all analog sensors
 						displayAnalogSensors();
 				}
@@ -499,10 +517,20 @@ void Server::loop()
 				lineFollower.autoCalibrate();
 			else if(strcmp(tok, "default") == 0)
 			{
+				eeprom.data.selectedProgram = 0;
 				eeprom.data.leftWheelCenter = 1410;
 				eeprom.data.rightWheelCenter = 1384;
-				eeprom.data.selectedProgram = 0;
+				eeprom.data.inch = 500; // perhaps half a second?
+				for(int x = 0; x < NUM_IR_TRACK; x++)
+				{
+					eeprom.data.LF_threshold[x] = 512;
+					eeprom.data.LF_reverseColor = false;
+				}
 				eeprom.save();
+			}
+			else if(strcmp(tok, "inch") == 0)
+			{
+				drive.inch();
 			}
 		}
 	}
@@ -520,9 +548,6 @@ void setup()
 
 	drive.leftWheel.init(8, eeprom.data.leftWheelCenter);
 	drive.rightWheel.init(9, eeprom.data.rightWheelCenter, true);
-
-	if(eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
-		lineFollower.autoCalibrate();
 }
 
 /******************************************************************************
