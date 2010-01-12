@@ -1,0 +1,29 @@
+Serial command reference:
+
+get [variable]
+	l	-	left wheel servo
+	lc	-	left wheel servo center pulse duration (in ms)
+	r	-	right wheel servo
+	rc	-	right wheel servo center pulse duration (in ms)
+	p	-	current program
+	i	-	drive.inch() delay configuration
+	all	-	all analog sensors
+
+set	[variable] [value]
+	variable	-	same used for 'get'
+	value		-	int
+	
+save
+	save to eeprom
+
+load
+	discard changes and reload from eeprom
+
+cal
+	line-follower auto calibration
+
+default
+	clean eeprom with default hard-coded values
+	
+inch
+	move forward one inch
