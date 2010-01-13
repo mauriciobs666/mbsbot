@@ -23,12 +23,14 @@
  ******************************************************************************/
 
 // eeprom.data.selectedProgram
+
 #define PRG_RC				0x00
 #define PRG_LINEFOLLOWER	0x01
 #define PRG_PHOTOVORE 		0x02
 #define PRG_SHOW_SENSORS	0x03
 
 // LINE FOLLOWER SETUP
+
 #define NUM_IR_TRACK 3
 #define FIRST_IR_SENSOR_INDEX 2
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
@@ -449,7 +451,7 @@ void Server::loop()
 {
 	if( server.receive() )
 	{
-		char *pqp;
+		char *pqp; // not all avr-libc versions contain strtok() ...
 		char * tok = strtok_r(command, " ", &pqp);
 
 		if (tok)	// first token is the ACTION
