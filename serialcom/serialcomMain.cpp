@@ -49,6 +49,7 @@ const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
 const long serialcomFrame::idMenuQuit = wxNewId();
 const long serialcomFrame::idMenuAbout = wxNewId();
 const long serialcomFrame::ID_STATUSBAR1 = wxNewId();
+const long serialcomFrame::ID_TIMER1 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(serialcomFrame,wxFrame)
@@ -67,7 +68,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxMenuBar* MenuBar1;
     wxMenu* Menu2;
 
-    Create(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+    Create(parent, wxID_ANY, _("MBSBOT"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK1"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
@@ -98,15 +99,18 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StatusBar1->SetFieldsCount(1,__wxStatusBarWidths_1);
     StatusBar1->SetStatusStyles(1,__wxStatusBarStyles_1);
     SetStatusBar(StatusBar1);
+    Timer1.SetOwner(this, ID_TIMER1);
+    Timer1.Start(100, false);
     BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
 
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnAbout);
+    Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
 
-    serialPort.init("COM1");
+    serialPort.init("/dev/ttyUSB0");
 }
 
 serialcomFrame::~serialcomFrame()
@@ -126,20 +130,32 @@ void serialcomFrame::OnAbout(wxCommandEvent& event)
     wxMessageBox(msg, _("Welcome to..."));
 }
 
+#define SERIAL_BUFFER_SIZE 100
+
 void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 {
-	char command[100];
-	//s.Write(command, strlen(command));
-	Log->AppendText(SendCommandText->GetLineText(0)+_("\n"));
+	wxString cmd=SendCommandText->GetLineText(0)+_("\n");
+
+	char command[SERIAL_BUFFER_SIZE];
+	strncpy(command, cmd.mb_str(wxConvUTF8), SERIAL_BUFFER_SIZE);
+
+	serialPort.Write(command, strlen(command));
+
+	Log->AppendText(cmd);
 	SendCommandText->Clear();
 }
 
-//	int available;
-//	char response[100];
-//	do
-//	{
-//		available = serialPort.Read(response, sizeof(response));
-//		if(available > 0)
-//			Log->AppendText(wxString(response,wxConvUTF8));
-//	}
-//	while(available>0);
+void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
+{
+	int available;
+	char response[SERIAL_BUFFER_SIZE];
+	do
+	{
+		available = serialPort.Read(response, SERIAL_BUFFER_SIZE);
+		if(available > 0)
+		{
+			response[available]=0;
+			Log->AppendText(wxString(response,wxConvUTF8));
+		}
+	} while(available>0);
+}

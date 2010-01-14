@@ -17,6 +17,7 @@
 #include <wx/textctrl.h>
 #include <wx/panel.h>
 #include <wx/frame.h>
+#include <wx/timer.h>
 #include <wx/statusbr.h>
 //*)
 
@@ -35,6 +36,7 @@ class serialcomFrame: public wxFrame
         void OnQuit(wxCommandEvent& event);
         void OnAbout(wxCommandEvent& event);
         void OnSendCommandTextTextEnter(wxCommandEvent& event);
+        void OnTimer1Trigger(wxTimerEvent& event);
         //*)
 
         //(*Identifiers(serialcomFrame)
@@ -45,6 +47,7 @@ class serialcomFrame: public wxFrame
         static const long idMenuQuit;
         static const long idMenuAbout;
         static const long ID_STATUSBAR1;
+        static const long ID_TIMER1;
         //*)
 
         //(*Declarations(serialcomFrame)
@@ -52,6 +55,7 @@ class serialcomFrame: public wxFrame
         wxNotebook* Notebook1;
         wxPanel* Panel1;
         wxStatusBar* StatusBar1;
+        wxTimer Timer1;
         wxTextCtrl* SendCommandText;
         //*)
 

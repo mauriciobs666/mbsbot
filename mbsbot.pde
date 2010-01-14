@@ -404,7 +404,7 @@ void LineFollower::autoCalibrate()
  ******************************************************************************/
 
 #define MAX_COMMAND_SIZE 20
-#define COMMAND_END ';'
+#define COMMAND_END '\n'
 
 class Server
 {
@@ -573,6 +573,7 @@ void loop()
 		break;
 		case PRG_SHOW_SENSORS:
 			displayAnalogSensors();
+			delay(500);
 		break;
 	}
 	delay(15);
