@@ -23,9 +23,15 @@ bool serialcomApp::OnInit()
     wxInitAllImageHandlers();
     if ( wxsOK )
     {
-    serialcomFrame* Frame = new serialcomFrame(0);
-    Frame->Show();
-    SetTopWindow(Frame);
+        serialcomFrame* Frame = new serialcomFrame(0);
+        Frame->Show();
+        SetTopWindow(Frame);
+
+        if(argc)
+        {
+            wxString tmp(argv[1]);
+            Frame->serialPort.init(tmp.mb_str(wxConvUTF8));
+        }
     }
     //*)
     return wxsOK;

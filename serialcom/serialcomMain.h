@@ -30,6 +30,7 @@ class serialcomFrame: public wxFrame
         serialcomFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~serialcomFrame();
 
+		SerialPort serialPort;
     private:
 
         //(*Handlers(serialcomFrame)
@@ -37,14 +38,17 @@ class serialcomFrame: public wxFrame
         void OnAbout(wxCommandEvent& event);
         void OnSendCommandTextTextEnter(wxCommandEvent& event);
         void OnTimer1Trigger(wxTimerEvent& event);
+        void OnMenuItem3Selected(wxCommandEvent& event);
         //*)
 
         //(*Identifiers(serialcomFrame)
         static const long ID_TEXTCTRL2;
         static const long ID_PANEL1;
+        static const long ID_PANEL2;
         static const long ID_NOTEBOOK1;
         static const long ID_TEXTCTRL1;
         static const long idMenuQuit;
+        static const long ID_MENUITEM1;
         static const long idMenuAbout;
         static const long ID_STATUSBAR1;
         static const long ID_TIMER1;
@@ -55,13 +59,12 @@ class serialcomFrame: public wxFrame
         wxNotebook* Notebook1;
         wxPanel* Panel1;
         wxStatusBar* StatusBar1;
+        wxPanel* Panel2;
         wxTimer Timer1;
         wxTextCtrl* SendCommandText;
         //*)
 
         DECLARE_EVENT_TABLE()
-
-        SerialPort serialPort;
 };
 
 #endif // SERIALCOMMAIN_H

@@ -22,6 +22,14 @@
 						</object>
 						<label>Log</label>
 					</object>
+					<object class="notebookpage">
+						<object class="wxPanel" name="ID_PANEL2" variable="Panel2" member="yes">
+							<object class="wxFlexGridSizer" variable="FlexGridSizer1" member="no">
+								<cols>3</cols>
+							</object>
+						</object>
+						<label>Drive</label>
+					</object>
 				</object>
 				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 				<option>1</option>
@@ -42,6 +50,13 @@
 					<accel>Alt-F4</accel>
 					<help>Quit the application</help>
 					<handler function="OnQuit" entry="EVT_MENU" />
+				</object>
+			</object>
+			<object class="wxMenu" variable="Menu3" member="yes">
+				<label>&amp;Edit</label>
+				<object class="wxMenuItem" name="ID_MENUITEM1" variable="MenuItem3" member="yes">
+					<label>Preferences</label>
+					<handler function="OnMenuItem3Selected" entry="EVT_MENU" />
 				</object>
 			</object>
 			<object class="wxMenu" variable="Menu2" member="no">
