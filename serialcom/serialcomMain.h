@@ -13,8 +13,10 @@
 //(*Headers(serialcomFrame)
 #include <wx/notebook.h>
 #include <wx/sizer.h>
+#include <wx/stattext.h>
 #include <wx/menu.h>
 #include <wx/textctrl.h>
+#include <wx/slider.h>
 #include <wx/panel.h>
 #include <wx/frame.h>
 #include <wx/timer.h>
@@ -39,11 +41,21 @@ class serialcomFrame: public wxFrame
         void OnSendCommandTextTextEnter(wxCommandEvent& event);
         void OnTimer1Trigger(wxTimerEvent& event);
         void OnMenuItem3Selected(wxCommandEvent& event);
+        void OnSlider1CmdSliderUpdated(wxScrollEvent& event);
+        void OnSlider2CmdSliderUpdated(wxScrollEvent& event);
+        void OnTextCtrl1TextEnter(wxCommandEvent& event);
+        void OnTextCtrl2TextEnter(wxCommandEvent& event);
         //*)
 
         //(*Identifiers(serialcomFrame)
         static const long ID_TEXTCTRL2;
         static const long ID_PANEL1;
+        static const long ID_STATICTEXT1;
+        static const long ID_STATICTEXT2;
+        static const long ID_SLIDER1;
+        static const long ID_SLIDER2;
+        static const long ID_TEXTCTRL3;
+        static const long ID_TEXTCTRL4;
         static const long ID_PANEL2;
         static const long ID_NOTEBOOK1;
         static const long ID_TEXTCTRL1;
@@ -55,10 +67,18 @@ class serialcomFrame: public wxFrame
         //*)
 
         //(*Declarations(serialcomFrame)
+        wxSlider* Slider1;
         wxTextCtrl* Log;
+        wxSlider* Slider2;
         wxNotebook* Notebook1;
+        wxStaticText* StaticText2;
+        wxMenu* Menu3;
         wxPanel* Panel1;
+        wxStaticText* StaticText1;
+        wxMenuItem* MenuItem3;
         wxStatusBar* StatusBar1;
+        wxTextCtrl* TextCtrl2;
+        wxTextCtrl* TextCtrl1;
         wxPanel* Panel2;
         wxTimer Timer1;
         wxTextCtrl* SendCommandText;

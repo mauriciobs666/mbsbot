@@ -44,6 +44,12 @@ wxString wxbuildinfo(wxbuildinfoformat format)
 //(*IdInit(serialcomFrame)
 const long serialcomFrame::ID_TEXTCTRL2 = wxNewId();
 const long serialcomFrame::ID_PANEL1 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT1 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT2 = wxNewId();
+const long serialcomFrame::ID_SLIDER1 = wxNewId();
+const long serialcomFrame::ID_SLIDER2 = wxNewId();
+const long serialcomFrame::ID_TEXTCTRL3 = wxNewId();
+const long serialcomFrame::ID_TEXTCTRL4 = wxNewId();
 const long serialcomFrame::ID_PANEL2 = wxNewId();
 const long serialcomFrame::ID_NOTEBOOK1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
@@ -63,11 +69,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 {
     //(*Initialize(serialcomFrame)
     wxMenuItem* MenuItem2;
-    wxMenu* Menu3;
     wxMenuItem* MenuItem1;
     wxBoxSizer* BoxSizer2;
     wxMenu* Menu1;
-    wxMenuItem* MenuItem3;
     wxBoxSizer* BoxSizer1;
     wxMenuBar* MenuBar1;
     wxFlexGridSizer* FlexGridSizer1;
@@ -84,7 +88,19 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2->Fit(Panel1);
     BoxSizer2->SetSizeHints(Panel1);
     Panel2 = new wxPanel(Notebook1, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
-    FlexGridSizer1 = new wxFlexGridSizer(0, 3, 0, 0);
+    FlexGridSizer1 = new wxFlexGridSizer(3, 2, 0, 0);
+    StaticText1 = new wxStaticText(Panel2, ID_STATICTEXT1, _("Left Wheel"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+    FlexGridSizer1->Add(StaticText1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText2 = new wxStaticText(Panel2, ID_STATICTEXT2, _("Right Wheel"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
+    FlexGridSizer1->Add(StaticText2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Slider1 = new wxSlider(Panel2, ID_SLIDER1, 1500, 1000, 2000, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER1"));
+    FlexGridSizer1->Add(Slider1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Slider2 = new wxSlider(Panel2, ID_SLIDER2, 1500, 1000, 2000, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER2"));
+    FlexGridSizer1->Add(Slider2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrl1 = new wxTextCtrl(Panel2, ID_TEXTCTRL3, _("1500"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL3"));
+    FlexGridSizer1->Add(TextCtrl1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrl2 = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("1500"), wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
+    FlexGridSizer1->Add(TextCtrl2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel2->SetSizer(FlexGridSizer1);
     FlexGridSizer1->Fit(Panel2);
     FlexGridSizer1->SetSizeHints(Panel2);
@@ -119,6 +135,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
 
+    Connect(ID_SLIDER1,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider1CmdSliderUpdated);
+    Connect(ID_SLIDER2,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider2CmdSliderUpdated);
+    Connect(ID_TEXTCTRL3,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl1TextEnter);
+    Connect(ID_TEXTCTRL4,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl2TextEnter);
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnQuit);
     Connect(ID_MENUITEM1,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnMenuItem3Selected);
@@ -176,4 +196,32 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
 void serialcomFrame::OnMenuItem3Selected(wxCommandEvent& event)
 {
+}
+
+void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
+{
+	int val=Slider1->GetValue();
+	wxString str = wxString::Format(wxT("%i"), val);
+	TextCtrl1->SetValue(str);
+}
+
+void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
+{
+	int val=Slider2->GetValue();
+	wxString str = wxString::Format(wxT("%i"), val);
+	TextCtrl2->SetValue(str);
+}
+
+void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
+{
+	wxString str = TextCtrl1->GetValue();
+	int val = atoi(str.mb_str(wxConvUTF8));
+	Slider1->SetValue(val);
+}
+
+void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
+{
+	wxString str = TextCtrl2->GetValue();
+	int val = atoi(str.mb_str(wxConvUTF8));
+	Slider2->SetValue(val);
 }
