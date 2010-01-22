@@ -105,7 +105,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->Fit(Panel2);
     FlexGridSizer1->SetSizeHints(Panel2);
     Notebook1->AddPage(Panel1, _("Log"), false);
-    Notebook1->AddPage(Panel2, _("Drive"), false);
+    Notebook1->AddPage(Panel2, _("Servos"), false);
     BoxSizer1->Add(Notebook1, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SendCommandText = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL1"));
     BoxSizer1->Add(SendCommandText, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
@@ -203,6 +203,10 @@ void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
 	int val=Slider1->GetValue();
 	wxString str = wxString::Format(wxT("%i"), val);
 	TextCtrl1->SetValue(str);
+
+	char cmd[20];
+	snprintf(cmd, 20, "set l %d\n", val);
+	serialPort.Write(cmd, strlen(cmd));
 }
 
 void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
@@ -210,6 +214,10 @@ void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
 	int val=Slider2->GetValue();
 	wxString str = wxString::Format(wxT("%i"), val);
 	TextCtrl2->SetValue(str);
+
+	char cmd[20];
+	snprintf(cmd, 20, "set r %d\n", val);
+	serialPort.Write(cmd, strlen(cmd));
 }
 
 void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
@@ -217,6 +225,10 @@ void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
 	wxString str = TextCtrl1->GetValue();
 	int val = atoi(str.mb_str(wxConvUTF8));
 	Slider1->SetValue(val);
+
+	char cmd[20];
+	snprintf(cmd, 20, "set l %d\n", val);
+	serialPort.Write(cmd, strlen(cmd));
 }
 
 void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
@@ -224,4 +236,8 @@ void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
 	wxString str = TextCtrl2->GetValue();
 	int val = atoi(str.mb_str(wxConvUTF8));
 	Slider2->SetValue(val);
+
+	char cmd[20];
+	snprintf(cmd, 20, "set r %d\n", val);
+	serialPort.Write(cmd, strlen(cmd));
 }
