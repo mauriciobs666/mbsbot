@@ -13,17 +13,18 @@
 //(*Headers(serialcomFrame)
 #include <wx/notebook.h>
 #include <wx/sizer.h>
-#include <wx/stattext.h>
 #include <wx/menu.h>
 #include <wx/textctrl.h>
 #include <wx/slider.h>
 #include <wx/panel.h>
+#include <wx/grid.h>
+#include <wx/button.h>
 #include <wx/frame.h>
 #include <wx/timer.h>
 #include <wx/statusbr.h>
 //*)
 
-#include <MBSUtil.h>
+#include "MbsBot.h"
 
 class serialcomFrame: public wxFrame
 {
@@ -32,31 +33,49 @@ class serialcomFrame: public wxFrame
         serialcomFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~serialcomFrame();
 
-		SerialPort serialPort;
+		MbsBot bot;
     private:
 
-        //(*Handlers(serialcomFrame)
-        void OnQuit(wxCommandEvent& event);
-        void OnAbout(wxCommandEvent& event);
-        void OnSendCommandTextTextEnter(wxCommandEvent& event);
-        void OnTimer1Trigger(wxTimerEvent& event);
-        void OnMenuItem3Selected(wxCommandEvent& event);
-        void OnSlider1CmdSliderUpdated(wxScrollEvent& event);
-        void OnSlider2CmdSliderUpdated(wxScrollEvent& event);
-        void OnTextCtrl1TextEnter(wxCommandEvent& event);
-        void OnTextCtrl2TextEnter(wxCommandEvent& event);
-        //*)
+		//(*Handlers(serialcomFrame)
+		void OnQuit(wxCommandEvent& event);
+		void OnAbout(wxCommandEvent& event);
+		void OnSendCommandTextTextEnter(wxCommandEvent& event);
+		void OnTimer1Trigger(wxTimerEvent& event);
+		void OnMenuItem3Selected(wxCommandEvent& event);
+		void OnSlider1CmdSliderUpdated(wxScrollEvent& event);
+		void OnSlider2CmdSliderUpdated(wxScrollEvent& event);
+		void OnTextCtrl1TextEnter(wxCommandEvent& event);
+		void OnTextCtrl2TextEnter(wxCommandEvent& event);
+		void OnButton1Click(wxCommandEvent& event);
+		void OnButton2Click(wxCommandEvent& event);
+		void OnButton3Click(wxCommandEvent& event);
+		void OnNotebook1PageChanged(wxNotebookEvent& event);
+		void OnButton4Click(wxCommandEvent& event);
+		void OnButton5Click(wxCommandEvent& event);
+		void OnButton6Click(wxCommandEvent& event);
+		void OnButton7Click(wxCommandEvent& event);
+		void OnButton8Click(wxCommandEvent& event);
+		//*)
 
         //(*Identifiers(serialcomFrame)
         static const long ID_TEXTCTRL2;
         static const long ID_PANEL1;
-        static const long ID_STATICTEXT1;
-        static const long ID_STATICTEXT2;
         static const long ID_SLIDER1;
-        static const long ID_SLIDER2;
         static const long ID_TEXTCTRL3;
+        static const long ID_SLIDER2;
         static const long ID_TEXTCTRL4;
+        static const long ID_BUTTON2;
+        static const long ID_BUTTON1;
+        static const long ID_BUTTON3;
         static const long ID_PANEL2;
+        static const long ID_BUTTON6;
+        static const long ID_BUTTON7;
+        static const long ID_BUTTON8;
+        static const long ID_PANEL3;
+        static const long ID_GRID1;
+        static const long ID_BUTTON4;
+        static const long ID_BUTTON5;
+        static const long ID_PANEL4;
         static const long ID_NOTEBOOK1;
         static const long ID_TEXTCTRL1;
         static const long idMenuQuit;
@@ -69,17 +88,26 @@ class serialcomFrame: public wxFrame
         //(*Declarations(serialcomFrame)
         wxSlider* Slider1;
         wxTextCtrl* Log;
+        wxButton* Button4;
         wxSlider* Slider2;
         wxNotebook* Notebook1;
-        wxStaticText* StaticText2;
+        wxPanel* Panel4;
         wxMenu* Menu3;
+        wxButton* Button1;
         wxPanel* Panel1;
-        wxStaticText* StaticText1;
+        wxGrid* Grid1;
+        wxButton* Button2;
+        wxPanel* Panel3;
+        wxButton* Button6;
+        wxButton* Button5;
         wxMenuItem* MenuItem3;
+        wxButton* Button3;
+        wxButton* Button7;
         wxStatusBar* StatusBar1;
         wxTextCtrl* TextCtrl2;
         wxTextCtrl* TextCtrl1;
         wxPanel* Panel2;
+        wxButton* Button8;
         wxTimer Timer1;
         wxTextCtrl* SendCommandText;
         //*)

@@ -207,6 +207,7 @@ void photovore()
 
 void displayAnalogSensors()
 {
+	Serial.print("AS ");
 	for (int x = 0; x < 6; x++)
 	{
 		Serial.print(analogRead(x));
@@ -496,18 +497,36 @@ void Server::loop()
 				if (tok)			// second token is the VAR to be read
 				{
 					if(strcmp(tok, "l") == 0)				// left motor
+					{
+						Serial.print("L ");
 						Serial.println(drive.leftWheel.read());
+					}
 					else if(strcmp(tok, "lc") == 0)			// left motor center
+					{
+						Serial.print("LC ");
 						Serial.println(eeprom.data.leftWheelCenter);
+					}
 					else if(strcmp(tok, "r") == 0)			// right motor
+					{
+						Serial.print("R ");
 						Serial.println(drive.rightWheel.read());
+					}
 					else if(strcmp(tok, "rc") == 0)			// right motor center
+					{
+						Serial.print("RC ");
 						Serial.println(eeprom.data.rightWheelCenter);
+					}
 					else if(strcmp(tok,"p") == 0)			// program
+					{
+						Serial.print("P ");
 						Serial.println(eeprom.data.selectedProgram);
+					}
 					else if(strcmp(tok,"i") == 0)			// inch delay
+					{
+						Serial.print("I ");
 						Serial.println(eeprom.data.inch);
-					else if(strcmp(tok,"all") == 0)			// all analog sensors
+					}
+					else if(strcmp(tok,"as") == 0)			// all analog sensors
 						displayAnalogSensors();
 				}
 			}
@@ -533,6 +552,10 @@ void Server::loop()
 			else if(strcmp(tok, "inch") == 0)
 			{
 				drive.inch();
+			}
+			else if(strcmp(tok, "stop") == 0)
+			{
+				drive.stop();
 			}
 		}
 	}

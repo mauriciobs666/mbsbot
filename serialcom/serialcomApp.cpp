@@ -30,7 +30,7 @@ bool serialcomApp::OnInit()
         if(argc)
         {
             wxString tmp(argv[1]);
-            Frame->serialPort.init(tmp.mb_str(wxConvUTF8));
+            Frame->bot.serialPort.init(tmp.mb_str(wxConvUTF8));
         }
     }
     //*)

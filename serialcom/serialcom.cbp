@@ -88,6 +88,8 @@
 		<Unit filename="resource.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>
+		<Unit filename="MbsBot.cpp" />
+		<Unit filename="MbsBot.h" />
 		<Unit filename="serialcomApp.cpp" />
 		<Unit filename="serialcomApp.h" />
 		<Unit filename="serialcomMain.cpp" />
