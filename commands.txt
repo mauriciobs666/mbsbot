@@ -7,7 +7,7 @@ get [variable]
 	rc	-	right wheel servo center pulse duration (in ms)
 	p	-	current program
 	i	-	drive.inch() delay configuration
-	all	-	all analog sensors
+	as	-	all analog sensors
 
 set	[variable] [value]
 	variable	-	same used for 'get'
@@ -27,3 +27,6 @@ default
 	
 inch
 	move forward one inch
+
+stop
+	stop wheels

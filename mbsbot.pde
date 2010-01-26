@@ -32,7 +32,7 @@
 // LINE FOLLOWER SETUP
 
 #define NUM_IR_TRACK 3
-#define FIRST_IR_SENSOR_INDEX 2
+#define FIRST_IR_SENSOR_INDEX 0
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
 
 /******************************************************************************
@@ -316,7 +316,7 @@ void LineFollower::autoCalibrate()
 	// pause so the user can move the sensors outside the track
 
 	Serial.println("Calibrate OUTSIDE");
-
+/*
 	for(int x=10; x>0; x--)
 	{
 		sprintf(linha, "Start in %ds", x);
@@ -324,6 +324,9 @@ void LineFollower::autoCalibrate()
 
 		delay(1000);
 	}
+*/
+	// no no don't pause... move!
+	drive.inch();
 
 	// read all sensors at OUTSIDE position several times
 
@@ -573,6 +576,9 @@ void setup()
 
 	drive.leftWheel.init(8, eeprom.data.leftWheelCenter);
 	drive.rightWheel.init(9, eeprom.data.rightWheelCenter, true);
+
+	if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
+		lineFollower.autoCalibrate();
 }
 
 /******************************************************************************
