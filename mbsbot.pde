@@ -45,7 +45,7 @@ class Eeprom
 public:
 	struct sConfigurationData
 	{
-		char selectedProgram;
+		short selectedProgram;
 
 		short leftWheelCenter;
 		short rightWheelCenter;
@@ -570,7 +570,7 @@ void Server::loop()
 
 void setup()
 {
-	Serial.begin(9600);
+	Serial.begin(115200);
 
 	eeprom.load();
 

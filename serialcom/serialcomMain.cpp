@@ -279,6 +279,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 	while ((rx = bot.receive()))
 	{
 		wxString str = wxString(rx,wxConvUTF8);
+		//Log->AppendText(str);
 
 		char * tok = strtok(rx, " ");
 		if (tok)
