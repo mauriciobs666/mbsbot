@@ -18,6 +18,8 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <Servo.h>
+
 /******************************************************************************
  *	DEFINES AND SETUP
  ******************************************************************************/
@@ -25,15 +27,18 @@
 // eeprom.data.selectedProgram
 
 #define PRG_RC				0x00
-#define PRG_LINEFOLLOWER	0x01
+#define PRG_SHOW_SENSORS	0x01
 #define PRG_PHOTOVORE 		0x02
-#define PRG_SHOW_SENSORS	0x03
+#define PRG_LINEFOLLOWER	0x03
+#define PRG_SHARP			0x04
 
 // LINE FOLLOWER SETUP
 
 #define NUM_IR_TRACK 3
 #define FIRST_IR_SENSOR_INDEX 0
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
+
+Servo head;
 
 /******************************************************************************
  *	EEPROM - PERSISTENT CONFIGURATION
@@ -73,7 +78,6 @@ public:
  *	WHEELS CONTROLER
  ******************************************************************************/
 
-#include <Servo.h>
 class Wheel
 {
 public:
@@ -491,6 +495,8 @@ void Server::loop()
 							eeprom.data.selectedProgram = value;
 						else if(strcmp(dest,"i") == 0)		// inch delay
 							eeprom.data.inch = value;
+						else if(strcmp(dest,"h") == 0)
+							head.write(value);
 					}
 				}
 			}
@@ -577,6 +583,8 @@ void setup()
 	drive.leftWheel.init(8, eeprom.data.leftWheelCenter);
 	drive.rightWheel.init(9, eeprom.data.rightWheelCenter, true);
 
+	head.attach(10);
+
 	if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
 }
@@ -591,18 +599,19 @@ void loop()
 
 	switch(eeprom.data.selectedProgram)
 	{
+		case PRG_SHOW_SENSORS:
+			delay(500);
+			displayAnalogSensors();
 		case PRG_RC:
 			drive.refresh();
-		break;
-		case PRG_LINEFOLLOWER:
-			lineFollower.loop();
 		break;
 		case PRG_PHOTOVORE:
 			photovore();
 		break;
-		case PRG_SHOW_SENSORS:
-			displayAnalogSensors();
-			delay(500);
+		case PRG_LINEFOLLOWER:
+			lineFollower.loop();
+		break;
+		case PRG_SHARP:
 		break;
 	}
 	delay(15);
