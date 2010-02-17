@@ -8,6 +8,14 @@ get [variable]
 	p	-	current program
 	i	-	drive.inch() delay configuration
 	as	-	all analog sensors
+	h	-	head servo
+
+programs available:
+	0	-	Remote control
+	1	-	Remote control with sensor monitoring
+	2	-	Photovore
+	3	-	Line Follower
+	4	-	Sharp IR ranger test
 
 set	[variable] [value]
 	variable	-	same used for 'get'
