@@ -48,7 +48,7 @@
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL3" variable="TextCtrl1" member="yes">
 												<value>1500</value>
-												<size>80,21</size>
+												<size>80,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 												<handler function="OnTextCtrl1TextEnter" entry="EVT_TEXT_ENTER" />
 											</object>
@@ -80,7 +80,7 @@
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL4" variable="TextCtrl2" member="yes">
 												<value>1500</value>
-												<size>80,21</size>
+												<size>80,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 												<handler function="OnTextCtrl2TextEnter" entry="EVT_TEXT_ENTER" />
 											</object>
@@ -110,7 +110,8 @@
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="TextCtrl3" member="yes">
 												<value>90</value>
-												<size>80,21</size>
+												<size>80,18</size>
+												<style>wxTE_PROCESS_ENTER</style>
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>

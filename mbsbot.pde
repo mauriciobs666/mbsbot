@@ -1,4 +1,6 @@
-/*	Copyright (C) 2009-2010 - Mauricio Bieze Stefani
+/*
+ *	Copyright (C) 2010 - Mauricio Bieze Stefani
+ *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -24,6 +26,8 @@
  *	DEFINES AND SETUP
  ******************************************************************************/
 
+#define SERIAL_PORT_SPEED 115200
+ 
 // eeprom.data.selectedProgram
 
 #define PRG_RC				0x00
@@ -576,7 +580,7 @@ void Server::loop()
 
 void setup()
 {
-	Serial.begin(115200);
+	Serial.begin(SERIAL_PORT_SPEED);
 
 	eeprom.load();
 

@@ -1,13 +1,23 @@
-/***************************************************************
- * Name:      serialcomMain.cpp
- * Purpose:   Code for Application Frame
- * Author:    Mauricio Bieze Stefani ()
- * Created:   2010-01-07
- * Copyright: Mauricio Bieze Stefani ()
- * License:
- **************************************************************/
+/*
+ *	Copyright (C) 2010 - Mauricio Bieze Stefani
+ *	This file is part of the MBSBOT project.
+ *
+ *	MBSBOT is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License, or
+ *	(at your option) any later version.
+ *
+ *	MBSBOT is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ *
+ *	You should have received a copy of the GNU General Public License
+ *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "serialcomMain.h"
+#include "Preferences.h"
 #include <wx/msgdlg.h>
 
 //(*InternalHeaders(serialcomFrame)
@@ -96,7 +106,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer1;
     wxMenu* Menu2;
     wxStaticBoxSizer* StaticBoxSizer5;
-    
+
     Create(parent, wxID_ANY, _("MBSBOT"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK1"));
@@ -112,19 +122,19 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer1 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Left Wheel"));
     Slider1 = new wxSlider(Panel2, ID_SLIDER1, 1500, 1000, 2000, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER1"));
     StaticBoxSizer1->Add(Slider1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl1 = new wxTextCtrl(Panel2, ID_TEXTCTRL3, _("1500"), wxDefaultPosition, wxSize(80,21), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL3"));
+    TextCtrl1 = new wxTextCtrl(Panel2, ID_TEXTCTRL3, _("1500"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL3"));
     StaticBoxSizer1->Add(TextCtrl1, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer2 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Right Wheel"));
     Slider2 = new wxSlider(Panel2, ID_SLIDER2, 1500, 1000, 2000, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER2"));
     StaticBoxSizer2->Add(Slider2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl2 = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("1500"), wxDefaultPosition, wxSize(80,21), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
+    TextCtrl2 = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("1500"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
     StaticBoxSizer2->Add(TextCtrl2, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Head"));
     Slider3 = new wxSlider(Panel2, ID_SLIDER3, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
     StaticBoxSizer7->Add(Slider3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl3 = new wxTextCtrl(Panel2, ID_TEXTCTRL5, _("90"), wxDefaultPosition, wxSize(80,21), 0, wxDefaultValidator, _T("ID_TEXTCTRL5"));
+    TextCtrl3 = new wxTextCtrl(Panel2, ID_TEXTCTRL5, _("90"), wxDefaultPosition, wxSize(80,18), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL5"));
     StaticBoxSizer7->Add(TextCtrl3, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer3 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Controls"));
@@ -230,7 +240,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Timer1.Start(100, false);
     BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
-    
+
     Connect(ID_SLIDER1,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider1CmdSliderUpdated);
     Connect(ID_TEXTCTRL3,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl1TextEnter);
     Connect(ID_SLIDER2,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider2CmdSliderUpdated);
@@ -276,7 +286,7 @@ void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 	char command[SERIAL_BUFFER_SIZE];
 	strncpy(command, cmd.mb_str(wxConvUTF8), SERIAL_BUFFER_SIZE);
 
-	bot.send(command);
+	MbsBot::getInstance()->send(command);
 
 	Log->AppendText(cmd);
 	SendCommandText->Clear();
@@ -285,7 +295,7 @@ void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
 	char *rx;
-	while ((rx = bot.receive()))
+	while ((rx = MbsBot::getInstance()->receive()))
 	{
 		wxString str = wxString(rx,wxConvUTF8);
 		//Log->AppendText(str);
@@ -344,6 +354,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
 void serialcomFrame::OnMenuItem3Selected(wxCommandEvent& event)
 {
+	Preferences* pref = new Preferences(this);
+    pref->Show();
 }
 
 void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
@@ -351,7 +363,7 @@ void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
 	int val = Slider1->GetValue();
 	TextCtrl1->SetValue(wxString::Format(wxT("%i"), val));
 
-	bot.setLeftWheel(val);
+	MbsBot::getInstance()->setLeftWheel(val);
 }
 
 void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
@@ -359,7 +371,7 @@ void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
 	int val = Slider2->GetValue();
 	TextCtrl2->SetValue(wxString::Format(wxT("%i"), val));
 
-	bot.setRightWheel(val);
+	MbsBot::getInstance()->setRightWheel(val);
 }
 
 void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
@@ -367,7 +379,7 @@ void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
 	int val = atoi(TextCtrl1->GetValue().mb_str(wxConvUTF8));
 	Slider1->SetValue(val);
 
-	bot.setLeftWheel(val);
+	MbsBot::getInstance()->setLeftWheel(val);
 }
 
 void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
@@ -375,26 +387,26 @@ void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
 	int val = atoi(TextCtrl2->GetValue().mb_str(wxConvUTF8));
 	Slider2->SetValue(val);
 
-	bot.setRightWheel(val);
+	MbsBot::getInstance()->setRightWheel(val);
 }
 
 void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
-	bot.setLeftWheelCenter(Slider1->GetValue());
-	bot.setRightWheelCenter(Slider2->GetValue());
+	MbsBot::getInstance()->setLeftWheelCenter(Slider1->GetValue());
+	MbsBot::getInstance()->setRightWheelCenter(Slider2->GetValue());
 }
 
 void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
-	bot.send("get l\n");
-	bot.send("get r\n");
+	MbsBot::getInstance()->send("get l\n");
+	MbsBot::getInstance()->send("get r\n");
 }
 
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 {
-	bot.send("stop\n");
-	bot.send("get l\n");
-	bot.send("get r\n");
+	MbsBot::getInstance()->send("stop\n");
+	MbsBot::getInstance()->send("get l\n");
+	MbsBot::getInstance()->send("get r\n");
 }
 
 void serialcomFrame::OnNotebook1PageChanged(wxNotebookEvent& event)
@@ -403,7 +415,7 @@ void serialcomFrame::OnNotebook1PageChanged(wxNotebookEvent& event)
 
 void serialcomFrame::OnButton4Click(wxCommandEvent& event)
 {
-	bot.send("get as\n");
+	MbsBot::getInstance()->send("get as\n");
 }
 
 void serialcomFrame::OnButton5Click(wxCommandEvent& event)
@@ -417,15 +429,15 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton6Click(wxCommandEvent& event)
 {
-	bot.send("save\n");
+	MbsBot::getInstance()->send("save\n");
 }
 
 void serialcomFrame::OnButton7Click(wxCommandEvent& event)
 {
-	bot.send("load\n");
+	MbsBot::getInstance()->send("load\n");
 }
 
 void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 {
-	bot.send("default\n");
+	MbsBot::getInstance()->send("default\n");
 }
