@@ -43,19 +43,18 @@ Preferences::Preferences(wxWindow* parent,wxWindowID id,const wxPoint& pos,const
 {
 	//(*Initialize(Preferences)
 	wxFlexGridSizer* FlexGridSizer1;
-
-	Create(parent, id, _("Not working yet"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("id"));
-	SetClientSize(wxSize(187,104));
-	Move(wxDefaultPosition);
+	
+	Create(parent, wxID_ANY, _("Not working yet"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+	SetClientSize(wxSize(208,104));
 	Panel1 = new wxPanel(this, ID_PANEL1, wxPoint(112,96), wxSize(168,72), wxTAB_TRAVERSAL, _T("ID_PANEL1"));
 	FlexGridSizer1 = new wxFlexGridSizer(1, 2, 0, 0);
 	StaticText1 = new wxStaticText(Panel1, ID_STATICTEXT1, _("Serial port"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
 	FlexGridSizer1->Add(StaticText1, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-	TextCtrl1 = new wxTextCtrl(Panel1, ID_TEXTCTRL1, _("/dev/ttyUSB0"), wxDefaultPosition, wxSize(85,21), 0, wxDefaultValidator, _T("ID_TEXTCTRL1"));
+	TextCtrl1 = new wxTextCtrl(Panel1, ID_TEXTCTRL1, _("/dev/ttyUSB0"), wxDefaultPosition, wxSize(106,21), 0, wxDefaultValidator, _T("ID_TEXTCTRL1"));
 	FlexGridSizer1->Add(TextCtrl1, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
 	StaticText2 = new wxStaticText(Panel1, ID_STATICTEXT2, _("Speed"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
 	FlexGridSizer1->Add(StaticText2, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-	Choice1 = new wxChoice(Panel1, ID_CHOICE1, wxDefaultPosition, wxSize(83,21), 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
+	Choice1 = new wxChoice(Panel1, ID_CHOICE1, wxDefaultPosition, wxSize(106,21), 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
 	Choice1->Append(_("9600"));
 	Choice1->Append(_("19200"));
 	Choice1->Append(_("38400"));
@@ -68,7 +67,7 @@ Preferences::Preferences(wxWindow* parent,wxWindowID id,const wxPoint& pos,const
 	FlexGridSizer1->Add(Button2, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
 	Panel1->SetSizer(FlexGridSizer1);
 	FlexGridSizer1->SetSizeHints(Panel1);
-
+	
 	Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&Preferences::OnButton1Click);
 	Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&Preferences::OnButton2Click);
 	//*)

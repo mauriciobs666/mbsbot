@@ -27,7 +27,7 @@
  ******************************************************************************/
 
 #define SERIAL_PORT_SPEED 115200
- 
+
 // eeprom.data.selectedProgram
 
 #define PRG_RC				0x00
@@ -41,8 +41,6 @@
 #define NUM_IR_TRACK 3
 #define FIRST_IR_SENSOR_INDEX 0
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
-
-Servo head;
 
 /******************************************************************************
  *	EEPROM - PERSISTENT CONFIGURATION
@@ -59,10 +57,14 @@ public:
 		short leftWheelCenter;
 		short rightWheelCenter;
 
+		// delay in ms used to make it move about an inch
 		short inch;
 
 		unsigned short LF_threshold[NUM_IR_TRACK];
 		bool LF_reverseColor;
+
+		// delay to allow the servo to position between reads
+		short RF_delay_reads;
 	} data;
 	void load()
 	{
@@ -75,6 +77,19 @@ public:
 		char * dest = (char*) &data;
 		for(int addr = 0; addr < sizeof(data); addr++, dest++ )
 			EEPROM.write(addr, *dest);
+	}
+	void loadDefault()
+	{
+		data.selectedProgram = 0;
+		data.leftWheelCenter = 1410;
+		data.rightWheelCenter = 1384;
+		data.inch = 200;
+		for(int x = 0; x < NUM_IR_TRACK; x++)
+		{
+			data.LF_threshold[x] = 512;
+			data.LF_reverseColor = false;
+		}
+		data.RF_delay_reads = 100;
 	}
 } eeprom;
 
@@ -321,19 +336,8 @@ void LineFollower::autoCalibrate()
 		delay(CAL_READS_INTERVAL);
 	}
 
-	// pause so the user can move the sensors outside the track
-
 	Serial.println("Calibrate OUTSIDE");
-/*
-	for(int x=10; x>0; x--)
-	{
-		sprintf(linha, "Start in %ds", x);
-		Serial.println(linha);
 
-		delay(1000);
-	}
-*/
-	// no no don't pause... move!
 	drive.inch();
 
 	// read all sensors at OUTSIDE position several times
@@ -409,6 +413,60 @@ void LineFollower::autoCalibrate()
 	Serial.println("Thresholds:");
 	sprintf(linha," %04d %04d %04d", eeprom.data.LF_threshold[0], eeprom.data.LF_threshold[1], eeprom.data.LF_threshold[2]);
 	Serial.println(linha);
+}
+
+/******************************************************************************
+ *	SHARP IR RANGEFINDER
+ ******************************************************************************/
+
+#define RF_NUMBER_STEPS 10
+#define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
+#define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
+#define RF_DELAY_READS 100
+#define RF_SENSOR_PIN 3
+
+class RangeFinder
+{
+public:
+	RangeFinder() : nextRead(0), currentStep(0), stepDir(1)
+		{}
+	Servo servo;
+	void loop();
+private:
+	short currentStep;
+	char stepDir;
+	short dataArray[RF_NUMBER_STEPS];
+	unsigned long nextRead;
+} rangeFinder;
+
+void RangeFinder::loop()
+{
+	if( millis() > nextRead )
+	{
+		// read sensor into array
+		dataArray[currentStep] = analogRead(RF_SENSOR_PIN);
+
+		// check boundaries
+		if(( currentStep == 0 ) || ( currentStep == RF_NUMBER_STEPS-1 ))
+		{
+			stepDir = -stepDir; 		// reverse servo direction
+
+			// send debug values
+			Serial.print("RFA ");
+			for(int x = 0; x < RF_NUMBER_STEPS; x++)
+			{
+				Serial.print(dataArray[x]);
+				Serial.print(" ");
+			}
+			Serial.println("");
+		}
+
+		// move
+		currentStep += stepDir;
+		servo.write( RF_SERVO_SAFE_ANGLE + currentStep * RF_STEP_ANGLE );
+
+		nextRead = millis() + RF_DELAY_READS;
+	}
 }
 
 /******************************************************************************
@@ -497,10 +555,12 @@ void Server::loop()
 						}
 						else if(strcmp(dest,"p") == 0)		// program
 							eeprom.data.selectedProgram = value;
-						else if(strcmp(dest,"i") == 0)		// inch delay
+						else if(strcmp(dest,"di") == 0)		// inch delay
 							eeprom.data.inch = value;
-						else if(strcmp(dest,"h") == 0)
-							head.write(value);
+						else if(strcmp(dest,"drf") == 0)	// range finder delay
+							eeprom.data.RF_delay_reads = value;
+						else if(strcmp(dest,"sx") == 0)		// servo x position
+							rangeFinder.servo.write(value);
 					}
 				}
 			}
@@ -534,10 +594,15 @@ void Server::loop()
 						Serial.print("P ");
 						Serial.println(eeprom.data.selectedProgram);
 					}
-					else if(strcmp(tok,"i") == 0)			// inch delay
+					else if(strcmp(tok,"di") == 0)			// inch delay
 					{
-						Serial.print("I ");
+						Serial.print("DI ");
 						Serial.println(eeprom.data.inch);
+					}
+					else if(strcmp(tok,"drf") == 0)			// range finder delay
+					{
+						Serial.print("DRF ");
+						Serial.println(eeprom.data.RF_delay_reads);
 					}
 					else if(strcmp(tok,"as") == 0)			// all analog sensors
 						displayAnalogSensors();
@@ -550,26 +615,11 @@ void Server::loop()
 			else if(strcmp(tok, "cal") == 0)	// re-calibrate line following IR sensors
 				lineFollower.autoCalibrate();
 			else if(strcmp(tok, "default") == 0)
-			{
-				eeprom.data.selectedProgram = 0;
-				eeprom.data.leftWheelCenter = 1410;
-				eeprom.data.rightWheelCenter = 1384;
-				eeprom.data.inch = 500; // perhaps half a second?
-				for(int x = 0; x < NUM_IR_TRACK; x++)
-				{
-					eeprom.data.LF_threshold[x] = 512;
-					eeprom.data.LF_reverseColor = false;
-				}
-				eeprom.save();
-			}
+				eeprom.loadDefault();
 			else if(strcmp(tok, "inch") == 0)
-			{
 				drive.inch();
-			}
 			else if(strcmp(tok, "stop") == 0)
-			{
 				drive.stop();
-			}
 		}
 	}
 }
@@ -587,7 +637,7 @@ void setup()
 	drive.leftWheel.init(8, eeprom.data.leftWheelCenter);
 	drive.rightWheel.init(9, eeprom.data.rightWheelCenter, true);
 
-	head.attach(10);
+	rangeFinder.servo.attach(10);
 
 	if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
@@ -616,6 +666,7 @@ void loop()
 			lineFollower.loop();
 		break;
 		case PRG_SHARP:
+			rangeFinder.loop();
 		break;
 	}
 	delay(15);

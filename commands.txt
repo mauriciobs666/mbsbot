@@ -6,9 +6,10 @@ get [variable]
 	r	-	right wheel servo
 	rc	-	right wheel servo center pulse duration (in ms)
 	p	-	current program
-	i	-	drive.inch() delay configuration
+	di	-	drive.inch() delay configuration
+	drf	-	range finder between readings delay (servo movement)
 	as	-	all analog sensors
-	h	-	head servo
+	sx	-	servo "X"
 
 programs available:
 	0	-	Remote control
@@ -31,7 +32,7 @@ cal
 	line-follower auto calibration
 
 default
-	clean eeprom with default hard-coded values
+	load default hard-coded values into RAM
 	
 inch
 	move forward one inch

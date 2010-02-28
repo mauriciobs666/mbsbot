@@ -2,9 +2,8 @@
 <wxsmith>
 	<object class="wxFrame" name="Preferences">
 		<title>Not working yet</title>
-		<size>187,104</size>
-		<pos_arg>1</pos_arg>
-		<size_arg>1</size_arg>
+		<size>208,104</size>
+		<id_arg>0</id_arg>
 		<object class="wxPanel" name="ID_PANEL1" variable="Panel1" member="yes">
 			<pos>112,96</pos>
 			<size>168,72</size>
@@ -22,7 +21,7 @@
 				<object class="sizeritem">
 					<object class="wxTextCtrl" name="ID_TEXTCTRL1" variable="TextCtrl1" member="yes">
 						<value>/dev/ttyUSB0</value>
-						<size>85,21</size>
+						<size>106,21</size>
 					</object>
 					<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 					<border>5</border>
@@ -46,7 +45,7 @@
 							<item>115200</item>
 						</content>
 						<selection>4</selection>
-						<size>83,21</size>
+						<size>106,21</size>
 					</object>
 					<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 					<border>5</border>
