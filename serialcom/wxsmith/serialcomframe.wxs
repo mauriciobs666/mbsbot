@@ -110,7 +110,7 @@
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="TextCtrl3" member="yes">
 												<value>90</value>
-												<size>80,18</size>
+												<size>80,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -136,7 +136,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON1" variable="Button1" member="yes">
-												<label>Save as center</label>
+												<label>Set as center</label>
 												<handler function="OnButton1Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>

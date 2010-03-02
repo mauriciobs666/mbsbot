@@ -80,7 +80,7 @@ public:
 	}
 	void loadDefault()
 	{
-		data.selectedProgram = 0;
+		data.selectedProgram = 1;
 		data.leftWheelCenter = 1410;
 		data.rightWheelCenter = 1384;
 		data.inch = 200;
@@ -419,10 +419,9 @@ void LineFollower::autoCalibrate()
  *	SHARP IR RANGEFINDER
  ******************************************************************************/
 
-#define RF_NUMBER_STEPS 10
+#define RF_NUMBER_STEPS 20
 #define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
 #define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
-#define RF_DELAY_READS 100
 #define RF_SENSOR_PIN 3
 
 class RangeFinder
@@ -447,7 +446,11 @@ void RangeFinder::loop()
 		dataArray[currentStep] = analogRead(RF_SENSOR_PIN);
 
 		// check boundaries
-		if(( currentStep == 0 ) || ( currentStep == RF_NUMBER_STEPS-1 ))
+		if(
+			( ( currentStep == 0 ) && ( stepDir == -1 ) )
+			||
+			( ( currentStep == RF_NUMBER_STEPS-1 ) && ( stepDir == 1 ) )
+		  )
 		{
 			stepDir = -stepDir; 		// reverse servo direction
 
@@ -465,7 +468,7 @@ void RangeFinder::loop()
 		currentStep += stepDir;
 		servo.write( RF_SERVO_SAFE_ANGLE + currentStep * RF_STEP_ANGLE );
 
-		nextRead = millis() + RF_DELAY_READS;
+		nextRead = millis() + eeprom.data.RF_delay_reads;
 	}
 }
 
