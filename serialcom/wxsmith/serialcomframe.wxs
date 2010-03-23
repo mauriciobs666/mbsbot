@@ -102,6 +102,7 @@
 												<max>179</max>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
+												<handler function="OnSlider3CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
@@ -112,6 +113,7 @@
 												<value>90</value>
 												<size>80,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
+												<handler function="OnTextCtrl3TextEnter" entry="EVT_TEXT_ENTER" />
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>

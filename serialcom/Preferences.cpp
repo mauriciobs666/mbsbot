@@ -43,8 +43,8 @@ Preferences::Preferences(wxWindow* parent,wxWindowID id,const wxPoint& pos,const
 {
 	//(*Initialize(Preferences)
 	wxFlexGridSizer* FlexGridSizer1;
-	
-	Create(parent, wxID_ANY, _("Not working yet"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+
+	Create(parent, wxID_ANY, _("Preferences"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
 	SetClientSize(wxSize(208,104));
 	Panel1 = new wxPanel(this, ID_PANEL1, wxPoint(112,96), wxSize(168,72), wxTAB_TRAVERSAL, _T("ID_PANEL1"));
 	FlexGridSizer1 = new wxFlexGridSizer(1, 2, 0, 0);
@@ -67,7 +67,7 @@ Preferences::Preferences(wxWindow* parent,wxWindowID id,const wxPoint& pos,const
 	FlexGridSizer1->Add(Button2, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
 	Panel1->SetSizer(FlexGridSizer1);
 	FlexGridSizer1->SetSizeHints(Panel1);
-	
+
 	Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&Preferences::OnButton1Click);
 	Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&Preferences::OnButton2Click);
 	//*)

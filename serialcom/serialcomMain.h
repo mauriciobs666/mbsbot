@@ -63,6 +63,8 @@ class serialcomFrame: public wxFrame
 		void OnButton6Click(wxCommandEvent& event);
 		void OnButton7Click(wxCommandEvent& event);
 		void OnButton8Click(wxCommandEvent& event);
+		void OnSlider3CmdSliderUpdated(wxScrollEvent& event);
+		void OnTextCtrl3TextEnter(wxCommandEvent& event);
 		//*)
 
         //(*Identifiers(serialcomFrame)

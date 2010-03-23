@@ -47,6 +47,7 @@ class MbsBot
 
 		int setLeftWheel(int val);
 		int setRightWheel(int val);
+		int setHead(int val);
 
 		int setLeftWheelCenter(int val);
 		int setRightWheelCenter(int val);

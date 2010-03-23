@@ -245,6 +245,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL3,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl1TextEnter);
     Connect(ID_SLIDER2,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider2CmdSliderUpdated);
     Connect(ID_TEXTCTRL4,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl2TextEnter);
+    Connect(ID_SLIDER3,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider3CmdSliderUpdated);
+    Connect(ID_TEXTCTRL5,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl3TextEnter);
     Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton2Click);
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton1Click);
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton3Click);
@@ -400,6 +402,7 @@ void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
 	MbsBot::getInstance()->send("get l\n");
 	MbsBot::getInstance()->send("get r\n");
+	MbsBot::getInstance()->send("get sx\n");
 }
 
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
@@ -407,6 +410,7 @@ void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 	MbsBot::getInstance()->send("stop\n");
 	MbsBot::getInstance()->send("get l\n");
 	MbsBot::getInstance()->send("get r\n");
+	MbsBot::getInstance()->send("get sx\n");
 }
 
 void serialcomFrame::OnNotebook1PageChanged(wxNotebookEvent& event)
@@ -440,4 +444,20 @@ void serialcomFrame::OnButton7Click(wxCommandEvent& event)
 void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 {
 	MbsBot::getInstance()->send("default\n");
+}
+
+void serialcomFrame::OnSlider3CmdSliderUpdated(wxScrollEvent& event)
+{
+	int val = Slider3->GetValue();
+	TextCtrl3->SetValue(wxString::Format(wxT("%i"), val));
+
+	//MbsBot::getInstance()->setRightWheel(val);
+}
+
+void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
+{
+	int val = atoi(TextCtrl3->GetValue().mb_str(wxConvUTF8));
+	Slider3->SetValue(val);
+
+	//MbsBot::getInstance()->setRightWheel(val);
 }
