@@ -35,8 +35,6 @@ bool serialcomApp::OnInit()
         serialcomFrame* Frame = new serialcomFrame(0);
         Frame->Show();
         SetTopWindow(Frame);
-
-        MbsBot::getInstance()->init();
     }
     //*)
     return wxsOK;

@@ -71,6 +71,14 @@ Preferences::Preferences(wxWindow* parent,wxWindowID id,const wxPoint& pos,const
 	Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&Preferences::OnButton1Click);
 	Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&Preferences::OnButton2Click);
 	//*)
+	int spd[] = { 9600, 19200, 38400, 57600, 115200 };
+	int currSpd = MbsBot::getInstance()->getBaud();
+	for(int x=0; x<sizeof(spd); x++)
+		if( currSpd == spd[x])
+		{
+			Choice1->SetSelection(x);
+		}
+
 }
 
 Preferences::~Preferences()

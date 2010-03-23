@@ -22,20 +22,20 @@ MbsBot *MbsBot::instance = 0;
 
 int MbsBot::init(const char *port, int baud)
 {
-	char lport[100];
-
 	if(port == NULL)
 	{
 		#ifdef __WXMSW__
-			strcpy(lport,"COM1");
+			strcpy(serialPortDevice,"COM1");
 		#else
-			strcpy(lport,"/dev/ttyUSB0");
+			strcpy(serialPortDevice,"/dev/ttyUSB0");
 		#endif
 	}
 	else
-		strcpy(lport,port);
+		strcpy(serialPortDevice,port);
 
-	return serialPort.init( lport, (baud == -1) ? 115200 : baud );
+	baudRate = (baud == -1) ? 115200 : baud;
+
+	return serialPort.init( serialPortDevice, baudRate );
 }
 
 int MbsBot::send(const char * command, int len)
@@ -83,6 +83,13 @@ int MbsBot::setRightWheel(int val)
 {
 	char cmd[20];
 	snprintf(cmd, 20, "set r %d\n", val);
+	return send(cmd);
+}
+
+int MbsBot::setHead(int val)
+{
+	char cmd[20];
+	snprintf(cmd, 20, "set sx %d\n", val);
 	return send(cmd);
 }
 

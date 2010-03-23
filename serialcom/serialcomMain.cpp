@@ -262,6 +262,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnAbout);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
+    if( MbsBot::getInstance()->init() == 0)
+		StatusBar1->SetStatusText(_("Connected"));
+    else
+		StatusBar1->SetStatusText(_("Error opening serial port"));
 }
 
 serialcomFrame::~serialcomFrame()

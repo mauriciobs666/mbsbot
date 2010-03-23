@@ -41,6 +41,14 @@ class MbsBot
 			{}
 
 		int init(const char *port=NULL, int baud=-1);
+		int getBaud()
+			{
+				return baudRate;
+			}
+		char* getPort()
+			{
+				return serialPortDevice;
+			}
 
 		int send(const char * command, int len=-1);
 		char * receive();
@@ -54,6 +62,8 @@ class MbsBot
 
 	private:
 		SerialPort serialPort;
+		char serialPortDevice[100];
+		int baudRate;
 		char response[SERIAL_BUFFER_SIZE];
 };
 
