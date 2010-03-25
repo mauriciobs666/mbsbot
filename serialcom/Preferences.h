@@ -61,7 +61,6 @@ class Preferences: public wxFrame
 	private:
 
 		//(*Handlers(Preferences)
-		void OnTextCtrl2Text(wxCommandEvent& event);
 		void OnButton1Click(wxCommandEvent& event);
 		void OnButton2Click(wxCommandEvent& event);
 		//*)

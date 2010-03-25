@@ -135,7 +135,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Slider3 = new wxSlider(Panel2, ID_SLIDER3, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
     StaticBoxSizer7->Add(Slider3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrl3 = new wxTextCtrl(Panel2, ID_TEXTCTRL5, _("90"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL5"));
-    StaticBoxSizer7->Add(TextCtrl3, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer7->Add(TextCtrl3, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer3 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Controls"));
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
@@ -329,6 +329,16 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 					TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
 				}
 			}
+			else if(strcmp(tok, "SX") == 0)
+			{
+				tok = strtok(NULL, " ");
+				if (tok)
+				{
+					int value = atoi(tok);
+					Slider3->SetValue(value);
+					TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
+				}
+			}
 			else if(strcmp(tok, "AS") == 0)
 			{
 				for(int s = 0; s < 6; s++)
@@ -455,7 +465,7 @@ void serialcomFrame::OnSlider3CmdSliderUpdated(wxScrollEvent& event)
 	int val = Slider3->GetValue();
 	TextCtrl3->SetValue(wxString::Format(wxT("%i"), val));
 
-	//MbsBot::getInstance()->setRightWheel(val);
+	MbsBot::getInstance()->setHead(val);
 }
 
 void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
@@ -463,5 +473,5 @@ void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
 	int val = atoi(TextCtrl3->GetValue().mb_str(wxConvUTF8));
 	Slider3->SetValue(val);
 
-	//MbsBot::getInstance()->setRightWheel(val);
+	MbsBot::getInstance()->setHead(val);
 }

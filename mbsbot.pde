@@ -610,7 +610,7 @@ void Server::loop()
 					else if(strcmp(tok,"sx") == 0)			// servo x
 					{
 						Serial.print("SX ");
-						//Serial.println(eeprom.data.RF_delay_reads);
+						Serial.println(rangeFinder.servo.read());
 					}
 					else if(strcmp(tok,"as") == 0)			// all analog sensors
 						displayAnalogSensors();

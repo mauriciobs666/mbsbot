@@ -42,13 +42,9 @@ class MbsBot
 
 		int init(const char *port=NULL, int baud=-1);
 		int getBaud()
-			{
-				return baudRate;
-			}
+			{ return baudRate; }
 		char* getPort()
-			{
-				return serialPortDevice;
-			}
+			{ return serialPortDevice; }
 
 		int send(const char * command, int len=-1);
 		char * receive();
