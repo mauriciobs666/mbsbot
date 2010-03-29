@@ -22,6 +22,7 @@
 //(*Headers(serialcomFrame)
 #include <wx/notebook.h>
 #include <wx/sizer.h>
+#include <wx/stattext.h>
 #include <wx/menu.h>
 #include <wx/textctrl.h>
 #include <wx/slider.h>
@@ -88,6 +89,15 @@ class serialcomFrame: public wxFrame
         static const long ID_BUTTON4;
         static const long ID_BUTTON5;
         static const long ID_PANEL4;
+        static const long ID_BUTTON9;
+        static const long ID_BUTTON10;
+        static const long ID_BUTTON12;
+        static const long ID_BUTTON13;
+        static const long ID_PANEL5;
+        static const long ID_STATICTEXT1;
+        static const long ID_TEXTCTRL6;
+        static const long ID_STATICTEXT2;
+        static const long ID_PANEL6;
         static const long ID_NOTEBOOK1;
         static const long ID_TEXTCTRL1;
         static const long idMenuQuit;
@@ -99,30 +109,39 @@ class serialcomFrame: public wxFrame
 
         //(*Declarations(serialcomFrame)
         wxSlider* Slider1;
+        wxTextCtrl* TextCtrl4;
+        wxPanel* Panel5;
         wxTextCtrl* Log;
         wxButton* Button4;
         wxSlider* Slider2;
         wxNotebook* Notebook1;
+        wxStaticText* StaticText2;
         wxPanel* Panel4;
         wxMenu* Menu3;
         wxButton* Button1;
         wxSlider* Slider3;
         wxPanel* Panel1;
+        wxStaticText* StaticText1;
         wxGrid* Grid1;
         wxButton* Button2;
+        wxPanel* Panel6;
         wxPanel* Panel3;
         wxButton* Button6;
+        wxButton* Button10;
         wxButton* Button5;
         wxMenuItem* MenuItem3;
         wxButton* Button3;
         wxButton* Button7;
         wxStatusBar* StatusBar1;
+        wxButton* Button9;
         wxTextCtrl* TextCtrl2;
         wxTextCtrl* TextCtrl1;
         wxPanel* Panel2;
+        wxButton* Button13;
         wxTextCtrl* TextCtrl3;
         wxButton* Button8;
         wxTimer Timer1;
+        wxButton* Button12;
         wxTextCtrl* SendCommandText;
         //*)
 
