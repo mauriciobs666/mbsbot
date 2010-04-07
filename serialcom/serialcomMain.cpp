@@ -119,8 +119,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer1;
     wxMenu* Menu2;
     wxStaticBoxSizer* StaticBoxSizer5;
-    
+
     Create(parent, wxID_ANY, _("MBSBOT"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+    SetClientSize(wxSize(640,480));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK1"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
@@ -177,13 +178,15 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Panel4 = new wxPanel(Notebook1, ID_PANEL4, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL4"));
     FlexGridSizer2 = new wxFlexGridSizer(1, 2, 0, 0);
     StaticBoxSizer4 = new wxStaticBoxSizer(wxHORIZONTAL, Panel4, _("Sensor Values"));
-    Grid1 = new wxGrid(Panel4, ID_GRID1, wxDefaultPosition, wxSize(322,182), 0, _T("ID_GRID1"));
-    Grid1->CreateGrid(6,3);
+    Grid1 = new wxGrid(Panel4, ID_GRID1, wxDefaultPosition, wxSize(492,182), 0, _T("ID_GRID1"));
+    Grid1->CreateGrid(6,5);
     Grid1->EnableEditing(true);
     Grid1->EnableGridLines(true);
-    Grid1->SetColLabelValue(0, _("Current"));
+    Grid1->SetColLabelValue(0, _("Now"));
     Grid1->SetColLabelValue(1, _("Min"));
     Grid1->SetColLabelValue(2, _("Max"));
+    Grid1->SetColLabelValue(3, _("Avg"));
+    Grid1->SetColLabelValue(4, _("X"));
     Grid1->SetRowLabelValue(0, _("0"));
     Grid1->SetRowLabelValue(1, _("1"));
     Grid1->SetRowLabelValue(2, _("2"));
@@ -193,21 +196,33 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Grid1->SetCellValue(0, 0, _("0"));
     Grid1->SetCellValue(0, 1, _("1023"));
     Grid1->SetCellValue(0, 2, _("0"));
+    Grid1->SetCellValue(0, 3, _("0"));
+    Grid1->SetCellValue(0, 4, _("0"));
     Grid1->SetCellValue(1, 0, _("0"));
     Grid1->SetCellValue(1, 1, _("1023"));
     Grid1->SetCellValue(1, 2, _("0"));
+    Grid1->SetCellValue(1, 3, _("0"));
+    Grid1->SetCellValue(1, 4, _("0"));
     Grid1->SetCellValue(2, 0, _("0"));
     Grid1->SetCellValue(2, 1, _("1023"));
     Grid1->SetCellValue(2, 2, _("0"));
+    Grid1->SetCellValue(2, 3, _("0"));
+    Grid1->SetCellValue(2, 4, _("0"));
     Grid1->SetCellValue(3, 0, _("0"));
     Grid1->SetCellValue(3, 1, _("1023"));
     Grid1->SetCellValue(3, 2, _("0"));
+    Grid1->SetCellValue(3, 3, _("0"));
+    Grid1->SetCellValue(3, 4, _("0"));
     Grid1->SetCellValue(4, 0, _("0"));
     Grid1->SetCellValue(4, 1, _("1023"));
     Grid1->SetCellValue(4, 2, _("0"));
+    Grid1->SetCellValue(4, 3, _("0"));
+    Grid1->SetCellValue(4, 4, _("0"));
     Grid1->SetCellValue(5, 0, _("0"));
     Grid1->SetCellValue(5, 1, _("1023"));
     Grid1->SetCellValue(5, 2, _("0"));
+    Grid1->SetCellValue(5, 3, _("0"));
+    Grid1->SetCellValue(5, 4, _("0"));
     Grid1->SetDefaultCellFont( Grid1->GetFont() );
     Grid1->SetDefaultCellTextColour( Grid1->GetForegroundColour() );
     StaticBoxSizer4->Add(Grid1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -286,9 +301,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     SetStatusBar(StatusBar1);
     Timer1.SetOwner(this, ID_TIMER1);
     Timer1.Start(100, false);
-    BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
-    
+
     Connect(ID_SLIDER1,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider1CmdSliderUpdated);
     Connect(ID_TEXTCTRL3,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl1TextEnter);
     Connect(ID_SLIDER2,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider2CmdSliderUpdated);
@@ -352,7 +366,11 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 	while ((rx = MbsBot::getInstance()->receive()))
 	{
 		wxString str = wxString(rx,wxConvUTF8);
-		//Log->AppendText(str);
+
+		//#define ALWAYS_SHOW_CMD_RECEIVED
+		#ifdef ALWAYS_SHOW_CMD_RECEIVED
+			Log->AppendText(str);
+		#endif
 
 		char * tok = strtok(rx, " ");
 		if (tok)
@@ -407,6 +425,16 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 						// maximum value
 						if(value > atoi(Grid1->GetCellValue (s, 2).mb_str(wxConvUTF8)))
 							Grid1->SetCellValue (str, s, 2);
+
+						// data packets counter
+
+						accumulated[s] += value;
+						counter[s]++;
+
+						int average = accumulated[s] / counter[s];
+
+						str = wxString::Format(wxT("%i"), average);
+						Grid1->SetCellValue (str, s, 3);
 					}
 				}
 			}
@@ -490,6 +518,10 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 	{
 		Grid1->SetCellValue (_("1023"), s, 1);
 		Grid1->SetCellValue (_("0"), s, 2);
+		Grid1->SetCellValue (_("0"), s, 3);
+		Grid1->SetCellValue (_("0"), s, 4);
+		counter[s]=0;
+		accumulated[s]=0;
 	}
 }
 

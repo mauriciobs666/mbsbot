@@ -2,6 +2,7 @@
 <wxsmith>
 	<object class="wxFrame" name="serialcomFrame">
 		<title>MBSBOT</title>
+		<size>640,480</size>
 		<id_arg>0</id_arg>
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
 			<orient>wxVERTICAL</orient>
@@ -216,12 +217,14 @@
 										<label>Sensor Values</label>
 										<object class="sizeritem">
 											<object class="wxGrid" name="ID_GRID1" variable="Grid1" member="yes">
-												<cols>3</cols>
+												<cols>5</cols>
 												<rows>6</rows>
 												<collabels>
-													<item>Current</item>
+													<item>Now</item>
 													<item>Min</item>
 													<item>Max</item>
+													<item>Avg</item>
+													<item>X</item>
 												</collabels>
 												<rowlabels>
 													<item>0</item>
@@ -236,22 +239,34 @@
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
-													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
-													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
+													<item>0</item>
+													<item>0</item>
 													<item>1023</item>
+													<item>0</item>
+													<item>0</item>
+													<item>0</item>
+													<item>0</item>
+													<item>1023</item>
+													<item>0</item>
+													<item>0</item>
+													<item>0</item>
+													<item>0</item>
+													<item>1023</item>
+													<item>0</item>
+													<item>0</item>
 													<item>0</item>
 												</celltext>
-												<size>322,182</size>
+												<size>492,182</size>
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
