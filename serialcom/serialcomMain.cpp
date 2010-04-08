@@ -80,12 +80,15 @@ const long serialcomFrame::ID_PANEL5 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL6 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT2 = wxNewId();
+const long serialcomFrame::ID_CHOICE1 = wxNewId();
+const long serialcomFrame::ID_BUTTON14 = wxNewId();
+const long serialcomFrame::ID_BUTTON11 = wxNewId();
+const long serialcomFrame::ID_BUTTON15 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
+const long serialcomFrame::ID_PANEL7 = wxNewId();
 const long serialcomFrame::ID_NOTEBOOK1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
-const long serialcomFrame::idMenuQuit = wxNewId();
-const long serialcomFrame::ID_MENUITEM1 = wxNewId();
-const long serialcomFrame::idMenuAbout = wxNewId();
 const long serialcomFrame::ID_STATUSBAR1 = wxNewId();
 const long serialcomFrame::ID_TIMER1 = wxNewId();
 //*)
@@ -100,24 +103,19 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     //(*Initialize(serialcomFrame)
     wxStaticBoxSizer* StaticBoxSizer2;
     wxFlexGridSizer* FlexGridSizer4;
-    wxMenuItem* MenuItem2;
     wxStaticBoxSizer* StaticBoxSizer4;
     wxFlexGridSizer* FlexGridSizer3;
-    wxMenuItem* MenuItem1;
     wxFlexGridSizer* FlexGridSizer5;
     wxFlexGridSizer* FlexGridSizer2;
     wxBoxSizer* BoxSizer2;
-    wxMenu* Menu1;
     wxStaticBoxSizer* StaticBoxSizer7;
     wxStaticBoxSizer* StaticBoxSizer8;
     wxStaticBoxSizer* StaticBoxSizer3;
     wxStaticBoxSizer* StaticBoxSizer6;
     wxBoxSizer* BoxSizer1;
-    wxMenuBar* MenuBar1;
     wxFlexGridSizer* FlexGridSizer6;
     wxStaticBoxSizer* StaticBoxSizer1;
     wxFlexGridSizer* FlexGridSizer1;
-    wxMenu* Menu2;
     wxStaticBoxSizer* StaticBoxSizer5;
 
     Create(parent, wxID_ANY, _("MBSBOT"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
@@ -264,35 +262,37 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer6->Add(TextCtrl4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText2 = new wxStaticText(Panel6, ID_STATICTEXT2, _("Speed"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
     FlexGridSizer6->Add(StaticText2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Choice1 = new wxChoice(Panel6, ID_CHOICE1, wxDefaultPosition, wxSize(124,21), 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
+    Choice1->Append(_("9600"));
+    Choice1->Append(_("19200"));
+    Choice1->Append(_("38400"));
+    Choice1->Append(_("57600"));
+    Choice1->SetSelection( Choice1->Append(_("115200")) );
+    FlexGridSizer6->Add(Choice1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Button14 = new wxButton(Panel6, ID_BUTTON14, _("Discard"), wxDefaultPosition, wxSize(67,29), 0, wxDefaultValidator, _T("ID_BUTTON14"));
+    FlexGridSizer6->Add(Button14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Button11 = new wxButton(Panel6, ID_BUTTON11, _("Set"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON11"));
+    FlexGridSizer6->Add(Button11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer8->Add(FlexGridSizer6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Button15 = new wxButton(Panel6, ID_BUTTON15, _("Old pref window"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON15"));
+    StaticBoxSizer8->Add(Button15, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer8, 1, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel6->SetSizer(FlexGridSizer5);
     FlexGridSizer5->Fit(Panel6);
     FlexGridSizer5->SetSizeHints(Panel6);
+    Panel7 = new wxPanel(Notebook1, ID_PANEL7, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL7"));
+    StaticText3 = new wxStaticText(Panel7, ID_STATICTEXT3, _("(C) 2010 - Mauricio Bieze Stefani"), wxPoint(40,40), wxDefaultSize, 0, _T("ID_STATICTEXT3"));
     Notebook1->AddPage(Panel1, _("Log"), false);
     Notebook1->AddPage(Panel2, _("Servos"), false);
     Notebook1->AddPage(Panel3, _("EEPROM"), false);
     Notebook1->AddPage(Panel4, _("Sensors"), false);
     Notebook1->AddPage(Panel5, _("Drive"), false);
     Notebook1->AddPage(Panel6, _("Setup"), false);
+    Notebook1->AddPage(Panel7, _("About"), false);
     BoxSizer1->Add(Notebook1, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SendCommandText = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL1"));
     BoxSizer1->Add(SendCommandText, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SetSizer(BoxSizer1);
-    MenuBar1 = new wxMenuBar();
-    Menu1 = new wxMenu();
-    MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);
-    Menu1->Append(MenuItem1);
-    MenuBar1->Append(Menu1, _("&File"));
-    Menu3 = new wxMenu();
-    MenuItem3 = new wxMenuItem(Menu3, ID_MENUITEM1, _("Preferences"), wxEmptyString, wxITEM_NORMAL);
-    Menu3->Append(MenuItem3);
-    MenuBar1->Append(Menu3, _("&Edit"));
-    Menu2 = new wxMenu();
-    MenuItem2 = new wxMenuItem(Menu2, idMenuAbout, _("About\tF1"), _("Show info about this application"), wxITEM_NORMAL);
-    Menu2->Append(MenuItem2);
-    MenuBar1->Append(Menu2, _("Help"));
-    SetMenuBar(MenuBar1);
     StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, 0, _T("ID_STATUSBAR1"));
     int __wxStatusBarWidths_1[1] = { -1 };
     int __wxStatusBarStyles_1[1] = { wxSB_NORMAL };
@@ -317,11 +317,11 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON8,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton8Click);
     Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton4Click);
     Connect(ID_BUTTON5,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton5Click);
+    Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
+    Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
+    Connect(ID_BUTTON15,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton15Click);
     Connect(ID_NOTEBOOK1,wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED,(wxObjectEventFunction)&serialcomFrame::OnNotebook1PageChanged);
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
-    Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnQuit);
-    Connect(ID_MENUITEM1,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnMenuItem3Selected);
-    Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnAbout);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
     if( MbsBot::getInstance()->init() == 0)
@@ -334,11 +334,6 @@ serialcomFrame::~serialcomFrame()
 {
     //(*Destroy(serialcomFrame)
     //*)
-}
-
-void serialcomFrame::OnQuit(wxCommandEvent& event)
-{
-    Close();
 }
 
 void serialcomFrame::OnAbout(wxCommandEvent& event)
@@ -442,12 +437,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 				Log->AppendText(str);
 		}
 	}
-}
-
-void serialcomFrame::OnMenuItem3Selected(wxCommandEvent& event)
-{
-	Preferences* pref = new Preferences(this);
-    pref->Show();
 }
 
 void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
@@ -554,4 +543,30 @@ void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
 	Slider3->SetValue(val);
 
 	MbsBot::getInstance()->setHead(val);
+}
+
+// pre-defined baud rates
+const int spd[] = { 9600, 19200, 38400, 57600, 115200 };
+const int n_spd = 5;
+
+void serialcomFrame::OnButton11Click(wxCommandEvent& event)
+{
+    MbsBot::getInstance()->init(TextCtrl4->GetValue().mb_str(wxConvUTF8), spd[Choice1->GetCurrentSelection()]);
+}
+
+void serialcomFrame::OnButton14Click(wxCommandEvent& event)
+{
+   	int currSpd = MbsBot::getInstance()->getBaud();
+
+	for(int x=0; x < n_spd; x++)
+		if( currSpd == spd[x])
+			Choice1->SetSelection(x);
+
+	TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
+}
+
+void serialcomFrame::OnButton15Click(wxCommandEvent& event)
+{
+   	Preferences* pref = new Preferences(this);
+    pref->Show();
 }
