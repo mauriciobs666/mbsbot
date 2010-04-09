@@ -24,6 +24,7 @@
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
+#include <wx/stopwatch.h>
 #include <wx/slider.h>
 #include <wx/panel.h>
 #include <wx/grid.h>
@@ -78,6 +79,18 @@ class serialcomFrame: public wxFrame
         //(*Identifiers(serialcomFrame)
         static const long ID_TEXTCTRL2;
         static const long ID_PANEL1;
+        static const long ID_STATICTEXT1;
+        static const long ID_TEXTCTRL6;
+        static const long ID_STATICTEXT2;
+        static const long ID_CHOICE1;
+        static const long ID_BUTTON14;
+        static const long ID_BUTTON11;
+        static const long ID_BUTTON15;
+        static const long ID_PANEL6;
+        static const long ID_BUTTON6;
+        static const long ID_BUTTON7;
+        static const long ID_BUTTON8;
+        static const long ID_PANEL3;
         static const long ID_SLIDER1;
         static const long ID_TEXTCTRL3;
         static const long ID_SLIDER2;
@@ -88,30 +101,16 @@ class serialcomFrame: public wxFrame
         static const long ID_BUTTON1;
         static const long ID_BUTTON3;
         static const long ID_PANEL2;
-        static const long ID_BUTTON6;
-        static const long ID_BUTTON7;
-        static const long ID_BUTTON8;
-        static const long ID_PANEL3;
         static const long ID_GRID1;
         static const long ID_BUTTON4;
         static const long ID_BUTTON5;
         static const long ID_PANEL4;
         static const long ID_BUTTON9;
         static const long ID_BUTTON10;
+        static const long ID_TEXTCTRL7;
         static const long ID_BUTTON12;
         static const long ID_BUTTON13;
         static const long ID_PANEL5;
-        static const long ID_STATICTEXT1;
-        static const long ID_TEXTCTRL6;
-        static const long ID_STATICTEXT2;
-        static const long ID_CHOICE1;
-        static const long ID_BUTTON14;
-        static const long ID_BUTTON11;
-        static const long ID_BUTTON15;
-        static const long ID_PANEL6;
-        static const long ID_STATICTEXT3;
-        static const long ID_STATICTEXT4;
-        static const long ID_PANEL7;
         static const long ID_NOTEBOOK1;
         static const long ID_TEXTCTRL1;
         static const long ID_STATUSBAR1;
@@ -133,7 +132,6 @@ class serialcomFrame: public wxFrame
         wxSlider* Slider3;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
-        wxStaticText* StaticText3;
         wxGrid* Grid1;
         wxButton* Button2;
         wxPanel* Panel6;
@@ -144,15 +142,15 @@ class serialcomFrame: public wxFrame
         wxButton* Button5;
         wxButton* Button3;
         wxButton* Button7;
-        wxPanel* Panel7;
+        wxStopWatch StopWatch1;
         wxStatusBar* StatusBar1;
         wxButton* Button9;
         wxTextCtrl* TextCtrl2;
         wxTextCtrl* TextCtrl1;
         wxPanel* Panel2;
+        wxTextCtrl* TextCtrl5;
         wxButton* Button15;
         wxButton* Button13;
-        wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
         wxChoice* Choice1;
         wxButton* Button8;
