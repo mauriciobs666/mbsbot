@@ -86,6 +86,7 @@ const long serialcomFrame::ID_BUTTON11 = wxNewId();
 const long serialcomFrame::ID_BUTTON15 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_PANEL7 = wxNewId();
 const long serialcomFrame::ID_NOTEBOOK1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
@@ -282,6 +283,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer5->SetSizeHints(Panel6);
     Panel7 = new wxPanel(Notebook1, ID_PANEL7, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL7"));
     StaticText3 = new wxStaticText(Panel7, ID_STATICTEXT3, _("(C) 2010 - Mauricio Bieze Stefani"), wxPoint(40,40), wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    StaticText4 = new wxStaticText(Panel7, ID_STATICTEXT4, _("Label"), wxPoint(40,64), wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     Notebook1->AddPage(Panel1, _("Log"), false);
     Notebook1->AddPage(Panel2, _("Servos"), false);
     Notebook1->AddPage(Panel3, _("EEPROM"), false);
@@ -324,6 +326,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
+
+    StaticText4->SetLabel(wxbuildinfo(long_f));
+
     if( MbsBot::getInstance()->init() == 0)
 		StatusBar1->SetStatusText(_("Connected"));
     else

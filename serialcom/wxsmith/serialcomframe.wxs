@@ -473,6 +473,10 @@
 								<label>(C) 2010 - Mauricio Bieze Stefani</label>
 								<pos>40,40</pos>
 							</object>
+							<object class="wxStaticText" name="ID_STATICTEXT4" variable="StaticText4" member="yes">
+								<label>Label</label>
+								<pos>40,64</pos>
+							</object>
 						</object>
 						<label>About</label>
 					</object>
