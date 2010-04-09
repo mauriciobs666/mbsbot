@@ -17,7 +17,6 @@
  */
 
 #include "serialcomMain.h"
-#include "Preferences.h"
 #include <wx/msgdlg.h>
 
 //(*InternalHeaders(serialcomFrame)
@@ -60,7 +59,6 @@ const long serialcomFrame::ID_STATICTEXT2 = wxNewId();
 const long serialcomFrame::ID_CHOICE1 = wxNewId();
 const long serialcomFrame::ID_BUTTON14 = wxNewId();
 const long serialcomFrame::ID_BUTTON11 = wxNewId();
-const long serialcomFrame::ID_BUTTON15 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
 const long serialcomFrame::ID_BUTTON6 = wxNewId();
 const long serialcomFrame::ID_BUTTON7 = wxNewId();
@@ -152,8 +150,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Button11 = new wxButton(Panel6, ID_BUTTON11, _("Set"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON11"));
     FlexGridSizer6->Add(Button11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer8->Add(FlexGridSizer6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button15 = new wxButton(Panel6, ID_BUTTON15, _("Old pref window"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON15"));
-    StaticBoxSizer8->Add(Button15, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer8, 1, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel6->SetSizer(FlexGridSizer5);
     FlexGridSizer5->Fit(Panel6);
@@ -308,7 +304,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
-    Connect(ID_BUTTON15,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton15Click);
     Connect(ID_BUTTON6,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton6Click);
     Connect(ID_BUTTON7,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton7Click);
     Connect(ID_BUTTON8,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton8Click);
@@ -388,12 +383,6 @@ void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 			Choice1->SetSelection(x);
 
 	TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
-}
-
-void serialcomFrame::OnButton15Click(wxCommandEvent& event)
-{
-   	Preferences* pref = new Preferences(this);
-    pref->Show();
 }
 
 /* ============================================================================

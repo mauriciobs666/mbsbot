@@ -42,8 +42,6 @@
 		</Linker>
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
-		<Unit filename="Preferences.cpp" />
-		<Unit filename="Preferences.h" />
 		<Unit filename="serialcomApp.cpp" />
 		<Unit filename="serialcomApp.h" />
 		<Unit filename="serialcomMain.cpp" />
@@ -58,7 +56,6 @@
 				<gui name="wxWidgets" src="serialcomApp.cpp" main="serialcomFrame" init_handlers="necessary" language="CPP" />
 				<resources>
 					<wxFrame wxs="wxsmith/serialcomframe.wxs" src="serialcomMain.cpp" hdr="serialcomMain.h" name="serialcomFrame" language="CPP" />
-					<wxFrame wxs="wxsmith/Preferences.wxs" src="Preferences.cpp" hdr="Preferences.h" name="Preferences" language="CPP" />
 				</resources>
 			</wxsmith>
 		</Extensions>
