@@ -323,6 +323,15 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
 
+	// Sensor data analysis stuff
+
+    counter = 0;
+    for(int s=0; s<6; s++)			// six sensors
+		for(int c=0; c<10; c++)		// average of last (TEN) measures
+		    accumulated[s][c]=0;
+
+	// Default serial port
+
     if( MbsBot::getInstance()->init() == 0)
 		StatusBar1->SetStatusText(_("Connected"));
     else
@@ -515,8 +524,6 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 		Grid1->SetCellValue (_("0"), s, 2);
 		Grid1->SetCellValue (_("0"), s, 3);
 		Grid1->SetCellValue (_("0"), s, 4);
-		counter[s]=0;
-		accumulated[s]=0;
 	}
 }
 
@@ -593,17 +600,25 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 						if(value > atoi(Grid1->GetCellValue (s, 2).mb_str(wxConvUTF8)))
 							Grid1->SetCellValue (str, s, 2);
 
-						// average
+						// average of last 10 measures
 
-						accumulated[s] += value;
-						counter[s]++;
+						accumulated[s][counter] = value;
 
-						int average = accumulated[s] / counter[s];
+						int average = 0;
+
+						for (int c=0; c < 10; c++)
+							average += accumulated[s][c];
+
+						average /= 10;
 
 						str = wxString::Format(wxT("%i"), average);
 						Grid1->SetCellValue (str, s, 3);
 					}
 				}
+
+				counter++;
+				if(counter >= 10)
+					counter = 0;
 			}
 			else
 				Log->AppendText(str);

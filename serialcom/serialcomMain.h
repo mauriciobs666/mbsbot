@@ -41,9 +41,9 @@ class serialcomFrame: public wxFrame
 {
     public:
 
-		// Data analysis stuff
-		int counter[6];
-		int accumulated[6];
+		// Sensor data analysis stuff
+		int counter;
+		int accumulated[6][10];
 
         serialcomFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~serialcomFrame();
