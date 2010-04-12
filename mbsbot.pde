@@ -57,7 +57,7 @@ public:
 		short leftWheelCenter;
 		short rightWheelCenter;
 
-		// delay in ms used to make it move about an inch
+		// delay in ms used to make it move an inch (+/-)
 		short inch;
 
 		unsigned short LF_threshold[NUM_IR_TRACK];
@@ -100,96 +100,131 @@ public:
 class Wheel
 {
 public:
-	void init(int pin, short centerAng=1500, bool reverseDirection=false)
-	{
-		servo.attach(pin);
-		setCenter(centerAng);
-		setReverse(reverseDirection);
-		stop();
-	}
 	void stop()
 	{
-		current = centerAngle;
+		current = center;
 		refresh();
 	}
-	void refresh()
-	{
-		servo.writeMicroseconds(current);
-	}
-	void move(char percent)
-	{
-		// typical servos use from 1000-2000us
-		current = reverse ? (centerAngle - percent*5) : (centerAngle + percent*5);
-		refresh();
-	}
+
+    virtual void move(char percent);
+
+	virtual void refresh();
+
 	void write(int value)
 	{
 		current = value;
 		refresh();
 	}
+
 	short read()
-	{
-		return current;
-	}
+        { return current; }
+
 	void setCenter(short value)
-	{
-		centerAngle = value;
-	}
+        { center = value; }
+
 	void setReverse(bool rev)
+        { reverse = rev; }
+protected:
+	bool reverse;
+	short current;
+	short center;
+};
+
+class WheelServo : public Wheel
+{
+public:
+	void init(int pin, short centerAng=1500, bool reverseDirection=false)
 	{
-		reverse = rev;
+		servo.attach(pin);
+		setCenter(center);
+		setReverse(reverseDirection);
+		stop();
+	}
+
+	virtual void move(char percent)
+	{
+		// typical servos use from 1000-2000us
+		current = reverse ? (center - percent*5) : (center + percent*5);
+		refresh();
+	}
+
+	virtual void refresh()
+	{
+		servo.writeMicroseconds(current);
 	}
 private:
 	Servo servo;
-	bool reverse;
-	short centerAngle;
-	short current;
+};
+
+class WheelDC : public Wheel
+{
+public:
+	void init(int PWMpin, int DIRpin, bool reverseDirection=false)
+	{
+
+		setCenter(0);
+		setReverse(reverseDirection);
+		stop();
+	}
+
+	virtual void move(char percent)
+	{
+		// typical servos use from 1000-2000us
+		current = reverse ? (center - percent*5) : (center + percent*5);
+		refresh();
+	}
+
+	virtual void refresh()
+	{
+
+	}
+private:
 };
 
 class Drive
 {
 public:
-	Wheel leftWheel;
-	Wheel rightWheel;
+	Wheel *leftWheel;
+	Wheel *rightWheel;
 	void forward(char percent=100)
 	{
-		leftWheel.move(percent);
-		rightWheel.move(percent);
+		leftWheel->move(percent);
+		rightWheel->move(percent);
 	}
 	void backward(char percent=100)
 	{
-		leftWheel.move(-percent);
-		rightWheel.move(-percent);
+		leftWheel->move(-percent);
+		rightWheel->move(-percent);
 	}
 	void left(char percent=100)
 	{
-		leftWheel.move(-percent);
-		rightWheel.move(percent);
+		leftWheel->move(-percent);
+		rightWheel->move(percent);
 	}
 	void leftSmooth(char percent=100)
 	{
-		leftWheel.stop();
-		rightWheel.move(percent);
+		leftWheel->stop();
+		rightWheel->move(percent);
 	}
 	void right(char percent=100)
 	{
-		leftWheel.move(percent);
-		rightWheel.move(-percent);
+		leftWheel->move(percent);
+		rightWheel->move(-percent);
 	}
 	void rightSmooth(char percent=100)
 	{
-		leftWheel.move(percent);
-		rightWheel.stop();
+		leftWheel->move(percent);
+		rightWheel->stop();
 	}
 	void stop()
 	{
-		leftWheel.stop();
-		rightWheel.stop();
+		leftWheel->stop();
+		rightWheel->stop();
 	}
 	void refresh()
 	{
-		leftWheel.refresh();
-		rightWheel.refresh();
+		leftWheel->refresh();
+		rightWheel->refresh();
 	}
 	void pulse(int period, char percent=100)
 	{
@@ -543,17 +578,17 @@ void Server::loop()
 						int value = atoi(tok);
 
 						if(strcmp(dest, "l") == 0)			// left motor
-							drive.leftWheel.write(value);
+							drive.leftWheel->write(value);
 						else if(strcmp(dest, "lc") == 0)	// left motor center
 						{
-							drive.leftWheel.setCenter(value);
+							drive.leftWheel->setCenter(value);
 							eeprom.data.leftWheelCenter = value;
 						}
 						else if(strcmp(dest, "r") == 0)		// right motor
-							drive.rightWheel.write(value);
+							drive.rightWheel->write(value);
 						else if(strcmp(dest, "rc") == 0)	// right motor center
 						{
-							drive.rightWheel.setCenter(value);
+							drive.rightWheel->setCenter(value);
 							eeprom.data.rightWheelCenter = value;
 						}
 						else if(strcmp(dest,"p") == 0)		// program
@@ -575,7 +610,7 @@ void Server::loop()
 					if(strcmp(tok, "l") == 0)				// left motor
 					{
 						Serial.print("L ");
-						Serial.println(drive.leftWheel.read());
+						Serial.println(drive.leftWheel->read());
 					}
 					else if(strcmp(tok, "lc") == 0)			// left motor center
 					{
@@ -585,7 +620,7 @@ void Server::loop()
 					else if(strcmp(tok, "r") == 0)			// right motor
 					{
 						Serial.print("R ");
-						Serial.println(drive.rightWheel.read());
+						Serial.println(drive.rightWheel->read());
 					}
 					else if(strcmp(tok, "rc") == 0)			// right motor center
 					{
@@ -636,14 +671,19 @@ void Server::loop()
  *	SETUP
  ******************************************************************************/
 
+WheelServo leftWheel, rightWheel;
+
 void setup()
 {
 	Serial.begin(SERIAL_PORT_SPEED);
 
 	eeprom.load();
 
-	drive.leftWheel.init(8, eeprom.data.leftWheelCenter);
-	drive.rightWheel.init(9, eeprom.data.rightWheelCenter, true);
+	leftWheel.init(8, eeprom.data.leftWheelCenter);
+	rightWheel.init(9, eeprom.data.rightWheelCenter, true);
+
+    drive.leftWheel = &leftWheel;
+    drive.rightWheel = &rightWheel;
 
 	rangeFinder.servo.attach(10);
 
