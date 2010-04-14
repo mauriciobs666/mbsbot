@@ -1,6 +1,6 @@
 const int PWMA= 10;
 const int PWMB= 9;
-const int DIRA= 13;
+const int DIRA= 11;
 const int DIRB= 12;
 
 void setup()
