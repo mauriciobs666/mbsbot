@@ -112,9 +112,9 @@ class serialcomFrame: public wxFrame
         static const long ID_PANEL4;
         static const long ID_BUTTON9;
         static const long ID_BUTTON10;
-        static const long ID_TEXTCTRL7;
-        static const long ID_BUTTON12;
         static const long ID_BUTTON13;
+        static const long ID_BUTTON12;
+        static const long ID_TEXTCTRL7;
         static const long ID_BUTTON15;
         static const long ID_STATICTEXT3;
         static const long ID_STATICTEXT4;
@@ -154,10 +154,10 @@ class serialcomFrame: public wxFrame
         wxStatusBar* StatusBar1;
         wxButton* Button9;
         wxTextCtrl* TextCtrl2;
+        wxButton* ButtonJoystickEn;
         wxTextCtrl* TextCtrl1;
         wxPanel* Panel2;
         wxTextCtrl* TextCtrl5;
-        wxButton* Button15;
         wxButton* Button13;
         wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;

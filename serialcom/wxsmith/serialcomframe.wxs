@@ -411,7 +411,8 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON9" variable="Button9" member="yes">
-														<label>Up</label>
+														<label>W</label>
+														<size>29,29</size>
 														<handler function="OnButton9Click" entry="EVT_BUTTON" />
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -425,15 +426,17 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON10" variable="Button10" member="yes">
-														<label>Left</label>
+														<label>A</label>
+														<size>29,29</size>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL7" variable="TextCtrl5" member="yes">
-														<handler function="OnDriveByKeyboard" entry="EVT_TEXT" />
+													<object class="wxButton" name="ID_BUTTON13" variable="Button13" member="yes">
+														<label>S</label>
+														<size>29,29</size>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -441,7 +444,8 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON12" variable="Button12" member="yes">
-														<label>Right</label>
+														<label>D</label>
+														<size>29,29</size>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -453,8 +457,9 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxButton" name="ID_BUTTON13" variable="Button13" member="yes">
-														<label>Down</label>
+													<object class="wxTextCtrl" name="ID_TEXTCTRL7" variable="TextCtrl5" member="yes">
+														<size>29,29</size>
+														<handler function="OnDriveByKeyboard" entry="EVT_TEXT" />
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -477,11 +482,11 @@
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer10" member="no">
-										<label>Analog</label>
+										<label>Joystick</label>
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
-											<object class="wxButton" name="ID_BUTTON15" variable="Button15" member="yes">
-												<label>Init JOY</label>
+											<object class="wxButton" name="ID_BUTTON15" variable="ButtonJoystickEn" member="yes">
+												<label>Enable</label>
 												<handler function="OnButton15Click1" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -490,7 +495,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
-												<label>Label</label>
+												<label>.</label>
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
@@ -498,7 +503,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxStaticText" name="ID_STATICTEXT4" variable="StaticText4" member="yes">
-												<label>Label</label>
+												<label>.</label>
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>

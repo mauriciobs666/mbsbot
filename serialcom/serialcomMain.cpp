@@ -80,9 +80,9 @@ const long serialcomFrame::ID_BUTTON5 = wxNewId();
 const long serialcomFrame::ID_PANEL4 = wxNewId();
 const long serialcomFrame::ID_BUTTON9 = wxNewId();
 const long serialcomFrame::ID_BUTTON10 = wxNewId();
-const long serialcomFrame::ID_TEXTCTRL7 = wxNewId();
-const long serialcomFrame::ID_BUTTON12 = wxNewId();
 const long serialcomFrame::ID_BUTTON13 = wxNewId();
+const long serialcomFrame::ID_BUTTON12 = wxNewId();
+const long serialcomFrame::ID_TEXTCTRL7 = wxNewId();
 const long serialcomFrame::ID_BUTTON15 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
@@ -268,27 +268,27 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer9 = new wxStaticBoxSizer(wxHORIZONTAL, Panel5, _("Digital"));
     FlexGridSizer7 = new wxFlexGridSizer(0, 3, 0, 0);
     FlexGridSizer7->Add(-1,-1,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button9 = new wxButton(Panel5, ID_BUTTON9, _("Up"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON9"));
+    Button9 = new wxButton(Panel5, ID_BUTTON9, _("W"), wxDefaultPosition, wxSize(29,29), 0, wxDefaultValidator, _T("ID_BUTTON9"));
     FlexGridSizer7->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer7->Add(-1,-1,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button10 = new wxButton(Panel5, ID_BUTTON10, _("Left"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON10"));
+    Button10 = new wxButton(Panel5, ID_BUTTON10, _("A"), wxDefaultPosition, wxSize(29,29), 0, wxDefaultValidator, _T("ID_BUTTON10"));
     FlexGridSizer7->Add(Button10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl5 = new wxTextCtrl(Panel5, ID_TEXTCTRL7, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL7"));
-    FlexGridSizer7->Add(TextCtrl5, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button12 = new wxButton(Panel5, ID_BUTTON12, _("Right"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON12"));
+    Button13 = new wxButton(Panel5, ID_BUTTON13, _("S"), wxDefaultPosition, wxSize(29,29), 0, wxDefaultValidator, _T("ID_BUTTON13"));
+    FlexGridSizer7->Add(Button13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Button12 = new wxButton(Panel5, ID_BUTTON12, _("D"), wxDefaultPosition, wxSize(29,29), 0, wxDefaultValidator, _T("ID_BUTTON12"));
     FlexGridSizer7->Add(Button12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer7->Add(-1,-1,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button13 = new wxButton(Panel5, ID_BUTTON13, _("Down"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON13"));
-    FlexGridSizer7->Add(Button13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrl5 = new wxTextCtrl(Panel5, ID_TEXTCTRL7, wxEmptyString, wxDefaultPosition, wxSize(29,29), 0, wxDefaultValidator, _T("ID_TEXTCTRL7"));
+    FlexGridSizer7->Add(TextCtrl5, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer7->Add(-1,-1,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer9->Add(FlexGridSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer4->Add(StaticBoxSizer9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer10 = new wxStaticBoxSizer(wxVERTICAL, Panel5, _("Analog"));
-    Button15 = new wxButton(Panel5, ID_BUTTON15, _("Init JOY"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON15"));
-    StaticBoxSizer10->Add(Button15, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("Label"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    StaticBoxSizer10 = new wxStaticBoxSizer(wxVERTICAL, Panel5, _("Joystick"));
+    ButtonJoystickEn = new wxButton(Panel5, ID_BUTTON15, _("Enable"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON15"));
+    StaticBoxSizer10->Add(ButtonJoystickEn, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("."), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
     StaticBoxSizer10->Add(StaticText3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText4 = new wxStaticText(Panel5, ID_STATICTEXT4, _("Label"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
+    StaticText4 = new wxStaticText(Panel5, ID_STATICTEXT4, _("."), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     StaticBoxSizer10->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer4->Add(StaticBoxSizer10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel5->SetSizer(FlexGridSizer4);
@@ -643,10 +643,12 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 	}
 	if(joystick)
 	{
-		wxPoint pos=joystick->GetPosition();
+        // left and right wheels in % of power
 
 		int lw = 0;
 		int rw = 0;
+
+		wxPoint pos = joystick->GetPosition();
 
 		if(pos.x < 0)
 		{
@@ -669,12 +671,15 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 			rw = -100;
 		}
 
+        // debug print
+
 		StaticText3->SetLabel(wxString::Format(wxT("%i"), lw));
 		StaticText4->SetLabel(wxString::Format(wxT("%i"), rw));
 
+        // optimization: only send command if something changed
+
 		static int lastL = 0;
 		static int lastR = 0;
-
 		if ((lw != lastL) || (rw != lastR))
 		{
 			MbsBot::getInstance()->drive(lw, rw);
@@ -699,8 +704,19 @@ void serialcomFrame::OnDriveByKeyboard(wxCommandEvent& event)
 
 void serialcomFrame::OnButton15Click1(wxCommandEvent& event)
 {
-	if(wxJoystick::GetNumberJoysticks() > 0)
-	{
-		joystick = new wxJoystick(wxJOYSTICK1);
-	}
+    if ( joystick == NULL)
+    {
+        if(wxJoystick::GetNumberJoysticks() > 0)
+        {
+            joystick = new wxJoystick(wxJOYSTICK1);
+            if(joystick)
+                ButtonJoystickEn->SetLabel(_("Disable"));
+        }
+    }
+    else
+    {
+        delete joystick;
+        joystick = NULL;
+        ButtonJoystickEn->SetLabel(_("Enable"));
+    }
 }
