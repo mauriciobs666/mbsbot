@@ -42,6 +42,8 @@
 #define FIRST_IR_SENSOR_INDEX 0
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
 
+#define WHEEL_DC 1
+
 /******************************************************************************
  *	EEPROM - PERSISTENT CONFIGURATION
  ******************************************************************************/
@@ -156,11 +158,20 @@ private:
 	Servo servo;
 };
 
+#ifndef WHEEL_DC
+WheelServo leftWheel, rightWheel;
+#endif
+
 class WheelDC : public Wheel
 {
 public:
 	void init(int PWMpin, int DIRpin, bool reverseDirection=false)
 	{
+		pwm = PWMpin;
+		pinMode(pwm, OUTPUT);
+
+		dir = DIRpin;
+		pinMode(dir, OUTPUT);
 
 		setCenter(0);
 		setReverse(reverseDirection);
@@ -169,17 +180,27 @@ public:
 
 	virtual void move(char percent)
 	{
-		// typical servos use from 1000-2000us
-		current = reverse ? (center - percent*5) : (center + percent*5);
+		current = reverse ? (center - percent) : (center + percent);
 		refresh();
 	}
 
 	virtual void refresh()
 	{
+		if(current < center)
+			digitalWrite(dir, HIGH);
+		else
+			digitalWrite(dir, LOW);
 
+		analogWrite(pwm, abs(current));
 	}
 private:
+	int pwm;
+	int dir;
 };
+
+#ifdef WHEEL_DC
+WheelDC leftWheel, rightWheel;
+#endif
 
 class Drive
 {
@@ -235,6 +256,11 @@ public:
 	void inch(bool forward=true)
 	{
 		pulse(eeprom.data.inch, forward ? 100 : -100);
+	}
+	void drive(int lw, int rw)
+	{
+		leftWheel->move(lw);
+		rightWheel->move(rw);
 	}
 } drive;
 
@@ -511,7 +537,7 @@ void RangeFinder::loop()
  *	TELNET SERVER
  ******************************************************************************/
 
-#define MAX_COMMAND_SIZE 20
+#define MAX_COMMAND_SIZE 50
 #define COMMAND_END '\n'
 
 class Server
@@ -663,6 +689,17 @@ void Server::loop()
 				drive.inch();
 			else if(strcmp(tok, "stop") == 0)
 				drive.stop();
+			else if(strcmp(tok, "drv") == 0)
+			{
+				tok = strtok_r(NULL, " ", &pqp);
+				if (tok)			// second token is the left wheel power percent
+				{
+					int lw = atoi(tok);
+					tok = strtok_r(NULL, " ", &pqp);
+					if (tok)		// third token is the right wheel power percent
+						drive.drive(lw, atoi(tok));
+				}
+			}
 		}
 	}
 }
@@ -671,21 +708,24 @@ void Server::loop()
  *	SETUP
  ******************************************************************************/
 
-WheelServo leftWheel, rightWheel;
-
 void setup()
 {
 	Serial.begin(SERIAL_PORT_SPEED);
 
 	eeprom.load();
 
+#ifndef WHEEL_DC
 	leftWheel.init(8, eeprom.data.leftWheelCenter);
 	rightWheel.init(9, eeprom.data.rightWheelCenter, true);
 
+	rangeFinder.servo.attach(10);
+#else
+	leftWheel.init(9,12);
+	rightWheel.init(10,11);
+#endif
+
     drive.leftWheel = &leftWheel;
     drive.rightWheel = &rightWheel;
-
-	rangeFinder.servo.attach(10);
 
 	if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
@@ -707,12 +747,15 @@ void loop()
 		case PRG_RC:
 			drive.refresh();
 		break;
+
 		case PRG_PHOTOVORE:
 			photovore();
 		break;
+
 		case PRG_LINEFOLLOWER:
 			lineFollower.loop();
 		break;
+
 		case PRG_SHARP:
 			rangeFinder.loop();
 		break;

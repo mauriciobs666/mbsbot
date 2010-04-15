@@ -24,7 +24,6 @@
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
-#include <wx/stopwatch.h>
 #include <wx/slider.h>
 #include <wx/panel.h>
 #include <wx/grid.h>
@@ -36,6 +35,7 @@
 //*)
 
 #include "MbsBot.h"
+#include <wx/joystick.h>
 
 class serialcomFrame: public wxFrame
 {
@@ -44,6 +44,8 @@ class serialcomFrame: public wxFrame
 		// Sensor data analysis stuff
 		int counter;
 		int accumulated[6][10];
+
+		wxJoystick *joystick;
 
         serialcomFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~serialcomFrame();
@@ -74,6 +76,10 @@ class serialcomFrame: public wxFrame
 		void OnButton11Click(wxCommandEvent& event);
 		void OnButton14Click(wxCommandEvent& event);
 		void OnButton15Click(wxCommandEvent& event);
+		void OnButton9Click(wxCommandEvent& event);
+		void OnDriveByKeyboard(wxCommandEvent& event);
+		void OnButton15Click1(wxCommandEvent& event);
+		void OnDriveTimerTrigger(wxTimerEvent& event);
 		//*)
 
         //(*Identifiers(serialcomFrame)
@@ -109,6 +115,9 @@ class serialcomFrame: public wxFrame
         static const long ID_TEXTCTRL7;
         static const long ID_BUTTON12;
         static const long ID_BUTTON13;
+        static const long ID_BUTTON15;
+        static const long ID_STATICTEXT3;
+        static const long ID_STATICTEXT4;
         static const long ID_PANEL5;
         static const long ID_NOTEBOOK1;
         static const long ID_TEXTCTRL1;
@@ -131,6 +140,7 @@ class serialcomFrame: public wxFrame
         wxSlider* Slider3;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
+        wxStaticText* StaticText3;
         wxGrid* Grid1;
         wxButton* Button2;
         wxPanel* Panel6;
@@ -141,14 +151,15 @@ class serialcomFrame: public wxFrame
         wxButton* Button5;
         wxButton* Button3;
         wxButton* Button7;
-        wxStopWatch StopWatch1;
         wxStatusBar* StatusBar1;
         wxButton* Button9;
         wxTextCtrl* TextCtrl2;
         wxTextCtrl* TextCtrl1;
         wxPanel* Panel2;
         wxTextCtrl* TextCtrl5;
+        wxButton* Button15;
         wxButton* Button13;
+        wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
         wxChoice* Choice1;
         wxButton* Button8;

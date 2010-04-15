@@ -83,6 +83,9 @@ const long serialcomFrame::ID_BUTTON10 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL7 = wxNewId();
 const long serialcomFrame::ID_BUTTON12 = wxNewId();
 const long serialcomFrame::ID_BUTTON13 = wxNewId();
+const long serialcomFrame::ID_BUTTON15 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_PANEL5 = wxNewId();
 const long serialcomFrame::ID_NOTEBOOK1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
@@ -108,6 +111,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxBoxSizer* BoxSizer2;
     wxFlexGridSizer* FlexGridSizer7;
     wxStaticBoxSizer* StaticBoxSizer7;
+    wxStaticBoxSizer* StaticBoxSizer10;
     wxStaticBoxSizer* StaticBoxSizer8;
     wxStaticBoxSizer* StaticBoxSizer3;
     wxStaticBoxSizer* StaticBoxSizer6;
@@ -279,6 +283,14 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer7->Add(-1,-1,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer9->Add(FlexGridSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer4->Add(StaticBoxSizer9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer10 = new wxStaticBoxSizer(wxVERTICAL, Panel5, _("Analog"));
+    Button15 = new wxButton(Panel5, ID_BUTTON15, _("Init JOY"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON15"));
+    StaticBoxSizer10->Add(Button15, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("Label"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    StaticBoxSizer10->Add(StaticText3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText4 = new wxStaticText(Panel5, ID_STATICTEXT4, _("Label"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
+    StaticBoxSizer10->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer4->Add(StaticBoxSizer10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel5->SetSizer(FlexGridSizer4);
     FlexGridSizer4->Fit(Panel5);
     FlexGridSizer4->SetSizeHints(Panel5);
@@ -318,6 +330,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton3Click);
     Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton4Click);
     Connect(ID_BUTTON5,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton5Click);
+    Connect(ID_BUTTON9,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton9Click);
+    Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnDriveByKeyboard);
+    Connect(ID_BUTTON15,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton15Click1);
     Connect(ID_NOTEBOOK1,wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED,(wxObjectEventFunction)&serialcomFrame::OnNotebook1PageChanged);
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
@@ -336,6 +351,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 		StatusBar1->SetStatusText(_("Connected"));
     else
 		StatusBar1->SetStatusText(_("Error opening serial port"));
+
+	joystick = NULL;
 }
 
 serialcomFrame::~serialcomFrame()
@@ -624,8 +641,66 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 				Log->AppendText(str);
 		}
 	}
+	if(joystick)
+	{
+		wxPoint pos=joystick->GetPosition();
+
+		int lw = 0;
+		int rw = 0;
+
+		if(pos.x < 0)
+		{
+			lw = -100;
+			rw = 100;
+		}
+		else if(pos.x > 0)
+		{
+			lw = 100;
+			rw = -100;
+		}
+		else if (pos.y < 0)
+		{
+			lw = 100;
+			rw = 100;
+		}
+		else if (pos.y > 0)
+		{
+			lw = -100;
+			rw = -100;
+		}
+
+		StaticText3->SetLabel(wxString::Format(wxT("%i"), lw));
+		StaticText4->SetLabel(wxString::Format(wxT("%i"), rw));
+
+		static int lastL = 0;
+		static int lastR = 0;
+
+		if ((lw != lastL) || (rw != lastR))
+		{
+			MbsBot::getInstance()->drive(lw, rw);
+			lastL = lw;
+			lastR = rw;
+		}
+	}
 }
 
 void serialcomFrame::OnNotebook1PageChanged(wxNotebookEvent& event)
 {
+}
+
+void serialcomFrame::OnButton9Click(wxCommandEvent& event)
+{
+
+}
+
+void serialcomFrame::OnDriveByKeyboard(wxCommandEvent& event)
+{
+}
+
+void serialcomFrame::OnButton15Click1(wxCommandEvent& event)
+{
+	if(wxJoystick::GetNumberJoysticks() > 0)
+	{
+		joystick = new wxJoystick(wxJOYSTICK1);
+	}
 }

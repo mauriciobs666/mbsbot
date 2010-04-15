@@ -41,10 +41,9 @@ class MbsBot
 			{}
 
 		int init(const char *port=NULL, int baud=-1);
-		int getBaud()
-			{ return baudRate; }
-		char* getPort()
-			{ return serialPortDevice; }
+
+		int getBaud() { return baudRate; }
+		char* getPort() { return serialPortDevice; }
 
 		int send(const char * command, int len=-1);
 		char * receive();
@@ -55,6 +54,8 @@ class MbsBot
 
 		int setLeftWheelCenter(int val);
 		int setRightWheelCenter(int val);
+
+		int drive(int lw, int rw);
 
 	private:
 		SerialPort serialPort;

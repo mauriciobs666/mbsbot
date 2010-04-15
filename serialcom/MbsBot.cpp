@@ -106,3 +106,10 @@ int MbsBot::setRightWheelCenter(int val)
 	snprintf(cmd, 20, "set rc %d\n", val);
 	return send(cmd);
 }
+
+int MbsBot::drive(int lw, int rw)
+{
+	char cmd[20];
+	snprintf(cmd, 20, "drv %d %d\n", lw, rw);
+	return send(cmd);
+}
