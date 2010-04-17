@@ -138,7 +138,7 @@ public:
 	void init(int pin, short centerAng=1500, bool reverseDirection=false)
 	{
 		servo.attach(pin);
-		setCenter(center);
+		setCenter(centerAng);
 		setReverse(reverseDirection);
 		stop();
 	}
