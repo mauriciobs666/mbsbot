@@ -164,9 +164,7 @@
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
 											<object class="wxSlider" name="ID_SLIDER1" variable="Slider1" member="yes">
-												<value>1500</value>
-												<min>1000</min>
-												<max>2000</max>
+												<min>-100</min>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSlider1CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
@@ -177,7 +175,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL3" variable="TextCtrl1" member="yes">
-												<value>1500</value>
+												<value>0</value>
 												<size>80,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 												<handler function="OnTextCtrl1TextEnter" entry="EVT_TEXT_ENTER" />
@@ -196,9 +194,7 @@
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
 											<object class="wxSlider" name="ID_SLIDER2" variable="Slider2" member="yes">
-												<value>1500</value>
-												<min>1000</min>
-												<max>2000</max>
+												<min>-100</min>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSlider2CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
@@ -209,7 +205,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL4" variable="TextCtrl2" member="yes">
-												<value>1500</value>
+												<value>0</value>
 												<size>80,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 												<handler function="OnTextCtrl2TextEnter" entry="EVT_TEXT_ENTER" />

@@ -35,12 +35,14 @@ class MbsBot
 			return instance;
 		}
 
-		MbsBot()
-			{}
+		MbsBot();
 		virtual ~MbsBot()
 			{}
 
 		int init(const char *port=NULL, int baud=-1);
+
+		int saveLocalConfig(const char *filename="./mbsbot.cfg");
+		int loadLocalConfig(const char *filename="./mbsbot.cfg");
 
 		int getBaud() { return baudRate; }
 		char* getPort() { return serialPortDevice; }

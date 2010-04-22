@@ -20,22 +20,81 @@
 
 MbsBot *MbsBot::instance = 0;
 
+MbsBot::MbsBot()
+{
+	memset(serialPortDevice, 0, sizeof(serialPortDevice));
+}
+
 int MbsBot::init(const char *port, int baud)
 {
+	loadLocalConfig();
+
+	printf("serialPortDevice from file = %s\n", serialPortDevice);
+
 	if(port == NULL)
 	{
-		#ifdef __WXMSW__
-			strcpy(serialPortDevice,"COM1");
-		#else
-			strcpy(serialPortDevice,"/dev/ttyUSB0");
-		#endif
+		if(strcmp(serialPortDevice, "") == 0)
+		{
+			// use predefined value
+			#ifdef __WXMSW__
+				strcpy(serialPortDevice,"COM1");
+			#else
+				strcpy(serialPortDevice,"/dev/ttyUSB0");
+			#endif
+		}
 	}
 	else
-		strcpy(serialPortDevice,port);
+		strcpy(serialPortDevice, port);
 
-	baudRate = (baud == -1) ? 115200 : baud;
+	if (baud == -1)
+	{
+		if ( baudRate == -1)
+			baudRate = 115200;
+	}
+	else
+		baudRate = baud;
 
-	return serialPort.init( serialPortDevice, baudRate );
+	int rc = serialPort.init( serialPortDevice, baudRate );
+
+	if( rc == 0) // connected, no error
+		saveLocalConfig();
+
+	return rc;
+}
+
+int MbsBot::saveLocalConfig(const char *filename)
+{
+	FILE *hnd = fopen(filename,"w");
+	if(hnd)
+	{
+		fprintf(hnd,"DEVICE %s\n", serialPortDevice);
+		fprintf(hnd,"BAUD %d\n", baudRate);
+		fclose(hnd);
+		return 0;
+	}
+	return -1;
+}
+
+int MbsBot::loadLocalConfig(const char *filename)
+{
+	FILE *hnd = fopen(filename,"r");
+	if(hnd)
+	{
+		char currentLine[100];
+		while(fgets(currentLine, sizeof(currentLine),hnd))
+		{
+			printf("fgets() = %s\n", currentLine);
+
+			char *tok = strtok(currentLine, " =");
+			if(tok && strcmp(tok, "DEVICE") == 0 )
+				strcpy(serialPortDevice, strtok(NULL," \n"));
+			else if(tok && strcmp(tok, "BAUD") == 0)
+				baudRate = atoi(strtok(NULL," "));
+		}
+		fclose(hnd);
+		return 0;
+	}
+	return -1;
 }
 
 int MbsBot::send(const char * command, int len)
