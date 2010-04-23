@@ -132,6 +132,8 @@ protected:
 	short center;
 };
 
+#ifndef WHEEL_DC
+
 class WheelServo : public Wheel
 {
 public:
@@ -156,11 +158,9 @@ public:
 	}
 private:
 	Servo servo;
-};
+} leftWheel, rightWheel;
 
-#ifndef WHEEL_DC
-WheelServo leftWheel, rightWheel;
-#endif
+#else
 
 class WheelDC : public Wheel
 {
@@ -169,9 +169,11 @@ public:
 	{
 		pwm = PWMpin;
 		pinMode(pwm, OUTPUT);
+		analogWrite(pwm, 0);
 
 		dir = DIRpin;
 		pinMode(dir, OUTPUT);
+		digitalWrite(dir, 0);
 
 		setCenter(0);
 		setReverse(reverseDirection);
@@ -180,7 +182,7 @@ public:
 
 	virtual void move(char percent)
 	{
-		current = reverse ? (center - percent) : (center + percent);
+		current = reverse ? ( center - (percent*5)/2 ) : ( center + (percent*5)/2 );
 		refresh();
 	}
 
@@ -196,10 +198,8 @@ public:
 private:
 	int pwm;
 	int dir;
-};
+} leftWheel, rightWheel;
 
-#ifdef WHEEL_DC
-WheelDC leftWheel, rightWheel;
 #endif
 
 class Drive
@@ -722,6 +722,8 @@ void setup()
 #else
 	leftWheel.init(9,12);
 	rightWheel.init(10,11);
+
+	rangeFinder.servo.attach(13);
 #endif
 
     drive.leftWheel = &leftWheel;

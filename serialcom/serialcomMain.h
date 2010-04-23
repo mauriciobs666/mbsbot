@@ -137,7 +137,10 @@ class serialcomFrame: public wxFrame
         wxPanel* Panel4;
         wxButton* Button1;
         wxButton* Button14;
+        wxButton* ButtonForward;
         wxSlider* Slider3;
+        wxTextCtrl* TextCtrlDrive;
+        wxButton* ButtonBackward;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
         wxStaticText* StaticText3;
@@ -145,26 +148,23 @@ class serialcomFrame: public wxFrame
         wxButton* Button2;
         wxPanel* Panel6;
         wxPanel* Panel3;
+        wxButton* ButtonRight;
         wxButton* Button6;
-        wxButton* Button10;
         wxButton* Button11;
         wxButton* Button5;
         wxButton* Button3;
         wxButton* Button7;
         wxStatusBar* StatusBar1;
-        wxButton* Button9;
         wxTextCtrl* TextCtrl2;
         wxButton* ButtonJoystickEn;
         wxTextCtrl* TextCtrl1;
+        wxButton* ButtonLeft;
         wxPanel* Panel2;
-        wxTextCtrl* TextCtrl5;
-        wxButton* Button13;
         wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
         wxChoice* Choice1;
         wxButton* Button8;
         wxTimer Timer1;
-        wxButton* Button12;
         wxTextCtrl* SendCommandText;
         //*)
 

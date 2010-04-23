@@ -406,7 +406,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxButton" name="ID_BUTTON9" variable="Button9" member="yes">
+													<object class="wxButton" name="ID_BUTTON9" variable="ButtonForward" member="yes">
 														<label>W</label>
 														<size>29,29</size>
 														<handler function="OnButton9Click" entry="EVT_BUTTON" />
@@ -421,7 +421,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxButton" name="ID_BUTTON10" variable="Button10" member="yes">
+													<object class="wxButton" name="ID_BUTTON10" variable="ButtonLeft" member="yes">
 														<label>A</label>
 														<size>29,29</size>
 													</object>
@@ -430,7 +430,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxButton" name="ID_BUTTON13" variable="Button13" member="yes">
+													<object class="wxButton" name="ID_BUTTON13" variable="ButtonBackward" member="yes">
 														<label>S</label>
 														<size>29,29</size>
 													</object>
@@ -439,7 +439,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxButton" name="ID_BUTTON12" variable="Button12" member="yes">
+													<object class="wxButton" name="ID_BUTTON12" variable="ButtonRight" member="yes">
 														<label>D</label>
 														<size>29,29</size>
 													</object>
@@ -453,7 +453,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL7" variable="TextCtrl5" member="yes">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL7" variable="TextCtrlDrive" member="yes">
 														<size>29,29</size>
 														<handler function="OnDriveByKeyboard" entry="EVT_TEXT" />
 													</object>
@@ -532,7 +532,7 @@
 			<styles>wxSB_NORMAL</styles>
 		</object>
 		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes">
-			<interval>100</interval>
+			<interval>50</interval>
 			<handler function="OnTimer1Trigger" entry="EVT_TIMER" />
 		</object>
 	</object>

@@ -169,6 +169,20 @@ int MbsBot::setRightWheelCenter(int val)
 int MbsBot::drive(int lw, int rw)
 {
 	char cmd[20];
-	snprintf(cmd, 20, "drv %d %d\n", lw, rw);
-	return send(cmd);
+	int rc=0;
+
+	// optimization: remember last values and only send command if changed
+
+	static int lastL = 0;
+	static int lastR = 0;
+
+	if ((lw != lastL) || (rw != lastR))
+	{
+		lastL = lw;
+		lastR = rw;
+
+		snprintf(cmd, 20, "drv %d %d\n", lw, rw);
+		rc = send(cmd);
+	}
+	return rc;
 }
