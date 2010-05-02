@@ -65,7 +65,6 @@ class serialcomFrame: public wxFrame
 		void OnButton1Click(wxCommandEvent& event);
 		void OnButton2Click(wxCommandEvent& event);
 		void OnButton3Click(wxCommandEvent& event);
-		void OnNotebook1PageChanged(wxNotebookEvent& event);
 		void OnButton4Click(wxCommandEvent& event);
 		void OnButton5Click(wxCommandEvent& event);
 		void OnButton6Click(wxCommandEvent& event);
@@ -76,7 +75,6 @@ class serialcomFrame: public wxFrame
 		void OnButton11Click(wxCommandEvent& event);
 		void OnButton14Click(wxCommandEvent& event);
 		void OnButton15Click(wxCommandEvent& event);
-		void OnButton9Click(wxCommandEvent& event);
 		void OnDriveByKeyboard(wxCommandEvent& event);
 		void OnButton15Click1(wxCommandEvent& event);
 		void OnDriveTimerTrigger(wxTimerEvent& event);
@@ -91,6 +89,7 @@ class serialcomFrame: public wxFrame
         static const long ID_CHOICE1;
         static const long ID_BUTTON14;
         static const long ID_BUTTON11;
+        static const long ID_BUTTON9;
         static const long ID_PANEL6;
         static const long ID_BUTTON6;
         static const long ID_BUTTON7;
@@ -110,10 +109,6 @@ class serialcomFrame: public wxFrame
         static const long ID_BUTTON4;
         static const long ID_BUTTON5;
         static const long ID_PANEL4;
-        static const long ID_BUTTON9;
-        static const long ID_BUTTON10;
-        static const long ID_BUTTON13;
-        static const long ID_BUTTON12;
         static const long ID_TEXTCTRL7;
         static const long ID_BUTTON15;
         static const long ID_STATICTEXT3;
@@ -137,10 +132,8 @@ class serialcomFrame: public wxFrame
         wxPanel* Panel4;
         wxButton* Button1;
         wxButton* Button14;
-        wxButton* ButtonForward;
         wxSlider* Slider3;
         wxTextCtrl* TextCtrlDrive;
-        wxButton* ButtonBackward;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
         wxStaticText* StaticText3;
@@ -148,17 +141,16 @@ class serialcomFrame: public wxFrame
         wxButton* Button2;
         wxPanel* Panel6;
         wxPanel* Panel3;
-        wxButton* ButtonRight;
         wxButton* Button6;
         wxButton* Button11;
         wxButton* Button5;
         wxButton* Button3;
         wxButton* Button7;
         wxStatusBar* StatusBar1;
+        wxButton* Button9;
         wxTextCtrl* TextCtrl2;
         wxButton* ButtonJoystickEn;
         wxTextCtrl* TextCtrl1;
-        wxButton* ButtonLeft;
         wxPanel* Panel2;
         wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
