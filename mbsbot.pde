@@ -723,8 +723,9 @@ void setup()
 	leftWheel.init(9,12);
 	rightWheel.init(10,11);
 
-	rangeFinder.servo.attach(13);
+	rangeFinder.servo.attach(8);
 #endif
+	rangeFinder.servo.write(90);
 
     drive.leftWheel = &leftWheel;
     drive.rightWheel = &rightWheel;
