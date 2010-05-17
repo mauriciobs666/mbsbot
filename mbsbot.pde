@@ -42,7 +42,9 @@
 #define FIRST_IR_SENSOR_INDEX 0
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
 
-#define WHEEL_DC 1
+// Wheels conected to a Servo or a DC motor? Pick one:
+//#define WHEEL_DC 1 // DC motor through 754410 driver
+#undef WHEEL_DC // servo
 
 /******************************************************************************
  *	EEPROM - PERSISTENT CONFIGURATION
