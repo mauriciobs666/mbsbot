@@ -78,6 +78,8 @@ class serialcomFrame: public wxFrame
 		void OnDriveByKeyboard(wxCommandEvent& event);
 		void OnButton15Click1(wxCommandEvent& event);
 		void OnDriveTimerTrigger(wxTimerEvent& event);
+		void OnChoiceDCServo(wxCommandEvent& event);
+		void OnChoiceProgram(wxCommandEvent& event);
 		//*)
 
         //(*Identifiers(serialcomFrame)
@@ -91,6 +93,7 @@ class serialcomFrame: public wxFrame
         static const long ID_BUTTON11;
         static const long ID_BUTTON9;
         static const long ID_PANEL6;
+        static const long ID_CHOICE3;
         static const long ID_BUTTON6;
         static const long ID_BUTTON7;
         static const long ID_BUTTON8;
@@ -104,6 +107,7 @@ class serialcomFrame: public wxFrame
         static const long ID_BUTTON2;
         static const long ID_BUTTON1;
         static const long ID_BUTTON3;
+        static const long ID_CHOICE2;
         static const long ID_PANEL2;
         static const long ID_GRID1;
         static const long ID_BUTTON4;
@@ -114,7 +118,7 @@ class serialcomFrame: public wxFrame
         static const long ID_STATICTEXT3;
         static const long ID_STATICTEXT4;
         static const long ID_PANEL5;
-        static const long ID_NOTEBOOK1;
+        static const long ID_NOTEBOOK2;
         static const long ID_TEXTCTRL1;
         static const long ID_STATUSBAR1;
         static const long ID_TIMER1;
@@ -130,6 +134,7 @@ class serialcomFrame: public wxFrame
         wxNotebook* Notebook1;
         wxStaticText* StaticText2;
         wxPanel* Panel4;
+        wxChoice* Choice3;
         wxButton* Button1;
         wxButton* Button14;
         wxSlider* Slider3;
@@ -155,6 +160,7 @@ class serialcomFrame: public wxFrame
         wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
         wxChoice* Choice1;
+        wxChoice* Choice2;
         wxButton* Button8;
         wxTimer Timer1;
         wxTextCtrl* SendCommandText;

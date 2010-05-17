@@ -40,8 +40,11 @@
 			<Add library="mbsutil" />
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
+		<Unit filename="../commands.txt" />
+		<Unit filename="../mbsbot.pde" />
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
+		<Unit filename="Protocol.h" />
 		<Unit filename="serialcomApp.cpp" />
 		<Unit filename="serialcomApp.h" />
 		<Unit filename="serialcomMain.cpp" />

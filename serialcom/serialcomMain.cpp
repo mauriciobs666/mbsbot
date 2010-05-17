@@ -39,6 +39,7 @@ const long serialcomFrame::ID_BUTTON14 = wxNewId();
 const long serialcomFrame::ID_BUTTON11 = wxNewId();
 const long serialcomFrame::ID_BUTTON9 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
+const long serialcomFrame::ID_CHOICE3 = wxNewId();
 const long serialcomFrame::ID_BUTTON6 = wxNewId();
 const long serialcomFrame::ID_BUTTON7 = wxNewId();
 const long serialcomFrame::ID_BUTTON8 = wxNewId();
@@ -52,6 +53,7 @@ const long serialcomFrame::ID_TEXTCTRL5 = wxNewId();
 const long serialcomFrame::ID_BUTTON2 = wxNewId();
 const long serialcomFrame::ID_BUTTON1 = wxNewId();
 const long serialcomFrame::ID_BUTTON3 = wxNewId();
+const long serialcomFrame::ID_CHOICE2 = wxNewId();
 const long serialcomFrame::ID_PANEL2 = wxNewId();
 const long serialcomFrame::ID_GRID1 = wxNewId();
 const long serialcomFrame::ID_BUTTON4 = wxNewId();
@@ -62,7 +64,7 @@ const long serialcomFrame::ID_BUTTON15 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_PANEL5 = wxNewId();
-const long serialcomFrame::ID_NOTEBOOK1 = wxNewId();
+const long serialcomFrame::ID_NOTEBOOK2 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
 const long serialcomFrame::ID_STATUSBAR1 = wxNewId();
 const long serialcomFrame::ID_TIMER1 = wxNewId();
@@ -102,10 +104,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Create(parent, wxID_ANY, _("MBSBOT"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     SetClientSize(wxSize(640,480));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
-    Notebook1 = new wxNotebook(this, ID_NOTEBOOK1, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK1"));
+    Notebook1 = new wxNotebook(this, ID_NOTEBOOK2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK2"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
-    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, _("\nCopyright (C) 2010 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n"), wxDefaultPosition, wxSize(645,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
+    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, _("\nCopyright (C) 2010 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n\nSerial command reference:\n\nget [variable]\n\tl\t-\tleft wheel servo\n\tlc\t-\tleft wheel servo center pulse duration (in ms)\n\tr\t-\tright wheel servo\n\trc\t-\tright wheel servo center pulse duration (in ms)\n\tp\t-\tcurrent program\n\tdi\t-\tdrive.inch() delay configuration\n\tdrf\t-\trange finder between readings delay (servo movement)\n\tas\t-\tall analog sensors\n\tsx\t-\tservo \"X\"\n\nprograms available:\n\t0\t-\tRemote control\n\t1\t-\tRemote control with sensor monitoring\n\t2\t-\tPhotovore\n\t3\t-\tLine Follower\n\t4\t-\tSharp IR ranger test\n\nset\t[variable] [value]\n\tvariable\t-\tsame used for \'get\'\n\tvalue\t\t-\tint\n\t\nsave\n\tsave to eeprom\n\nload\n\tdiscard changes and reload from eeprom\n\ncal\n\tline-follower auto calibration\n\ndefault\n\tload default hard-coded values into RAM\n\t\ninch\n\tmove forward one inch\n\nstop\n\tstop wheels\n"), wxDefaultPosition, wxSize(645,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
     BoxSizer2->Add(Log, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     Panel1->SetSizer(BoxSizer2);
     BoxSizer2->Fit(Panel1);
@@ -145,6 +147,13 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Panel3 = new wxPanel(Notebook1, ID_PANEL3, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL3"));
     FlexGridSizer3 = new wxFlexGridSizer(0, 3, 0, 0);
     StaticBoxSizer12 = new wxStaticBoxSizer(wxHORIZONTAL, Panel3, _("Variables"));
+    Choice3 = new wxChoice(Panel3, ID_CHOICE3, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE3"));
+    Choice3->Append(_("PRG_RC"));
+    Choice3->Append(_("PRG_SHOW_SENSORS"));
+    Choice3->Append(_("PRG_PHOTOVORE"));
+    Choice3->Append(_("PRG_LINEFOLLOWER"));
+    Choice3->Append(_("PRG_SHARP"));
+    StaticBoxSizer12->Add(Choice3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(StaticBoxSizer12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer6 = new wxStaticBoxSizer(wxVERTICAL, Panel3, _("Controls"));
     Button6 = new wxButton(Panel3, ID_BUTTON6, _("Save"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON6"));
@@ -181,9 +190,13 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
     StaticBoxSizer3->Add(Button2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button1 = new wxButton(Panel2, ID_BUTTON1, _("Set as center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
-    StaticBoxSizer3->Add(Button1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer3->Add(Button1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button3 = new wxButton(Panel2, ID_BUTTON3, _("Center / Stop"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
     StaticBoxSizer3->Add(Button3, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Choice2 = new wxChoice(Panel2, ID_CHOICE2, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE2"));
+    Choice2->Append(_("Servo Wheel"));
+    Choice2->Append(_("DC Wheel"));
+    StaticBoxSizer3->Add(Choice2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer3, 0, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel2->SetSizer(FlexGridSizer1);
     FlexGridSizer1->Fit(Panel2);
@@ -198,8 +211,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Grid1->SetColLabelValue(0, _("Now"));
     Grid1->SetColLabelValue(1, _("Min"));
     Grid1->SetColLabelValue(2, _("Max"));
-    Grid1->SetColLabelValue(3, _("Avg"));
-    Grid1->SetColLabelValue(4, _("X"));
+    Grid1->SetColLabelValue(3, _("Avg/10"));
+    Grid1->SetColLabelValue(4, _("tbd"));
     Grid1->SetRowLabelValue(0, _("0"));
     Grid1->SetRowLabelValue(1, _("1"));
     Grid1->SetRowLabelValue(2, _("2"));
@@ -290,6 +303,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
+    Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceProgram);
     Connect(ID_BUTTON6,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton6Click);
     Connect(ID_BUTTON7,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton7Click);
     Connect(ID_BUTTON8,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton8Click);
@@ -302,6 +316,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton2Click);
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton1Click);
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton3Click);
+    Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceDCServo);
     Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton4Click);
     Connect(ID_BUTTON5,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton5Click);
     Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnDriveByKeyboard);
@@ -474,6 +489,7 @@ void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
 
 void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
+	wxMessageBox(_("r u sure?"), _("OVERWRITE"));
 	MbsBot::getInstance()->setLeftWheelCenter(Slider1->GetValue());
 	MbsBot::getInstance()->setRightWheelCenter(Slider2->GetValue());
 }
@@ -707,4 +723,30 @@ void serialcomFrame::OnButton15Click1(wxCommandEvent& event)
         joystick = NULL;
         ButtonJoystickEn->SetLabel(_("Enable"));
     }
+}
+
+void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
+{
+
+	if( Choice2->GetCurrentSelection() == 0 )
+	{
+		// Wheel Servo
+		Slider1->SetRange(1000,2000);
+		Slider2->SetRange(1000,2000);
+	}
+	else if ( Choice2->GetCurrentSelection() == 1 )
+	{
+		// Wheel DC
+		Slider1->SetRange(-100,100);
+		Slider2->SetRange(-100,100);
+	}
+	else
+	MbsBot::getInstance()->send("get l\n");
+	MbsBot::getInstance()->send("get r\n");
+	MbsBot::getInstance()->send("get sx\n");
+}
+
+void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
+{
+	MbsBot::getInstance()->setProgram((enum ProgramID)(Choice3->GetCurrentSelection()));
 }

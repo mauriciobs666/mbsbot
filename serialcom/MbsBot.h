@@ -20,6 +20,7 @@
 #define MBSBOT_H
 
 #include <MBSUtil.h>
+#include "Protocol.h"
 
 #define SERIAL_BUFFER_SIZE 100
 #define COMMAND_END '\n'
@@ -59,6 +60,7 @@ class MbsBot
 
 		int drive(int lw, int rw);
 
+		int setProgram(enum ProgramID);
 	private:
 		SerialPort serialPort;
 		char serialPortDevice[100];

@@ -84,7 +84,7 @@ public:
 	}
 	void loadDefault()
 	{
-		data.selectedProgram = 1;
+		data.selectedProgram = PRG_RC;
 		data.leftWheelCenter = 1410;
 		data.rightWheelCenter = 1384;
 		data.inch = 200;
@@ -747,7 +747,7 @@ void loop()
 	switch(eeprom.data.selectedProgram)
 	{
 		case PRG_SHOW_SENSORS:
-			delay(500);
+			delay(100);
 			displayAnalogSensors();
 		case PRG_RC:
 			drive.refresh();

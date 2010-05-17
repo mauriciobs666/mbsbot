@@ -186,3 +186,11 @@ int MbsBot::drive(int lw, int rw)
 	}
 	return rc;
 }
+
+int MbsBot::setProgram(enum ProgramID prg)
+{
+	char cmd[20];
+//	int val=
+	snprintf(cmd, 20, "set p %d\n", prg);
+	return send(cmd);
+}

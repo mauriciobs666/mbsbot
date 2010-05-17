@@ -7,14 +7,13 @@
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
 			<orient>wxVERTICAL</orient>
 			<object class="sizeritem">
-				<object class="wxNotebook" name="ID_NOTEBOOK1" variable="Notebook1" member="yes">
-					<handler function="OnNotebook1PageChanged" entry="EVT_NOTEBOOK_PAGE_CHANGED" />
+				<object class="wxNotebook" name="ID_NOTEBOOK2" variable="Notebook1" member="yes">
 					<object class="notebookpage">
 						<object class="wxPanel" name="ID_PANEL1" variable="Panel1" member="yes">
 							<object class="wxBoxSizer" variable="BoxSizer2" member="no">
 								<object class="sizeritem">
 									<object class="wxTextCtrl" name="ID_TEXTCTRL2" variable="Log" member="yes">
-										<value>&#x0A;Copyright (C) 2010 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</value>
+										<value>&#x0A;Copyright (C) 2010 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;&#x0A;Serial command reference:&#x0A;&#x0A;get [variable]&#x0A;&#x09;l&#x09;-&#x09;left wheel servo&#x0A;&#x09;lc&#x09;-&#x09;left wheel servo center pulse duration (in ms)&#x0A;&#x09;r&#x09;-&#x09;right wheel servo&#x0A;&#x09;rc&#x09;-&#x09;right wheel servo center pulse duration (in ms)&#x0A;&#x09;p&#x09;-&#x09;current program&#x0A;&#x09;di&#x09;-&#x09;drive.inch() delay configuration&#x0A;&#x09;drf&#x09;-&#x09;range finder between readings delay (servo movement)&#x0A;&#x09;as&#x09;-&#x09;all analog sensors&#x0A;&#x09;sx&#x09;-&#x09;servo &quot;X&quot;&#x0A;&#x0A;programs available:&#x0A;&#x09;0&#x09;-&#x09;Remote control&#x0A;&#x09;1&#x09;-&#x09;Remote control with sensor monitoring&#x0A;&#x09;2&#x09;-&#x09;Photovore&#x0A;&#x09;3&#x09;-&#x09;Line Follower&#x0A;&#x09;4&#x09;-&#x09;Sharp IR ranger test&#x0A;&#x0A;set&#x09;[variable] [value]&#x0A;&#x09;variable&#x09;-&#x09;same used for &apos;get&apos;&#x0A;&#x09;value&#x09;&#x09;-&#x09;int&#x0A;&#x09;&#x0A;save&#x0A;&#x09;save to eeprom&#x0A;&#x0A;load&#x0A;&#x09;discard changes and reload from eeprom&#x0A;&#x0A;cal&#x0A;&#x09;line-follower auto calibration&#x0A;&#x0A;default&#x0A;&#x09;load default hard-coded values into RAM&#x0A;&#x09;&#x0A;inch&#x0A;&#x09;move forward one inch&#x0A;&#x0A;stop&#x0A;&#x09;stop wheels&#x0A;</value>
 										<size>645,275</size>
 										<style>wxTE_MULTILINE</style>
 									</object>
@@ -140,6 +139,21 @@
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer12" member="no">
 										<label>Variables</label>
+										<object class="sizeritem">
+											<object class="wxChoice" name="ID_CHOICE3" variable="Choice3" member="yes">
+												<content>
+													<item>PRG_RC</item>
+													<item>PRG_SHOW_SENSORS</item>
+													<item>PRG_PHOTOVORE</item>
+													<item>PRG_LINEFOLLOWER</item>
+													<item>PRG_SHARP</item>
+												</content>
+												<handler function="OnChoiceProgram" entry="EVT_CHOICE" />
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
 									</object>
 									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
@@ -299,7 +313,7 @@
 												<label>Set as center</label>
 												<handler function="OnButton1Click" entry="EVT_BUTTON" />
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -309,6 +323,18 @@
 												<handler function="OnButton3Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxChoice" name="ID_CHOICE2" variable="Choice2" member="yes">
+												<content>
+													<item>Servo Wheel</item>
+													<item>DC Wheel</item>
+												</content>
+												<handler function="OnChoiceDCServo" entry="EVT_CHOICE" />
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -336,8 +362,8 @@
 													<item>Now</item>
 													<item>Min</item>
 													<item>Max</item>
-													<item>Avg</item>
-													<item>X</item>
+													<item>Avg/10</item>
+													<item>tbd</item>
 												</collabels>
 												<rowlabels>
 													<item>0</item>
