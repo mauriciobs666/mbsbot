@@ -24,6 +24,7 @@
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
+#include <wx/checkbox.h>
 #include <wx/slider.h>
 #include <wx/panel.h>
 #include <wx/grid.h>
@@ -80,6 +81,7 @@ class serialcomFrame: public wxFrame
 		void OnDriveTimerTrigger(wxTimerEvent& event);
 		void OnChoiceDCServo(wxCommandEvent& event);
 		void OnChoiceProgram(wxCommandEvent& event);
+		void OnCheckBoxJoystick(wxCommandEvent& event);
 		//*)
 
         //(*Identifiers(serialcomFrame)
@@ -102,21 +104,19 @@ class serialcomFrame: public wxFrame
         static const long ID_TEXTCTRL3;
         static const long ID_SLIDER2;
         static const long ID_TEXTCTRL4;
-        static const long ID_SLIDER3;
-        static const long ID_TEXTCTRL5;
         static const long ID_BUTTON2;
         static const long ID_BUTTON1;
         static const long ID_BUTTON3;
         static const long ID_CHOICE2;
+        static const long ID_CHECKBOX1;
+        static const long ID_SLIDER3;
+        static const long ID_TEXTCTRL5;
         static const long ID_PANEL2;
         static const long ID_GRID1;
         static const long ID_BUTTON4;
         static const long ID_BUTTON5;
         static const long ID_PANEL4;
-        static const long ID_TEXTCTRL7;
-        static const long ID_BUTTON15;
         static const long ID_STATICTEXT3;
-        static const long ID_STATICTEXT4;
         static const long ID_PANEL5;
         static const long ID_NOTEBOOK2;
         static const long ID_TEXTCTRL1;
@@ -132,13 +132,13 @@ class serialcomFrame: public wxFrame
         wxButton* Button4;
         wxSlider* Slider2;
         wxNotebook* Notebook1;
+        wxCheckBox* CheckBoxJoystick;
         wxStaticText* StaticText2;
         wxPanel* Panel4;
         wxChoice* Choice3;
         wxButton* Button1;
         wxButton* Button14;
         wxSlider* Slider3;
-        wxTextCtrl* TextCtrlDrive;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
         wxStaticText* StaticText3;
@@ -154,10 +154,8 @@ class serialcomFrame: public wxFrame
         wxStatusBar* StatusBar1;
         wxButton* Button9;
         wxTextCtrl* TextCtrl2;
-        wxButton* ButtonJoystickEn;
         wxTextCtrl* TextCtrl1;
         wxPanel* Panel2;
-        wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
         wxChoice* Choice1;
         wxChoice* Choice2;

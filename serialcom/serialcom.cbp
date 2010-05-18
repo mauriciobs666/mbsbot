@@ -84,12 +84,12 @@
 			<Add library="libwsock32.a" />
 			<Add library="libodbc32.a" />
 			<Add library="mbsutil" />
+			<Add library="libwinmm.a" />
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
-		<Unit filename="Preferences.cpp" />
-		<Unit filename="Preferences.h" />
+		<Unit filename="Protocol.h" />
 		<Unit filename="resource.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>

@@ -48,21 +48,19 @@ const long serialcomFrame::ID_SLIDER1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL3 = wxNewId();
 const long serialcomFrame::ID_SLIDER2 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL4 = wxNewId();
-const long serialcomFrame::ID_SLIDER3 = wxNewId();
-const long serialcomFrame::ID_TEXTCTRL5 = wxNewId();
 const long serialcomFrame::ID_BUTTON2 = wxNewId();
 const long serialcomFrame::ID_BUTTON1 = wxNewId();
 const long serialcomFrame::ID_BUTTON3 = wxNewId();
 const long serialcomFrame::ID_CHOICE2 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX1 = wxNewId();
+const long serialcomFrame::ID_SLIDER3 = wxNewId();
+const long serialcomFrame::ID_TEXTCTRL5 = wxNewId();
 const long serialcomFrame::ID_PANEL2 = wxNewId();
 const long serialcomFrame::ID_GRID1 = wxNewId();
 const long serialcomFrame::ID_BUTTON4 = wxNewId();
 const long serialcomFrame::ID_BUTTON5 = wxNewId();
 const long serialcomFrame::ID_PANEL4 = wxNewId();
-const long serialcomFrame::ID_TEXTCTRL7 = wxNewId();
-const long serialcomFrame::ID_BUTTON15 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_PANEL5 = wxNewId();
 const long serialcomFrame::ID_NOTEBOOK2 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL1 = wxNewId();
@@ -85,16 +83,13 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer3;
     wxFlexGridSizer* FlexGridSizer5;
     wxFlexGridSizer* FlexGridSizer2;
-    wxStaticBoxSizer* StaticBoxSizer9;
     wxBoxSizer* BoxSizer2;
     wxFlexGridSizer* FlexGridSizer7;
     wxStaticBoxSizer* StaticBoxSizer7;
     wxStaticBoxSizer* StaticBoxSizer13;
-    wxStaticBoxSizer* StaticBoxSizer10;
     wxStaticBoxSizer* StaticBoxSizer8;
     wxStaticBoxSizer* StaticBoxSizer3;
     wxStaticBoxSizer* StaticBoxSizer6;
-    wxStaticBoxSizer* StaticBoxSizer11;
     wxBoxSizer* BoxSizer1;
     wxFlexGridSizer* FlexGridSizer6;
     wxStaticBoxSizer* StaticBoxSizer1;
@@ -107,7 +102,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK2"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
-    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, _("\nCopyright (C) 2010 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n\nSerial command reference:\n\nget [variable]\n\tl\t-\tleft wheel servo\n\tlc\t-\tleft wheel servo center pulse duration (in ms)\n\tr\t-\tright wheel servo\n\trc\t-\tright wheel servo center pulse duration (in ms)\n\tp\t-\tcurrent program\n\tdi\t-\tdrive.inch() delay configuration\n\tdrf\t-\trange finder between readings delay (servo movement)\n\tas\t-\tall analog sensors\n\tsx\t-\tservo \"X\"\n\nprograms available:\n\t0\t-\tRemote control\n\t1\t-\tRemote control with sensor monitoring\n\t2\t-\tPhotovore\n\t3\t-\tLine Follower\n\t4\t-\tSharp IR ranger test\n\nset\t[variable] [value]\n\tvariable\t-\tsame used for \'get\'\n\tvalue\t\t-\tint\n\t\nsave\n\tsave to eeprom\n\nload\n\tdiscard changes and reload from eeprom\n\ncal\n\tline-follower auto calibration\n\ndefault\n\tload default hard-coded values into RAM\n\t\ninch\n\tmove forward one inch\n\nstop\n\tstop wheels\n"), wxDefaultPosition, wxSize(645,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
+    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, _("\nSerial command reference:\n\nget [variable]\n\tl\t-\tleft wheel servo\n\tlc\t-\tleft wheel servo center pulse duration (in ms)\n\tr\t-\tright wheel servo\n\trc\t-\tright wheel servo center pulse duration (in ms)\n\tp\t-\tcurrent program\n\tdi\t-\tdrive.inch() delay configuration\n\tdrf\t-\trange finder between readings delay (servo movement)\n\tas\t-\tall analog sensors\n\tsx\t-\tservo \"X\"\n\nprograms available:\n\t0\t-\tRemote control\n\t1\t-\tRemote control with sensor monitoring\n\t2\t-\tPhotovore\n\t3\t-\tLine Follower\n\t4\t-\tSharp IR ranger test\n\nset\t[variable] [value]\n\tvariable\t-\tsame used for \'get\'\n\tvalue\t\t-\tint\n\t\nsave\n\tsave to eeprom\n\nload\n\tdiscard changes and reload from eeprom\n\ncal\n\tline-follower auto calibration\n\ndefault\n\tload default hard-coded values into RAM\n\t\ninch\n\tmove forward one inch\n\nstop\n\tstop wheels\n"), wxDefaultPosition, wxSize(645,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
     BoxSizer2->Add(Log, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     Panel1->SetSizer(BoxSizer2);
     BoxSizer2->Fit(Panel1);
@@ -129,7 +124,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Choice1->Append(_("57600"));
     Choice1->SetSelection( Choice1->Append(_("115200")) );
     FlexGridSizer6->Add(Choice1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button14 = new wxButton(Panel6, ID_BUTTON14, _("Discard"), wxDefaultPosition, wxSize(67,29), 0, wxDefaultValidator, _T("ID_BUTTON14"));
+    Button14 = new wxButton(Panel6, ID_BUTTON14, _("Discard"), wxDefaultPosition, wxSize(-1,-1), 0, wxDefaultValidator, _T("ID_BUTTON14"));
     FlexGridSizer6->Add(Button14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button11 = new wxButton(Panel6, ID_BUTTON11, _("Set"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON11"));
     FlexGridSizer6->Add(Button11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -180,12 +175,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     TextCtrl2 = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("0"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
     StaticBoxSizer2->Add(TextCtrl2, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Head"));
-    Slider3 = new wxSlider(Panel2, ID_SLIDER3, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
-    StaticBoxSizer7->Add(Slider3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl3 = new wxTextCtrl(Panel2, ID_TEXTCTRL5, _("90"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL5"));
-    StaticBoxSizer7->Add(TextCtrl3, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer1->Add(StaticBoxSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer3 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Controls"));
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
     StaticBoxSizer3->Add(Button2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -197,7 +186,16 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Choice2->Append(_("Servo Wheel"));
     Choice2->Append(_("DC Wheel"));
     StaticBoxSizer3->Add(Choice2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    CheckBoxJoystick = new wxCheckBox(Panel2, ID_CHECKBOX1, _("Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
+    CheckBoxJoystick->SetValue(false);
+    StaticBoxSizer3->Add(CheckBoxJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
     FlexGridSizer1->Add(StaticBoxSizer3, 0, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Head"));
+    Slider3 = new wxSlider(Panel2, ID_SLIDER3, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
+    StaticBoxSizer7->Add(Slider3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrl3 = new wxTextCtrl(Panel2, ID_TEXTCTRL5, _("90"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL5"));
+    StaticBoxSizer7->Add(TextCtrl3, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer1->Add(StaticBoxSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel2->SetSizer(FlexGridSizer1);
     FlexGridSizer1->Fit(Panel2);
     FlexGridSizer1->SetSizeHints(Panel2);
@@ -264,29 +262,17 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer2->SetSizeHints(Panel4);
     Panel5 = new wxPanel(Notebook1, ID_PANEL5, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL5"));
     FlexGridSizer4 = new wxFlexGridSizer(3, 1, 0, 0);
-    StaticBoxSizer9 = new wxStaticBoxSizer(wxHORIZONTAL, Panel5, _("Keyboard"));
-    TextCtrlDrive = new wxTextCtrl(Panel5, ID_TEXTCTRL7, wxEmptyString, wxDefaultPosition, wxSize(71,29), 0, wxDefaultValidator, _T("ID_TEXTCTRL7"));
-    StaticBoxSizer9->Add(TextCtrlDrive, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer4->Add(StaticBoxSizer9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer10 = new wxStaticBoxSizer(wxVERTICAL, Panel5, _("Joystick"));
-    ButtonJoystickEn = new wxButton(Panel5, ID_BUTTON15, _("Enable"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON15"));
-    StaticBoxSizer10->Add(ButtonJoystickEn, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer4->Add(StaticBoxSizer10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer11 = new wxStaticBoxSizer(wxHORIZONTAL, Panel5, _("Current"));
-    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("."), wxDefaultPosition, wxSize(21,17), 0, _T("ID_STATICTEXT3"));
-    StaticBoxSizer11->Add(StaticText3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText4 = new wxStaticText(Panel5, ID_STATICTEXT4, _("."), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
-    StaticBoxSizer11->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer4->Add(StaticBoxSizer11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("\nCopyright (C) 2010 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    FlexGridSizer4->Add(StaticText3, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
     Panel5->SetSizer(FlexGridSizer4);
     FlexGridSizer4->Fit(Panel5);
     FlexGridSizer4->SetSizeHints(Panel5);
     Notebook1->AddPage(Panel1, _("Log"), false);
-    Notebook1->AddPage(Panel6, _("Setup"), false);
+    Notebook1->AddPage(Panel6, _("Local Setup"), false);
     Notebook1->AddPage(Panel3, _("EEPROM"), false);
-    Notebook1->AddPage(Panel2, _("Servos"), false);
+    Notebook1->AddPage(Panel2, _("Motors"), false);
     Notebook1->AddPage(Panel4, _("Sensors"), false);
-    Notebook1->AddPage(Panel5, _("Drive"), false);
+    Notebook1->AddPage(Panel5, _("About"), false);
     BoxSizer1->Add(Notebook1, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SendCommandText = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL1"));
     BoxSizer1->Add(SendCommandText, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
@@ -311,16 +297,15 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL3,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl1TextEnter);
     Connect(ID_SLIDER2,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider2CmdSliderUpdated);
     Connect(ID_TEXTCTRL4,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl2TextEnter);
-    Connect(ID_SLIDER3,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider3CmdSliderUpdated);
-    Connect(ID_TEXTCTRL5,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl3TextEnter);
     Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton2Click);
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton1Click);
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton3Click);
     Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceDCServo);
+    Connect(ID_CHECKBOX1,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnCheckBoxJoystick);
+    Connect(ID_SLIDER3,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider3CmdSliderUpdated);
+    Connect(ID_TEXTCTRL5,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl3TextEnter);
     Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton4Click);
     Connect(ID_BUTTON5,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton5Click);
-    Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnDriveByKeyboard);
-    Connect(ID_BUTTON15,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton15Click1);
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
@@ -674,75 +659,14 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 		else if (pos.y > 0)		// backward
 			lw = rw = -100;
 
-        // debug print
-
 		Slider1->SetValue(lw);
-		Slider2->SetValue(rw);
+		TextCtrl1->SetValue(wxString::Format(wxT("%i"), lw));
 
-		StaticText3->SetLabel(wxString::Format(wxT("%i"), pos.x));
-		StaticText4->SetLabel(wxString::Format(wxT("%i"), pos.y));
+		Slider2->SetValue(rw);
+		TextCtrl2->SetValue(wxString::Format(wxT("%i"), rw));
 
 		MbsBot::getInstance()->drive(lw, rw);
 	}
-}
-
-void serialcomFrame::OnDriveByKeyboard(wxCommandEvent& event)
-{
-	char strtmp[30];
-	wxString wxstr = TextCtrlDrive->GetValue();
-	strncpy(strtmp, wxstr.mb_str(wxConvUTF8), 30);
-	int len = strlen(strtmp);
-
-	// left and right wheels in % of power
-    int lw = 0;
-    int rw = 0;
-
-	if(len > 0)
-	{
-		char cmd = strtmp[len-1];
-
-		if(cmd == 'a')		// turn left
-		{
-			lw = -100;
-			rw = 100;
-		}
-		else if(cmd == 'd')	// turn right
-		{
-			lw = 100;
-			rw = -100;
-		}
-		else if (cmd == 'w')	// go forward
-			lw = rw = 100;
-		else if (cmd == 's')	// go back
-			lw = rw = -100;
-
-		TextCtrlDrive->Clear();
-	}
-
-    MbsBot::getInstance()->drive(lw, rw);
-
-    // debug print
-    StaticText3->SetLabel(wxString::Format(wxT("%i"), lw));
-    StaticText4->SetLabel(wxString::Format(wxT("%i"), rw));
-}
-
-void serialcomFrame::OnButton15Click1(wxCommandEvent& event)
-{
-    if ( joystick == NULL)
-    {
-        if(wxJoystick::GetNumberJoysticks() > 0)
-        {
-            joystick = new wxJoystick(wxJOYSTICK1);
-            if(joystick)
-                ButtonJoystickEn->SetLabel(_("Disable"));
-        }
-    }
-    else
-    {
-        delete joystick;
-        joystick = NULL;
-        ButtonJoystickEn->SetLabel(_("Enable"));
-    }
 }
 
 void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
@@ -760,7 +684,6 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 		Slider1->SetRange(-100,100);
 		Slider2->SetRange(-100,100);
 	}
-	else
 	MbsBot::getInstance()->send("get l\n");
 	MbsBot::getInstance()->send("get r\n");
 	MbsBot::getInstance()->send("get sx\n");
@@ -769,4 +692,27 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 {
 	MbsBot::getInstance()->setProgram((enum ProgramID)(Choice3->GetCurrentSelection()));
+}
+
+void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
+{
+	if(CheckBoxJoystick->IsChecked())
+	{
+		if ( joystick == NULL)
+			if(wxJoystick::GetNumberJoysticks() > 0)
+				joystick = new wxJoystick(wxJOYSTICK1);
+		if ( joystick == NULL)	// error or no joystick found
+		{
+			CheckBoxJoystick->SetValue(false);
+			StatusBar1->SetStatusText(_("Error opening Joystick 1"));
+		}
+	}
+    else
+    {
+    	if ( joystick != NULL)
+    	{
+			delete joystick;
+			joystick = NULL;
+    	}
+    }
 }

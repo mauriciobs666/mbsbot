@@ -13,7 +13,7 @@
 							<object class="wxBoxSizer" variable="BoxSizer2" member="no">
 								<object class="sizeritem">
 									<object class="wxTextCtrl" name="ID_TEXTCTRL2" variable="Log" member="yes">
-										<value>&#x0A;Copyright (C) 2010 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;&#x0A;Serial command reference:&#x0A;&#x0A;get [variable]&#x0A;&#x09;l&#x09;-&#x09;left wheel servo&#x0A;&#x09;lc&#x09;-&#x09;left wheel servo center pulse duration (in ms)&#x0A;&#x09;r&#x09;-&#x09;right wheel servo&#x0A;&#x09;rc&#x09;-&#x09;right wheel servo center pulse duration (in ms)&#x0A;&#x09;p&#x09;-&#x09;current program&#x0A;&#x09;di&#x09;-&#x09;drive.inch() delay configuration&#x0A;&#x09;drf&#x09;-&#x09;range finder between readings delay (servo movement)&#x0A;&#x09;as&#x09;-&#x09;all analog sensors&#x0A;&#x09;sx&#x09;-&#x09;servo &quot;X&quot;&#x0A;&#x0A;programs available:&#x0A;&#x09;0&#x09;-&#x09;Remote control&#x0A;&#x09;1&#x09;-&#x09;Remote control with sensor monitoring&#x0A;&#x09;2&#x09;-&#x09;Photovore&#x0A;&#x09;3&#x09;-&#x09;Line Follower&#x0A;&#x09;4&#x09;-&#x09;Sharp IR ranger test&#x0A;&#x0A;set&#x09;[variable] [value]&#x0A;&#x09;variable&#x09;-&#x09;same used for &apos;get&apos;&#x0A;&#x09;value&#x09;&#x09;-&#x09;int&#x0A;&#x09;&#x0A;save&#x0A;&#x09;save to eeprom&#x0A;&#x0A;load&#x0A;&#x09;discard changes and reload from eeprom&#x0A;&#x0A;cal&#x0A;&#x09;line-follower auto calibration&#x0A;&#x0A;default&#x0A;&#x09;load default hard-coded values into RAM&#x0A;&#x09;&#x0A;inch&#x0A;&#x09;move forward one inch&#x0A;&#x0A;stop&#x0A;&#x09;stop wheels&#x0A;</value>
+										<value>&#x0A;Serial command reference:&#x0A;&#x0A;get [variable]&#x0A;&#x09;l&#x09;-&#x09;left wheel servo&#x0A;&#x09;lc&#x09;-&#x09;left wheel servo center pulse duration (in ms)&#x0A;&#x09;r&#x09;-&#x09;right wheel servo&#x0A;&#x09;rc&#x09;-&#x09;right wheel servo center pulse duration (in ms)&#x0A;&#x09;p&#x09;-&#x09;current program&#x0A;&#x09;di&#x09;-&#x09;drive.inch() delay configuration&#x0A;&#x09;drf&#x09;-&#x09;range finder between readings delay (servo movement)&#x0A;&#x09;as&#x09;-&#x09;all analog sensors&#x0A;&#x09;sx&#x09;-&#x09;servo &quot;X&quot;&#x0A;&#x0A;programs available:&#x0A;&#x09;0&#x09;-&#x09;Remote control&#x0A;&#x09;1&#x09;-&#x09;Remote control with sensor monitoring&#x0A;&#x09;2&#x09;-&#x09;Photovore&#x0A;&#x09;3&#x09;-&#x09;Line Follower&#x0A;&#x09;4&#x09;-&#x09;Sharp IR ranger test&#x0A;&#x0A;set&#x09;[variable] [value]&#x0A;&#x09;variable&#x09;-&#x09;same used for &apos;get&apos;&#x0A;&#x09;value&#x09;&#x09;-&#x09;int&#x0A;&#x09;&#x0A;save&#x0A;&#x09;save to eeprom&#x0A;&#x0A;load&#x0A;&#x09;discard changes and reload from eeprom&#x0A;&#x0A;cal&#x0A;&#x09;line-follower auto calibration&#x0A;&#x0A;default&#x0A;&#x09;load default hard-coded values into RAM&#x0A;&#x09;&#x0A;inch&#x0A;&#x09;move forward one inch&#x0A;&#x0A;stop&#x0A;&#x09;stop wheels&#x0A;</value>
 										<size>645,275</size>
 										<style>wxTE_MULTILINE</style>
 									</object>
@@ -78,7 +78,7 @@
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON14" variable="Button14" member="yes">
 														<label>Discard</label>
-														<size>67,29</size>
+														<size>-1,-1</size>
 														<handler function="OnButton14Click" entry="EVT_BUTTON" />
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -130,7 +130,7 @@
 								</object>
 							</object>
 						</object>
-						<label>Setup</label>
+						<label>Local Setup</label>
 					</object>
 					<object class="notebookpage">
 						<object class="wxPanel" name="ID_PANEL3" variable="Panel3" member="yes">
@@ -265,37 +265,6 @@
 									<option>1</option>
 								</object>
 								<object class="sizeritem">
-									<object class="wxStaticBoxSizer" variable="StaticBoxSizer7" member="no">
-										<label>Head</label>
-										<orient>wxVERTICAL</orient>
-										<object class="sizeritem">
-											<object class="wxSlider" name="ID_SLIDER3" variable="Slider3" member="yes">
-												<value>90</value>
-												<max>179</max>
-												<size>50,150</size>
-												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
-												<handler function="OnSlider3CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
-											</object>
-											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
-										</object>
-										<object class="sizeritem">
-											<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="TextCtrl3" member="yes">
-												<value>90</value>
-												<size>80,25</size>
-												<style>wxTE_PROCESS_ENTER</style>
-												<handler function="OnTextCtrl3TextEnter" entry="EVT_TEXT_ENTER" />
-											</object>
-											<flag>wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-										</object>
-									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-									<border>5</border>
-									<option>1</option>
-								</object>
-								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer3" member="no">
 										<label>Controls</label>
 										<orient>wxVERTICAL</orient>
@@ -338,13 +307,53 @@
 											<border>5</border>
 											<option>1</option>
 										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="ID_CHECKBOX1" variable="CheckBoxJoystick" member="yes">
+												<label>Joystick</label>
+												<handler function="OnCheckBoxJoystick" entry="EVT_CHECKBOX" />
+											</object>
+											<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
 									</object>
 									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
 								</object>
+								<object class="sizeritem">
+									<object class="wxStaticBoxSizer" variable="StaticBoxSizer7" member="no">
+										<label>Head</label>
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxSlider" name="ID_SLIDER3" variable="Slider3" member="yes">
+												<value>90</value>
+												<max>179</max>
+												<size>50,150</size>
+												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
+												<handler function="OnSlider3CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
+											</object>
+											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="TextCtrl3" member="yes">
+												<value>90</value>
+												<size>80,25</size>
+												<style>wxTE_PROCESS_ENTER</style>
+												<handler function="OnTextCtrl3TextEnter" entry="EVT_TEXT_ENTER" />
+											</object>
+											<flag>wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+										</object>
+									</object>
+									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
 							</object>
 						</object>
-						<label>Servos</label>
+						<label>Motors</label>
 					</object>
 					<object class="notebookpage">
 						<object class="wxPanel" name="ID_PANEL4" variable="Panel4" member="yes">
@@ -453,68 +462,16 @@
 								<cols>1</cols>
 								<rows>3</rows>
 								<object class="sizeritem">
-									<object class="wxStaticBoxSizer" variable="StaticBoxSizer9" member="no">
-										<label>Keyboard</label>
-										<object class="sizeritem">
-											<object class="wxTextCtrl" name="ID_TEXTCTRL7" variable="TextCtrlDrive" member="yes">
-												<size>71,29</size>
-												<handler function="OnDriveByKeyboard" entry="EVT_TEXT" />
-											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
-										</object>
+									<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
+										<label>&#x0A;Copyright (C) 2010 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</label>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-									<border>5</border>
-									<option>1</option>
-								</object>
-								<object class="sizeritem">
-									<object class="wxStaticBoxSizer" variable="StaticBoxSizer10" member="no">
-										<label>Joystick</label>
-										<orient>wxVERTICAL</orient>
-										<object class="sizeritem">
-											<object class="wxButton" name="ID_BUTTON15" variable="ButtonJoystickEn" member="yes">
-												<label>Enable</label>
-												<handler function="OnButton15Click1" entry="EVT_BUTTON" />
-											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
-										</object>
-									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-									<border>5</border>
-									<option>1</option>
-								</object>
-								<object class="sizeritem">
-									<object class="wxStaticBoxSizer" variable="StaticBoxSizer11" member="no">
-										<label>Current</label>
-										<object class="sizeritem">
-											<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
-												<label>.</label>
-												<size>21,17</size>
-											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
-										</object>
-										<object class="sizeritem">
-											<object class="wxStaticText" name="ID_STATICTEXT4" variable="StaticText4" member="yes">
-												<label>.</label>
-											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
-										</object>
-									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
 							</object>
 						</object>
-						<label>Drive</label>
+						<label>About</label>
 					</object>
 				</object>
 				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
