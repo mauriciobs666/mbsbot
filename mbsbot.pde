@@ -43,8 +43,8 @@
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
 
 // Wheels conected to a Servo or a DC motor? Pick one:
-//#define WHEEL_DC 1 // DC motor through 754410 driver
-#undef WHEEL_DC // servo
+#define WHEEL_DC 1 // DC motor through 754410 driver
+//#undef WHEEL_DC // servo
 
 /******************************************************************************
  *	EEPROM - PERSISTENT CONFIGURATION
@@ -325,15 +325,15 @@ void LineFollower::loop()
 
 	if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, stop
 		drive.stop();
-	else if( IRSensorOverLine[0] )	// turn right
-	{
-		lastCorrection=1;
-		drive.right();
-	}
-	else if( IRSensorOverLine[2] )	// turn left
+	else if( IRSensorOverLine[0] )	// turn left
 	{
 		lastCorrection=-1;
 		drive.left();
+	}
+	else if( IRSensorOverLine[2] )	// turn right
+	{
+		lastCorrection=1;
+		drive.right();
 	}
 	else if( IRSensorOverLine[1] )	// go ahead
 		drive.forward();

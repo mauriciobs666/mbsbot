@@ -636,31 +636,51 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 	if(joystick)
 	{
         // left and right wheels in % of power
-		int lw, rw;
+		int lw = 0;
+		int rw = 0;
 
 		wxPoint pos = joystick->GetPosition();
+		// pos.x < 0 left
+		// pos.x > 0 right
+		// pos.y < 0 up
+		// pos.y > 0 down
 
-		if(pos.x < 0)		// turn left
+		if(pos.x < 0)			// turn left
 		{
-			lw = -100;
-			rw = 100;
+			if(pos.y == 0)		// hard turn left
+			{
+				lw = -100;
+				rw = 100;
+			}
+			else if(pos.y < 0)	// smooth left-forward
+				rw = 100;
+			else if(pos.y > 0)	// smooth left-backward
+				rw = -100;
 		}
-		else if(pos.x > 0)	// turn right
+		else if(pos.x > 0)		// turn right
 		{
-			lw = 100;
-			rw = -100;
+			if(pos.y == 0)		// hard turn right
+			{
+				lw = 100;
+				rw = -100;
+			}
+			else if(pos.y < 0)	// smooth right-forward
+				lw = 100;
+			else if(pos.y > 0)	// smooth right-backward
+				lw = -100;
 		}
-		else if (pos.y < 0)	// go forward
+		else if (pos.y < 0)		// forward
 			lw = rw = 100;
-		else if (pos.y > 0)	// go back
+		else if (pos.y > 0)		// backward
 			lw = rw = -100;
-		else				// stop
-			lw = rw = 0;
 
         // debug print
 
-		StaticText3->SetLabel(wxString::Format(wxT("%i"), lw));
-		StaticText4->SetLabel(wxString::Format(wxT("%i"), rw));
+		Slider1->SetValue(lw);
+		Slider2->SetValue(rw);
+
+		StaticText3->SetLabel(wxString::Format(wxT("%i"), pos.x));
+		StaticText4->SetLabel(wxString::Format(wxT("%i"), pos.y));
 
 		MbsBot::getInstance()->drive(lw, rw);
 	}
