@@ -722,12 +722,12 @@ void setup()
 
 	rangeFinder.servo.attach(10);
 #else
-	leftWheel.init(9,12);
-	rightWheel.init(10,11);
+	leftWheel.init(5,4);
+	rightWheel.init(3,2);
 
-//	rangeFinder.servo.attach(13);
+	rangeFinder.servo.attach(9);
 #endif
-//	rangeFinder.servo.write(90);
+	rangeFinder.servo.write(90);
 
     drive.leftWheel = &leftWheel;
     drive.rightWheel = &rightWheel;
