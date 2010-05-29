@@ -16,11 +16,16 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// ANSI
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 
+// Arduino /libraries
 #include <Servo.h>
+
+// MBSBOT
+#include "Protocol.h"
 
 /******************************************************************************
  *	DEFINES AND SETUP
@@ -28,17 +33,7 @@
 
 #define SERIAL_PORT_SPEED 115200
 
-// eeprom.data.selectedProgram
-
-#define PRG_RC				0x00
-#define PRG_SHOW_SENSORS	0x01
-#define PRG_PHOTOVORE 		0x02
-#define PRG_LINEFOLLOWER	0x03
-#define PRG_SHARP			0x04
-#define PRG_SHARP_CHASE		0x05
-
 // LINE FOLLOWER SETUP
-
 #define NUM_IR_TRACK 3
 #define FIRST_IR_SENSOR_INDEX 0
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected

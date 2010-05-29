@@ -19,13 +19,55 @@
 #ifndef PROTOCOL_H_INCLUDED
 #define PROTOCOL_H_INCLUDED
 
+/*
+Serial command reference:
+
+get [variable]
+	l	-	left wheel servo
+	lc	-	left wheel servo center pulse duration (in ms)
+	r	-	right wheel servo
+	rc	-	right wheel servo center pulse duration (in ms)
+	p	-	current program
+	di	-	drive.inch() delay configuration
+	drf	-	range finder between readings delay (servo movement)
+	as	-	all analog sensors
+	sx	-	servo "X"
+
+set	[variable] [value]
+	variable	-	same used for 'get'
+	value		-	int
+
+save
+	save to eeprom
+
+load
+	discard changes and reload from eeprom
+
+cal
+	line-follower auto calibration
+
+default
+	load default hard-coded values into RAM
+
+inch
+	move forward one inch
+
+stop
+	stop wheels
+*/
+
+// programs available:
+
 enum ProgramID
 {
-	PRG_RC = 0,
-	PRG_SHOW_SENSORS,
+	PRG_RC = 0,			// Remote control
+	PRG_SHOW_SENSORS,	// Remote control with sensor monitoring
 	PRG_PHOTOVORE,
 	PRG_LINEFOLLOWER,
-	PRG_SHARP
+	PRG_SHARP,			// Sharp IR ranger test
+	PRG_SHARP_CHASE		//
 };
+
+#define COMMAND_END '\n'
 
 #endif // PROTOCOL_H_INCLUDED
