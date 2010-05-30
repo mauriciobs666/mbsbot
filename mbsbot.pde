@@ -31,16 +31,26 @@
  *	DEFINES AND SETUP
  ******************************************************************************/
 
+// TELNET SERVER
 #define SERIAL_PORT_SPEED 115200
+#define MAX_COMMAND_SIZE 50
 
-// LINE FOLLOWER SETUP
+// LINE FOLLOWER
 #define NUM_IR_TRACK 3
 #define FIRST_IR_SENSOR_INDEX 0
 // where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
 
-// Wheels conected to a Servo or a DC motor? Pick one:
+// WHEELS
+// are them conected to a Servo or a DC motor? Pick one:
 #define WHEEL_DC 1 // DC motor through 754410 driver
-//#undef WHEEL_DC // servo
+//#undef WHEEL_DC // servo (old board)
+
+// RANGE FINDER
+#define RF_NUMBER_STEPS 30
+#define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
+#define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
+#define RF_SENSOR_PIN 3
+#define SHARP_TRESHOLD 200
 
 /******************************************************************************
  *	EEPROM - PERSISTENT CONFIGURATION
@@ -478,18 +488,27 @@ void LineFollower::autoCalibrate()
  *	SHARP IR RANGE FINDER
  ******************************************************************************/
 
-#define RF_NUMBER_STEPS 20
-#define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
-#define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
-#define RF_SENSOR_PIN 3
-
 class RangeFinder
 {
 public:
 	RangeFinder() : nextRead(0), currentStep(0), stepDir(1)
 		{}
 	Servo servo;
-	void loop();
+	short readSensor()
+		{ return analogRead(RF_SENSOR_PIN); }
+	bool stepUp();
+	bool stepDown();
+	void refreshServo();
+	void chase();
+	void fillArray();
+	bool step();
+	void reverseDir()
+		{ stepDir = -stepDir; }
+	bool lowerBound()
+		{ return currentStep <= 0; }
+	bool upperBound()
+		{ return currentStep >= (RF_NUMBER_STEPS-1); }
+	bool delayRead();
 private:
 	short currentStep;
 	char stepDir;
@@ -497,23 +516,81 @@ private:
 	unsigned long nextRead;
 } rangeFinder;
 
-void RangeFinder::loop()
+bool RangeFinder::delayRead()
 {
-	if( millis() > nextRead )
+	if ( millis() > nextRead )
+	{
+		nextRead = millis() + eeprom.data.RF_delay_reads;
+		return true;
+	}
+	return false;
+}
+
+bool RangeFinder::stepUp()
+{
+	if(upperBound())
+		currentStep = (RF_NUMBER_STEPS-1);
+	else
+		currentStep++;
+	return upperBound();
+}
+
+bool RangeFinder::stepDown()
+{
+	if(lowerBound())
+		currentStep = 0;
+	else
+		currentStep--;
+	return lowerBound();
+}
+
+bool RangeFinder::step()
+{
+	return (stepDir < 0) ? stepDown() : stepUp();
+}
+
+void RangeFinder::refreshServo()
+{
+	servo.write( RF_SERVO_SAFE_ANGLE + currentStep * RF_STEP_ANGLE );
+}
+
+void RangeFinder::chase()
+{
+	if( delayRead() )
+	{
+		if( rangeFinder.readSensor() > SHARP_TRESHOLD )
+			rangeFinder.stepDown();
+		else //no object detected
+			rangeFinder.stepUp(); // TODO: head turns right
+
+		refreshServo();
+	}
+
+	/*
+	if scanner is pointing far left
+		robot turns left
+	else if scanner is pointing far right
+		robot turns right
+	else //scanner pointing forward
+		robot drives straight
+	*/
+}
+
+void RangeFinder::fillArray()
+{
+	if( delayRead() )
 	{
 		// read sensor into array
-		dataArray[currentStep] = analogRead(RF_SENSOR_PIN);
+		dataArray[currentStep] = readSensor();
 
-		// check boundaries
-		if(
-			( ( currentStep == 0 ) && ( stepDir == -1 ) )
-			||
-			( ( currentStep == RF_NUMBER_STEPS-1 ) && ( stepDir == 1 ) )
-		  )
+		// calc next move and check boundaries
+		if( step() )
 		{
-			stepDir = -stepDir; 		// reverse servo direction
+			// step() returns true if reached left or right most
+			// reverse next move
+			reverseDir();
 
-			// send debug values
+			// array is complete, send debug values
 			Serial.print("RFA ");
 			for(int x = 0; x < RF_NUMBER_STEPS; x++)
 			{
@@ -524,19 +601,13 @@ void RangeFinder::loop()
 		}
 
 		// move
-		currentStep += stepDir;
-		servo.write( RF_SERVO_SAFE_ANGLE + currentStep * RF_STEP_ANGLE );
-
-		nextRead = millis() + eeprom.data.RF_delay_reads;
+		refreshServo();
 	}
 }
 
 /******************************************************************************
  *	TELNET SERVER
  ******************************************************************************/
-
-#define MAX_COMMAND_SIZE 50
-#define COMMAND_END '\n'
 
 class Server
 {
@@ -758,7 +829,11 @@ void loop()
 		break;
 
 		case PRG_SHARP:
-			rangeFinder.loop();
+			rangeFinder.fillArray();
+		break;
+
+		case PRG_SHARP_CHASE:
+			rangeFinder.chase();
 		break;
 	}
 	delay(15);

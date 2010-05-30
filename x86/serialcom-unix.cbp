@@ -41,7 +41,6 @@
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
 		<Unit filename="../Protocol.h" />
-		<Unit filename="../commands.txt" />
 		<Unit filename="../mbsbot.pde" />
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />

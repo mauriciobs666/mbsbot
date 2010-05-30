@@ -19,8 +19,12 @@
 #ifndef PROTOCOL_H_INCLUDED
 #define PROTOCOL_H_INCLUDED
 
-/*
-Serial command reference:
+/* General packet format
+<command> [arguments] COMMAND_END
+*/
+#define COMMAND_END '\n'
+
+/* Command reference:
 
 get [variable]
 	l	-	left wheel servo
@@ -33,7 +37,7 @@ get [variable]
 	as	-	all analog sensors
 	sx	-	servo "X"
 
-set	[variable] [value]
+set	[variable] [=] [value]
 	variable	-	same used for 'get'
 	value		-	int
 
@@ -62,12 +66,10 @@ enum ProgramID
 {
 	PRG_RC = 0,			// Remote control
 	PRG_SHOW_SENSORS,	// Remote control with sensor monitoring
-	PRG_PHOTOVORE,
-	PRG_LINEFOLLOWER,
+	PRG_PHOTOVORE,		//
+	PRG_LINEFOLLOWER,	//
 	PRG_SHARP,			// Sharp IR ranger test
 	PRG_SHARP_CHASE		//
 };
-
-#define COMMAND_END '\n'
 
 #endif // PROTOCOL_H_INCLUDED
