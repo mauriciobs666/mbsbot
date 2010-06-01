@@ -29,8 +29,6 @@ int MbsBot::init(const char *port, int baud)
 {
 	loadLocalConfig();
 
-	printf("serialPortDevice from file = %s\n", serialPortDevice);
-
 	if(port == NULL)
 	{
 		if(strcmp(serialPortDevice, "") == 0)
@@ -57,7 +55,12 @@ int MbsBot::init(const char *port, int baud)
 	int rc = serialPort.init( serialPortDevice, baudRate );
 
 	if( rc == 0) // connected, no error
+	{
+		TRACE_INFO("Opened %s @ %d bps\n", serialPortDevice, baudRate);
 		saveLocalConfig();
+	}
+	else
+		TRACE_ERROR("Error %d while trying to open %s\n", rc, serialPortDevice);
 
 	return rc;
 }
@@ -83,8 +86,7 @@ int MbsBot::loadLocalConfig(const char *filename)
 		char currentLine[100];
 		while(fgets(currentLine, sizeof(currentLine),hnd))
 		{
-			printf("fgets() = %s\n", currentLine);
-
+			//printf("fgets() = %s\n", currentLine);
 			char *tok = strtok(currentLine, " =");
 			if(tok && strcmp(tok, "DEVICE") == 0 )
 				strcpy(serialPortDevice, strtok(NULL," \n"));
@@ -172,7 +174,6 @@ int MbsBot::drive(int lw, int rw)
 	int rc=0;
 
 	// optimization: remember last values and only send command if changed
-
 	static int lastL = 0;
 	static int lastR = 0;
 
@@ -190,7 +191,6 @@ int MbsBot::drive(int lw, int rw)
 int MbsBot::setProgram(enum ProgramID prg)
 {
 	char cmd[20];
-//	int val=
 	snprintf(cmd, 20, "set p %d\n", prg);
 	return send(cmd);
 }

@@ -47,10 +47,8 @@
 
 // RANGE FINDER
 #define RF_NUMBER_STEPS 30
-#define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
-#define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
 #define RF_SENSOR_PIN 3
-#define SHARP_TRESHOLD 200
+#define SHARP_TRESHOLD 300
 
 /******************************************************************************
  *	EEPROM - PERSISTENT CONFIGURATION
@@ -488,6 +486,9 @@ void LineFollower::autoCalibrate()
  *	SHARP IR RANGE FINDER
  ******************************************************************************/
 
+#define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
+#define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
+
 class RangeFinder
 {
 public:
@@ -559,9 +560,22 @@ void RangeFinder::chase()
 	if( delayRead() )
 	{
 		if( rangeFinder.readSensor() > SHARP_TRESHOLD )
-			rangeFinder.stepDown();
+		{
+			if(stepDir < 0)
+				rangeFinder.stepDown();
+			else
+				rangeFinder.stepUp();
+		}
 		else //no object detected
-			rangeFinder.stepUp(); // TODO: head turns right
+		{
+			if(stepDir < 0)
+				rangeFinder.stepUp();
+			else
+				rangeFinder.stepDown();
+		}
+
+		if(upperBound() || lowerBound())
+			reverseDir();
 
 		refreshServo();
 	}
@@ -768,6 +782,12 @@ void Server::loop()
 					if (tok)		// third token is the right wheel power percent
 						drive.drive(lw, atoi(tok));
 				}
+			}
+			else if(strcmp(tok,"beep") == 0)
+			{
+				tok = strtok_r(NULL, " ", &pqp);
+				if (tok)			// frequency
+					tone(19,atoi(tok),200);
 			}
 		}
 	}

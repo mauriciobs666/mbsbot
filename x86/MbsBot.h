@@ -20,9 +20,10 @@
 #define MBSBOT_H
 
 #include <MBSUtil.h>
+#include <MBSTrace.h>
 #include "../Protocol.h"
 
-#define SERIAL_BUFFER_SIZE 100
+#define SERIAL_BUFFER_SIZE 1000
 
 class MbsBot
 {
