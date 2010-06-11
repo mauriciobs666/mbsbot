@@ -26,6 +26,7 @@
 
 // MBSBOT
 #include "Protocol.h"
+#include "Board.h"
 
 /******************************************************************************
  *	DEFINES AND SETUP
@@ -35,19 +36,8 @@
 #define SERIAL_PORT_SPEED 115200
 #define MAX_COMMAND_SIZE 50
 
-// LINE FOLLOWER
-#define NUM_IR_TRACK 3
-#define FIRST_IR_SENSOR_INDEX 0
-// where NUM_IR_TRACK=3 and FIRST_IR_SENSOR_INDEX=2 means pins A2, A3 and A4 are connected
-
-// WHEELS
-// are them conected to a Servo or a DC motor? Pick one:
-#define WHEEL_DC 1 // DC motor through 754410 driver
-//#undef WHEEL_DC // servo (old board)
-
 // RANGE FINDER
 #define RF_NUMBER_STEPS 30
-#define RF_SENSOR_PIN 3
 #define SHARP_TRESHOLD 300
 
 /******************************************************************************
@@ -804,13 +794,17 @@ void setup()
 	eeprom.load();
 
 #ifndef WHEEL_DC
-	leftWheel.init(8, eeprom.data.leftWheelCenter);
-	rightWheel.init(9, eeprom.data.rightWheelCenter, true);
+
+#define PIN_LEFTWHEEL		8
+#define PIN_RIGHTWHEEL		9
+
+	leftWheel.init(PIN_LEFTWHEEL, eeprom.data.leftWheelCenter);
+	rightWheel.init(PIN_RIGHTWHEEL, eeprom.data.rightWheelCenter, true);
 
 	rangeFinder.servo.attach(10);
 #else
-	leftWheel.init(5,4);
-	rightWheel.init(3,2);
+	leftWheel.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL);
+	rightWheel.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL);
 
 	rangeFinder.servo.attach(9);
 #endif

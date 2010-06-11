@@ -40,6 +40,7 @@
 			<Add library="mbsutil" />
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
+		<Unit filename="../Board.h" />
 		<Unit filename="../Protocol.h" />
 		<Unit filename="../mbsbot.pde" />
 		<Unit filename="MbsBot.cpp" />
