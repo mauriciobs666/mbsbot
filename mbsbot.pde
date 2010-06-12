@@ -24,13 +24,13 @@
 // Arduino /libraries
 #include <Servo.h>
 
-// MBSBOT
-#include "Protocol.h"
-#include "Board.h"
-
 /******************************************************************************
  *	DEFINES AND SETUP
  ******************************************************************************/
+
+// MBSBOT
+#include "Protocol.h"
+#include "Board.h"
 
 // TELNET SERVER
 #define SERIAL_PORT_SPEED 115200
@@ -347,14 +347,14 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
 	// read IR sensor data and map into IRSensor[]
 	for(int x = 0; x < NUM_IR_TRACK; x++)
 	{
-		IRSensor[x] = analogRead(FIRST_IR_SENSOR_INDEX + x);
+		IRSensor[x] = analogRead(PIN_FIRST_IR_SENSOR + x);
 		isIRSensorOverLine[x] = (IRSensor[x] > eeprom.data.LF_threshold[x]) ^ eeprom.data.LF_reverseColor;
 	}
 }
 
 void LineFollower::autoCalibrate()
 {
-	// configure number of redundant reads during autocalibration
+	// configure number of reads during autocalibration
 	#define CAL_READS_NUM 5
 	#define CAL_READS_INTERVAL 200
 
@@ -382,7 +382,7 @@ void LineFollower::autoCalibrate()
 	{
 		for(int y=0; y < NUM_IR_TRACK; y++)
 		{
-			sensorTrack[y] += sensorTemp[y] = analogRead(FIRST_IR_SENSOR_INDEX + y);
+			sensorTrack[y] += sensorTemp[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
 			sensorTrackMax[y] = max(sensorTrack[y],sensorTrackMax[y]);
 			sensorTrackMin[y] = min(sensorTrack[y],sensorTrackMin[y]);
 		}
@@ -406,7 +406,7 @@ void LineFollower::autoCalibrate()
 	{
 		for(int y=0; y < NUM_IR_TRACK; y++)
 		{
-			sensorOut[y] += sensorTemp[y] = analogRead(FIRST_IR_SENSOR_INDEX + y);
+			sensorOut[y] += sensorTemp[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
 			sensorOutMax[y] = max(sensorOut[y], sensorOutMax[y]);
 			sensorOutMin[y] = min(sensorOut[y], sensorOutMin[y]);
 		}
@@ -486,7 +486,7 @@ public:
 		{}
 	Servo servo;
 	short readSensor()
-		{ return analogRead(RF_SENSOR_PIN); }
+		{ return analogRead(PIN_SHARP_RF); }
 	bool stepUp();
 	bool stepDown();
 	void refreshServo();
@@ -773,11 +773,18 @@ void Server::loop()
 						drive.drive(lw, atoi(tok));
 				}
 			}
+			else if(strcmp(tok,"status") == 0)
+			{
+				Serial.print("S ");
+				Serial.println(eeprom.data.selectedProgram);
+			}
 			else if(strcmp(tok,"beep") == 0)
 			{
 				tok = strtok_r(NULL, " ", &pqp);
+				#ifdef PIN_BEEP
 				if (tok)			// frequency
-					tone(19,atoi(tok),200);
+					tone(PIN_BEEP,atoi(tok),200);
+				#endif
 			}
 		}
 	}
@@ -794,24 +801,21 @@ void setup()
 	eeprom.load();
 
 #ifndef WHEEL_DC
-
-#define PIN_LEFTWHEEL		8
-#define PIN_RIGHTWHEEL		9
-
+	#define PIN_LEFTWHEEL		8
+	#define PIN_RIGHTWHEEL		9
+	#define PIN_HEAD_SERVO		10
 	leftWheel.init(PIN_LEFTWHEEL, eeprom.data.leftWheelCenter);
 	rightWheel.init(PIN_RIGHTWHEEL, eeprom.data.rightWheelCenter, true);
-
-	rangeFinder.servo.attach(10);
 #else
 	leftWheel.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL);
 	rightWheel.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL);
-
-	rangeFinder.servo.attach(9);
 #endif
-	rangeFinder.servo.write(90);
 
     drive.leftWheel = &leftWheel;
     drive.rightWheel = &rightWheel;
+
+	rangeFinder.servo.attach(PIN_HEAD_SERVO);
+	rangeFinder.servo.write(90);
 
 	if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
