@@ -1,5 +1,4 @@
-/*
- *	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -24,9 +23,8 @@
 */
 #define COMMAND_END '\n'
 
-/* Command reference:
-
-get [variable]
+#define CMD_READ	"get"
+/* CMD_READ [variable]
 	l	-	left wheel servo
 	lc	-	left wheel servo center pulse duration (in ms)
 	r	-	right wheel servo
@@ -36,11 +34,15 @@ get [variable]
 	drf	-	range finder between readings delay (servo movement)
 	as	-	all analog sensors
 	sx	-	servo "X"
+*/
 
-set	[variable] [=] [value]
-	variable	-	same used for 'get'
+#define CMD_WRITE	"set"
+/* CMD_WRITE [variable] [=] [value]
+	variable	-	same used for CMD_WRITE
 	value		-	int
+*/
 
+/*
 save
 	save to eeprom
 
@@ -61,7 +63,6 @@ stop
 */
 
 // programs available:
-
 enum ProgramID
 {
 	PRG_RC = 0,			// Remote control

@@ -19,24 +19,22 @@
 #define BOARD_H_INCLUDED
 
 // WHEELS - are them conected to a Servo or a DC motor? Pick one:
-#define WHEEL_DC 1 // DC motor through 754410 driver
-//#undef WHEEL_DC // servo (old board)
+//#define WHEEL_DC 1 // DC motor through 754410 driver
+#undef WHEEL_DC // servo (old board)
 
-#define PIN_LEFTWHEEL		4
-#define PIN_LEFTWHEEL_PWM	5
-#define PIN_RIGHTWHEEL		2
-#define PIN_RIGHTWHEEL_PWM	3
+#define PIN_LEFTWHEEL		8
+#define PIN_RIGHTWHEEL		9
 
 // SHARP RANGE FINDER (analog pin!)
 #define PIN_SHARP_RF		3
 
-#define PIN_HEAD_SERVO		9
+#define PIN_HEAD_SERVO		10
 
 // LINE FOLLOWER (analog pins!)
 #define NUM_IR_TRACK		3
 #define PIN_FIRST_IR_SENSOR 0
 // where NUM_IR_TRACK=3 and PIN_FIRST_IR_SENSOR=2 means pins A2, A3 and A4 are connected
 
-#define PIN_BEEP 			19
+//#define PIN_BEEP 			19
 
 #endif // BOARD_H_INCLUDED
