@@ -18,6 +18,8 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
+#define BOARD_VERSION 1
+
 // WHEELS - are them conected to a Servo or a DC motor? Pick one:
 //#define WHEEL_DC 1 // DC motor through 754410 driver
 #undef WHEEL_DC // servo (old board)

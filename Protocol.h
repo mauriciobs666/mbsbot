@@ -18,6 +18,8 @@
 #ifndef PROTOCOL_H_INCLUDED
 #define PROTOCOL_H_INCLUDED
 
+#define PROTOCOL_VERSION 1
+
 /* General packet format
 <command> [arguments] COMMAND_END
 */
@@ -42,24 +44,52 @@
 	value		-	int
 */
 
-/*
-save
-	save to eeprom
+#define CMD_SAVE	"save"
+/* CMD_SAVE
+save to eeprom
+*/
 
-load
-	discard changes and reload from eeprom
+#define CMD_LOAD	"load"
+/* CMD_LOAD
+discard changes and reload from eeprom
+*/
 
-cal
-	line-follower auto calibration
+#define CMD_DEFAULT	"default"
+/* CMD_DEFAULT
+load default hard-coded values into RAM
+*/
 
-default
-	load default hard-coded values into RAM
+#define CMD_LF_CAL	"cal"
+/* CMD_LF_CAL
+line-follower auto calibration
+*/
 
-inch
-	move forward one inch
+#define CMD_MV_INCH	"inch"
+/* CMD_MV_INCH
+move forward one inch
+*/
 
-stop
-	stop wheels
+#define CMD_MV_STOP	"stop"
+/* CMD_MV_STOP
+stop wheels
+*/
+
+#define CMD_MV_WHEELS	"drv"
+/* CMD_MV_WHEELS leftwheel rightwheel
+	leftwheel	+/- 0-100 %
+	rightwheel 	+/- 0-100 %
+*/
+
+#define CMD_STATUS	"status"
+/* CMD_STATUS
+*/
+
+#define CMD_UNAME	"uname"
+/* CMD_UNAME
+*/
+
+#define CMD_BEEP	"beep"
+/* CMD_BEEP [frequency]
 */
 
 // programs available:

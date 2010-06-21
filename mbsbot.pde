@@ -658,7 +658,7 @@ void Server::loop()
 
 		if (tok)	// first token is the ACTION
 		{
-			if(strcmp(tok, "set") == 0)	// action SET is meant to assign a value to some variable
+			if(strcmp(tok, CMD_WRITE) == 0)		// assign a value to some variable
 			{
 				tok = strtok_r(NULL, " =", &pqp);
 				if (tok)			// second token is the DESTINATION VAR
@@ -696,7 +696,7 @@ void Server::loop()
 					}
 				}
 			}
-			else if(strcmp(tok, "get") == 0)	// action GET reads a variable
+			else if(strcmp(tok, CMD_READ) == 0)	// action GET reads a variable
 			{
 				tok = strtok_r(NULL, " ", &pqp);
 				if (tok)			// second token is the VAR to be read
@@ -745,19 +745,19 @@ void Server::loop()
 						displayAnalogSensors();
 				}
 			}
-			else if(strcmp(tok, "save") == 0)	// save stuff to eeprom
+			else if(strcmp(tok, CMD_SAVE) == 0)	// save stuff to eeprom
 				eeprom.save();
-			else if(strcmp(tok, "load") == 0)	// discard changes and reload from eeprom
+			else if(strcmp(tok, CMD_LOAD) == 0)	// discard changes and reload from eeprom
 				eeprom.load();
-			else if(strcmp(tok, "cal") == 0)	// re-calibrate line following IR sensors
-				lineFollower.autoCalibrate();
-			else if(strcmp(tok, "default") == 0)
+			else if(strcmp(tok, CMD_DEFAULT) == 0)
 				eeprom.loadDefault();
-			else if(strcmp(tok, "inch") == 0)
+			else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibrate line following IR sensors
+				lineFollower.autoCalibrate();
+			else if(strcmp(tok, CMD_MV_INCH) == 0)
 				drive.inch();
-			else if(strcmp(tok, "stop") == 0)
+			else if(strcmp(tok, CMD_MV_STOP) == 0)
 				drive.stop();
-			else if(strcmp(tok, "drv") == 0)
+			else if(strcmp(tok, CMD_MV_WHEELS) == 0)
 			{
 				tok = strtok_r(NULL, " ", &pqp);
 				if (tok)			// second token is the left wheel power percent
@@ -768,12 +768,19 @@ void Server::loop()
 						drive.drive(lw, atoi(tok));
 				}
 			}
-			else if(strcmp(tok,"status") == 0)
+			else if(strcmp(tok, CMD_STATUS) == 0)
 			{
 				Serial.print("S ");
 				Serial.println(eeprom.data.selectedProgram);
 			}
-			else if(strcmp(tok,"beep") == 0)
+			else if(strcmp(tok, CMD_UNAME))
+			{
+				Serial.print("Mbsbot hardware v");
+				Serial.print(BOARD_VERSION);
+				Serial.print(" protocol v");
+				Serial.println(PROTOCOL_VERSION);
+			}
+			else if(strcmp(tok, CMD_BEEP) == 0)
 			{
 				tok = strtok_r(NULL, " ", &pqp);
 				#ifdef PIN_BEEP
