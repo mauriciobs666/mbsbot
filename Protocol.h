@@ -24,6 +24,7 @@
 <command> [arguments] COMMAND_END
 */
 #define COMMAND_END '\n'
+#define MAX_COMMAND_SIZE 50
 
 #define CMD_READ	"get"
 /* CMD_READ [variable]
@@ -75,9 +76,17 @@ stop wheels
 */
 
 #define CMD_MV_WHEELS	"drv"
-/* CMD_MV_WHEELS leftwheel rightwheel
+/* CMD_MV_WHEELS leftwheel rightwheel [duration]
 	leftwheel	+/- 0-100 %
 	rightwheel 	+/- 0-100 %
+	duration    time in ms
+*/
+
+#define CMD_MV_VECT "vect"
+/* CMD_MV_VECT X_axis Y_axis [duration]
+	X_axis	    +/- 0-100 %
+	Y_axis 	    +/- 0-100 %
+	duration    time in ms
 */
 
 #define CMD_STATUS	"status"

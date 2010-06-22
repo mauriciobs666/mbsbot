@@ -1,5 +1,4 @@
-/*
- *	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -95,7 +94,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer1;
     wxFlexGridSizer* FlexGridSizer1;
     wxStaticBoxSizer* StaticBoxSizer5;
-    
+
     Create(parent, wxID_ANY, _("MBSBOT"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     SetClientSize(wxSize(640,480));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
@@ -287,7 +286,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Timer1.SetOwner(this, ID_TIMER1);
     Timer1.Start(50, false);
     BoxSizer1->SetSizeHints(this);
-    
+
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceProgram);
@@ -340,12 +339,9 @@ serialcomFrame::~serialcomFrame()
     //*)
 }
 
-/* ============================================================================
- *
- *      LOG
- *
- * ============================================================================
- */
+// ============================================================================
+//      LOG
+// ============================================================================
 
 void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 {
@@ -360,12 +356,9 @@ void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 	SendCommandText->Clear();
 }
 
-/* ============================================================================
- *
- *      SETUP
- *
- * ============================================================================
- */
+// ============================================================================
+//      SETUP
+// ============================================================================
 
 void serialcomFrame::OnButton11Click(wxCommandEvent& event)
 {
@@ -388,12 +381,9 @@ void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 	TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
 }
 
-/* ============================================================================
- *
- *      EEPROM
- *
- * ============================================================================
- */
+// ============================================================================
+//      EEPROM
+// ============================================================================
 
 void serialcomFrame::OnButton6Click(wxCommandEvent& event)
 {
@@ -410,12 +400,9 @@ void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 	MbsBot::getInstance()->send("default\n");
 }
 
-/* ============================================================================
- *
- *      SERVO CONTROL
- *
- * ============================================================================
- */
+// ============================================================================
+//      MOTORS
+// ============================================================================
 
 // left wheel
 
@@ -426,7 +413,6 @@ void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
 
 	MbsBot::getInstance()->setLeftWheel(val);
 }
-
 void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
 {
 	int val = atoi(TextCtrl1->GetValue().mb_str(wxConvUTF8));
@@ -444,7 +430,6 @@ void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
 
 	MbsBot::getInstance()->setRightWheel(val);
 }
-
 void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
 {
 	int val = atoi(TextCtrl2->GetValue().mb_str(wxConvUTF8));
@@ -462,7 +447,6 @@ void serialcomFrame::OnSlider3CmdSliderUpdated(wxScrollEvent& event)
 
 	MbsBot::getInstance()->setHead(val);
 }
-
 void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
 {
 	int val = atoi(TextCtrl3->GetValue().mb_str(wxConvUTF8));
@@ -472,7 +456,6 @@ void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
 }
 
 // Set center
-
 void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
 	wxMessageBox(_("r u sure?"), _("OVERWRITE"));
@@ -481,7 +464,6 @@ void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 }
 
 // Refresh
-
 void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
 	MbsBot::getInstance()->send("get l\n");
@@ -490,7 +472,6 @@ void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 }
 
 // Stop
-
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 {
 	MbsBot::getInstance()->send("stop\n");
@@ -499,12 +480,9 @@ void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 	MbsBot::getInstance()->send("get sx\n");
 }
 
-/* ============================================================================
- *
- *      SENSOR DATA
- *
- * ============================================================================
- */
+// ============================================================================
+//      SENSOR DATA
+// ============================================================================
 
 void serialcomFrame::OnButton4Click(wxCommandEvent& event)
 {
@@ -522,12 +500,9 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 	}
 }
 
-/* ============================================================================
- *
- *      MISC
- *
- * ============================================================================
- */
+// ============================================================================
+//      MISC
+// ============================================================================
 
 void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
@@ -621,15 +596,31 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 	}
 	if(joystick)
 	{
-        // left and right wheels in % of power
-		int lw = 0;
-		int rw = 0;
-
 		wxPoint pos = joystick->GetPosition();
 		// pos.x < 0 left
 		// pos.x > 0 right
 		// pos.y < 0 up
 		// pos.y > 0 down
+
+        int x = 0;
+        int y = 0;
+
+        if(pos.x < 0)
+            x = -100;
+        else if(pos.x > 0)
+            x = 100;
+
+        // y is reversed
+        if(pos.y < 0)
+            y = 100;
+        else if(pos.y > 0)
+            y = -100;
+
+        MbsBot::getInstance()->vectorialDrive(x,y);
+/*
+        // left and right wheels in % of power
+		int lw = 0;
+		int rw = 0;
 
 		if(pos.x < 0)			// turn left
 		{
@@ -667,6 +658,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 		TextCtrl2->SetValue(wxString::Format(wxT("%i"), rw));
 
 		MbsBot::getInstance()->drive(lw, rw);
+*/
 	}
 }
 

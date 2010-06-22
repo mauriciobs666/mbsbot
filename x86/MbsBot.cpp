@@ -1,5 +1,4 @@
-/*
- *	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -133,64 +132,57 @@ char * MbsBot::receive()
 	return NULL;
 }
 
-int MbsBot::setLeftWheel(int val)
+int writeVariable(const char *var, int value)
 {
-	char cmd[20];
-	snprintf(cmd, 20, "set l %d\n", val);
+	char cmd[MAX_COMMAND_SIZE];
+	snprintf(cmd, MAX_COMMAND_SIZE, "%s %s %d\n", CMD_WRITE, var, val);
 	return send(cmd);
 }
 
-int MbsBot::setRightWheel(int val)
+int MbsBot::wheels(int lw, int rw, int duration)
 {
-	char cmd[20];
-	snprintf(cmd, 20, "set r %d\n", val);
-	return send(cmd);
-}
-
-int MbsBot::setHead(int val)
-{
-	char cmd[20];
-	snprintf(cmd, 20, "set sx %d\n", val);
-	return send(cmd);
-}
-
-int MbsBot::setLeftWheelCenter(int val)
-{
-	char cmd[20];
-	snprintf(cmd, 20, "set lc %d\n", val);
-	return send(cmd);
-}
-
-int MbsBot::setRightWheelCenter(int val)
-{
-	char cmd[20];
-	snprintf(cmd, 20, "set rc %d\n", val);
-	return send(cmd);
-}
-
-int MbsBot::drive(int lw, int rw)
-{
-	char cmd[20];
+	char cmd[MAX_COMMAND_SIZE];
 	int rc=0;
 
 	// optimization: remember last values and only send command if changed
 	static int lastL = 0;
 	static int lastR = 0;
 
-	if ((lw != lastL) || (rw != lastR))
+	if ((lw != lastL) || (rw != lastR) || (duration>0))
 	{
 		lastL = lw;
 		lastR = rw;
 
-		snprintf(cmd, 20, "drv %d %d\n", lw, rw);
+        if(duration > 0)
+            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d %d\n", CMD_MV_WHEELS, lw, rw, duration);
+		else
+            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d\n", CMD_MV_WHEELS, lw, rw);
+
 		rc = send(cmd);
 	}
 	return rc;
 }
 
-int MbsBot::setProgram(enum ProgramID prg)
+int MbsBot::vectorialDrive(int x, int y, int duration=0)
 {
-	char cmd[20];
-	snprintf(cmd, 20, "set p %d\n", prg);
-	return send(cmd);
+	char cmd[MAX_COMMAND_SIZE];
+	int rc=0;
+
+	// optimization: remember last values and only send command if changed
+	static int lastX = 0;
+	static int lastY = 0;
+
+	if ((x != lastX) || (y != lastY) || (duration>0))
+	{
+		lastX = x;
+		lastY = y;
+
+        if(duration > 0)
+            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d %d\n", CMD_MV_VECT, x, y, duration);
+		else
+            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d\n", CMD_MV_VECT, x, y);
+
+		rc = send(cmd);
+	}
+	return rc;
 }

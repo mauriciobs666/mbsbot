@@ -1,5 +1,4 @@
-/*
- *	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -51,16 +50,24 @@ class MbsBot
 		int send(const char * command, int len=-1);
 		char * receive();
 
-		int setLeftWheel(int val);
-		int setRightWheel(int val);
-		int setHead(int val);
+		int writeVariable(const char *var, int value);
 
-		int setLeftWheelCenter(int val);
-		int setRightWheelCenter(int val);
+        int setProgram(enum ProgramID val)
+            { return writeVariable("p", val); }
+		int setLeftWheel(int val)
+            { return writeVariable("l", val); }
+		int setRightWheel(int val)
+            { return writeVariable("r", val); }
+		int setHead(int val)
+            { return writeVariable("sx", val); }
+		int setLeftWheelCenter(int val)
+            { return writeVariable("lc", val); }
+		int setRightWheelCenter(int val)
+            { return writeVariable("rc", val); }
 
-		int drive(int lw, int rw);
+		int wheels(int lw, int rw, int duration=0);
 
-		int setProgram(enum ProgramID);
+		int vectorialDrive(int x, int y, int duration=0);
 	private:
 		SerialPort serialPort;
 		char serialPortDevice[100];
