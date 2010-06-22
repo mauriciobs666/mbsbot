@@ -135,8 +135,8 @@ class serialcomFrame: public wxFrame
         wxCheckBox* CheckBoxJoystick;
         wxStaticText* StaticText2;
         wxPanel* Panel4;
-        wxChoice* Choice3;
         wxButton* Button1;
+        wxChoice* ChoicePrg;
         wxButton* Button14;
         wxSlider* Slider3;
         wxPanel* Panel1;

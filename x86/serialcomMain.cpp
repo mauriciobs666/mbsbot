@@ -141,14 +141,14 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Panel3 = new wxPanel(Notebook1, ID_PANEL3, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL3"));
     FlexGridSizer3 = new wxFlexGridSizer(0, 3, 0, 0);
     StaticBoxSizer12 = new wxStaticBoxSizer(wxHORIZONTAL, Panel3, _("Variables"));
-    Choice3 = new wxChoice(Panel3, ID_CHOICE3, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE3"));
-    Choice3->Append(_("PRG_RC"));
-    Choice3->Append(_("PRG_SHOW_SENSORS"));
-    Choice3->Append(_("PRG_PHOTOVORE"));
-    Choice3->Append(_("PRG_LINEFOLLOWER"));
-    Choice3->Append(_("PRG_SHARP"));
-    Choice3->Append(_("PRG_SHARP_CHASE"));
-    StaticBoxSizer12->Add(Choice3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    ChoicePrg = new wxChoice(Panel3, ID_CHOICE3, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE3"));
+    ChoicePrg->Append(_("PRG_RC"));
+    ChoicePrg->Append(_("PRG_SHOW_SENSORS"));
+    ChoicePrg->Append(_("PRG_PHOTOVORE"));
+    ChoicePrg->Append(_("PRG_LINEFOLLOWER"));
+    ChoicePrg->Append(_("PRG_SHARP"));
+    ChoicePrg->Append(_("PRG_SHARP_CHASE"));
+    StaticBoxSizer12->Add(ChoicePrg, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(StaticBoxSizer12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer6 = new wxStaticBoxSizer(wxVERTICAL, Panel3, _("Controls"));
     Button6 = new wxButton(Panel3, ID_BUTTON6, _("Save"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON6"));
@@ -519,7 +519,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 		char * tok = strtok(rx, " ");
 		if (tok)
 		{
-			if(strcmp(tok, "L") == 0)
+			if(strcmp(tok, "L") == 0)		// left wheel
 			{
 				tok = strtok(NULL, " ");
 				if (tok)
@@ -529,7 +529,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 					TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
 				}
 			}
-			else if(strcmp(tok, "R") == 0)
+			else if(strcmp(tok, "R") == 0)	// right wheel
 			{
 				tok = strtok(NULL, " ");
 				if (tok)
@@ -539,7 +539,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 					TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
 				}
 			}
-			else if(strcmp(tok, "SX") == 0)
+			else if(strcmp(tok, "SX") == 0)	// head servo
 			{
 				tok = strtok(NULL, " ");
 				if (tok)
@@ -549,7 +549,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 					TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
 				}
 			}
-			else if(strcmp(tok, "AS") == 0)
+			else if(strcmp(tok, "AS") == 0)	// all analog sensors
 			{
 				for(int s = 0; s < 6; s++)
 				{
@@ -589,6 +589,42 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 				counter++;
 				if(counter >= 10)
 					counter = 0;
+			}
+			else if(strcmp(tok, "S") == 0)	// status
+			{
+				tok = strtok(NULL, " ");
+				if (tok)
+				{
+					// current program
+					int value = atoi(tok);
+					ChoicePrg->SetSelection(value);
+					tok = strtok(NULL, " ");
+					if (tok)
+					{
+						// left wheel
+						value = atoi(tok);
+						Slider1->SetValue(value);
+						TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
+
+						tok = strtok(NULL, " ");
+						if (tok)
+						{
+							// right wheel
+							value = atoi(tok);
+							Slider2->SetValue(value);
+							TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
+
+							tok = strtok(NULL, " ");
+							if (tok)
+							{
+								// head servo
+								value = atoi(tok);
+								Slider3->SetValue(value);
+								TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
+							}
+						}
+					}
+				}
 			}
 			else
 				Log->AppendText(str);
@@ -684,7 +720,7 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->setProgram((enum ProgramID)(Choice3->GetCurrentSelection()));
+	MbsBot::getInstance()->setProgram((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
 }
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)

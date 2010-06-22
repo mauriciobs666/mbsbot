@@ -140,7 +140,7 @@
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer12" member="no">
 										<label>Variables</label>
 										<object class="sizeritem">
-											<object class="wxChoice" name="ID_CHOICE3" variable="Choice3" member="yes">
+											<object class="wxChoice" name="ID_CHOICE3" variable="ChoicePrg" member="yes">
 												<content>
 													<item>PRG_RC</item>
 													<item>PRG_SHOW_SENSORS</item>

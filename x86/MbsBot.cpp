@@ -132,10 +132,10 @@ char * MbsBot::receive()
 	return NULL;
 }
 
-int writeVariable(const char *var, int value)
+int MbsBot::writeVariable(const char *var, int value)
 {
 	char cmd[MAX_COMMAND_SIZE];
-	snprintf(cmd, MAX_COMMAND_SIZE, "%s %s %d\n", CMD_WRITE, var, val);
+	snprintf(cmd, MAX_COMMAND_SIZE, "%s %s %d\n", CMD_WRITE, var, value);
 	return send(cmd);
 }
 
@@ -163,7 +163,7 @@ int MbsBot::wheels(int lw, int rw, int duration)
 	return rc;
 }
 
-int MbsBot::vectorialDrive(int x, int y, int duration=0)
+int MbsBot::vectorialDrive(int x, int y, int duration)
 {
 	char cmd[MAX_COMMAND_SIZE];
 	int rc=0;
