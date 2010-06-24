@@ -57,6 +57,13 @@ public:
 		unsigned short LF_threshold[NUM_IR_TRACK];
 		bool LF_reverseColor;
 
+		struct sPID
+		{
+			int Kp;
+			int Ki;
+			int Kd;
+		} pid;
+
 		// delay to allow the servo to position between reads
 		short RF_delay_reads;
 	} data;
@@ -137,6 +144,12 @@ public:
 	}
 	virtual void refresh()
 	{
+		// protect against out of range values
+		if (current < 1000)
+			current = 1000;
+		else if (current > 2000)
+			current = 2000;
+
 		servo.writeMicroseconds(current);
 	}
 private:
@@ -170,6 +183,12 @@ public:
 	}
 	virtual void refresh()
 	{
+		// protect against out of range values
+		if(current > 255)
+			current = 255;
+		else if (current < -255)
+			current = -255;
+
 		if(current < center)
 			digitalWrite(dir, HIGH);
 		else
@@ -307,7 +326,7 @@ void displayAnalogSensors()
 class LineFollower
 {
 public:
-	LineFollower() : lastError(0), Kp(100)
+	LineFollower() : lastError(0), nextIter(0)
 		{}
 	void autoCalibrate();
 	void loop();
@@ -315,7 +334,7 @@ public:
 	int calcError(bool * isIRSensorOverLine);
 private:
 	char lastError;
-	int Kp;
+	int nextIter;
 }
 lineFollower;
 
@@ -334,14 +353,34 @@ void LineFollower::loop()
 		// regular PID control
 
 		int error = calcError(IRSensorOverLine);
-		int Pout = Kp * error;
-		int MV = Pout;
+		int Pout = eeprom.data.pid.Kp * error;
+
+		//TODO: integral
+		int Iout = 0;
+
+		//TODO: derivative
+		int Dout = 0;
+
+		int MV = Pout + Iout + Dout;
 
 		drive.leftWheel->move ( (MV < 0) ? (100 + MV) : 100 );
 		drive.rightWheel->move( (MV > 0) ? (100 - MV) : 100 );
 
 		lastError = error;
 	}
+}
+
+int LineFollower::calcError(bool * isIRSensorOverLine)
+{
+	if( isIRSensorOverLine[0] )		// line is to the left
+		return -1;
+	else if( isIRSensorOverLine[2] )// line is to the right
+		return 1;
+	else if( isIRSensorOverLine[1] )// centered
+		return 0;
+
+	// lost track, redo last correction in the hope the track is just a bit ahead
+	return lastError;
 }
 
 void LineFollower::readSensors(bool * isIRSensorOverLine)
@@ -356,12 +395,11 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
 	}
 }
 
+// Auto Calibration parameters
+#define CAL_READS_NUM 5
+#define CAL_READS_INTERVAL 200
 void LineFollower::autoCalibrate()
 {
-	// configure number of reads during autocalibration
-	#define CAL_READS_NUM 5
-	#define CAL_READS_INTERVAL 200
-
 	unsigned short sensorTemp[NUM_IR_TRACK];
 
 	unsigned short sensorTrack[NUM_IR_TRACK];
@@ -474,19 +512,6 @@ void LineFollower::autoCalibrate()
 	Serial.println("Thresholds:");
 	sprintf(linha," %04d %04d %04d", eeprom.data.LF_threshold[0], eeprom.data.LF_threshold[1], eeprom.data.LF_threshold[2]);
 	Serial.println(linha);
-}
-
-int LineFollower::calcError(bool * isIRSensorOverLine)
-{
-	if( isIRSensorOverLine[0] )		// line is to the left
-		return -1;
-	else if( isIRSensorOverLine[2] )// line is to the right
-		return 1;
-	else if( isIRSensorOverLine[1] )// centered
-		return 0;
-
-	// lost track, redo last correction in the hope the track is just a bit ahead
-	return lastError;
 }
 
 // ******************************************************************************
