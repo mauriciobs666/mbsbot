@@ -307,12 +307,15 @@ void displayAnalogSensors()
 class LineFollower
 {
 public:
-	void init();
+	LineFollower() : lastError(0), Kp(1)
+		{}
 	void autoCalibrate();
 	void loop();
 	void readSensors(bool * isIRSensorOverLine);
+	int calcError(bool * isIRSensorOverLine);
 private:
-	char lastCorrection;
+	char lastError;
+	int Kp;
 }
 lineFollower;
 
@@ -322,26 +325,31 @@ void LineFollower::loop()
 
 	readSensors(IRSensorOverLine);
 
+	// first handle special conditions
+
 	if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, stop
 		drive.stop();
-	else if( IRSensorOverLine[0] )	// turn left
+	else
 	{
-		lastCorrection=-1;
-		drive.left();
-	}
-	else if( IRSensorOverLine[2] )	// turn right
-	{
-		lastCorrection=1;
-		drive.right();
-	}
-	else if( IRSensorOverLine[1] )	// go ahead
-		drive.forward();
-	else 							// lost track, redo last correction in the hope the track is just a bit ahead
-	{
-		if(lastCorrection == 1)
-			drive.right();
-		else if (lastCorrection == -1)
+		// regular PID control
+
+		int error = calcError(IRSensorOverLine);
+
+		int Pout = Kp * error;
+
+		int MV = Pout;
+
+		drive.leftWheel->move();
+		drive.rightWheel->move();
+
+		if( error < 0 )			// turn left
 			drive.left();
+		else if( error > 0 )	// turn right
+			drive.right();
+		else					// go ahead
+			drive.forward();
+
+		lastError = error;
 	}
 }
 
@@ -475,6 +483,19 @@ void LineFollower::autoCalibrate()
 	Serial.println("Thresholds:");
 	sprintf(linha," %04d %04d %04d", eeprom.data.LF_threshold[0], eeprom.data.LF_threshold[1], eeprom.data.LF_threshold[2]);
 	Serial.println(linha);
+}
+
+int LineFollower::calcError(bool * isIRSensorOverLine)
+{
+	if( isIRSensorOverLine[0] )		// line is to the left
+		return -1;
+	else if( isIRSensorOverLine[2] )// line is to the right
+		return 1;
+	else if( isIRSensorOverLine[1] )// centered
+		return 0;
+
+	// lost track, redo last correction in the hope the track is just a bit ahead
+	return lastError;
 }
 
 // ******************************************************************************
