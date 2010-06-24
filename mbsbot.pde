@@ -307,7 +307,7 @@ void displayAnalogSensors()
 class LineFollower
 {
 public:
-	LineFollower() : lastError(0), Kp(1)
+	LineFollower() : lastError(0), Kp(100)
 		{}
 	void autoCalibrate();
 	void loop();
@@ -334,20 +334,11 @@ void LineFollower::loop()
 		// regular PID control
 
 		int error = calcError(IRSensorOverLine);
-
 		int Pout = Kp * error;
-
 		int MV = Pout;
 
-		drive.leftWheel->move();
-		drive.rightWheel->move();
-
-		if( error < 0 )			// turn left
-			drive.left();
-		else if( error > 0 )	// turn right
-			drive.right();
-		else					// go ahead
-			drive.forward();
+		drive.leftWheel->move ( (MV < 0) ? (100 + MV) : 100 );
+		drive.rightWheel->move( (MV > 0) ? (100 - MV) : 100 );
 
 		lastError = error;
 	}
