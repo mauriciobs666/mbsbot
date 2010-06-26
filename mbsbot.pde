@@ -90,6 +90,9 @@ public:
 			data.LF_threshold[x] = 512;
 			data.LF_reverseColor = false;
 		}
+		data.pid.Kp = 100;
+		data.pid.Ki = 0;
+		data.pid.Kd = 0;
 		data.RF_delay_reads = 100;
 	}
 } eeprom;
@@ -326,14 +329,15 @@ void displayAnalogSensors()
 class LineFollower
 {
 public:
-	LineFollower() : lastError(0), nextIter(0)
+	LineFollower() : lastError(0), accError(0), nextIter(0)
 		{}
 	void autoCalibrate();
 	void loop();
 	void readSensors(bool * isIRSensorOverLine);
-	int calcError(bool * isIRSensorOverLine);
+	char calcError(bool * isIRSensorOverLine);
 private:
 	char lastError;
+	int accError;
 	int nextIter;
 }
 lineFollower;
@@ -349,19 +353,29 @@ void LineFollower::loop()
 	if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, stop
 		drive.stop();
 	else
-	{
-		// regular PID control
+	{	// regular PID control
 
 		int error = calcError(IRSensorOverLine);
-		int Pout = eeprom.data.pid.Kp * error;
 
-		//TODO: integral
-		int Iout = 0;
+		// Proportional
+		int Pterm = eeprom.data.pid.Kp * error;
 
-		//TODO: derivative
-		int Dout = 0;
+		// Integral
+		accError += error;
 
-		int MV = Pout + Iout + Dout;
+		/* TODO limit accumulation
+		if (accErr > MAX_ERROR)
+			accErr = MAX_ERROR;
+		else if (accErr < MIN_ERROR)
+			accErr = MIN_ERROR;
+		*/
+
+		int Iterm = eeprom.data.pid.Ki * accError;
+
+		// Deritavive
+		int Dterm = eeprom.data.pid.Kd * ( error - lastError );
+
+		int MV = Pterm + Iterm + Dterm;
 
 		drive.leftWheel->move ( (MV < 0) ? (100 + MV) : 100 );
 		drive.rightWheel->move( (MV > 0) ? (100 - MV) : 100 );
@@ -370,7 +384,7 @@ void LineFollower::loop()
 	}
 }
 
-int LineFollower::calcError(bool * isIRSensorOverLine)
+char LineFollower::calcError(bool * isIRSensorOverLine)
 {
 	if( isIRSensorOverLine[0] )		// line is to the left
 		return -1;
@@ -690,23 +704,21 @@ void Server::loop()
 {
 	if( server.receive() )
 	{
-		char *pqp; // not all avr-libc versions contain strtok() ...
-		#define STRTOK(a, b) strtok_r(a, b, &pqp);
+		char *tok;	// temp
 
-		char * tok = STRTOK(command, " ");
+		char *pqp;	// not all avr-libc versions contain strtok() so we need this crap bellow:
+		#define STRTOK(a, b) strtok_r(a, b, &pqp)
 
-		if (tok)	// first token is the ACTION
+		if (tok = STRTOK(command, " "))						// first token is the ACTION
 		{
-			if(strcmp(tok, CMD_WRITE) == 0)		// assign a value to some variable
+			if(strcmp(tok, CMD_WRITE) == 0)					// assign a value to some variable
 			{
-				tok = STRTOK(NULL, " =");
-				if (tok)			// second token is the DESTINATION VAR
+				if (tok = STRTOK(NULL, " ="))				// second token is the DESTINATION VAR
 				{
 					char dest[10];
 					strcpy(dest,tok);
 
-					tok = STRTOK(NULL, " ");
-					if (tok)		// third token is the actual value
+					if (tok = STRTOK(NULL, " "))			// third token is the actual value
 					{
 						int value = atoi(tok);
 
@@ -732,6 +744,14 @@ void Server::loop()
 							eeprom.data.RF_delay_reads = value;
 						else if(strcmp(dest,"sx") == 0)		// servo x position
 							rangeFinder.servo.write(value);
+						else if(strcmp(dest,"pid") == 0)	// PID parameters
+						{
+							eeprom.data.pid.Kp = value;		// P
+							if (tok = STRTOK(NULL, " "))	// I
+								eeprom.data.pid.Ki = atoi(tok);
+							if (tok = STRTOK(NULL, " "))	// D
+								eeprom.data.pid.Kd = atoi(tok);
+						}
 					}
 				}
 			}
@@ -782,6 +802,15 @@ void Server::loop()
 					}
 					else if(strcmp(tok,"as") == 0)			// all analog sensors
 						displayAnalogSensors();
+					else if(strcmp(tok,"pid") == 0)			// PID
+					{
+						Serial.print("PID ");
+						Serial.print(eeprom.data.pid.Kp);
+						Serial.print(" ");
+						Serial.print(eeprom.data.pid.Ki);
+						Serial.print(" ");
+						Serial.println(eeprom.data.pid.Kd);
+					}
 				}
 			}
 			else if(strcmp(tok, CMD_SAVE) == 0)	// save stuff to eeprom
