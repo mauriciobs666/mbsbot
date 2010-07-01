@@ -567,6 +567,7 @@ public:
 	bool upperBound()
 		{ return currentStep >= (RF_NUMBER_STEPS-1); }
 	bool delayRead();
+	bool collision();
 private:
 	short currentStep;
 	char stepDir;
@@ -670,17 +671,31 @@ void RangeFinder::fillArray()
 
 bool RangeFinder::collision()
 {
+	const int minDist = 200;	// in sensor units
+	const int timeAlarm = 3;	// seconds to collision
+	const int s0 = 700;			// collision position
+
 	if(delayRead())
+	{
 		readSensor();
 
-	//ignore far objects
-	if(currValue > 200)
-	{
-		// if speed > 100
-		if( (currValue - lastValue) > 100 )
+		// ignore far objects
+		if(currValue > minDist)
 		{
-			BEEP(1000, 50);
-			return true;
+			// calc delta-S
+			int ds = currValue - lastValue;
+
+			// calc velocity in sensor units / second
+			int v = (ds * 1000) / eeprom.data.RF_delay_reads;
+
+			// s = s0 + v * t;
+			int timeToCollision = (s0 - currValue) / v;
+
+			if(timeToCollision < timeAlarm)
+			{
+				BEEP(1000, 50);
+				return true;
+			}
 		}
 	}
 	return false;
@@ -969,7 +984,8 @@ void loop()
 			rangeFinder.chase();
 		break;
 
-		case PRG_COLLISION_DETECT:
+		case PRG_COLLISION:
+			rangeFinder.collision();
 		break;
 	}
 	delay(15);

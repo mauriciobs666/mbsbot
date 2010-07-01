@@ -148,6 +148,7 @@
 													<item>PRG_LINEFOLLOWER</item>
 													<item>PRG_SHARP</item>
 													<item>PRG_SHARP_CHASE</item>
+													<item>PRG_COLLISION</item>
 												</content>
 												<handler function="OnChoiceProgram" entry="EVT_CHOICE" />
 											</object>

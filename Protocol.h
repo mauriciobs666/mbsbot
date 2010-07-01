@@ -110,7 +110,7 @@ enum ProgramID
 	PRG_LINEFOLLOWER,	//
 	PRG_SHARP,			// Sharp IR ranger test
 	PRG_SHARP_CHASE,	//
-	PRG_COLLISION_DETECT
+	PRG_COLLISION		//
 };
 
 #endif // PROTOCOL_H_INCLUDED

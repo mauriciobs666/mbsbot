@@ -148,6 +148,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     ChoicePrg->Append(_("PRG_LINEFOLLOWER"));
     ChoicePrg->Append(_("PRG_SHARP"));
     ChoicePrg->Append(_("PRG_SHARP_CHASE"));
+    ChoicePrg->Append(_("PRG_COLLISION"));
     StaticBoxSizer12->Add(ChoicePrg, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(StaticBoxSizer12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer6 = new wxStaticBoxSizer(wxVERTICAL, Panel3, _("Controls"));
