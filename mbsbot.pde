@@ -28,7 +28,14 @@
 // ******************************************************************************
 // MBSBOT
 #include "Protocol.h"
+
 #include "Board.h"
+
+#ifdef PIN_BEEP
+	#define BEEP(freq, dur) tone(PIN_BEEP,freq,dur)
+#else
+	#define BEEP(freq, dur)
+#endif
 
 // TELNET SERVER
 #define SERIAL_PORT_SPEED 115200
@@ -537,11 +544,14 @@ void LineFollower::autoCalibrate()
 class RangeFinder
 {
 public:
-	RangeFinder() : nextRead(0), currentStep(0), stepDir(1)
+	RangeFinder() : nextRead(0), currentStep(0), stepDir(1), currValue(0), lastValue(0)
 		{}
 	Servo servo;
 	short readSensor()
-		{ return analogRead(PIN_SHARP_RF); }
+		{
+			lastValue = currValue;
+			return currValue = analogRead(PIN_SHARP_RF);
+		}
 	bool stepUp();
 	bool stepDown();
 	void refreshServo()
@@ -562,6 +572,8 @@ private:
 	char stepDir;
 	short dataArray[RF_NUMBER_STEPS];
 	unsigned long nextRead;
+	short currValue;
+	short lastValue;
 } rangeFinder;
 
 bool RangeFinder::delayRead()
@@ -654,6 +666,24 @@ void RangeFinder::fillArray()
 		// move
 		refreshServo();
 	}
+}
+
+bool RangeFinder::collision()
+{
+	if(delayRead())
+		readSensor();
+
+	//ignore far objects
+	if(currValue > 200)
+	{
+		// if speed > 100
+		if( (currValue - lastValue) > 100 )
+		{
+			BEEP(1000, 50);
+			return true;
+		}
+	}
+	return false;
 }
 
 // ******************************************************************************
@@ -937,6 +967,9 @@ void loop()
 
 		case PRG_SHARP_CHASE:
 			rangeFinder.chase();
+		break;
+
+		case PRG_COLLISION_DETECT:
 		break;
 	}
 	delay(15);
