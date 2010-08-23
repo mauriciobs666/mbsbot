@@ -1,22 +1,29 @@
 #######################################
-# Syntax Coloring Map Servo
+# Syntax Coloring Map For Messenger
 #######################################
 
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
 
-Servo  KEYWORD1
+Messenger	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
-attach KEYWORD2
-detach KEYWORD2
-write KEYWORD2
-read KEYWORD2
-attached KEYWORD2
+
+process	KEYWORD2
+readInt	KEYWORD2
+readLong	KEYWORD2
+readChar	KEYWORD2
+copyString	KEYWORD2
+checkString	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
 
 #######################################
 # Constants (LITERAL1)
 #######################################
+
