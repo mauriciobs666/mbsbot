@@ -82,6 +82,8 @@ class serialcomFrame: public wxFrame
 		void OnChoiceDCServo(wxCommandEvent& event);
 		void OnChoiceProgram(wxCommandEvent& event);
 		void OnCheckBoxJoystick(wxCommandEvent& event);
+		void OnButton9Click(wxCommandEvent& event);
+		void OnButton10Click(wxCommandEvent& event);
 		//*)
 
         //(*Identifiers(serialcomFrame)
@@ -94,6 +96,8 @@ class serialcomFrame: public wxFrame
         static const long ID_BUTTON14;
         static const long ID_BUTTON11;
         static const long ID_BUTTON9;
+        static const long ID_CHECKBOX2;
+        static const long ID_BUTTON10;
         static const long ID_PANEL6;
         static const long ID_CHOICE3;
         static const long ID_BUTTON6;
@@ -135,6 +139,7 @@ class serialcomFrame: public wxFrame
         wxCheckBox* CheckBoxJoystick;
         wxStaticText* StaticText2;
         wxPanel* Panel4;
+        wxCheckBox* CheckBoxRXdata;
         wxButton* Button1;
         wxChoice* ChoicePrg;
         wxButton* Button14;
@@ -147,6 +152,7 @@ class serialcomFrame: public wxFrame
         wxPanel* Panel6;
         wxPanel* Panel3;
         wxButton* Button6;
+        wxButton* Button10;
         wxButton* Button11;
         wxButton* Button5;
         wxButton* Button3;

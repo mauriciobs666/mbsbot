@@ -37,6 +37,8 @@ const long serialcomFrame::ID_CHOICE1 = wxNewId();
 const long serialcomFrame::ID_BUTTON14 = wxNewId();
 const long serialcomFrame::ID_BUTTON11 = wxNewId();
 const long serialcomFrame::ID_BUTTON9 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX2 = wxNewId();
+const long serialcomFrame::ID_BUTTON10 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
 const long serialcomFrame::ID_CHOICE3 = wxNewId();
 const long serialcomFrame::ID_BUTTON6 = wxNewId();
@@ -82,6 +84,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer3;
     wxFlexGridSizer* FlexGridSizer5;
     wxFlexGridSizer* FlexGridSizer2;
+    wxStaticBoxSizer* StaticBoxSizer9;
     wxBoxSizer* BoxSizer2;
     wxFlexGridSizer* FlexGridSizer7;
     wxStaticBoxSizer* StaticBoxSizer7;
@@ -89,6 +92,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer8;
     wxStaticBoxSizer* StaticBoxSizer3;
     wxStaticBoxSizer* StaticBoxSizer6;
+    wxFlexGridSizer* FlexGridSizer8;
     wxBoxSizer* BoxSizer1;
     wxFlexGridSizer* FlexGridSizer6;
     wxStaticBoxSizer* StaticBoxSizer1;
@@ -135,6 +139,15 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer7->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer9 = new wxStaticBoxSizer(wxHORIZONTAL, Panel6, _("Log"));
+    FlexGridSizer8 = new wxFlexGridSizer(0, 1, 0, 0);
+    CheckBoxRXdata = new wxCheckBox(Panel6, ID_CHECKBOX2, _("Show RX data"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX2"));
+    CheckBoxRXdata->SetValue(false);
+    FlexGridSizer8->Add(CheckBoxRXdata, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Button10 = new wxButton(Panel6, ID_BUTTON10, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON10"));
+    FlexGridSizer8->Add(Button10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer9->Add(FlexGridSizer8, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer5->Add(StaticBoxSizer9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel6->SetSizer(FlexGridSizer5);
     FlexGridSizer5->Fit(Panel6);
     FlexGridSizer5->SetSizeHints(Panel6);
@@ -290,6 +303,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
+    Connect(ID_BUTTON9,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton9Click);
+    Connect(ID_BUTTON10,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton10Click);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceProgram);
     Connect(ID_BUTTON6,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton6Click);
     Connect(ID_BUTTON7,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton7Click);
@@ -507,15 +522,22 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 
 void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
+	static char onceInASecond = 20;
+	if(onceInASecond == 0)
+	{
+		MbsBot::getInstance()->send("status\n");
+		onceInASecond = 20;
+	}
+	else
+		onceInASecond--;
+
 	char *rx;
 	while ((rx = MbsBot::getInstance()->receive()))
 	{
 		wxString str = wxString(rx,wxConvUTF8);
 
-		//#define ALWAYS_SHOW_CMD_RECEIVED
-		#ifdef ALWAYS_SHOW_CMD_RECEIVED
+		if(CheckBoxRXdata->IsChecked())
 			Log->AppendText(str);
-		#endif
 
 		char * tok = strtok(rx, " ");
 		if (tok)
@@ -622,12 +644,13 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 								value = atoi(tok);
 								Slider3->SetValue(value);
 								TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
+								StatusBar1->SetStatusText(_("Status OK"));
 							}
 						}
 					}
 				}
 			}
-			else
+			else if(!CheckBoxRXdata->IsChecked())
 				Log->AppendText(str);
 		}
 	}
@@ -654,48 +677,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             y = -100;
 
         MbsBot::getInstance()->vectorialDrive(x,y);
-/*
-        // left and right wheels in % of power
-		int lw = 0;
-		int rw = 0;
-
-		if(pos.x < 0)			// turn left
-		{
-			if(pos.y == 0)		// hard turn left
-			{
-				lw = -100;
-				rw = 100;
-			}
-			else if(pos.y < 0)	// smooth left-forward
-				rw = 100;
-			else if(pos.y > 0)	// smooth left-backward
-				rw = -100;
-		}
-		else if(pos.x > 0)		// turn right
-		{
-			if(pos.y == 0)		// hard turn right
-			{
-				lw = 100;
-				rw = -100;
-			}
-			else if(pos.y < 0)	// smooth right-forward
-				lw = 100;
-			else if(pos.y > 0)	// smooth right-backward
-				lw = -100;
-		}
-		else if (pos.y < 0)		// forward
-			lw = rw = 100;
-		else if (pos.y > 0)		// backward
-			lw = rw = -100;
-
-		Slider1->SetValue(lw);
-		TextCtrl1->SetValue(wxString::Format(wxT("%i"), lw));
-
-		Slider2->SetValue(rw);
-		TextCtrl2->SetValue(wxString::Format(wxT("%i"), rw));
-
-		MbsBot::getInstance()->drive(lw, rw);
-*/
 	}
 }
 
@@ -745,4 +726,13 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 			joystick = NULL;
     	}
     }
+}
+
+void serialcomFrame::OnButton9Click(wxCommandEvent& event)
+{
+}
+
+void serialcomFrame::OnButton10Click(wxCommandEvent& event)
+{
+	Log->Clear();
 }

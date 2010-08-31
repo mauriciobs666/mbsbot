@@ -58,17 +58,21 @@ public:
 		short leftWheelCenter;
 		short rightWheelCenter;
 
-		// delay in ms used to make it move an inch (+/-)
-		short inch;
+		struct sMoveDelays // delay in ms used to make it move (+/-)
+		{
+			short inch;		//an inch
+			short right;	//90 degrees
+		} mvDelay;
 
+		// line follower sensor array parameters(from auto-cal)
 		unsigned short LF_threshold[NUM_IR_TRACK];
 		bool LF_reverseColor;
 
 		struct sPID
 		{
-			int Kp;
-			int Ki;
-			int Kd;
+			int Kp;		// proportional
+			int Ki;		// integral
+			int Kd;		// derivative
 		} pid;
 
 		// delay to allow the servo to position between reads
@@ -91,7 +95,8 @@ public:
 		data.selectedProgram = PRG_RC;
 		data.leftWheelCenter = 1410;
 		data.rightWheelCenter = 1384;
-		data.inch = 200;
+		data.mvDelay.inch = 200;
+		data.mvDelay.right = 200;
 		for(int x = 0; x < NUM_IR_TRACK; x++)
 		{
 			data.LF_threshold[x] = 512;
@@ -264,7 +269,7 @@ public:
 	}
 	void inch(bool forward=true)
 	{
-		pulse(eeprom.data.inch, forward ? 100 : -100);
+		pulse(eeprom.data.mvDelay.inch, forward ? 100 : -100);
 	}
 	void vectorial(int x, int y);
 }
@@ -784,7 +789,7 @@ void Server::loop()
 						else if(strcmp(dest,"p") == 0)		// program
 							eeprom.data.selectedProgram = value;
 						else if(strcmp(dest,"di") == 0)		// inch delay
-							eeprom.data.inch = value;
+							eeprom.data.mvDelay.inch = value;
 						else if(strcmp(dest,"drf") == 0)	// range finder delay
 							eeprom.data.RF_delay_reads = value;
 						else if(strcmp(dest,"sx") == 0)		// servo x position
@@ -833,7 +838,7 @@ void Server::loop()
 					else if(strcmp(tok,"di") == 0)			// inch delay
 					{
 						Serial.print("DI ");
-						Serial.println(eeprom.data.inch);
+						Serial.println(eeprom.data.mvDelay.inch);
 					}
 					else if(strcmp(tok,"drf") == 0)			// range finder delay
 					{

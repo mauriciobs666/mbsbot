@@ -91,6 +91,10 @@ stop wheels
 
 #define CMD_STATUS	"status"
 /* CMD_STATUS
+no args - get status
+
+reply:
+S [p] [l] [r] [sx]
 */
 
 #define CMD_UNAME	"uname"
