@@ -47,6 +47,7 @@ class serialcomFrame: public wxFrame
 		int accumulated[6][10];
 
 		wxJoystick *joystick;
+		bool calibrateJoy;
 
         serialcomFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~serialcomFrame();
@@ -96,6 +97,18 @@ class serialcomFrame: public wxFrame
         static const long ID_BUTTON14;
         static const long ID_BUTTON11;
         static const long ID_BUTTON9;
+        static const long ID_STATICTEXT4;
+        static const long ID_STATICTEXT5;
+        static const long ID_STATICTEXT6;
+        static const long ID_STATICTEXT7;
+        static const long ID_STATICTEXT8;
+        static const long ID_STATICTEXT9;
+        static const long ID_STATICTEXT10;
+        static const long ID_STATICTEXT11;
+        static const long ID_STATICTEXT12;
+        static const long ID_STATICTEXT13;
+        static const long ID_STATICTEXT14;
+        static const long ID_STATICTEXT15;
         static const long ID_CHECKBOX2;
         static const long ID_BUTTON10;
         static const long ID_PANEL6;
@@ -130,20 +143,27 @@ class serialcomFrame: public wxFrame
 
         //(*Declarations(serialcomFrame)
         wxSlider* Slider1;
+        wxStaticText* StaticText10;
+        wxStaticText* StaticText9;
         wxTextCtrl* TextCtrl4;
         wxPanel* Panel5;
         wxTextCtrl* Log;
         wxButton* Button4;
         wxSlider* Slider2;
         wxNotebook* Notebook1;
+        wxStaticText* StaticText13;
         wxCheckBox* CheckBoxJoystick;
         wxStaticText* StaticText2;
         wxPanel* Panel4;
         wxCheckBox* CheckBoxRXdata;
+        wxStaticText* StaticText14;
         wxButton* Button1;
+        wxStaticText* StaticText6;
         wxChoice* ChoicePrg;
         wxButton* Button14;
         wxSlider* Slider3;
+        wxStaticText* StaticText8;
+        wxStaticText* StaticText11;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
         wxStaticText* StaticText3;
@@ -156,12 +176,17 @@ class serialcomFrame: public wxFrame
         wxButton* Button11;
         wxButton* Button5;
         wxButton* Button3;
+        wxStaticText* StaticText5;
         wxButton* Button7;
+        wxStaticText* StaticText7;
         wxStatusBar* StatusBar1;
         wxButton* Button9;
         wxTextCtrl* TextCtrl2;
         wxTextCtrl* TextCtrl1;
+        wxStaticText* StaticText15;
+        wxStaticText* StaticText12;
         wxPanel* Panel2;
+        wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
         wxChoice* Choice1;
         wxChoice* Choice2;

@@ -37,6 +37,18 @@ const long serialcomFrame::ID_CHOICE1 = wxNewId();
 const long serialcomFrame::ID_BUTTON14 = wxNewId();
 const long serialcomFrame::ID_BUTTON11 = wxNewId();
 const long serialcomFrame::ID_BUTTON9 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT5 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT6 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT7 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT8 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT9 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT10 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT11 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT12 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT13 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT14 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT15 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX2 = wxNewId();
 const long serialcomFrame::ID_BUTTON10 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
@@ -83,6 +95,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer4;
     wxFlexGridSizer* FlexGridSizer3;
     wxFlexGridSizer* FlexGridSizer5;
+    wxFlexGridSizer* FlexGridSizer9;
     wxFlexGridSizer* FlexGridSizer2;
     wxStaticBoxSizer* StaticBoxSizer9;
     wxBoxSizer* BoxSizer2;
@@ -133,10 +146,36 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer6->Add(Button11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer8->Add(FlexGridSizer6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer8, 1, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer13 = new wxStaticBoxSizer(wxHORIZONTAL, Panel6, _("Joystick"));
-    FlexGridSizer7 = new wxFlexGridSizer(0, 2, 0, 0);
+    StaticBoxSizer13 = new wxStaticBoxSizer(wxVERTICAL, Panel6, _("Joystick"));
+    FlexGridSizer7 = new wxFlexGridSizer(0, 1, 0, 0);
     Button9 = new wxButton(Panel6, ID_BUTTON9, _("Calibrate"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON9"));
     FlexGridSizer7->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer9 = new wxFlexGridSizer(0, 2, 0, 0);
+    StaticText4 = new wxStaticText(Panel6, ID_STATICTEXT4, _("max X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
+    FlexGridSizer9->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText5 = new wxStaticText(Panel6, ID_STATICTEXT5, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    FlexGridSizer9->Add(StaticText5, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText6 = new wxStaticText(Panel6, ID_STATICTEXT6, _("min X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
+    FlexGridSizer9->Add(StaticText6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText7 = new wxStaticText(Panel6, ID_STATICTEXT7, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
+    FlexGridSizer9->Add(StaticText7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText8 = new wxStaticText(Panel6, ID_STATICTEXT8, _("max Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
+    FlexGridSizer9->Add(StaticText8, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText9 = new wxStaticText(Panel6, ID_STATICTEXT9, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
+    FlexGridSizer9->Add(StaticText9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText10 = new wxStaticText(Panel6, ID_STATICTEXT10, _("min Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
+    FlexGridSizer9->Add(StaticText10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText11 = new wxStaticText(Panel6, ID_STATICTEXT11, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
+    FlexGridSizer9->Add(StaticText11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText12 = new wxStaticText(Panel6, ID_STATICTEXT12, _("center X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
+    FlexGridSizer9->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText13 = new wxStaticText(Panel6, ID_STATICTEXT13, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
+    FlexGridSizer9->Add(StaticText13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText14 = new wxStaticText(Panel6, ID_STATICTEXT14, _("center Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
+    FlexGridSizer9->Add(StaticText14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText15 = new wxStaticText(Panel6, ID_STATICTEXT15, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
+    FlexGridSizer9->Add(StaticText15, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer7->Add(FlexGridSizer9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer9 = new wxStaticBoxSizer(wxHORIZONTAL, Panel6, _("Log"));
@@ -347,6 +386,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 	TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
 
 	joystick = NULL;
+	calibrateJoy = false;
 }
 
 serialcomFrame::~serialcomFrame()
@@ -654,6 +694,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 				Log->AppendText(str);
 		}
 	}
+
 	if(joystick)
 	{
 		wxPoint pos = joystick->GetPosition();
@@ -662,21 +703,30 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 		// pos.y < 0 up
 		// pos.y > 0 down
 
-        int x = 0;
-        int y = 0;
+		if(calibrateJoy)
+		{
 
-        if(pos.x < 0)
-            x = -100;
-        else if(pos.x > 0)
-            x = 100;
+		}
+		else
+		{
+			// Drive mode
 
-        // y is reversed
-        if(pos.y < 0)
-            y = 100;
-        else if(pos.y > 0)
-            y = -100;
+			int x = 0;
+			int y = 0;
 
-        MbsBot::getInstance()->vectorialDrive(x,y);
+			if(pos.x < 0)
+				x = -100;
+			else if(pos.x > 0)
+				x = 100;
+
+			// y is reversed
+			if(pos.y < 0)
+				y = 100;
+			else if(pos.y > 0)
+				y = -100;
+
+			MbsBot::getInstance()->vectorialDrive(x,y);
+		}
 	}
 }
 
