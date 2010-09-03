@@ -132,7 +132,7 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticText5" member="yes">
+															<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticTextMaxX" member="yes">
 																<label>32767</label>
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -148,7 +148,7 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT7" variable="StaticText7" member="yes">
+															<object class="wxStaticText" name="ID_STATICTEXT7" variable="StaticTextMinX" member="yes">
 																<label>-32768</label>
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -164,7 +164,7 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT9" variable="StaticText9" member="yes">
+															<object class="wxStaticText" name="ID_STATICTEXT9" variable="StaticTextMaxY" member="yes">
 																<label>32767</label>
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -180,7 +180,7 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT11" variable="StaticText11" member="yes">
+															<object class="wxStaticText" name="ID_STATICTEXT11" variable="StaticTextMinY" member="yes">
 																<label>-32768</label>
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -196,7 +196,7 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticText13" member="yes">
+															<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticTextCenterX" member="yes">
 																<label>0</label>
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -212,7 +212,7 @@
 															<option>1</option>
 														</object>
 														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT15" variable="StaticText15" member="yes">
+															<object class="wxStaticText" name="ID_STATICTEXT15" variable="StaticTextCenterY" member="yes">
 																<label>0</label>
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>

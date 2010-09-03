@@ -153,28 +153,28 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer9 = new wxFlexGridSizer(0, 2, 0, 0);
     StaticText4 = new wxStaticText(Panel6, ID_STATICTEXT4, _("max X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     FlexGridSizer9->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText5 = new wxStaticText(Panel6, ID_STATICTEXT5, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
-    FlexGridSizer9->Add(StaticText5, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextMaxX = new wxStaticText(Panel6, ID_STATICTEXT5, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    FlexGridSizer9->Add(StaticTextMaxX, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText6 = new wxStaticText(Panel6, ID_STATICTEXT6, _("min X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
     FlexGridSizer9->Add(StaticText6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText7 = new wxStaticText(Panel6, ID_STATICTEXT7, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
-    FlexGridSizer9->Add(StaticText7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextMinX = new wxStaticText(Panel6, ID_STATICTEXT7, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
+    FlexGridSizer9->Add(StaticTextMinX, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText8 = new wxStaticText(Panel6, ID_STATICTEXT8, _("max Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
     FlexGridSizer9->Add(StaticText8, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText9 = new wxStaticText(Panel6, ID_STATICTEXT9, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
-    FlexGridSizer9->Add(StaticText9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextMaxY = new wxStaticText(Panel6, ID_STATICTEXT9, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
+    FlexGridSizer9->Add(StaticTextMaxY, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText10 = new wxStaticText(Panel6, ID_STATICTEXT10, _("min Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
     FlexGridSizer9->Add(StaticText10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText11 = new wxStaticText(Panel6, ID_STATICTEXT11, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
-    FlexGridSizer9->Add(StaticText11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextMinY = new wxStaticText(Panel6, ID_STATICTEXT11, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
+    FlexGridSizer9->Add(StaticTextMinY, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText12 = new wxStaticText(Panel6, ID_STATICTEXT12, _("center X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
     FlexGridSizer9->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText13 = new wxStaticText(Panel6, ID_STATICTEXT13, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
-    FlexGridSizer9->Add(StaticText13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextCenterX = new wxStaticText(Panel6, ID_STATICTEXT13, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
+    FlexGridSizer9->Add(StaticTextCenterX, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText14 = new wxStaticText(Panel6, ID_STATICTEXT14, _("center Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
     FlexGridSizer9->Add(StaticText14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText15 = new wxStaticText(Panel6, ID_STATICTEXT15, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
-    FlexGridSizer9->Add(StaticText15, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextCenterY = new wxStaticText(Panel6, ID_STATICTEXT15, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
+    FlexGridSizer9->Add(StaticTextCenterY, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer7->Add(FlexGridSizer9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -387,6 +387,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 
 	joystick = NULL;
 	calibrateJoy = false;
+
+	maxX=maxY=32767;
+	minX=minY=-32768;
+	centerX=centerY=0;
 }
 
 serialcomFrame::~serialcomFrame()
@@ -705,26 +709,46 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
 		if(calibrateJoy)
 		{
+			if(pos.x < minX)
+				minX = pos.x;
+			if(pos.x > maxX)
+				maxX = pos.x;
+			if(pos.y < minY)
+				minY = pos.y;
+			if(pos.y > maxY)
+				maxY = pos.y;
+			centerX = pos.x;
+			centerY = pos.y;
 
+			StaticTextMaxX->SetLabel(wxString::Format(wxT("%i"), maxX));
+			StaticTextMinX->SetLabel(wxString::Format(wxT("%i"), minX));
+			StaticTextMaxY->SetLabel(wxString::Format(wxT("%i"), maxY));
+			StaticTextMinY->SetLabel(wxString::Format(wxT("%i"), minY));
+			StaticTextCenterX->SetLabel(wxString::Format(wxT("%i"), centerX));
+			StaticTextCenterY->SetLabel(wxString::Format(wxT("%i"), centerY));
 		}
 		else
 		{
 			// Drive mode
 
+			int x = ((pos.x - centerX) * 100) / ((maxX - minX) / 2);
+			// y is reversed
+			int y = ((centerY - pos.y) * 100) / ((maxY - minY) / 2);
+/*
 			int x = 0;
 			int y = 0;
 
-			if(pos.x < 0)
+			if(pos.x < centerX)
 				x = -100;
-			else if(pos.x > 0)
+			else if(pos.x > centerX)
 				x = 100;
 
 			// y is reversed
-			if(pos.y < 0)
+			if(pos.y < centerY)
 				y = 100;
-			else if(pos.y > 0)
+			else if(pos.y > centerY)
 				y = -100;
-
+*/
 			MbsBot::getInstance()->vectorialDrive(x,y);
 		}
 	}
@@ -757,6 +781,8 @@ void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 {
+	calibrateJoy = false;
+
 	if(CheckBoxJoystick->IsChecked())
 	{
 		if ( joystick == NULL)
@@ -780,6 +806,18 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 
 void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
+	calibrateJoy = !calibrateJoy;
+	if(calibrateJoy)
+	{
+		maxX=maxY=32767;
+		minX=minY=-32768;
+		centerX=centerY=0;
+		Button9->SetLabel(_("Finish"));
+	}
+	else
+	{
+		Button9->SetLabel(_("Calibrate"));
+	}
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)

@@ -48,6 +48,8 @@ class serialcomFrame: public wxFrame
 
 		wxJoystick *joystick;
 		bool calibrateJoy;
+		int maxX, minX, centerX;
+		int maxY, minY, centerY;
 
         serialcomFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~serialcomFrame();
@@ -144,14 +146,13 @@ class serialcomFrame: public wxFrame
         //(*Declarations(serialcomFrame)
         wxSlider* Slider1;
         wxStaticText* StaticText10;
-        wxStaticText* StaticText9;
         wxTextCtrl* TextCtrl4;
         wxPanel* Panel5;
+        wxStaticText* StaticTextCenterX;
         wxTextCtrl* Log;
         wxButton* Button4;
         wxSlider* Slider2;
         wxNotebook* Notebook1;
-        wxStaticText* StaticText13;
         wxCheckBox* CheckBoxJoystick;
         wxStaticText* StaticText2;
         wxPanel* Panel4;
@@ -159,32 +160,33 @@ class serialcomFrame: public wxFrame
         wxStaticText* StaticText14;
         wxButton* Button1;
         wxStaticText* StaticText6;
+        wxStaticText* StaticTextCenterY;
         wxChoice* ChoicePrg;
         wxButton* Button14;
         wxSlider* Slider3;
         wxStaticText* StaticText8;
-        wxStaticText* StaticText11;
         wxPanel* Panel1;
         wxStaticText* StaticText1;
         wxStaticText* StaticText3;
         wxGrid* Grid1;
+        wxStaticText* StaticTextMaxY;
         wxButton* Button2;
         wxPanel* Panel6;
         wxPanel* Panel3;
         wxButton* Button6;
+        wxStaticText* StaticTextMinX;
         wxButton* Button10;
         wxButton* Button11;
         wxButton* Button5;
         wxButton* Button3;
-        wxStaticText* StaticText5;
         wxButton* Button7;
-        wxStaticText* StaticText7;
         wxStatusBar* StatusBar1;
         wxButton* Button9;
         wxTextCtrl* TextCtrl2;
+        wxStaticText* StaticTextMaxX;
         wxTextCtrl* TextCtrl1;
-        wxStaticText* StaticText15;
         wxStaticText* StaticText12;
+        wxStaticText* StaticTextMinY;
         wxPanel* Panel2;
         wxStaticText* StaticText4;
         wxTextCtrl* TextCtrl3;
