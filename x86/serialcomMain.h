@@ -36,6 +36,7 @@
 //*)
 
 #include "MbsBot.h"
+#include "../Average.hpp"
 #include <wx/joystick.h>
 
 class serialcomFrame: public wxFrame
@@ -43,13 +44,14 @@ class serialcomFrame: public wxFrame
     public:
 
 		// Sensor data analysis stuff
-		int counter;
-		int accumulated[6][10];
+		Average sensorAvg[6];
 
+		// Joystick
 		wxJoystick *joystick;
 		bool calibrateJoy;
 		int maxX, minX, centerX;
 		int maxY, minY, centerY;
+		Average joyX, joyY;
 
         serialcomFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~serialcomFrame();

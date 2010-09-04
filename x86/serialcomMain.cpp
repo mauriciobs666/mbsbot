@@ -365,13 +365,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
 
-	// Sensor data analysis stuff
-
-    counter = 0;
-    for(int s=0; s<6; s++)			// six sensors
-		for(int c=0; c<10; c++)		// average of last (TEN) measures
-		    accumulated[s][c]=0;
-
 	// Default serial port
 
     if( MbsBot::getInstance()->init() == 0)
@@ -638,24 +631,11 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 							Grid1->SetCellValue (str, s, 2);
 
 						// average of last 10 measures
-
-						accumulated[s][counter] = value;
-
-						int average = 0;
-
-						for (int c=0; c < 10; c++)
-							average += accumulated[s][c];
-
-						average /= 10;
-
-						str = wxString::Format(wxT("%i"), average);
+						sensorAvg[s].read(value);
+						str = wxString::Format(wxT("%i"), sensorAvg[s].getAverage());
 						Grid1->SetCellValue (str, s, 3);
 					}
 				}
-
-				counter++;
-				if(counter >= 10)
-					counter = 0;
 			}
 			else if(strcmp(tok, "S") == 0)	// status
 			{
@@ -709,14 +689,10 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
 		if(calibrateJoy)
 		{
-			if(pos.x < minX)
-				minX = pos.x;
-			if(pos.x > maxX)
-				maxX = pos.x;
-			if(pos.y < minY)
-				minY = pos.y;
-			if(pos.y > maxY)
-				maxY = pos.y;
+			if(pos.x < minX) minX = pos.x;
+			if(pos.x > maxX) maxX = pos.x;
+			if(pos.y < minY) minY = pos.y;
+			if(pos.y > maxY) maxY = pos.y;
 			centerX = pos.x;
 			centerY = pos.y;
 
@@ -730,25 +706,12 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 		else
 		{
 			// Drive mode
+			joyX.read(pos.x);
+			joyY.read(pos.y);
 
-			int x = ((pos.x - centerX) * 100) / ((maxX - minX) / 2);
-			// y is reversed
-			int y = ((centerY - pos.y) * 100) / ((maxY - minY) / 2);
-/*
-			int x = 0;
-			int y = 0;
+			int x = ((joyX.getAverage() - centerX) * 100) / ((maxX - minX) / 2);
+			int y = ((centerY - joyY.getAverage()) * 100) / ((maxY - minY) / 2);	// y is reversed
 
-			if(pos.x < centerX)
-				x = -100;
-			else if(pos.x > centerX)
-				x = 100;
-
-			// y is reversed
-			if(pos.y < centerY)
-				y = 100;
-			else if(pos.y > centerY)
-				y = -100;
-*/
 			MbsBot::getInstance()->vectorialDrive(x,y);
 		}
 	}
@@ -809,15 +772,12 @@ void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 	calibrateJoy = !calibrateJoy;
 	if(calibrateJoy)
 	{
-		maxX=maxY=32767;
-		minX=minY=-32768;
+		maxX=maxY=minX=minY=0;
 		centerX=centerY=0;
 		Button9->SetLabel(_("Finish"));
 	}
 	else
-	{
 		Button9->SetLabel(_("Calibrate"));
-	}
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)

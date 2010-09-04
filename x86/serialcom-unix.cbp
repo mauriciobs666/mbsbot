@@ -40,6 +40,7 @@
 			<Add library="mbsutil" />
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
+		<Unit filename="../Average.hpp" />
 		<Unit filename="../Board_v1.h" />
 		<Unit filename="../Board_v2.h" />
 		<Unit filename="../Protocol.h" />
