@@ -365,25 +365,25 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
 
-	// Default serial port
+    // Default serial port
 
     if( MbsBot::getInstance()->init() == 0)
-		StatusBar1->SetStatusText(_("Connected"));
+        StatusBar1->SetStatusText(_("Connected"));
     else
-		StatusBar1->SetStatusText(_("Error opening serial port"));
+        StatusBar1->SetStatusText(_("Error opening serial port"));
 
-   	int currSpd = MbsBot::getInstance()->getBaud();
-	for(int x=0; x < n_spd; x++)
-		if( currSpd == spd[x])
-			Choice1->SetSelection(x);
-	TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
+    int currSpd = MbsBot::getInstance()->getBaud();
+    for(int x=0; x < n_spd; x++)
+        if( currSpd == spd[x])
+            Choice1->SetSelection(x);
+    TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
 
-	joystick = NULL;
-	calibrateJoy = false;
+    joystick = NULL;
+    calibrateJoy = false;
 
-	maxX=maxY=32767;
-	minX=minY=-32768;
-	centerX=centerY=0;
+    maxX=maxY=32767;
+    minX=minY=-32768;
+    centerX=centerY=0;
 }
 
 serialcomFrame::~serialcomFrame()
@@ -398,15 +398,15 @@ serialcomFrame::~serialcomFrame()
 
 void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 {
-	wxString cmd=SendCommandText->GetLineText(0)+_("\n");
+    wxString cmd=SendCommandText->GetLineText(0)+_("\n");
 
-	char command[SERIAL_BUFFER_SIZE];
-	strncpy(command, cmd.mb_str(wxConvUTF8), SERIAL_BUFFER_SIZE);
+    char command[SERIAL_BUFFER_SIZE];
+    strncpy(command, cmd.mb_str(wxConvUTF8), SERIAL_BUFFER_SIZE);
 
-	MbsBot::getInstance()->send(command);
+    MbsBot::getInstance()->send(command);
 
-	Log->AppendText(cmd);
-	SendCommandText->Clear();
+    Log->AppendText(cmd);
+    SendCommandText->Clear();
 }
 
 // ============================================================================
@@ -417,21 +417,21 @@ void serialcomFrame::OnButton11Click(wxCommandEvent& event)
 {
     if(MbsBot::getInstance()->init(TextCtrl4->GetValue().mb_str(wxConvUTF8), spd[Choice1->GetCurrentSelection()]) == 0)
     {
-    	StatusBar1->SetStatusText(_("Connected"));
+        StatusBar1->SetStatusText(_("Connected"));
     }
     else
-		StatusBar1->SetStatusText(_("Error opening serial port"));
+        StatusBar1->SetStatusText(_("Error opening serial port"));
 }
 
 void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 {
-   	int currSpd = MbsBot::getInstance()->getBaud();
+    int currSpd = MbsBot::getInstance()->getBaud();
 
-	for(int x=0; x < n_spd; x++)
-		if( currSpd == spd[x])
-			Choice1->SetSelection(x);
+    for(int x=0; x < n_spd; x++)
+        if( currSpd == spd[x])
+            Choice1->SetSelection(x);
 
-	TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
+    TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
 }
 
 // ============================================================================
@@ -440,17 +440,17 @@ void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton6Click(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->send("save\n");
+    MbsBot::getInstance()->send("save\n");
 }
 
 void serialcomFrame::OnButton7Click(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->send("load\n");
+    MbsBot::getInstance()->send("load\n");
 }
 
 void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->send("default\n");
+    MbsBot::getInstance()->send("default\n");
 }
 
 // ============================================================================
@@ -461,76 +461,76 @@ void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 
 void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
 {
-	int val = Slider1->GetValue();
-	TextCtrl1->SetValue(wxString::Format(wxT("%i"), val));
+    int val = Slider1->GetValue();
+    TextCtrl1->SetValue(wxString::Format(wxT("%i"), val));
 
-	MbsBot::getInstance()->setLeftWheel(val);
+    MbsBot::getInstance()->setLeftWheel(val);
 }
 void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
 {
-	int val = atoi(TextCtrl1->GetValue().mb_str(wxConvUTF8));
-	Slider1->SetValue(val);
+    int val = atoi(TextCtrl1->GetValue().mb_str(wxConvUTF8));
+    Slider1->SetValue(val);
 
-	MbsBot::getInstance()->setLeftWheel(val);
+    MbsBot::getInstance()->setLeftWheel(val);
 }
 
 // right wheel
 
 void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
 {
-	int val = Slider2->GetValue();
-	TextCtrl2->SetValue(wxString::Format(wxT("%i"), val));
+    int val = Slider2->GetValue();
+    TextCtrl2->SetValue(wxString::Format(wxT("%i"), val));
 
-	MbsBot::getInstance()->setRightWheel(val);
+    MbsBot::getInstance()->setRightWheel(val);
 }
 void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
 {
-	int val = atoi(TextCtrl2->GetValue().mb_str(wxConvUTF8));
-	Slider2->SetValue(val);
+    int val = atoi(TextCtrl2->GetValue().mb_str(wxConvUTF8));
+    Slider2->SetValue(val);
 
-	MbsBot::getInstance()->setRightWheel(val);
+    MbsBot::getInstance()->setRightWheel(val);
 }
 
 // servo "X"
 
 void serialcomFrame::OnSlider3CmdSliderUpdated(wxScrollEvent& event)
 {
-	int val = Slider3->GetValue();
-	TextCtrl3->SetValue(wxString::Format(wxT("%i"), val));
+    int val = Slider3->GetValue();
+    TextCtrl3->SetValue(wxString::Format(wxT("%i"), val));
 
-	MbsBot::getInstance()->setHead(val);
+    MbsBot::getInstance()->setHead(val);
 }
 void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
 {
-	int val = atoi(TextCtrl3->GetValue().mb_str(wxConvUTF8));
-	Slider3->SetValue(val);
+    int val = atoi(TextCtrl3->GetValue().mb_str(wxConvUTF8));
+    Slider3->SetValue(val);
 
-	MbsBot::getInstance()->setHead(val);
+    MbsBot::getInstance()->setHead(val);
 }
 
 // Set center
 void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
-	wxMessageBox(_("r u sure?"), _("OVERWRITE"));
-	MbsBot::getInstance()->setLeftWheelCenter(Slider1->GetValue());
-	MbsBot::getInstance()->setRightWheelCenter(Slider2->GetValue());
+    wxMessageBox(_("r u sure?"), _("OVERWRITE"));
+    MbsBot::getInstance()->setLeftWheelCenter(Slider1->GetValue());
+    MbsBot::getInstance()->setRightWheelCenter(Slider2->GetValue());
 }
 
 // Refresh
 void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->send("get l\n");
-	MbsBot::getInstance()->send("get r\n");
-	MbsBot::getInstance()->send("get sx\n");
+    MbsBot::getInstance()->send("get l\n");
+    MbsBot::getInstance()->send("get r\n");
+    MbsBot::getInstance()->send("get sx\n");
 }
 
 // Stop
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->send("stop\n");
-	MbsBot::getInstance()->send("get l\n");
-	MbsBot::getInstance()->send("get r\n");
-	MbsBot::getInstance()->send("get sx\n");
+    MbsBot::getInstance()->send("stop\n");
+    MbsBot::getInstance()->send("get l\n");
+    MbsBot::getInstance()->send("get r\n");
+    MbsBot::getInstance()->send("get sx\n");
 }
 
 // ============================================================================
@@ -539,18 +539,18 @@ void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton4Click(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->send("get as\n");
+    MbsBot::getInstance()->send("get as\n");
 }
 
 void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 {
-	for(int s = 0; s < 6; s++)
-	{
-		Grid1->SetCellValue (_("1023"), s, 1);
-		Grid1->SetCellValue (_("0"), s, 2);
-		Grid1->SetCellValue (_("0"), s, 3);
-		Grid1->SetCellValue (_("0"), s, 4);
-	}
+    for(int s = 0; s < 6; s++)
+    {
+        Grid1->SetCellValue (_("1023"), s, 1);
+        Grid1->SetCellValue (_("0"), s, 2);
+        Grid1->SetCellValue (_("0"), s, 3);
+        Grid1->SetCellValue (_("0"), s, 4);
+    }
 }
 
 // ============================================================================
@@ -559,228 +559,225 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 
 void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
-	static char onceInASecond = 20;
-	if(onceInASecond == 0)
-	{
-		MbsBot::getInstance()->send("status\n");
-		onceInASecond = 20;
-	}
-	else
-		onceInASecond--;
+    static char onceInASecond = 20;
+    if(onceInASecond == 0)
+    {
+        MbsBot::getInstance()->send("status\n");
+        onceInASecond = 20;
+    }
+    else
+        onceInASecond--;
 
-	char *rx;
-	while ((rx = MbsBot::getInstance()->receive()))
-	{
-		wxString str = wxString(rx,wxConvUTF8);
+    char *rx;
+    while ((rx = MbsBot::getInstance()->receive()))
+    {
+        wxString str = wxString(rx,wxConvUTF8);
 
-		if(CheckBoxRXdata->IsChecked())
-			Log->AppendText(str);
+        if(CheckBoxRXdata->IsChecked())
+            Log->AppendText(str);
 
-		char * tok = strtok(rx, " ");
-		if (tok)
-		{
-			if(strcmp(tok, "L") == 0)		// left wheel
-			{
-				tok = strtok(NULL, " ");
-				if (tok)
-				{
-					int value = atoi(tok);
-					Slider1->SetValue(value);
-					TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
-				}
-			}
-			else if(strcmp(tok, "R") == 0)	// right wheel
-			{
-				tok = strtok(NULL, " ");
-				if (tok)
-				{
-					int value = atoi(tok);
-					Slider2->SetValue(value);
-					TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
-				}
-			}
-			else if(strcmp(tok, "SX") == 0)	// head servo
-			{
-				tok = strtok(NULL, " ");
-				if (tok)
-				{
-					int value = atoi(tok);
-					Slider3->SetValue(value);
-					TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
-				}
-			}
-			else if(strcmp(tok, "AS") == 0)	// all analog sensors
-			{
-				for(int s = 0; s < 6; s++)
-				{
-					tok = strtok(NULL, " ");
-					if (tok)
-					{
-						int value = atoi(tok);
+        char * tok = strtok(rx, " ");
+        if (tok)
+        {
+            if(strcmp(tok, "L") == 0)		// left wheel
+            {
+                tok = strtok(NULL, " ");
+                if (tok)
+                {
+                    int value = atoi(tok);
+                    Slider1->SetValue(value);
+                    TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
+                }
+            }
+            else if(strcmp(tok, "R") == 0)	// right wheel
+            {
+                tok = strtok(NULL, " ");
+                if (tok)
+                {
+                    int value = atoi(tok);
+                    Slider2->SetValue(value);
+                    TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
+                }
+            }
+            else if(strcmp(tok, "SX") == 0)	// head servo
+            {
+                tok = strtok(NULL, " ");
+                if (tok)
+                {
+                    int value = atoi(tok);
+                    Slider3->SetValue(value);
+                    TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
+                }
+            }
+            else if(strcmp(tok, "AS") == 0)	// all analog sensors
+            {
+                for(int s = 0; s < 6; s++)
+                {
+                    tok = strtok(NULL, " ");
+                    if (tok)
+                    {
+                        int value = atoi(tok);
 
-						// current value
-						wxString str=wxString::Format(wxT("%i"), value);
-						Grid1->SetCellValue (str, s, 0);
+                        // current value
+                        wxString str=wxString::Format(wxT("%i"), value);
+                        Grid1->SetCellValue (str, s, 0);
 
-						// minimum value
-						if(value < atoi(Grid1->GetCellValue (s, 1).mb_str(wxConvUTF8)))
-							Grid1->SetCellValue (str, s, 1);
+                        // minimum value
+                        if(value < atoi(Grid1->GetCellValue (s, 1).mb_str(wxConvUTF8)))
+                            Grid1->SetCellValue (str, s, 1);
 
-						// maximum value
-						if(value > atoi(Grid1->GetCellValue (s, 2).mb_str(wxConvUTF8)))
-							Grid1->SetCellValue (str, s, 2);
+                        // maximum value
+                        if(value > atoi(Grid1->GetCellValue (s, 2).mb_str(wxConvUTF8)))
+                            Grid1->SetCellValue (str, s, 2);
 
-						// average of last 10 measures
-						sensorAvg[s].read(value);
-						str = wxString::Format(wxT("%i"), sensorAvg[s].getAverage());
-						Grid1->SetCellValue (str, s, 3);
-					}
-				}
-			}
-			else if(strcmp(tok, "S") == 0)	// status
-			{
-				tok = strtok(NULL, " ");
-				if (tok)
-				{
-					// current program
-					int value = atoi(tok);
-					ChoicePrg->SetSelection(value);
-					tok = strtok(NULL, " ");
-					if (tok)
-					{
-						// left wheel
-						value = atoi(tok);
-						Slider1->SetValue(value);
-						TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
+                        // average of last 10 measures
+                        sensorAvg[s].read(value);
+                        str = wxString::Format(wxT("%i"), sensorAvg[s].getAverage());
+                        Grid1->SetCellValue (str, s, 3);
+                    }
+                }
+            }
+            else if(strcmp(tok, "S") == 0)	// status
+            {
+                tok = strtok(NULL, " ");
+                if (tok)
+                {
+                    // current program
+                    int value = atoi(tok);
+                    ChoicePrg->SetSelection(value);
+                    tok = strtok(NULL, " ");
+                    if (tok)
+                    {
+                        // left wheel
+                        value = atoi(tok);
+                        Slider1->SetValue(value);
+                        TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
 
-						tok = strtok(NULL, " ");
-						if (tok)
-						{
-							// right wheel
-							value = atoi(tok);
-							Slider2->SetValue(value);
-							TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
+                        tok = strtok(NULL, " ");
+                        if (tok)
+                        {
+                            // right wheel
+                            value = atoi(tok);
+                            Slider2->SetValue(value);
+                            TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
 
-							tok = strtok(NULL, " ");
-							if (tok)
-							{
-								// head servo
-								value = atoi(tok);
-								Slider3->SetValue(value);
-								TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
-								StatusBar1->SetStatusText(_("Status OK"));
-							}
-						}
-					}
-				}
-			}
-			else if(!CheckBoxRXdata->IsChecked())
-				Log->AppendText(str);
-		}
-	}
+                            tok = strtok(NULL, " ");
+                            if (tok)
+                            {
+                                // head servo
+                                value = atoi(tok);
+                                Slider3->SetValue(value);
+                                TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
+                                StatusBar1->SetStatusText(_("Status OK"));
+                            }
+                        }
+                    }
+                }
+            }
+            else if(!CheckBoxRXdata->IsChecked())
+                Log->AppendText(str);
+        }
+    }
 
-	if(joystick)
-	{
-		wxPoint pos = joystick->GetPosition();
-		// pos.x < 0 left
-		// pos.x > 0 right
-		// pos.y < 0 up
-		// pos.y > 0 down
+    if(joystick)
+    {
+        wxPoint pos = joystick->GetPosition();
+        // pos.x < 0 left
+        // pos.x > 0 right
+        // pos.y < 0 up
+        // pos.y > 0 down
 
-		if(calibrateJoy)
-		{
-			if(pos.x < minX) minX = pos.x;
-			if(pos.x > maxX) maxX = pos.x;
-			if(pos.y < minY) minY = pos.y;
-			if(pos.y > maxY) maxY = pos.y;
-			centerX = pos.x;
-			centerY = pos.y;
+        if(calibrateJoy)
+        {
+            if(pos.x < minX) minX = pos.x;
+            if(pos.x > maxX) maxX = pos.x;
+            if(pos.y < minY) minY = pos.y;
+            if(pos.y > maxY) maxY = pos.y;
+            centerX = pos.x;
+            centerY = pos.y;
 
-			StaticTextMaxX->SetLabel(wxString::Format(wxT("%i"), maxX));
-			StaticTextMinX->SetLabel(wxString::Format(wxT("%i"), minX));
-			StaticTextMaxY->SetLabel(wxString::Format(wxT("%i"), maxY));
-			StaticTextMinY->SetLabel(wxString::Format(wxT("%i"), minY));
-			StaticTextCenterX->SetLabel(wxString::Format(wxT("%i"), centerX));
-			StaticTextCenterY->SetLabel(wxString::Format(wxT("%i"), centerY));
-		}
-		else
-		{
-			// Drive mode
-			joyX.read(pos.x);
-			joyY.read(pos.y);
+            StaticTextMaxX->SetLabel(wxString::Format(wxT("%i"), maxX));
+            StaticTextMinX->SetLabel(wxString::Format(wxT("%i"), minX));
+            StaticTextMaxY->SetLabel(wxString::Format(wxT("%i"), maxY));
+            StaticTextMinY->SetLabel(wxString::Format(wxT("%i"), minY));
+            StaticTextCenterX->SetLabel(wxString::Format(wxT("%i"), centerX));
+            StaticTextCenterY->SetLabel(wxString::Format(wxT("%i"), centerY));
+        }
+        else
+        {
+            // Drive mode
+            int x = ((pos.x - centerX) * 100) / ((maxX - minX) / 2);
+            int y = ((centerY - pos.y) * 100) / ((maxY - minY) / 2); // y is reversed
 
-			int x = ((joyX.getAverage() - centerX) * 100) / ((maxX - minX) / 2);
-			int y = ((centerY - joyY.getAverage()) * 100) / ((maxY - minY) / 2);	// y is reversed
-
-			MbsBot::getInstance()->vectorialDrive(x,y);
-		}
-	}
+            MbsBot::getInstance()->vectorialDrive(x,y);
+        }
+    }
 }
 
 void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 {
 
-	if( Choice2->GetCurrentSelection() == 0 )
-	{
-		// Wheel Servo
-		Slider1->SetRange(1000,2000);
-		Slider2->SetRange(1000,2000);
-	}
-	else if ( Choice2->GetCurrentSelection() == 1 )
-	{
-		// Wheel DC
-		Slider1->SetRange(-100,100);
-		Slider2->SetRange(-100,100);
-	}
-	MbsBot::getInstance()->send("get l\n");
-	MbsBot::getInstance()->send("get r\n");
-	MbsBot::getInstance()->send("get sx\n");
+    if( Choice2->GetCurrentSelection() == 0 )
+    {
+        // Wheel Servo
+        Slider1->SetRange(1000,2000);
+        Slider2->SetRange(1000,2000);
+    }
+    else if ( Choice2->GetCurrentSelection() == 1 )
+    {
+        // Wheel DC
+        Slider1->SetRange(-100,100);
+        Slider2->SetRange(-100,100);
+    }
+    MbsBot::getInstance()->send("get l\n");
+    MbsBot::getInstance()->send("get r\n");
+    MbsBot::getInstance()->send("get sx\n");
 }
 
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 {
-	MbsBot::getInstance()->setProgram((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
+    MbsBot::getInstance()->setProgram((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
 }
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 {
-	calibrateJoy = false;
+    calibrateJoy = false;
 
-	if(CheckBoxJoystick->IsChecked())
-	{
-		if ( joystick == NULL)
-			if(wxJoystick::GetNumberJoysticks() > 0)
-				joystick = new wxJoystick(wxJOYSTICK1);
-		if ( joystick == NULL)	// error or no joystick found
-		{
-			CheckBoxJoystick->SetValue(false);
-			StatusBar1->SetStatusText(_("Error opening Joystick 1"));
-		}
-	}
+    if(CheckBoxJoystick->IsChecked())
+    {
+        if ( joystick == NULL)
+            if(wxJoystick::GetNumberJoysticks() > 0)
+                joystick = new wxJoystick(wxJOYSTICK1);
+        if ( joystick == NULL)	// error or no joystick found
+        {
+            CheckBoxJoystick->SetValue(false);
+            StatusBar1->SetStatusText(_("Error opening Joystick 1"));
+        }
+    }
     else
     {
-    	if ( joystick != NULL)
-    	{
-			delete joystick;
-			joystick = NULL;
-    	}
+        if ( joystick != NULL)
+        {
+            delete joystick;
+            joystick = NULL;
+        }
     }
 }
 
 void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
-	calibrateJoy = !calibrateJoy;
-	if(calibrateJoy)
-	{
-		maxX=maxY=minX=minY=0;
-		centerX=centerY=0;
-		Button9->SetLabel(_("Finish"));
-	}
-	else
-		Button9->SetLabel(_("Calibrate"));
+    calibrateJoy = !calibrateJoy;
+    if(calibrateJoy)
+    {
+        maxX=maxY=minX=minY=0;
+        centerX=centerY=0;
+        Button9->SetLabel(_("Finish"));
+    }
+    else
+        Button9->SetLabel(_("Calibrate"));
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)
 {
-	Log->Clear();
+    Log->Clear();
 }

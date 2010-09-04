@@ -34,13 +34,12 @@ public:
     }
     long read(long value)
     {
-        total -= readings[(int)index];       // subtract the last reading:
-        readings[(int)index] = value;
-        total += readings[(int)index];
+        total -= readings[index];       // subtract the last reading:
+        readings[index] = value;
+        total += readings[index];
 
-        if (index < NUM_READINGS)
-            index++;
-        else
+		index++;
+        if (index >= NUM_READINGS)
             index = 0;
 
         return getAverage();
@@ -51,7 +50,7 @@ public:
     }
 private:
     long readings[NUM_READINGS]; // the readings from the analog input
-    char index;                  // the index of the current reading
+    int index;                  // the index of the current reading
     long total;                  // the running total
 };
 

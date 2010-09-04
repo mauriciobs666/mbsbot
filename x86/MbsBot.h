@@ -68,11 +68,15 @@ class MbsBot
 		int wheels(int lw, int rw, int duration=0);
 
 		int vectorialDrive(int x, int y, int duration=0);
+		void setAccelStep(int step) { accelStep = step; }
+		int getAccelStep() { return accelStep; }
 	private:
 		SerialPort serialPort;
 		char serialPortDevice[100];
 		int baudRate;
 		char response[SERIAL_BUFFER_SIZE];
+
+		int accelStep;
 };
 
 #endif // MBSBOT_H

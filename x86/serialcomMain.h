@@ -41,165 +41,164 @@
 
 class serialcomFrame: public wxFrame
 {
-    public:
+public:
 
-		// Sensor data analysis stuff
-		Average sensorAvg[6];
+    // Sensor data analysis stuff
+    Average sensorAvg[6];
 
-		// Joystick
-		wxJoystick *joystick;
-		bool calibrateJoy;
-		int maxX, minX, centerX;
-		int maxY, minY, centerY;
-		Average joyX, joyY;
+    // Joystick
+    wxJoystick *joystick;
+    bool calibrateJoy;
+    int maxX, minX, centerX;
+    int maxY, minY, centerY;
 
-        serialcomFrame(wxWindow* parent,wxWindowID id = -1);
-        virtual ~serialcomFrame();
+    serialcomFrame(wxWindow* parent,wxWindowID id = -1);
+    virtual ~serialcomFrame();
 
-    private:
+private:
 
-		//(*Handlers(serialcomFrame)
-		void OnQuit(wxCommandEvent& event);
-		void OnAbout(wxCommandEvent& event);
-		void OnSendCommandTextTextEnter(wxCommandEvent& event);
-		void OnTimer1Trigger(wxTimerEvent& event);
-		void OnMenuItem3Selected(wxCommandEvent& event);
-		void OnSlider1CmdSliderUpdated(wxScrollEvent& event);
-		void OnSlider2CmdSliderUpdated(wxScrollEvent& event);
-		void OnTextCtrl1TextEnter(wxCommandEvent& event);
-		void OnTextCtrl2TextEnter(wxCommandEvent& event);
-		void OnButton1Click(wxCommandEvent& event);
-		void OnButton2Click(wxCommandEvent& event);
-		void OnButton3Click(wxCommandEvent& event);
-		void OnButton4Click(wxCommandEvent& event);
-		void OnButton5Click(wxCommandEvent& event);
-		void OnButton6Click(wxCommandEvent& event);
-		void OnButton7Click(wxCommandEvent& event);
-		void OnButton8Click(wxCommandEvent& event);
-		void OnSlider3CmdSliderUpdated(wxScrollEvent& event);
-		void OnTextCtrl3TextEnter(wxCommandEvent& event);
-		void OnButton11Click(wxCommandEvent& event);
-		void OnButton14Click(wxCommandEvent& event);
-		void OnButton15Click(wxCommandEvent& event);
-		void OnDriveByKeyboard(wxCommandEvent& event);
-		void OnButton15Click1(wxCommandEvent& event);
-		void OnDriveTimerTrigger(wxTimerEvent& event);
-		void OnChoiceDCServo(wxCommandEvent& event);
-		void OnChoiceProgram(wxCommandEvent& event);
-		void OnCheckBoxJoystick(wxCommandEvent& event);
-		void OnButton9Click(wxCommandEvent& event);
-		void OnButton10Click(wxCommandEvent& event);
-		//*)
+    //(*Handlers(serialcomFrame)
+    void OnQuit(wxCommandEvent& event);
+    void OnAbout(wxCommandEvent& event);
+    void OnSendCommandTextTextEnter(wxCommandEvent& event);
+    void OnTimer1Trigger(wxTimerEvent& event);
+    void OnMenuItem3Selected(wxCommandEvent& event);
+    void OnSlider1CmdSliderUpdated(wxScrollEvent& event);
+    void OnSlider2CmdSliderUpdated(wxScrollEvent& event);
+    void OnTextCtrl1TextEnter(wxCommandEvent& event);
+    void OnTextCtrl2TextEnter(wxCommandEvent& event);
+    void OnButton1Click(wxCommandEvent& event);
+    void OnButton2Click(wxCommandEvent& event);
+    void OnButton3Click(wxCommandEvent& event);
+    void OnButton4Click(wxCommandEvent& event);
+    void OnButton5Click(wxCommandEvent& event);
+    void OnButton6Click(wxCommandEvent& event);
+    void OnButton7Click(wxCommandEvent& event);
+    void OnButton8Click(wxCommandEvent& event);
+    void OnSlider3CmdSliderUpdated(wxScrollEvent& event);
+    void OnTextCtrl3TextEnter(wxCommandEvent& event);
+    void OnButton11Click(wxCommandEvent& event);
+    void OnButton14Click(wxCommandEvent& event);
+    void OnButton15Click(wxCommandEvent& event);
+    void OnDriveByKeyboard(wxCommandEvent& event);
+    void OnButton15Click1(wxCommandEvent& event);
+    void OnDriveTimerTrigger(wxTimerEvent& event);
+    void OnChoiceDCServo(wxCommandEvent& event);
+    void OnChoiceProgram(wxCommandEvent& event);
+    void OnCheckBoxJoystick(wxCommandEvent& event);
+    void OnButton9Click(wxCommandEvent& event);
+    void OnButton10Click(wxCommandEvent& event);
+    //*)
 
-        //(*Identifiers(serialcomFrame)
-        static const long ID_TEXTCTRL2;
-        static const long ID_PANEL1;
-        static const long ID_STATICTEXT1;
-        static const long ID_TEXTCTRL6;
-        static const long ID_STATICTEXT2;
-        static const long ID_CHOICE1;
-        static const long ID_BUTTON14;
-        static const long ID_BUTTON11;
-        static const long ID_BUTTON9;
-        static const long ID_STATICTEXT4;
-        static const long ID_STATICTEXT5;
-        static const long ID_STATICTEXT6;
-        static const long ID_STATICTEXT7;
-        static const long ID_STATICTEXT8;
-        static const long ID_STATICTEXT9;
-        static const long ID_STATICTEXT10;
-        static const long ID_STATICTEXT11;
-        static const long ID_STATICTEXT12;
-        static const long ID_STATICTEXT13;
-        static const long ID_STATICTEXT14;
-        static const long ID_STATICTEXT15;
-        static const long ID_CHECKBOX2;
-        static const long ID_BUTTON10;
-        static const long ID_PANEL6;
-        static const long ID_CHOICE3;
-        static const long ID_BUTTON6;
-        static const long ID_BUTTON7;
-        static const long ID_BUTTON8;
-        static const long ID_PANEL3;
-        static const long ID_SLIDER1;
-        static const long ID_TEXTCTRL3;
-        static const long ID_SLIDER2;
-        static const long ID_TEXTCTRL4;
-        static const long ID_BUTTON2;
-        static const long ID_BUTTON1;
-        static const long ID_BUTTON3;
-        static const long ID_CHOICE2;
-        static const long ID_CHECKBOX1;
-        static const long ID_SLIDER3;
-        static const long ID_TEXTCTRL5;
-        static const long ID_PANEL2;
-        static const long ID_GRID1;
-        static const long ID_BUTTON4;
-        static const long ID_BUTTON5;
-        static const long ID_PANEL4;
-        static const long ID_STATICTEXT3;
-        static const long ID_PANEL5;
-        static const long ID_NOTEBOOK2;
-        static const long ID_TEXTCTRL1;
-        static const long ID_STATUSBAR1;
-        static const long ID_TIMER1;
-        //*)
+    //(*Identifiers(serialcomFrame)
+    static const long ID_TEXTCTRL2;
+    static const long ID_PANEL1;
+    static const long ID_STATICTEXT1;
+    static const long ID_TEXTCTRL6;
+    static const long ID_STATICTEXT2;
+    static const long ID_CHOICE1;
+    static const long ID_BUTTON14;
+    static const long ID_BUTTON11;
+    static const long ID_BUTTON9;
+    static const long ID_STATICTEXT4;
+    static const long ID_STATICTEXT5;
+    static const long ID_STATICTEXT6;
+    static const long ID_STATICTEXT7;
+    static const long ID_STATICTEXT8;
+    static const long ID_STATICTEXT9;
+    static const long ID_STATICTEXT10;
+    static const long ID_STATICTEXT11;
+    static const long ID_STATICTEXT12;
+    static const long ID_STATICTEXT13;
+    static const long ID_STATICTEXT14;
+    static const long ID_STATICTEXT15;
+    static const long ID_CHECKBOX2;
+    static const long ID_BUTTON10;
+    static const long ID_PANEL6;
+    static const long ID_CHOICE3;
+    static const long ID_BUTTON6;
+    static const long ID_BUTTON7;
+    static const long ID_BUTTON8;
+    static const long ID_PANEL3;
+    static const long ID_SLIDER1;
+    static const long ID_TEXTCTRL3;
+    static const long ID_SLIDER2;
+    static const long ID_TEXTCTRL4;
+    static const long ID_BUTTON2;
+    static const long ID_BUTTON1;
+    static const long ID_BUTTON3;
+    static const long ID_CHOICE2;
+    static const long ID_CHECKBOX1;
+    static const long ID_SLIDER3;
+    static const long ID_TEXTCTRL5;
+    static const long ID_PANEL2;
+    static const long ID_GRID1;
+    static const long ID_BUTTON4;
+    static const long ID_BUTTON5;
+    static const long ID_PANEL4;
+    static const long ID_STATICTEXT3;
+    static const long ID_PANEL5;
+    static const long ID_NOTEBOOK2;
+    static const long ID_TEXTCTRL1;
+    static const long ID_STATUSBAR1;
+    static const long ID_TIMER1;
+    //*)
 
-        //(*Declarations(serialcomFrame)
-        wxSlider* Slider1;
-        wxStaticText* StaticText10;
-        wxTextCtrl* TextCtrl4;
-        wxPanel* Panel5;
-        wxStaticText* StaticTextCenterX;
-        wxTextCtrl* Log;
-        wxButton* Button4;
-        wxSlider* Slider2;
-        wxNotebook* Notebook1;
-        wxCheckBox* CheckBoxJoystick;
-        wxStaticText* StaticText2;
-        wxPanel* Panel4;
-        wxCheckBox* CheckBoxRXdata;
-        wxStaticText* StaticText14;
-        wxButton* Button1;
-        wxStaticText* StaticText6;
-        wxStaticText* StaticTextCenterY;
-        wxChoice* ChoicePrg;
-        wxButton* Button14;
-        wxSlider* Slider3;
-        wxStaticText* StaticText8;
-        wxPanel* Panel1;
-        wxStaticText* StaticText1;
-        wxStaticText* StaticText3;
-        wxGrid* Grid1;
-        wxStaticText* StaticTextMaxY;
-        wxButton* Button2;
-        wxPanel* Panel6;
-        wxPanel* Panel3;
-        wxButton* Button6;
-        wxStaticText* StaticTextMinX;
-        wxButton* Button10;
-        wxButton* Button11;
-        wxButton* Button5;
-        wxButton* Button3;
-        wxButton* Button7;
-        wxStatusBar* StatusBar1;
-        wxButton* Button9;
-        wxTextCtrl* TextCtrl2;
-        wxStaticText* StaticTextMaxX;
-        wxTextCtrl* TextCtrl1;
-        wxStaticText* StaticText12;
-        wxStaticText* StaticTextMinY;
-        wxPanel* Panel2;
-        wxStaticText* StaticText4;
-        wxTextCtrl* TextCtrl3;
-        wxChoice* Choice1;
-        wxChoice* Choice2;
-        wxButton* Button8;
-        wxTimer Timer1;
-        wxTextCtrl* SendCommandText;
-        //*)
+    //(*Declarations(serialcomFrame)
+    wxSlider* Slider1;
+    wxStaticText* StaticText10;
+    wxTextCtrl* TextCtrl4;
+    wxPanel* Panel5;
+    wxStaticText* StaticTextCenterX;
+    wxTextCtrl* Log;
+    wxButton* Button4;
+    wxSlider* Slider2;
+    wxNotebook* Notebook1;
+    wxCheckBox* CheckBoxJoystick;
+    wxStaticText* StaticText2;
+    wxPanel* Panel4;
+    wxCheckBox* CheckBoxRXdata;
+    wxStaticText* StaticText14;
+    wxButton* Button1;
+    wxStaticText* StaticText6;
+    wxStaticText* StaticTextCenterY;
+    wxChoice* ChoicePrg;
+    wxButton* Button14;
+    wxSlider* Slider3;
+    wxStaticText* StaticText8;
+    wxPanel* Panel1;
+    wxStaticText* StaticText1;
+    wxStaticText* StaticText3;
+    wxGrid* Grid1;
+    wxStaticText* StaticTextMaxY;
+    wxButton* Button2;
+    wxPanel* Panel6;
+    wxPanel* Panel3;
+    wxButton* Button6;
+    wxStaticText* StaticTextMinX;
+    wxButton* Button10;
+    wxButton* Button11;
+    wxButton* Button5;
+    wxButton* Button3;
+    wxButton* Button7;
+    wxStatusBar* StatusBar1;
+    wxButton* Button9;
+    wxTextCtrl* TextCtrl2;
+    wxStaticText* StaticTextMaxX;
+    wxTextCtrl* TextCtrl1;
+    wxStaticText* StaticText12;
+    wxStaticText* StaticTextMinY;
+    wxPanel* Panel2;
+    wxStaticText* StaticText4;
+    wxTextCtrl* TextCtrl3;
+    wxChoice* Choice1;
+    wxChoice* Choice2;
+    wxButton* Button8;
+    wxTimer Timer1;
+    wxTextCtrl* SendCommandText;
+    //*)
 
-        DECLARE_EVENT_TABLE()
+    DECLARE_EVENT_TABLE()
 };
 
 #endif // SERIALCOMMAIN_H
