@@ -36,19 +36,11 @@ const long serialcomFrame::ID_STATICTEXT2 = wxNewId();
 const long serialcomFrame::ID_CHOICE1 = wxNewId();
 const long serialcomFrame::ID_BUTTON14 = wxNewId();
 const long serialcomFrame::ID_BUTTON11 = wxNewId();
-const long serialcomFrame::ID_BUTTON9 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX3 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT5 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT6 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT7 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT8 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT9 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT10 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT11 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT12 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT13 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT14 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT15 = wxNewId();
+const long serialcomFrame::ID_BUTTON9 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX2 = wxNewId();
 const long serialcomFrame::ID_BUTTON10 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
@@ -61,6 +53,7 @@ const long serialcomFrame::ID_SLIDER1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL3 = wxNewId();
 const long serialcomFrame::ID_SLIDER2 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL4 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX4 = wxNewId();
 const long serialcomFrame::ID_BUTTON2 = wxNewId();
 const long serialcomFrame::ID_BUTTON1 = wxNewId();
 const long serialcomFrame::ID_BUTTON3 = wxNewId();
@@ -95,7 +88,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer4;
     wxFlexGridSizer* FlexGridSizer3;
     wxFlexGridSizer* FlexGridSizer5;
-    wxFlexGridSizer* FlexGridSizer9;
     wxFlexGridSizer* FlexGridSizer2;
     wxStaticBoxSizer* StaticBoxSizer9;
     wxBoxSizer* BoxSizer2;
@@ -148,35 +140,18 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer5->Add(StaticBoxSizer8, 1, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer13 = new wxStaticBoxSizer(wxVERTICAL, Panel6, _("Joystick"));
     FlexGridSizer7 = new wxFlexGridSizer(0, 1, 0, 0);
-    Button9 = new wxButton(Panel6, ID_BUTTON9, _("Calibrate"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON9"));
+    CheckBoxEnJoystick = new wxCheckBox(Panel6, ID_CHECKBOX3, _("Enable"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX3"));
+    CheckBoxEnJoystick->SetValue(false);
+    FlexGridSizer7->Add(CheckBoxEnJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextJoyCurr = new wxStaticText(Panel6, ID_STATICTEXT4, _("curr(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
+    FlexGridSizer7->Add(StaticTextJoyCurr, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextJoyMax = new wxStaticText(Panel6, ID_STATICTEXT5, _("max(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    FlexGridSizer7->Add(StaticTextJoyMax, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextJoyMin = new wxStaticText(Panel6, ID_STATICTEXT6, _("min(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
+    FlexGridSizer7->Add(StaticTextJoyMin, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    Button9 = new wxButton(Panel6, ID_BUTTON9, _("center(0,0)"), wxDefaultPosition, wxSize(127,27), 0, wxDefaultValidator, _T("ID_BUTTON9"));
     FlexGridSizer7->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer9 = new wxFlexGridSizer(0, 2, 0, 0);
-    StaticText4 = new wxStaticText(Panel6, ID_STATICTEXT4, _("max X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
-    FlexGridSizer9->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextMaxX = new wxStaticText(Panel6, ID_STATICTEXT5, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
-    FlexGridSizer9->Add(StaticTextMaxX, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText6 = new wxStaticText(Panel6, ID_STATICTEXT6, _("min X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
-    FlexGridSizer9->Add(StaticText6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextMinX = new wxStaticText(Panel6, ID_STATICTEXT7, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
-    FlexGridSizer9->Add(StaticTextMinX, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText8 = new wxStaticText(Panel6, ID_STATICTEXT8, _("max Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
-    FlexGridSizer9->Add(StaticText8, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextMaxY = new wxStaticText(Panel6, ID_STATICTEXT9, _("32767"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
-    FlexGridSizer9->Add(StaticTextMaxY, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText10 = new wxStaticText(Panel6, ID_STATICTEXT10, _("min Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT10"));
-    FlexGridSizer9->Add(StaticText10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextMinY = new wxStaticText(Panel6, ID_STATICTEXT11, _("-32768"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT11"));
-    FlexGridSizer9->Add(StaticTextMinY, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText12 = new wxStaticText(Panel6, ID_STATICTEXT12, _("center X"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT12"));
-    FlexGridSizer9->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextCenterX = new wxStaticText(Panel6, ID_STATICTEXT13, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT13"));
-    FlexGridSizer9->Add(StaticTextCenterX, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText14 = new wxStaticText(Panel6, ID_STATICTEXT14, _("center Y"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
-    FlexGridSizer9->Add(StaticText14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextCenterY = new wxStaticText(Panel6, ID_STATICTEXT15, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT15"));
-    FlexGridSizer9->Add(StaticTextCenterY, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer7->Add(FlexGridSizer9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer13, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer9 = new wxStaticBoxSizer(wxHORIZONTAL, Panel6, _("Log"));
     FlexGridSizer8 = new wxFlexGridSizer(0, 1, 0, 0);
@@ -229,19 +204,22 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer2->Add(TextCtrl2, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer3 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Controls"));
+    CheckBoxAutoRefresh = new wxCheckBox(Panel2, ID_CHECKBOX4, _("Auto-refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX4"));
+    CheckBoxAutoRefresh->SetValue(true);
+    StaticBoxSizer3->Add(CheckBoxAutoRefresh, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
     StaticBoxSizer3->Add(Button2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button1 = new wxButton(Panel2, ID_BUTTON1, _("Set as center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
     StaticBoxSizer3->Add(Button1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button3 = new wxButton(Panel2, ID_BUTTON3, _("Center / Stop"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
+    Button3 = new wxButton(Panel2, ID_BUTTON3, _("Stop / Center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
     StaticBoxSizer3->Add(Button3, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Choice2 = new wxChoice(Panel2, ID_CHOICE2, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE2"));
     Choice2->Append(_("Servo Wheel"));
-    Choice2->Append(_("DC Wheel"));
+    Choice2->SetSelection( Choice2->Append(_("PWM Wheel")) );
     StaticBoxSizer3->Add(Choice2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    CheckBoxJoystick = new wxCheckBox(Panel2, ID_CHECKBOX1, _("Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
-    CheckBoxJoystick->SetValue(false);
-    StaticBoxSizer3->Add(CheckBoxJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
+    CheckBoxDrvByJoy = new wxCheckBox(Panel2, ID_CHECKBOX1, _("Drive by Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
+    CheckBoxDrvByJoy->SetValue(true);
+    StaticBoxSizer3->Add(CheckBoxDrvByJoy, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
     FlexGridSizer1->Add(StaticBoxSizer3, 0, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Head"));
     Slider3 = new wxSlider(Panel2, ID_SLIDER3, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
@@ -342,6 +320,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
+    Connect(ID_CHECKBOX3,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnCheckBoxJoystick);
     Connect(ID_BUTTON9,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton9Click);
     Connect(ID_BUTTON10,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton10Click);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceProgram);
@@ -356,7 +335,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton1Click);
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton3Click);
     Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceDCServo);
-    Connect(ID_CHECKBOX1,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnCheckBoxJoystick);
     Connect(ID_SLIDER3,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider3CmdSliderUpdated);
     Connect(ID_TEXTCTRL5,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl3TextEnter);
     Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton4Click);
@@ -379,11 +357,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
 
     joystick = NULL;
-    calibrateJoy = false;
-
-    maxX=maxY=32767;
-    minX=minY=-32768;
-    centerX=centerY=0;
+    joyMax.x=10;
+    joyMax.y=10;
+    joyMin.x=-10;
+    joyMin.y=-10;
 }
 
 serialcomFrame::~serialcomFrame()
@@ -562,7 +539,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
     static char onceInASecond = 20;
     if(onceInASecond == 0)
     {
-        MbsBot::getInstance()->send("status\n");
+        if(CheckBoxAutoRefresh->IsChecked())
+            MbsBot::getInstance()->send("status\n");
         onceInASecond = 20;
     }
     else
@@ -681,33 +659,49 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
     if(joystick)
     {
-        wxPoint pos = joystick->GetPosition();
-        // pos.x < 0 left
-        // pos.x > 0 right
-        // pos.y < 0 up
-        // pos.y > 0 down
+        // Current position
 
-        if(calibrateJoy)
-        {
-            if(pos.x < minX) minX = pos.x;
-            if(pos.x > maxX) maxX = pos.x;
-            if(pos.y < minY) minY = pos.y;
-            if(pos.y > maxY) maxY = pos.y;
-            centerX = pos.x;
-            centerY = pos.y;
+        joyPos = joystick->GetPosition();
+        // x < 0 left
+        // x > 0 right
+        // y < 0 up
+        // y > 0 down
 
-            StaticTextMaxX->SetLabel(wxString::Format(wxT("%i"), maxX));
-            StaticTextMinX->SetLabel(wxString::Format(wxT("%i"), minX));
-            StaticTextMaxY->SetLabel(wxString::Format(wxT("%i"), maxY));
-            StaticTextMinY->SetLabel(wxString::Format(wxT("%i"), minY));
-            StaticTextCenterX->SetLabel(wxString::Format(wxT("%i"), centerX));
-            StaticTextCenterY->SetLabel(wxString::Format(wxT("%i"), centerY));
-        }
-        else
+        StaticTextJoyCurr->SetLabel(_("cur(") +
+                                    wxString::Format(wxT("%i"), joyPos.x) +
+                                    _(",") +
+                                    wxString::Format(wxT("%i"), joyPos.y) +
+                                    _(")"));
+
+        // Absolute maximum
+
+        if(joyPos.x > joyMax.x) joyMax.x = joyPos.x;
+        if(joyPos.y > joyMax.y) joyMax.y = joyPos.y;
+
+        StaticTextJoyMax->SetLabel(_("max(") +
+                                    wxString::Format(wxT("%i"), joyMax.x) +
+                                    _(",") +
+                                    wxString::Format(wxT("%i"), joyMax.y) +
+                                    _(")"));
+
+        // Absolute minimum
+
+        if(joyPos.x < joyMin.x) joyMin.x = joyPos.x;
+        if(joyPos.y < joyMin.y) joyMin.y = joyPos.y;
+
+        StaticTextJoyMin->SetLabel(_("min(") +
+                                    wxString::Format(wxT("%i"), joyMin.x) +
+                                    _(",") +
+                                    wxString::Format(wxT("%i"), joyMin.y) +
+                                    _(")"));
+
+        // Drive by Joystick
+
+        if(CheckBoxDrvByJoy->IsChecked())
         {
             // Drive mode
-            int x = ((pos.x - centerX) * 100) / ((maxX - minX) / 2);
-            int y = ((centerY - pos.y) * 100) / ((maxY - minY) / 2); // y is reversed
+            int x = ((joyPos.x - joyCenter.x) * 100) / ((joyMax.x - joyMin.x) / 2);
+            int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y is reversed
 
             MbsBot::getInstance()->vectorialDrive(x,y);
         }
@@ -725,7 +719,7 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
     }
     else if ( Choice2->GetCurrentSelection() == 1 )
     {
-        // Wheel DC
+        // Wheel PWM
         Slider1->SetRange(-100,100);
         Slider2->SetRange(-100,100);
     }
@@ -741,16 +735,14 @@ void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 {
-    calibrateJoy = false;
-
-    if(CheckBoxJoystick->IsChecked())
+    if(CheckBoxEnJoystick->IsChecked())
     {
         if ( joystick == NULL)
             if(wxJoystick::GetNumberJoysticks() > 0)
                 joystick = new wxJoystick(wxJOYSTICK1);
         if ( joystick == NULL)	// error or no joystick found
         {
-            CheckBoxJoystick->SetValue(false);
+            CheckBoxEnJoystick->SetValue(false);
             StatusBar1->SetStatusText(_("Error opening Joystick 1"));
         }
     }
@@ -766,15 +758,14 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 
 void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
-    calibrateJoy = !calibrateJoy;
-    if(calibrateJoy)
-    {
-        maxX=maxY=minX=minY=0;
-        centerX=centerY=0;
-        Button9->SetLabel(_("Finish"));
-    }
-    else
-        Button9->SetLabel(_("Calibrate"));
+    joyCenter.x = joyPos.x;
+    joyCenter.y = joyPos.y;
+
+    Button9->SetLabel(_("center(") +
+                      wxString::Format(wxT("%i"), joyCenter.x) +
+                      _(",") +
+                      wxString::Format(wxT("%i"), joyCenter.y) +
+                      _(")"));
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)

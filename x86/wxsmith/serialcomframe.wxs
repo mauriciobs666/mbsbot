@@ -112,120 +112,50 @@
 											<object class="wxFlexGridSizer" variable="FlexGridSizer7" member="no">
 												<cols>1</cols>
 												<object class="sizeritem">
+													<object class="wxCheckBox" name="ID_CHECKBOX3" variable="CheckBoxEnJoystick" member="yes">
+														<label>Enable</label>
+														<handler function="OnCheckBoxJoystick" entry="EVT_CHECKBOX" />
+													</object>
+													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT4" variable="StaticTextJoyCurr" member="yes">
+														<label>curr(x,y)</label>
+													</object>
+													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticTextJoyMax" member="yes">
+														<label>max(x,y)</label>
+													</object>
+													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT6" variable="StaticTextJoyMin" member="yes">
+														<label>min(x,y)</label>
+													</object>
+													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON9" variable="Button9" member="yes">
-														<label>Calibrate</label>
+														<label>center(0,0)</label>
+														<size>127,27</size>
 														<handler function="OnButton9Click" entry="EVT_BUTTON" />
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
-												<object class="sizeritem">
-													<object class="wxFlexGridSizer" variable="FlexGridSizer9" member="no">
-														<cols>2</cols>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT4" variable="StaticText4" member="yes">
-																<label>max X</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticTextMaxX" member="yes">
-																<label>32767</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT6" variable="StaticText6" member="yes">
-																<label>min X</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT7" variable="StaticTextMinX" member="yes">
-																<label>-32768</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT8" variable="StaticText8" member="yes">
-																<label>max Y</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT9" variable="StaticTextMaxY" member="yes">
-																<label>32767</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT10" variable="StaticText10" member="yes">
-																<label>min Y</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT11" variable="StaticTextMinY" member="yes">
-																<label>-32768</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT12" variable="StaticText12" member="yes">
-																<label>center X</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticTextCenterX" member="yes">
-																<label>0</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT14" variable="StaticText14" member="yes">
-																<label>center Y</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT15" variable="StaticTextCenterY" member="yes">
-																<label>0</label>
-															</object>
-															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-															<border>5</border>
-															<option>1</option>
-														</object>
-													</object>
-													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-													<border>5</border>
-													<option>1</option>
-												</object>
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -410,6 +340,15 @@
 										<label>Controls</label>
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
+											<object class="wxCheckBox" name="ID_CHECKBOX4" variable="CheckBoxAutoRefresh" member="yes">
+												<label>Auto-refresh</label>
+												<checked>1</checked>
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON2" variable="Button2" member="yes">
 												<label>Refresh</label>
 												<handler function="OnButton2Click" entry="EVT_BUTTON" />
@@ -429,7 +368,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON3" variable="Button3" member="yes">
-												<label>Center / Stop</label>
+												<label>Stop / Center</label>
 												<handler function="OnButton3Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -440,8 +379,9 @@
 											<object class="wxChoice" name="ID_CHOICE2" variable="Choice2" member="yes">
 												<content>
 													<item>Servo Wheel</item>
-													<item>DC Wheel</item>
+													<item>PWM Wheel</item>
 												</content>
+												<selection>1</selection>
 												<handler function="OnChoiceDCServo" entry="EVT_CHOICE" />
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -449,9 +389,9 @@
 											<option>1</option>
 										</object>
 										<object class="sizeritem">
-											<object class="wxCheckBox" name="ID_CHECKBOX1" variable="CheckBoxJoystick" member="yes">
-												<label>Joystick</label>
-												<handler function="OnCheckBoxJoystick" entry="EVT_CHECKBOX" />
+											<object class="wxCheckBox" name="ID_CHECKBOX1" variable="CheckBoxDrvByJoy" member="yes">
+												<label>Drive by Joystick</label>
+												<checked>1</checked>
 											</object>
 											<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 											<border>5</border>

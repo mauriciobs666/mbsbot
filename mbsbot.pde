@@ -930,6 +930,18 @@ void Server::loop()
 	}
 }
 
+void sendStatus()
+{
+    Serial.print("S ");
+	Serial.print(eeprom.data.selectedProgram);
+	Serial.print(" ");
+	Serial.print(drive.leftWheel->read());
+	Serial.print(" ");
+	Serial.print(drive.rightWheel->read());
+	Serial.print(" ");
+	Serial.println(rangeFinder.servo.read());
+}
+
 // ******************************************************************************
 //		SETUP
 // ******************************************************************************
@@ -969,6 +981,7 @@ void loop()
 		case PRG_SHOW_SENSORS:
 			delay(100);
 			displayAnalogSensors();
+			sendStatus();
 		case PRG_RC:
 			drive.refresh();
 		break;

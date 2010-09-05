@@ -22,6 +22,7 @@ MbsBot *MbsBot::instance = 0;
 MbsBot::MbsBot()
 {
 	memset(serialPortDevice, 0, sizeof(serialPortDevice));
+	accelStep = 10;
 }
 
 int MbsBot::init(const char *port, int baud)
