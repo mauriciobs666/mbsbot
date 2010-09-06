@@ -1005,6 +1005,15 @@ void loop()
 		case PRG_COLLISION:
 			rangeFinder.collision();
 		break;
+
+		case PRG_TEST:
+            short sonar=analogRead(0);
+            if(sonar < 15)
+                drive.left();
+            else
+                drive.forward();
+            delay(100);
+		break;
 	}
 	delay(15);
 }
