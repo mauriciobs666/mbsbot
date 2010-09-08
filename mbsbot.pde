@@ -375,7 +375,8 @@ void LineFollower::loop()
 		// Integral
 		accError += error;
 
-		/* TODO limit accumulation
+        // TODO (mbs#1#): limit accumulation
+		/* TODO: limit accumulation
 		if (accErr > MAX_ERROR)
 			accErr = MAX_ERROR;
 		else if (accErr < MIN_ERROR)
@@ -424,6 +425,7 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
 // Auto Calibration parameters
 #define CAL_READS_NUM 5
 #define CAL_READS_INTERVAL 200
+
 void LineFollower::autoCalibrate()
 {
 	unsigned short sensorTemp[NUM_IR_TRACK];
@@ -1008,11 +1010,15 @@ void loop()
 
 		case PRG_TEST:
             short sonar=analogRead(0);
-            if(sonar < 15)
-                drive.left();
+            if(sonar < 16)
+            {
+                drive.left(100);
+                delay(100);
+            }
+            else if(sonar < 20)
+                drive.leftSmooth(100);
             else
-                drive.forward();
-            delay(100);
+                drive.forward(100);
 		break;
 	}
 	delay(15);

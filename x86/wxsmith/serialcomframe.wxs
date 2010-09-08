@@ -100,7 +100,7 @@
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -160,7 +160,7 @@
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -193,7 +193,7 @@
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -218,6 +218,7 @@
 													<item>PRG_SHARP</item>
 													<item>PRG_SHARP_CHASE</item>
 													<item>PRG_COLLISION</item>
+													<item>PRG_TEST</item>
 												</content>
 												<handler function="OnChoiceProgram" entry="EVT_CHOICE" />
 											</object>
@@ -226,7 +227,7 @@
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -262,7 +263,7 @@
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -281,7 +282,8 @@
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
 											<object class="wxSlider" name="ID_SLIDER1" variable="Slider1" member="yes">
-												<min>-100</min>
+												<min>-255</min>
+												<max>255</max>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSlider1CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
@@ -301,7 +303,7 @@
 											<border>5</border>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -311,7 +313,8 @@
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
 											<object class="wxSlider" name="ID_SLIDER2" variable="Slider2" member="yes">
-												<min>-100</min>
+												<min>-255</min>
+												<max>255</max>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSlider2CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
@@ -331,7 +334,7 @@
 											<border>5</border>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -344,7 +347,7 @@
 												<label>Auto-refresh</label>
 												<checked>1</checked>
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -384,7 +387,7 @@
 												<selection>1</selection>
 												<handler function="OnChoiceDCServo" entry="EVT_CHOICE" />
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -393,12 +396,12 @@
 												<label>Drive by Joystick</label>
 												<checked>1</checked>
 											</object>
-											<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 								</object>
 								<object class="sizeritem">
@@ -428,7 +431,7 @@
 											<border>5</border>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -502,7 +505,7 @@
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -529,7 +532,7 @@
 											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
