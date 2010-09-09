@@ -34,6 +34,7 @@
 	rc	-	right wheel servo center pulse duration (in ms)
 	p	-	current program
 	di	-	drive.inch() delay configuration
+	dr	-	drive.left() and drive.right() delay configuration
 	drf	-	range finder between readings delay (servo movement)
 	as	-	all analog sensors
 	sx	-	servo "X"
@@ -89,9 +90,19 @@ stop wheels
 	duration    time in ms
 */
 
+#define CMD_TURN_LEFT	"left"
+/* CMD_TURN_LEFT
+turns left 90 degrees
+*/
+
+#define CMD_TURN_RIGHT	"right"
+/* CMD_TURN_RIGHT
+turns right 90 degrees
+*/
+
 #define CMD_STATUS	"status"
 /* CMD_STATUS
-no args - get status
+get status
 
 reply:
 S [p] [l] [r] [sx]

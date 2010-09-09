@@ -61,7 +61,7 @@ public:
 		struct sMoveDelays // delay in ms used to make it move (+/-)
 		{
 			short inch;		//an inch
-			short right;	//90 degrees
+			short right;	//right angle turn (90 degrees)
 		} mvDelay;
 
 		// line follower sensor array parameters(from auto-cal)
@@ -96,7 +96,7 @@ public:
 		data.leftWheelCenter = 1410;
 		data.rightWheelCenter = 1384;
 		data.mvDelay.inch = 200;
-		data.mvDelay.right = 200;
+		data.mvDelay.right = 400;
 		for(int x = 0; x < NUM_IR_TRACK; x++)
 		{
 			data.LF_threshold[x] = 512;
@@ -224,32 +224,57 @@ class Drive
 public:
 	Wheel *leftWheel;
 	Wheel *rightWheel;
-	void forward(char percent=100)
+	void forward(char percent=100, int period=0)
 	{
 		leftWheel->move(percent);
 		rightWheel->move(percent);
+		if(period > 0)
+		{
+			delay(period);
+			stop();
+		}
 	}
-	void backward(char percent=100)
-        { forward(-percent); }
-	void left(char percent=100)
+	void backward(char percent=100, int period=0)
+        { forward(-percent, period); }
+	void left(char percent=100, int period=0)
 	{
 		leftWheel->move(-percent);
 		rightWheel->move(percent);
+		if(period > 0)
+		{
+			delay(period);
+			stop();
+		}
 	}
-	void leftSmooth(char percent=100)
+	void leftSmooth(char percent=100, int period=0)
 	{
 		leftWheel->stop();
 		rightWheel->move(percent);
+		if(period > 0)
+		{
+			delay(period);
+			stop();
+		}
 	}
-	void right(char percent=100)
+	void right(char percent=100, int period=0)
 	{
 		leftWheel->move(percent);
 		rightWheel->move(-percent);
+		if(period > 0)
+		{
+			delay(period);
+			stop();
+		}
 	}
-	void rightSmooth(char percent=100)
+	void rightSmooth(char percent=100, int period=0)
 	{
 		leftWheel->move(percent);
 		rightWheel->stop();
+		if(period > 0)
+		{
+			delay(period);
+			stop();
+		}
 	}
 	void stop()
 	{
@@ -261,17 +286,13 @@ public:
 		leftWheel->refresh();
 		rightWheel->refresh();
 	}
-	void pulse(int period, char percent=100)
-	{
-		forward(percent);
-		delay(period);
-		stop();
-	}
-	void inch(bool forward=true)
-	{
-		pulse(eeprom.data.mvDelay.inch, forward ? 100 : -100);
-	}
+	void inch(bool goForward=true)
+		{ forward((goForward ? 100 : -100), eeprom.data.mvDelay.inch); }
 	void vectorial(int x, int y);
+	void turnLeft()
+		{ left(100, eeprom.data.mvDelay.right); }
+	void turnRight()
+		{ right(100, eeprom.data.mvDelay.right); }
 }
 drive;
 
@@ -319,20 +340,6 @@ void photovore()
 		drive.right();
 	else 									// go ahead
 		drive.forward();
-}
-
-// ******************************************************************************
-//		DEBUG SENSORS
-// ******************************************************************************
-void displayAnalogSensors()
-{
-	Serial.print("AS ");
-	for (int x = 0; x < 6; x++)
-	{
-		Serial.print(analogRead(x));
-		Serial.print(" ");
-	}
-	Serial.println("");
 }
 
 // ******************************************************************************
@@ -709,6 +716,32 @@ bool RangeFinder::collision()
 }
 
 // ******************************************************************************
+//		DEBUG / SENSORS INFORMATION
+// ******************************************************************************
+void displayAnalogSensors()
+{
+	Serial.print("AS ");
+	for (int x = 0; x < 6; x++)
+	{
+		Serial.print(analogRead(x));
+		Serial.print(" ");
+	}
+	Serial.println("");
+}
+
+void sendStatus()
+{
+    Serial.print("S ");
+	Serial.print(eeprom.data.selectedProgram);
+	Serial.print(" ");
+	Serial.print(drive.leftWheel->read());
+	Serial.print(" ");
+	Serial.print(drive.rightWheel->read());
+	Serial.print(" ");
+	Serial.println(rangeFinder.servo.read());
+}
+
+// ******************************************************************************
 //		TELNET SERVER
 // ******************************************************************************
 class Server
@@ -792,6 +825,8 @@ void Server::loop()
 							eeprom.data.selectedProgram = value;
 						else if(strcmp(dest,"di") == 0)		// inch delay
 							eeprom.data.mvDelay.inch = value;
+						else if(strcmp(dest,"dr") == 0)		// right-angle turn delay
+							eeprom.data.mvDelay.right = value;
 						else if(strcmp(dest,"drf") == 0)	// range finder delay
 							eeprom.data.RF_delay_reads = value;
 						else if(strcmp(dest,"sx") == 0)		// servo x position
@@ -841,6 +876,11 @@ void Server::loop()
 					{
 						Serial.print("DI ");
 						Serial.println(eeprom.data.mvDelay.inch);
+					}
+					else if(strcmp(tok,"dr") == 0)			// right-angle turn delay
+					{
+						Serial.print("DR ");
+						Serial.println(eeprom.data.mvDelay.right);
 					}
 					else if(strcmp(tok,"drf") == 0)			// range finder delay
 					{
@@ -902,17 +942,12 @@ void Server::loop()
 					    drive.vectorial(x, atoi(tok));
 				}
 			}
+			else if(strcmp(tok, CMD_TURN_LEFT) == 0)
+				drive.turnLeft();
+			else if(strcmp(tok, CMD_TURN_RIGHT) == 0)
+				drive.turnRight();
 			else if(strcmp(tok, CMD_STATUS) == 0)
-			{
-				Serial.print("S ");
-				Serial.print(eeprom.data.selectedProgram);
-				Serial.print(" ");
-				Serial.print(drive.leftWheel->read());
-				Serial.print(" ");
-				Serial.print(drive.rightWheel->read());
-				Serial.print(" ");
-				Serial.println(rangeFinder.servo.read());
-			}
+				sendStatus();
 			else if(strcmp(tok, CMD_UNAME) == 0)
 			{
 				Serial.print("Mbsbot hardware v");
@@ -932,18 +967,6 @@ void Server::loop()
 	}
 }
 
-void sendStatus()
-{
-    Serial.print("S ");
-	Serial.print(eeprom.data.selectedProgram);
-	Serial.print(" ");
-	Serial.print(drive.leftWheel->read());
-	Serial.print(" ");
-	Serial.print(drive.rightWheel->read());
-	Serial.print(" ");
-	Serial.println(rangeFinder.servo.read());
-}
-
 // ******************************************************************************
 //		SETUP
 // ******************************************************************************
@@ -961,6 +984,7 @@ void setup()
 	rightWheel.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL);
 #endif
 
+	// bellow is needed for polimorphism
     drive.leftWheel = &leftWheel;
     drive.rightWheel = &rightWheel;
 
