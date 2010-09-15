@@ -36,7 +36,7 @@
 //*)
 
 #include "MbsBot.h"
-#include "../Average.hpp"
+#include "Average.hpp"
 #include <wx/joystick.h>
 
 class serialcomFrame: public wxFrame

@@ -37,9 +37,6 @@
 	#define BEEP(freq, dur)
 #endif
 
-// TELNET SERVER
-#define SERIAL_PORT_SPEED 115200
-
 // RANGE FINDER
 #define RF_NUMBER_STEPS 30
 #define SHARP_TRESHOLD 300
@@ -748,8 +745,6 @@ class Server
 {
 public:
 	Server() : pos(0) {}
-	void send(char *data)
-		{ Serial.print(data); }
 	char * receive();
 	void loop();
 	char *getCommand()
@@ -957,11 +952,9 @@ void Server::loop()
 			}
 			else if(strcmp(tok, CMD_BEEP) == 0)
 			{
-			    #ifdef PIN_BEEP
-                    tok = STRTOK(NULL, " ");
-                    if (tok)			// frequency
-                        tone(PIN_BEEP, atoi(tok), 200); // duration = 200ms
-				#endif
+                tok = STRTOK(NULL, " ");
+                if (tok)			        // frequency
+                    BEEP(atoi(tok), 200);   // duration = 200ms
 			}
 		}
 	}
@@ -972,7 +965,7 @@ void Server::loop()
 // ******************************************************************************
 void setup()
 {
-	Serial.begin(SERIAL_PORT_SPEED);
+	Serial.begin(115200);
 
 	eeprom.load();
 
@@ -983,7 +976,6 @@ void setup()
 	leftWheel.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL);
 	rightWheel.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL);
 #endif
-
 	// bellow is needed for polimorphism
     drive.leftWheel = &leftWheel;
     drive.rightWheel = &rightWheel;
@@ -1031,7 +1023,11 @@ void loop()
 		case PRG_COLLISION:
 			rangeFinder.collision();
 		break;
+/*
+        case PRG_SENTRY:
 
+        break;
+*/
 		case PRG_TEST:
             short sonar=analogRead(0);
             if(sonar < 16)

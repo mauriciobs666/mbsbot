@@ -32,6 +32,9 @@
 // SHARP RANGE FINDER (analog pin!)
 #define PIN_SHARP_RF		3
 
+// SONAR (analog pin!)
+#define PIN_SONAR           0
+
 #define PIN_HEAD_SERVO		9
 
 // LINE FOLLOWER (analog pins!)
