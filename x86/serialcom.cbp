@@ -64,6 +64,7 @@
 			<Add option="-DwxUSE_UNICODE" />
 			<Add directory="$(#wx)\include" />
 			<Add directory="$(#wx)\contrib\include" />
+			<Add directory="$(#wx)\lib\gcc_lib\mswu" />
 			<Add directory="$(#mbsutil.include)" />
 		</Compiler>
 		<ResourceCompiler>
@@ -88,6 +89,7 @@
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
 		<Unit filename="..\Protocol.h" />
+		<Unit filename="..\mbsbot.pde" />
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
 		<Unit filename="resource.rc">
@@ -106,7 +108,6 @@
 				<gui name="wxWidgets" src="serialcomApp.cpp" main="serialcomFrame" init_handlers="necessary" language="CPP" />
 				<resources>
 					<wxFrame wxs="wxsmith/serialcomframe.wxs" src="serialcomMain.cpp" hdr="serialcomMain.h" name="serialcomFrame" language="CPP" />
-					<wxFrame wxs="wxsmith/Preferences.wxs" src="Preferences.cpp" hdr="Preferences.h" name="Preferences" language="CPP" />
 				</resources>
 			</wxsmith>
 		</Extensions>
