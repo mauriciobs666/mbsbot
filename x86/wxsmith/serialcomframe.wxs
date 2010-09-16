@@ -218,6 +218,7 @@
 													<item>PRG_SHARP</item>
 													<item>PRG_SHARP_CHASE</item>
 													<item>PRG_COLLISION</item>
+													<item>PRG_SENTRY</item>
 													<item>PRG_TEST</item>
 												</content>
 												<handler function="OnChoiceProgram" entry="EVT_CHOICE" />
@@ -362,7 +363,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON1" variable="Button1" member="yes">
-												<label>Set as center</label>
+												<label>Save as center</label>
 												<handler function="OnButton1Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>

@@ -126,7 +126,7 @@ enum ProgramID
 	PRG_SHARP,			// Sharp IR ranger test
 	PRG_SHARP_CHASE,	//
 	PRG_COLLISION,		//
-	//PRG_SENTRY,
+	PRG_SENTRY,
 	PRG_TEST
 };
 

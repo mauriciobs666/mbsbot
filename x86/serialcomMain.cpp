@@ -176,6 +176,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     ChoicePrg->Append(_("PRG_SHARP"));
     ChoicePrg->Append(_("PRG_SHARP_CHASE"));
     ChoicePrg->Append(_("PRG_COLLISION"));
+    ChoicePrg->Append(_("PRG_SENTRY"));
     ChoicePrg->Append(_("PRG_TEST"));
     StaticBoxSizer12->Add(ChoicePrg, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(StaticBoxSizer12, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
@@ -210,7 +211,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer3->Add(CheckBoxAutoRefresh, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
     StaticBoxSizer3->Add(Button2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button1 = new wxButton(Panel2, ID_BUTTON1, _("Set as center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
+    Button1 = new wxButton(Panel2, ID_BUTTON1, _("Save as center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
     StaticBoxSizer3->Add(Button1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button3 = new wxButton(Panel2, ID_BUTTON3, _("Stop / Center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
     StaticBoxSizer3->Add(Button3, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -620,6 +621,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             }
             else if(strcmp(tok, "S") == 0)	// status
             {
+                StatusBar1->SetStatusText(str);
+
                 tok = strtok(NULL, " ");
                 if (tok)
                 {

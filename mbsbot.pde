@@ -735,7 +735,12 @@ void sendStatus()
 	Serial.print(" ");
 	Serial.print(drive.rightWheel->read());
 	Serial.print(" ");
-	Serial.println(rangeFinder.servo.read());
+	Serial.print(rangeFinder.servo.read());
+	Serial.print(" ");
+	//for(int p=13; p>=0; p--)
+	for(int p=13; p>5; p--)
+        Serial.print(digitalRead(p));
+	Serial.println("");
 }
 
 // ******************************************************************************
@@ -802,7 +807,9 @@ void Server::loop()
 					{
 						int value = atoi(tok);
 
-						if(strcmp(dest, "l") == 0)			// left motor
+                        if(isdigit(dest[0]))                // digital pin number
+                            digitalWrite(atoi(dest), value ? HIGH : LOW);
+						else if(strcmp(dest, "l") == 0)		// left motor
 							drive.leftWheel->write(value);
 						else if(strcmp(dest, "lc") == 0)	// left motor center
 						{
@@ -945,9 +952,9 @@ void Server::loop()
 				sendStatus();
 			else if(strcmp(tok, CMD_UNAME) == 0)
 			{
-				Serial.print("Mbsbot hardware v");
+				Serial.print("Mbsbot hw ");
 				Serial.print(BOARD_VERSION);
-				Serial.print(" protocol v");
+				Serial.print(" sw ");
 				Serial.println(PROTOCOL_VERSION);
 			}
 			else if(strcmp(tok, CMD_BEEP) == 0)
@@ -985,14 +992,35 @@ void setup()
 
 	if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
+
+#if BOARD_VERSION == 2
+    for(int p=6; p <= 12; p++)
+    {
+        // setup all free pins as INPUT with PULL-UP to save power
+        pinMode(p, INPUT);
+        digitalWrite(p, HIGH);
+    }
+#endif
+
+    pinMode(13, OUTPUT);    // Arduino onboard LED
+    digitalWrite(13, LOW);
 }
 
 // ******************************************************************************
 //		MAIN LOOP
 // ******************************************************************************
+long lastSendStatus = 0;
+
 void loop()
 {
 	server.loop();
+
+	if(millis() > lastSendStatus + 10000)
+	{
+	    lastSendStatus += 10000;
+	    displayAnalogSensors();
+        sendStatus();
+	}
 
 	switch(eeprom.data.selectedProgram)
 	{
@@ -1023,12 +1051,24 @@ void loop()
 		case PRG_COLLISION:
 			rangeFinder.collision();
 		break;
-/*
-        case PRG_SENTRY:
 
+        case PRG_SENTRY:
+        {
+            short sonar=analogRead(0);
+            int threshold = 50;
+            if( sonar < threshold )
+            {
+                digitalWrite(13, HIGH);
+                Serial.println("ALARM");
+                delay(1000);
+                digitalWrite(13, LOW);
+                delay(1000);
+            }
+        }
         break;
-*/
+
 		case PRG_TEST:
+		{
             short sonar=analogRead(0);
             if(sonar < 16)
             {
@@ -1039,6 +1079,7 @@ void loop()
                 drive.leftSmooth(100);
             else
                 drive.forward(100);
+		}
 		break;
 	}
 	delay(15);
