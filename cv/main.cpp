@@ -11,7 +11,8 @@
 #include <sys/types.h>
 #include <signal.h>
 
-int fps = 5;
+int fps = 15;
+int ignoreFrames = fps * 1; // don't record first second
 int delayFrames = 1000 / fps;
 CvCapture* capture = NULL;
 CvVideoWriter* writer = NULL;
@@ -21,12 +22,12 @@ bool isWebcam = true;
 bool getout = false;
 time_t timestamp = 0;
 FILE* outChapter = NULL;
+int framesToSave = 0;
 
 std::vector<unsigned long> chapters;
 unsigned long count = 0;
 
 CvFont font;
-CvScalar color = CV_RGB(255, 255, 0);
 
 #define MAX_FILENAME 255
 char inBase[MAX_FILENAME] = "";
@@ -57,6 +58,17 @@ void onTrackbarSlideChapter(int pos)
         cvSetCaptureProperty(capture, CV_CAP_PROP_POS_FRAMES, chapters[pos-1]);
 }
 
+void destroyWindows()
+{
+    if( showWindows )
+    {
+        cvDestroyWindow( "CurrentFrame" );
+        cvDestroyWindow( "Test" );
+        cvDestroyWindow( "Controls" );
+    }
+    showWindows = false;
+}
+
 int main(int argc, char *argv[])
 {
     int rc = 0;
@@ -65,7 +77,7 @@ int main(int argc, char *argv[])
     MBSTrace::getInstance().openFile();
 
     time ( &timestamp );
-    TRACE_INFO("Log started %s", fukctime(ctime(&timestamp)));
+    TRACE_INFO("Log started %s", fukctime(&timestamp));
 
     signal(SIGINT, catch_int);
 
@@ -89,15 +101,15 @@ int main(int argc, char *argv[])
                     TRACE_INFO("Writing output to file %s", outFile);
 
                     char filename[MAX_FILENAME];
-                    snprintf(filename, MAX_FILENAME, "%s%s.avi.idx", outBase, strtime);
+                    snprintf(filename, MAX_FILENAME, "%s%s.chapter", outBase, strtime);
                     outChapter = fopen(filename, "a+");
                     if(outChapter)
-                        TRACE_INFO("Writing chapters to %s", filename);
+                        TRACE_INFO("Writing chapter info to %s", filename);
                     else
                         TRACE_ERROR("Could not open %s", filename);
                 }
                 break;
-            case 'h':
+            case 'b':
                 TRACE_INFO("Batch mode");
                 showWindows = false;
                 break;
@@ -127,18 +139,28 @@ int main(int argc, char *argv[])
         cvInitFont(&font, CV_FONT_HERSHEY_TRIPLEX, 1, 1);
         cvNamedWindow("CurrentFrame", CV_WINDOW_AUTOSIZE);
 
-        if(!isWebcam )
+        if( !isWebcam )
         {
+            TRACE_INFO("frame count = %d, fps = %d",
+                       (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT),
+                       fps);
+
             cvCreateTrackbar("Position", "CurrentFrame", &g_slider_position,
                              (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT),
                              onTrackbarSlide);
 
             char inChapter[MAX_FILENAME];
             strcpy(inChapter,inBase);
-            strcat(inChapter,".idx");
+
+            char *dot = strrchr( inChapter, '.' );
+
+            if(dot)
+                strcpy(dot,".chapter");
+            else
+                strcat(inChapter,".chapter");
 
             FILE *showChapter;
-            if((showChapter = fopen(inChapter,"r")))
+            if( ( showChapter = fopen(inChapter,"r") ) )
             {
                 char line[80];
                 while(fgets(line, 80, showChapter))
@@ -162,8 +184,8 @@ int main(int argc, char *argv[])
     if( isWebcam )
         capture = cvCreateCameraCapture(-1);
 
-    CvSize size = cvSize((int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_WIDTH),
-                      (int)cvGetCaptureProperty( capture, CV_CAP_PROP_FRAME_HEIGHT));
+    CvSize size = cvSize((int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH),
+                         (int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT));
 
     if(outFile[0] != 0)
         writer = cvCreateVideoWriter(outFile, CV_FOURCC('D', 'I', 'V', 'X'), fps, size);
@@ -178,18 +200,11 @@ int main(int argc, char *argv[])
     int kernelSize = 11;
     IplConvKernel *kernel=cvCreateStructuringElementEx(kernelSize,kernelSize,kernelSize/2+1,kernelSize/2+1,CV_SHAPE_RECT);
 
-    // play it
+    // main loop
     while(!getout)
     {
-        // pause for user input
-        //switch(cvWaitKey(1))
-        switch(cvWaitKey(delayFrames))
-        {
-            case 27:    //ESC
-                TRACE_INFO("ESC key pressed");
-                getout = true;
-            break;
-        }
+        // frame start time
+        clock_t clockBegin = clock();
 
         time ( &timestamp );
         //TRACE_INFO("%ld",timestamp);
@@ -215,6 +230,9 @@ int main(int argc, char *argv[])
             // remove noise and tiny changes
             cvErode(prcImage, prcImage, kernel);
 
+            // timestamp watermark
+            cvPutText(frame, fukctime(&timestamp), cvPoint(0, (size.height-5)), &font, CV_RGB(255, 255, 0));
+
             if( showWindows )
             {
                 if( !isWebcam )
@@ -228,29 +246,29 @@ int main(int argc, char *argv[])
                 cvShowImage( "Test", prcImage );
             }
 
-            if( writer )
+            if( ignoreFrames > 0 )
             {
-                static int framesToSave = 0;
-
+                ignoreFrames--;
+            }
+            else if( writer )
+            {
                 if( cvCountNonZero(prcImage) )
-                    framesToSave = 2 * fps;
+                    framesToSave = 1 * fps;
 
                 if ( framesToSave )
                 {
-                    framesToSave--;
-
-                    // timestamp watermark
-                    CvPoint pos = { 0, size.height - 5 };
-                    cvPutText(frame, fukctime(ctime(&timestamp)), pos, &font, color);
-
                     cvWriteFrame(writer, frame);
 
                     count++;
+
+                    framesToSave--;
 
                     // timeout
                     if ( ! framesToSave )
                     {   // close chapter
                         fprintf(outChapter, "%ld\n", count);
+                        fflush(outChapter);
+                        TRACE_INFO("Chapter timeout at frame %ld", count);
                     }
                 }
             }
@@ -260,6 +278,30 @@ int main(int argc, char *argv[])
             currImage = oldImage;
             oldImage = tmpImage;
         }
+
+        // find out how many milliseconds were spent to process frame
+        int milliseconds = (clock() - clockBegin) / (CLOCKS_PER_SEC/1000);
+
+        int delayKey = delayFrames - milliseconds;
+
+        if(delayKey <= 0)
+            delayKey = 1;
+
+        TRACE_INFO("Last frame took %dms delayKey = %dms", milliseconds, delayKey);
+
+        // pause for user input
+        switch( cvWaitKey(delayKey) )
+        //switch((milliseconds >= delayFrames) ? cvWaitKey(1) : cvWaitKey(delayFrames-milliseconds))
+        {
+            case 27:    //ESC
+                TRACE_INFO("ESC key pressed");
+                getout = true;
+            break;
+            case 'h':
+                destroyWindows();
+            break;
+        }
+
     }
 
     // clean up and exit
@@ -277,15 +319,17 @@ int main(int argc, char *argv[])
     if( capture )
         cvReleaseCapture( &capture );
 
-    if( showWindows )
-    {
-        cvDestroyWindow( "CurrentFrame" );
-        cvDestroyWindow( "Test" );
-        cvDestroyWindow( "Controls" );
+    if ( framesToSave )
+    {   // close chapter
+        fprintf(outChapter, "%ld\n", count);
+        fflush(outChapter);
+        TRACE_INFO("Chapter closed at frame %ld", count);
     }
 
+    destroyWindows();
+
     time ( &timestamp );
-    TRACE_INFO("Log finished %s", fukctime(ctime(&timestamp)));
+    TRACE_INFO("Log finished %s", fukctime(&timestamp));
     TRACE_INFO("Exit %d", rc);
     exit(rc);
 }
