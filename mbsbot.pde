@@ -579,6 +579,7 @@ public:
 		{ return currentStep >= (RF_NUMBER_STEPS-1); }
 	bool delayRead();
 	bool collision();
+	bool sentry();
 private:
 	short currentStep;
 	char stepDir;
@@ -708,6 +709,20 @@ bool RangeFinder::collision()
 				return true;
 			}
 		}
+	}
+	return false;
+}
+
+bool RangeFinder::sentry()
+{
+    if(delayRead())
+	{
+		readSensor();
+
+        int threshold = 30;
+
+        if( abs((lastValue - currValue)) > threshold )
+            return true;
 	}
 	return false;
 }
@@ -1054,9 +1069,7 @@ void loop()
 
         case PRG_SENTRY:
         {
-            short sonar=analogRead(0);
-            int threshold = 50;
-            if( sonar < threshold )
+            if(rangeFinder.sentry())
             {
                 digitalWrite(13, HIGH);
                 Serial.println("ALARM");

@@ -1,3 +1,20 @@
+/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+ *	This file is part of the MBSBOT project.
+ *
+ *	MBSBOT is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License, or
+ *	(at your option) any later version.
+ *
+ *	MBSBOT is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ *
+ *	You should have received a copy of the GNU General Public License
+ *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -187,6 +204,11 @@ int main(int argc, char *argv[])
     CvSize size = cvSize((int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH),
                          (int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT));
 
+    TRACE_INFO("Input device resolution %dx%d %dfps",
+				(int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH),
+				(int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT),
+				fps);
+
     if(outFile[0] != 0)
         writer = cvCreateVideoWriter(outFile, CV_FOURCC('D', 'I', 'V', 'X'), fps, size);
 
@@ -247,9 +269,7 @@ int main(int argc, char *argv[])
             }
 
             if( ignoreFrames > 0 )
-            {
                 ignoreFrames--;
-            }
             else if( writer )
             {
                 if( cvCountNonZero(prcImage) )
@@ -287,17 +307,16 @@ int main(int argc, char *argv[])
         if(delayKey <= 0)
             delayKey = 1;
 
-        TRACE_INFO("Last frame took %dms delayKey = %dms", milliseconds, delayKey);
+        //TRACE_INFO("Last frame took %dms delayKey = %dms", milliseconds, delayKey);
 
         // pause for user input
         switch( cvWaitKey(delayKey) )
-        //switch((milliseconds >= delayFrames) ? cvWaitKey(1) : cvWaitKey(delayFrames-milliseconds))
         {
             case 27:    //ESC
                 TRACE_INFO("ESC key pressed");
                 getout = true;
             break;
-            case 'h':
+            case 'b':
                 destroyWindows();
             break;
         }
