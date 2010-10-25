@@ -47,7 +47,6 @@ unsigned long count = 0;
 CvFont font;
 
 #define MAX_FILENAME 255
-char inBase[MAX_FILENAME] = "";
 char inFile[MAX_FILENAME] = "";
 char outBase[MAX_FILENAME] = "";
 char outFile[MAX_FILENAME] = "";
@@ -62,8 +61,8 @@ void catch_int(int)
 int g_slider_position = 0;
 void onTrackbarSlide(int pos)
 {
-    cvSetCaptureProperty(capture, CV_CAP_PROP_POS_FRAMES, pos);
-    //TRACE_INFO("on slide %d", pos);
+//    cvSetCaptureProperty(capture, CV_CAP_PROP_POS_FRAMES, pos);
+//    TRACE_INFO("on slide %d", pos);
 }
 
 int g_slider_chapter = 0;
@@ -130,6 +129,16 @@ int main(int argc, char *argv[])
                 TRACE_INFO("Batch mode");
                 showWindows = false;
                 break;
+            case 'f':
+                narg++;
+                if(narg >= argc)
+                    TRACE_ERROR("Missing frame rate");
+                else
+                {
+                    fps = atoi(argv[narg]);
+                    TRACE_INFO("Manually set frame rate to %dfps", fps);
+                }
+                break;
             default:
                 TRACE_ERROR("Unknown option %s", argv[narg]);
                 break;
@@ -142,14 +151,17 @@ int main(int argc, char *argv[])
         }
         else // input file name
         {
-            strcpy(inBase, argv[narg]);
-            TRACE_INFO("Input from file %s", inBase);
+            strcpy(inFile, argv[narg]);
             isWebcam = false;
-            capture = cvCreateFileCapture(inBase);
+            capture = cvCreateFileCapture(inFile);
             fps = cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
-            delayFrames = 1000 / fps;
+            TRACE_INFO("Input from file %s (%d frames @%dfps)", inFile,
+                       (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT),
+                       fps);
         }
     }
+
+    delayFrames = 1000 / fps;
 
     if(showWindows)
     {
@@ -158,16 +170,12 @@ int main(int argc, char *argv[])
 
         if( !isWebcam )
         {
-            TRACE_INFO("frame count = %d, fps = %d",
-                       (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT),
-                       fps);
-
             cvCreateTrackbar("Position", "CurrentFrame", &g_slider_position,
                              (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT),
                              onTrackbarSlide);
 
             char inChapter[MAX_FILENAME];
-            strcpy(inChapter,inBase);
+            strcpy(inChapter,inFile);
 
             char *dot = strrchr( inChapter, '.' );
 
@@ -188,8 +196,8 @@ int main(int argc, char *argv[])
                 fclose(showChapter);
                 if(chapters.size()>1)
                     cvCreateTrackbar("Chapter", "CurrentFrame", &g_slider_chapter,
-                                    (chapters.size()-1),
-                                    onTrackbarSlideChapter);
+                                     (chapters.size()-1),
+                                     onTrackbarSlideChapter);
             }
         }
         cvMoveWindow("CurrentFrame", 0, 0);
@@ -199,15 +207,23 @@ int main(int argc, char *argv[])
     }
 
     if( isWebcam )
+    {
         capture = cvCreateCameraCapture(-1);
+        TRACE_INFO("Soft limit = %dfps", fps);
+    }
+
+    if(!capture)
+    {
+        rc = -1;
+        TRACE_ERROR("Could not open capture device");
+    }
 
     CvSize size = cvSize((int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH),
                          (int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT));
 
-    TRACE_INFO("Input device resolution %dx%d %dfps",
-				(int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH),
-				(int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT),
-				fps);
+    TRACE_INFO("Input resolution %dx%d",
+               (int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH),
+               (int)cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT));
 
     if(outFile[0] != 0)
         writer = cvCreateVideoWriter(outFile, CV_FOURCC('D', 'I', 'V', 'X'), fps, size);
@@ -223,7 +239,7 @@ int main(int argc, char *argv[])
     IplConvKernel *kernel=cvCreateStructuringElementEx(kernelSize,kernelSize,kernelSize/2+1,kernelSize/2+1,CV_SHAPE_RECT);
 
     // main loop
-    while(!getout)
+    while(!getout && !rc)
     {
         // frame start time
         clock_t clockBegin = clock();
@@ -259,9 +275,9 @@ int main(int argc, char *argv[])
             {
                 if( !isWebcam )
                 {
-                    //int curr = (int) cvGetCaptureProperty( capture, CV_CAP_PROP_POS_FRAMES );
-                    //TRACE_INFO("set track %d", curr);
-                    //cvSetTrackbarPos("Position", "CurrentFrame", curr);
+                    int curr = (int) cvGetCaptureProperty( capture, CV_CAP_PROP_POS_FRAMES );
+//                    TRACE_INFO("set track %d", curr);
+                    cvSetTrackbarPos("Position", "CurrentFrame", curr);
                 }
 
                 cvShowImage( "CurrentFrame", frame );
@@ -285,7 +301,8 @@ int main(int argc, char *argv[])
 
                     // timeout
                     if ( ! framesToSave )
-                    {   // close chapter
+                    {
+                        // close chapter
                         fprintf(outChapter, "%ld\n", count);
                         fflush(outChapter);
                         TRACE_INFO("Chapter timeout at frame %ld", count);
@@ -305,19 +322,24 @@ int main(int argc, char *argv[])
         int delayKey = delayFrames - milliseconds;
 
         if(delayKey <= 0)
+        {
             delayKey = 1;
+            TRACE_WARN("Frame processing time was %dms", milliseconds);
+        }
 
         //TRACE_INFO("Last frame took %dms delayKey = %dms", milliseconds, delayKey);
 
         // pause for user input
         switch( cvWaitKey(delayKey) )
         {
-            case 27:    //ESC
-                TRACE_INFO("ESC key pressed");
-                getout = true;
+        case 27:    //ESC
+        case 'q':
+        case 'Q':
+            TRACE_INFO("ESC key pressed");
+            getout = true;
             break;
-            case 'b':
-                destroyWindows();
+        case 'b':
+            destroyWindows();
             break;
         }
 
@@ -339,7 +361,8 @@ int main(int argc, char *argv[])
         cvReleaseCapture( &capture );
 
     if ( framesToSave )
-    {   // close chapter
+    {
+        // close chapter
         fprintf(outChapter, "%ld\n", count);
         fflush(outChapter);
         TRACE_INFO("Chapter closed at frame %ld", count);
