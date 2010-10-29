@@ -991,6 +991,15 @@ void setup()
 
 	eeprom.load();
 
+#if BOARD_VERSION == 2
+    for(int p=6; p <= 12; p++)
+    {
+        // setup all free pins as INPUT with PULL-UP to save power
+        pinMode(p, INPUT);
+        digitalWrite(p, HIGH);
+    }
+#endif
+
 #ifndef WHEEL_DC
 	leftWheel.init(PIN_LEFTWHEEL, eeprom.data.leftWheelCenter);
 	rightWheel.init(PIN_RIGHTWHEEL, eeprom.data.rightWheelCenter, true);
@@ -1007,15 +1016,6 @@ void setup()
 
 	if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
 		lineFollower.autoCalibrate();
-
-#if BOARD_VERSION == 2
-    for(int p=6; p <= 12; p++)
-    {
-        // setup all free pins as INPUT with PULL-UP to save power
-        pinMode(p, INPUT);
-        digitalWrite(p, HIGH);
-    }
-#endif
 
     pinMode(13, OUTPUT);    // Arduino onboard LED
     digitalWrite(13, LOW);
