@@ -32,9 +32,9 @@ bool serialcomApp::OnInit()
     wxInitAllImageHandlers();
     if ( wxsOK )
     {
-        serialcomFrame* Frame = new serialcomFrame(0);
-        Frame->Show();
-        SetTopWindow(Frame);
+    	serialcomFrame* Frame = new serialcomFrame(0);
+    	Frame->Show();
+    	SetTopWindow(Frame);
     }
     //*)
     return wxsOK;

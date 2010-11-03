@@ -89,6 +89,11 @@ private:
     void OnCheckBoxJoystick(wxCommandEvent& event);
     void OnButton9Click(wxCommandEvent& event);
     void OnButton10Click(wxCommandEvent& event);
+    void OnSliderTiltCmdSliderUpdated(wxScrollEvent& event);
+    void OnTextCtrlTiltTextEnter(wxCommandEvent& event);
+    void OnSliderRollCmdSliderUpdated(wxScrollEvent& event);
+    void OnTextCtrlRollTextEnter(wxCommandEvent& event);
+    void OnTextCtrlRollText(wxCommandEvent& event);
     //*)
 
     //(*Identifiers(serialcomFrame)
@@ -125,6 +130,10 @@ private:
     static const long ID_CHECKBOX1;
     static const long ID_SLIDER3;
     static const long ID_TEXTCTRL5;
+    static const long ID_SLIDER4;
+    static const long ID_TEXTCTRL7;
+    static const long ID_SLIDER5;
+    static const long ID_TEXTCTRL8;
     static const long ID_PANEL2;
     static const long ID_GRID1;
     static const long ID_BUTTON4;
@@ -140,6 +149,7 @@ private:
 
     //(*Declarations(serialcomFrame)
     wxSlider* Slider1;
+    wxSlider* SliderRoll;
     wxCheckBox* CheckBoxEnJoystick;
     wxTextCtrl* TextCtrl4;
     wxPanel* Panel5;
@@ -147,14 +157,16 @@ private:
     wxButton* Button4;
     wxSlider* Slider2;
     wxNotebook* Notebook1;
+    wxTextCtrl* TextCtrlTilt;
     wxStaticText* StaticText2;
     wxPanel* Panel4;
     wxCheckBox* CheckBoxRXdata;
+    wxSlider* SliderTilt;
     wxButton* Button1;
     wxCheckBox* CheckBoxAutoRefresh;
     wxChoice* ChoicePrg;
+    wxTextCtrl* TextCtrlPan;
     wxButton* Button14;
-    wxSlider* Slider3;
     wxPanel* Panel1;
     wxStaticText* StaticText1;
     wxStaticText* StaticText3;
@@ -167,6 +179,7 @@ private:
     wxButton* Button10;
     wxButton* Button11;
     wxButton* Button5;
+    wxTextCtrl* TextCtrlRoll;
     wxButton* Button3;
     wxStaticText* StaticTextJoyMax;
     wxButton* Button7;
@@ -177,7 +190,7 @@ private:
     wxTextCtrl* TextCtrl1;
     wxPanel* Panel2;
     wxStaticText* StaticTextJoyMin;
-    wxTextCtrl* TextCtrl3;
+    wxSlider* SliderPan;
     wxChoice* Choice1;
     wxChoice* Choice2;
     wxButton* Button8;

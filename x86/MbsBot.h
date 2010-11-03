@@ -58,8 +58,12 @@ class MbsBot
             { return writeVariable("l", val); }
 		int setRightWheel(int val)
             { return writeVariable("r", val); }
-		int setHead(int val)
+		int setPan(int val)
             { return writeVariable("sx", val); }
+        int setTilt(int val)
+            { return writeVariable("sy", val); }
+		int setRoll(int val)
+            { return writeVariable("sz", val); }
 		int setLeftWheelCenter(int val)
             { return writeVariable("lc", val); }
 		int setRightWheelCenter(int val)

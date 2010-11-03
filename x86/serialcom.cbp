@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="serialcom" />
+		<Option title="serialcom-win" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -26,7 +26,6 @@
 					<Add library="libwxjpegd.a" />
 					<Add library="libwxtiffd.a" />
 					<Add library="libwxzlibd.a" />
-					<Add directory="$(#wx)\lib\gcc_lib" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -50,7 +49,6 @@
 					<Add library="libwxjpeg.a" />
 					<Add library="libwxtiff.a" />
 					<Add library="libwxzlib.a" />
-					<Add directory="$(#wx)\lib\gcc_lib" />
 				</Linker>
 			</Target>
 		</Build>
@@ -87,7 +85,11 @@
 			<Add library="mbsutil" />
 			<Add library="libwinmm.a" />
 			<Add directory="$(#mbsutil.lib)" />
+			<Add directory="$(#wx)\lib\gcc_lib" />
 		</Linker>
+		<Unit filename="..\Board.h" />
+		<Unit filename="..\Board_v1.h" />
+		<Unit filename="..\Board_v2.h" />
 		<Unit filename="..\Protocol.h" />
 		<Unit filename="..\mbsbot.pde" />
 		<Unit filename="MbsBot.cpp" />

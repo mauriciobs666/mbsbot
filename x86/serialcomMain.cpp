@@ -61,6 +61,10 @@ const long serialcomFrame::ID_CHOICE2 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX1 = wxNewId();
 const long serialcomFrame::ID_SLIDER3 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL5 = wxNewId();
+const long serialcomFrame::ID_SLIDER4 = wxNewId();
+const long serialcomFrame::ID_TEXTCTRL7 = wxNewId();
+const long serialcomFrame::ID_SLIDER5 = wxNewId();
+const long serialcomFrame::ID_TEXTCTRL8 = wxNewId();
 const long serialcomFrame::ID_PANEL2 = wxNewId();
 const long serialcomFrame::ID_GRID1 = wxNewId();
 const long serialcomFrame::ID_BUTTON4 = wxNewId();
@@ -94,10 +98,12 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer7;
     wxStaticBoxSizer* StaticBoxSizer7;
     wxStaticBoxSizer* StaticBoxSizer13;
+    wxStaticBoxSizer* StaticBoxSizer10;
     wxStaticBoxSizer* StaticBoxSizer8;
     wxStaticBoxSizer* StaticBoxSizer3;
     wxStaticBoxSizer* StaticBoxSizer6;
     wxFlexGridSizer* FlexGridSizer8;
+    wxStaticBoxSizer* StaticBoxSizer11;
     wxBoxSizer* BoxSizer1;
     wxFlexGridSizer* FlexGridSizer6;
     wxStaticBoxSizer* StaticBoxSizer1;
@@ -192,19 +198,19 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer3->Fit(Panel3);
     FlexGridSizer3->SetSizeHints(Panel3);
     Panel2 = new wxPanel(Notebook1, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
-    FlexGridSizer1 = new wxFlexGridSizer(1, 4, 0, 0);
+    FlexGridSizer1 = new wxFlexGridSizer(1, 6, 0, 0);
     StaticBoxSizer1 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Left Wheel"));
     Slider1 = new wxSlider(Panel2, ID_SLIDER1, 0, -255, 255, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER1"));
     StaticBoxSizer1->Add(Slider1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl1 = new wxTextCtrl(Panel2, ID_TEXTCTRL3, _("0"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL3"));
+    TextCtrl1 = new wxTextCtrl(Panel2, ID_TEXTCTRL3, _("0"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL3"));
     StaticBoxSizer1->Add(TextCtrl1, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer1->Add(StaticBoxSizer1, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
+    FlexGridSizer1->Add(StaticBoxSizer1, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     StaticBoxSizer2 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Right Wheel"));
     Slider2 = new wxSlider(Panel2, ID_SLIDER2, 0, -255, 255, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER2"));
     StaticBoxSizer2->Add(Slider2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl2 = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("0"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
+    TextCtrl2 = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("0"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
     StaticBoxSizer2->Add(TextCtrl2, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer1->Add(StaticBoxSizer2, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
+    FlexGridSizer1->Add(StaticBoxSizer2, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     StaticBoxSizer3 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Controls"));
     CheckBoxAutoRefresh = new wxCheckBox(Panel2, ID_CHECKBOX4, _("Auto-refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX4"));
     CheckBoxAutoRefresh->SetValue(true);
@@ -222,13 +228,25 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     CheckBoxDrvByJoy = new wxCheckBox(Panel2, ID_CHECKBOX1, _("Drive by Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     CheckBoxDrvByJoy->SetValue(true);
     StaticBoxSizer3->Add(CheckBoxDrvByJoy, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
-    FlexGridSizer1->Add(StaticBoxSizer3, 0, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
-    StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Head"));
-    Slider3 = new wxSlider(Panel2, ID_SLIDER3, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
-    StaticBoxSizer7->Add(Slider3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl3 = new wxTextCtrl(Panel2, ID_TEXTCTRL5, _("90"), wxDefaultPosition, wxSize(80,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL5"));
-    StaticBoxSizer7->Add(TextCtrl3, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer1->Add(StaticBoxSizer7, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
+    FlexGridSizer1->Add(StaticBoxSizer3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
+    StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Pan"));
+    SliderPan = new wxSlider(Panel2, ID_SLIDER3, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
+    StaticBoxSizer7->Add(SliderPan, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrlPan = new wxTextCtrl(Panel2, ID_TEXTCTRL5, _("90"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL5"));
+    StaticBoxSizer7->Add(TextCtrlPan, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer1->Add(StaticBoxSizer7, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
+    StaticBoxSizer10 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Tilt"));
+    SliderTilt = new wxSlider(Panel2, ID_SLIDER4, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER4"));
+    StaticBoxSizer10->Add(SliderTilt, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrlTilt = new wxTextCtrl(Panel2, ID_TEXTCTRL7, _("90"), wxDefaultPosition, wxSize(50,25), 0, wxDefaultValidator, _T("ID_TEXTCTRL7"));
+    StaticBoxSizer10->Add(TextCtrlTilt, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer1->Add(StaticBoxSizer10, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
+    StaticBoxSizer11 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Roll"));
+    SliderRoll = new wxSlider(Panel2, ID_SLIDER5, 90, 0, 179, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER5"));
+    StaticBoxSizer11->Add(SliderRoll, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrlRoll = new wxTextCtrl(Panel2, ID_TEXTCTRL8, _("90"), wxDefaultPosition, wxSize(50,25), 0, wxDefaultValidator, _T("ID_TEXTCTRL8"));
+    StaticBoxSizer11->Add(TextCtrlRoll, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer1->Add(StaticBoxSizer11, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Panel2->SetSizer(FlexGridSizer1);
     FlexGridSizer1->Fit(Panel2);
     FlexGridSizer1->SetSizeHints(Panel2);
@@ -339,6 +357,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceDCServo);
     Connect(ID_SLIDER3,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider3CmdSliderUpdated);
     Connect(ID_TEXTCTRL5,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl3TextEnter);
+    Connect(ID_SLIDER4,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSliderTiltCmdSliderUpdated);
+    Connect(ID_TEXTCTRL7,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrlTiltTextEnter);
+    Connect(ID_SLIDER5,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSliderRollCmdSliderUpdated);
+    Connect(ID_TEXTCTRL8,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrlRollTextEnter);
     Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton4Click);
     Connect(ID_BUTTON5,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton5Click);
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
@@ -472,29 +494,67 @@ void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
     MbsBot::getInstance()->setRightWheel(val);
 }
 
-// servo "X"
+// Pan servo
 
 void serialcomFrame::OnSlider3CmdSliderUpdated(wxScrollEvent& event)
 {
-    int val = Slider3->GetValue();
-    TextCtrl3->SetValue(wxString::Format(wxT("%i"), val));
+    int val = SliderPan->GetValue();
+    TextCtrlPan->SetValue(wxString::Format(wxT("%i"), val));
 
-    MbsBot::getInstance()->setHead(val);
+    MbsBot::getInstance()->setPan(val);
 }
 void serialcomFrame::OnTextCtrl3TextEnter(wxCommandEvent& event)
 {
-    int val = atoi(TextCtrl3->GetValue().mb_str(wxConvUTF8));
-    Slider3->SetValue(val);
+    int val = atoi(TextCtrlPan->GetValue().mb_str(wxConvUTF8));
+    SliderPan->SetValue(val);
 
-    MbsBot::getInstance()->setHead(val);
+    MbsBot::getInstance()->setPan(val);
+}
+
+// Tilt servo
+
+void serialcomFrame::OnSliderTiltCmdSliderUpdated(wxScrollEvent& event)
+{
+    int val = SliderTilt->GetValue();
+    TextCtrlTilt->SetValue(wxString::Format(wxT("%i"), val));
+
+    MbsBot::getInstance()->setTilt(val);
+}
+
+void serialcomFrame::OnTextCtrlTiltTextEnter(wxCommandEvent& event)
+{
+    int val = atoi(TextCtrlTilt->GetValue().mb_str(wxConvUTF8));
+    SliderTilt->SetValue(val);
+
+    MbsBot::getInstance()->setTilt(val);
+}
+
+// Roll servo
+
+void serialcomFrame::OnSliderRollCmdSliderUpdated(wxScrollEvent& event)
+{
+    int val = SliderRoll->GetValue();
+    TextCtrlRoll->SetValue(wxString::Format(wxT("%i"), val));
+
+    MbsBot::getInstance()->setRoll(val);
+}
+
+void serialcomFrame::OnTextCtrlRollTextEnter(wxCommandEvent& event)
+{
+    int val = atoi(TextCtrlRoll->GetValue().mb_str(wxConvUTF8));
+    SliderRoll->SetValue(val);
+
+    MbsBot::getInstance()->setRoll(val);
 }
 
 // Set center
 void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
-    wxMessageBox(_("r u sure?"), _("OVERWRITE"));
-    MbsBot::getInstance()->setLeftWheelCenter(Slider1->GetValue());
-    MbsBot::getInstance()->setRightWheelCenter(Slider2->GetValue());
+    if(wxYES == wxMessageBox(_("R U sure?"), _("OVERWRITE"), wxYES_NO))
+    {
+        MbsBot::getInstance()->setLeftWheelCenter(Slider1->GetValue());
+        MbsBot::getInstance()->setRightWheelCenter(Slider2->GetValue());
+    }
 }
 
 // Refresh
@@ -587,8 +647,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
                 if (tok)
                 {
                     int value = atoi(tok);
-                    Slider3->SetValue(value);
-                    TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
+                    SliderPan->SetValue(value);
+                    TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
                 }
             }
             else if(strcmp(tok, "AS") == 0)	// all analog sensors
@@ -650,8 +710,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
                             {
                                 // head servo
                                 value = atoi(tok);
-                                Slider3->SetValue(value);
-                                TextCtrl3->SetValue(wxString::Format(wxT("%i"), value));
+                                SliderPan->SetValue(value);
+                                TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
                                 //StatusBar1->SetStatusText(_("Status OK"));
                             }
                         }

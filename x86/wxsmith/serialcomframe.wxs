@@ -275,7 +275,7 @@
 					<object class="notebookpage">
 						<object class="wxPanel" name="ID_PANEL2" variable="Panel2" member="yes">
 							<object class="wxFlexGridSizer" variable="FlexGridSizer1" member="no">
-								<cols>4</cols>
+								<cols>6</cols>
 								<rows>1</rows>
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer1" member="no">
@@ -296,7 +296,7 @@
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL3" variable="TextCtrl1" member="yes">
 												<value>0</value>
-												<size>80,25</size>
+												<size>50,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 												<handler function="OnTextCtrl1TextEnter" entry="EVT_TEXT_ENTER" />
 											</object>
@@ -304,7 +304,7 @@
 											<border>5</border>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -327,7 +327,7 @@
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL4" variable="TextCtrl2" member="yes">
 												<value>0</value>
-												<size>80,25</size>
+												<size>50,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 												<handler function="OnTextCtrl2TextEnter" entry="EVT_TEXT_ENTER" />
 											</object>
@@ -335,7 +335,7 @@
 											<border>5</border>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
@@ -404,27 +404,28 @@
 									</object>
 									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
+									<option>1</option>
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer7" member="no">
-										<label>Head</label>
+										<label>Pan</label>
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
-											<object class="wxSlider" name="ID_SLIDER3" variable="Slider3" member="yes">
+											<object class="wxSlider" name="ID_SLIDER3" variable="SliderPan" member="yes">
 												<value>90</value>
 												<max>179</max>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSlider3CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
 											</object>
-											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
 										<object class="sizeritem">
-											<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="TextCtrl3" member="yes">
+											<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="TextCtrlPan" member="yes">
 												<value>90</value>
-												<size>80,25</size>
+												<size>50,25</size>
 												<style>wxTE_PROCESS_ENTER</style>
 												<handler function="OnTextCtrl3TextEnter" entry="EVT_TEXT_ENTER" />
 											</object>
@@ -432,7 +433,67 @@
 											<border>5</border>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
+								<object class="sizeritem">
+									<object class="wxStaticBoxSizer" variable="StaticBoxSizer10" member="no">
+										<label>Tilt</label>
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxSlider" name="ID_SLIDER4" variable="SliderTilt" member="yes">
+												<value>90</value>
+												<max>179</max>
+												<size>50,150</size>
+												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
+												<handler function="OnSliderTiltCmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxTextCtrl" name="ID_TEXTCTRL7" variable="TextCtrlTilt" member="yes">
+												<value>90</value>
+												<size>50,25</size>
+												<handler function="OnTextCtrlTiltTextEnter" entry="EVT_TEXT_ENTER" />
+											</object>
+											<flag>wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+										</object>
+									</object>
+									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
+								<object class="sizeritem">
+									<object class="wxStaticBoxSizer" variable="StaticBoxSizer11" member="no">
+										<label>Roll</label>
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxSlider" name="ID_SLIDER5" variable="SliderRoll" member="yes">
+												<value>90</value>
+												<max>179</max>
+												<size>50,150</size>
+												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
+												<handler function="OnSliderRollCmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
+											</object>
+											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxTextCtrl" name="ID_TEXTCTRL8" variable="TextCtrlRoll" member="yes">
+												<value>90</value>
+												<size>50,25</size>
+												<handler function="OnTextCtrlRollTextEnter" entry="EVT_TEXT_ENTER" />
+											</object>
+											<flag>wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+										</object>
+									</object>
+									<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>
