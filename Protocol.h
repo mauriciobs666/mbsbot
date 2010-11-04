@@ -37,7 +37,9 @@
 	dr	-	drive.left() and drive.right() delay configuration
 	drf	-	range finder between readings delay (servo movement)
 	as	-	all analog sensors
-	sx	-	servo "X"
+	sx	-	servo "X" (pan)
+	sy	-	servo "Y" (tilt)
+	sz	-	servo "Z" (roll)
 */
 
 #define CMD_WRITE	"set"
@@ -105,7 +107,7 @@ turns right 90 degrees
 get status
 
 reply:
-S [p] [l] [r] [sx]
+S [p] [l] [r] [sx] [sy] [sz]
 */
 
 #define CMD_UNAME	"uname"
