@@ -23,6 +23,10 @@
 // Arduino /libraries
 #include <Servo.h>
 
+// I2C and wiichuck
+#include <Wire.h>
+#include "nunchuck_funcs.h"
+
 // ******************************************************************************
 //		DEFINES AND SETUP
 // ******************************************************************************
@@ -40,17 +44,9 @@
 #define RF_NUMBER_STEPS 30
 #define SHARP_TRESHOLD 300
 
-#ifdef PIN_SERVO_PAN
 Servo pan;
-#endif
-
-#ifdef PIN_SERVO_TILT
 Servo tilt;
-#endif
-
-#ifdef PIN_SERVO_ROLL
 Servo roll;
-#endif
 
 // ******************************************************************************
 //		EEPROM - PERSISTENT CONFIGURATION
@@ -1046,14 +1042,13 @@ void setup()
 
     eeprom.load();
 
-#if BOARD_VERSION == 2
-    for(int p=6; p <= 12; p++)
+    // set all free pins as INPUT with PULL-UP to save power
+    int unused[] = PIN_UNUSED_ARRAY;
+    for(int p=0; p < PIN_UNUSED_CNT; p++)
     {
-        // setup all free pins as INPUT with PULL-UP to save power
-        pinMode(p, INPUT);
-        digitalWrite(p, HIGH);
+        pinMode(unused[p], INPUT);
+        digitalWrite(unused[p], HIGH);
     }
-#endif
 
 #ifndef WHEEL_DC
     leftWheel.init(PIN_LEFTWHEEL, eeprom.data.leftWheelCenter);
@@ -1086,6 +1081,14 @@ void setup()
 
     pinMode(13, OUTPUT);    // Arduino onboard LED
     digitalWrite(13, LOW);
+
+#ifdef WIICHUCK_POWER
+    nunchuck_setpowerpins();
+#endif
+
+#ifdef WIICHUCK
+    nunchuck_init();
+#endif
 }
 
 // ******************************************************************************
@@ -1110,6 +1113,7 @@ void loop()
         delay(100);
         displayAnalogSensors();
         sendStatus();
+
     case PRG_RC:
         drive.refresh();
         break;
@@ -1149,7 +1153,7 @@ void loop()
 
     case PRG_TEST:
     {
-        short sonar=analogRead(0);
+        short sonar=analogRead(PIN_SONAR);
         if(sonar < 16)
         {
             drive.left(100);

@@ -44,6 +44,7 @@
 		<Unit filename="../Board_v2.h" />
 		<Unit filename="../Protocol.h" />
 		<Unit filename="../mbsbot.pde" />
+		<Unit filename="../nunchuck_funcs.h" />
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
 		<Unit filename="serialcomApp.cpp" />
@@ -59,7 +60,7 @@
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="serialcomApp.cpp" main="serialcomFrame" init_handlers="necessary" language="CPP" />
 				<resources>
-					<wxFrame wxs="wxsmith/serialcomframe.wxs" src="serialcomMain.cpp" hdr="serialcomMain.h" name="serialcomFrame" language="CPP" />
+					<wxFrame wxs="wxsmith/serialcomframe.wxs" src="serialcomMain.cpp" hdr="serialcomMain.h" fwddecl="0" i18n="1" name="serialcomFrame" language="CPP" />
 				</resources>
 			</wxsmith>
 		</Extensions>
