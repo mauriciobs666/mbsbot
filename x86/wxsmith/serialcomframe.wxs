@@ -219,6 +219,7 @@
 													<item>PRG_SHARP_CHASE</item>
 													<item>PRG_COLLISION</item>
 													<item>PRG_SENTRY</item>
+													<item>PRG_WIICHUCK</item>
 													<item>PRG_TEST</item>
 												</content>
 												<handler function="OnChoiceProgram" entry="EVT_CHOICE" />
@@ -413,7 +414,8 @@
 										<object class="sizeritem">
 											<object class="wxSlider" name="ID_SLIDER3" variable="SliderPan" member="yes">
 												<value>90</value>
-												<max>179</max>
+												<min>5</min>
+												<max>175</max>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSlider3CmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
@@ -444,7 +446,8 @@
 										<object class="sizeritem">
 											<object class="wxSlider" name="ID_SLIDER4" variable="SliderTilt" member="yes">
 												<value>90</value>
-												<max>179</max>
+												<min>5</min>
+												<max>175</max>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSliderTiltCmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />
@@ -475,7 +478,8 @@
 										<object class="sizeritem">
 											<object class="wxSlider" name="ID_SLIDER5" variable="SliderRoll" member="yes">
 												<value>90</value>
-												<max>179</max>
+												<min>5</min>
+												<max>175</max>
 												<size>50,150</size>
 												<style>wxSL_VERTICAL|wxSL_INVERSE</style>
 												<handler function="OnSliderRollCmdSliderUpdated" entry="EVT_COMMAND_SLIDER_UPDATED" />

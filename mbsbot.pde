@@ -763,10 +763,19 @@ bool RangeFinder::sentry()
 // ******************************************************************************
 void displayAnalogSensors()
 {
+    #ifdef WIICHUCK
+        #define MAX_ANALOG 2
+    #else
+        #define MAX_ANALOG 6
+    #endif
+
     Serial.print("AS ");
     for (int x = 0; x < 6; x++)
     {
-        Serial.print(analogRead(x));
+        if(x < MAX_ANALOG)
+            Serial.print(analogRead(x));
+        else
+            Serial.print("I2C");
         Serial.print(" ");
     }
     Serial.println("");
@@ -1149,6 +1158,26 @@ void loop()
             delay(1000);
         }
     }
+    break;
+
+    case PRG_WIICHUCK:
+        nunchuck_get_data();
+
+        //nunchuck_print_data();
+
+        #ifdef PIN_SERVO_PAN
+            pan.write(map(nunchuck_joyx(),0,255,5,175));
+        #endif
+        #ifdef PIN_SERVO_TILT
+            tilt.write(map(nunchuck_joyy(),0,255,5,175));
+        #endif
+
+        if(nunchuck_zbutton())
+        {
+            drive.vectorial(map(nunchuck_accely(),70,182,-100,100),map(nunchuck_accelx(),65,173,-100,100));
+        }
+
+        delay(10);
     break;
 
     case PRG_TEST:
