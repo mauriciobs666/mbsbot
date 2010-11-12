@@ -48,6 +48,8 @@ Servo pan;
 Servo tilt;
 Servo roll;
 
+enum Errors lastError = SUCCESS;
+
 // ******************************************************************************
 //		EEPROM - PERSISTENT CONFIGURATION
 // ******************************************************************************
@@ -448,14 +450,8 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
     }
 }
 
-// Auto Calibration parameters
-#define CAL_READS_NUM 5
-#define CAL_READS_INTERVAL 200
-
 void LineFollower::autoCalibrate()
 {
-    unsigned short sensorTemp[NUM_IR_TRACK];
-
     unsigned short sensorTrack[NUM_IR_TRACK];
     unsigned short sensorTrackMax[NUM_IR_TRACK];
     unsigned short sensorTrackMin[NUM_IR_TRACK];
@@ -464,91 +460,79 @@ void LineFollower::autoCalibrate()
     unsigned short sensorOutMax[NUM_IR_TRACK];
     unsigned short sensorOutMin[NUM_IR_TRACK];
 
-    char linha[32]; // string temp to use with sprintf
+    memset(sensorTrackMax, 0, sizeof(sensorTrackMax));
+    memset(sensorTrackMin, 1023, sizeof(sensorTrackMin));
+    memset(sensorOutMax, 0, sizeof(sensorOut));
+    memset(sensorOutMin, 1023, sizeof(sensorOut));
 
     Serial.println("Calibrating TRACK");
 
-    // read all sensors at TRACK position several times
+    // read all sensors at TRACK position
 
-    memset(sensorTrack, 0, sizeof(sensorTrack));
-    memset(sensorTrackMax, 0, sizeof(sensorTrackMax));
-    memset(sensorTrackMin, 1023, sizeof(sensorTrackMin));
-
-    for(int x=0; x < CAL_READS_NUM; x++)
+    for(int y=0; y < NUM_IR_TRACK; y++)
     {
-        for(int y=0; y < NUM_IR_TRACK; y++)
-        {
-            sensorTrack[y] += sensorTemp[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
-            sensorTrackMax[y] = max(sensorTrack[y],sensorTrackMax[y]);
-            sensorTrackMin[y] = min(sensorTrack[y],sensorTrackMin[y]);
-        }
+        sensorTrack[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
 
-        sprintf(linha," %04d %04d %04d", sensorTemp[0], sensorTemp[1], sensorTemp[2]);
-        Serial.println(linha);
+        Serial.print(sensorTrack[y]);
+        Serial.print(" ");
 
-        delay(CAL_READS_INTERVAL);
+        sensorTrackMax[y] = max(sensorTrack[y],sensorTrackMax[y]);
+        sensorTrackMin[y] = min(sensorTrack[y],sensorTrackMin[y]);
     }
 
-    Serial.println("Calibrate OUTSIDE");
+    Serial.println("\nCalibrate OUTSIDE");
 
     drive.inch();
 
-    // read all sensors at OUTSIDE position several times
+    // read all sensors at OUTSIDE position
 
-    memset(sensorOut, 0, sizeof(sensorOut));
-    memset(sensorOutMax, 0, sizeof(sensorOut));
-    memset(sensorOutMin, 1023, sizeof(sensorOut));
-    for(int x=0; x < CAL_READS_NUM; x++)
+    for(int y=0; y < NUM_IR_TRACK; y++)
     {
-        for(int y=0; y < NUM_IR_TRACK; y++)
-        {
-            sensorOut[y] += sensorTemp[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
-            sensorOutMax[y] = max(sensorOut[y], sensorOutMax[y]);
-            sensorOutMin[y] = min(sensorOut[y], sensorOutMin[y]);
-        }
+        sensorOut[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
 
-        sprintf(linha," %04d %04d %04d", sensorTemp[0], sensorTemp[1], sensorTemp[2]);
-        Serial.println(linha);
+        Serial.print(sensorOut[y]);
+        Serial.print(" ");
 
-        delay(CAL_READS_INTERVAL);
+        sensorOutMax[y] = max(sensorOut[y], sensorOutMax[y]);
+        sensorOutMin[y] = min(sensorOut[y], sensorOutMin[y]);
     }
 
     bool reverseSensor[NUM_IR_TRACK];
 
+    Serial.println("\nThresholds: ");
+
     for(int y=0; y < NUM_IR_TRACK; y++)
     {
-        unsigned short mediumTrack = (sensorTrack[y] / CAL_READS_NUM);
-        unsigned short mediumOut = (sensorOut[y] / CAL_READS_NUM);
+        reverseSensor[y] = ( sensorOut[y] > sensorTrack[y] );
+        eeprom.data.LF_threshold[y] = ( sensorOut[y] + sensorTrack[y] ) / 2;
 
-        reverseSensor[y] = ( mediumOut > mediumTrack );
-
-        eeprom.data.LF_threshold[y] = ( mediumTrack + mediumOut ) / 2;
+        Serial.print(eeprom.data.LF_threshold[y]);
+        Serial.print(" ");
     }
 
-    // if one sensor is reversed then all others must also be!
     eeprom.data.LF_reverseColor = reverseSensor[0];
 
     if(eeprom.data.LF_reverseColor)
-        Serial.println("Reversed Track Color");
+        Serial.println("\nReversed Track Color");
     else
-        Serial.println("Normal Track Color");
-
-    for(int x=1; x < NUM_IR_TRACK; x++)
-        if (reverseSensor[x] ^ eeprom.data.LF_reverseColor)
-        {
-            sprintf(linha, "BAD Reverse %d", x);
-            Serial.println(linha);
-            return;
-        }
+        Serial.println("\nNormal Track Color");
 
     for(int x=0; x < NUM_IR_TRACK; x++)
     {
+        // if one sensor is reversed then all others must also be!
+        if (reverseSensor[x] ^ eeprom.data.LF_reverseColor)
+        {
+            Serial.print("BAD Reverse ");
+            Serial.println(x);
+            return;
+        }
+
         if(eeprom.data.LF_reverseColor)
         {
             if(sensorOutMin[x] <= sensorTrackMax[x])
             {
-                sprintf(linha, "BAD limits %d", x);
-                Serial.println(linha);
+                Serial.print("BAD limits ");
+                Serial.println(x);
                 return;
             }
         }
@@ -556,16 +540,12 @@ void LineFollower::autoCalibrate()
         {
             if(sensorOutMax[x] >= sensorTrackMin[x])
             {
-                sprintf(linha, "BAD limits %d", x);
-                Serial.println(linha);
+                Serial.print("BAD limits ");
+                Serial.println(x);
                 return;
             }
         }
     }
-
-    Serial.println("Thresholds:");
-    sprintf(linha," %04d %04d %04d", eeprom.data.LF_threshold[0], eeprom.data.LF_threshold[1], eeprom.data.LF_threshold[2]);
-    Serial.println(linha);
 }
 
 // ******************************************************************************
@@ -786,6 +766,8 @@ void sendStatus()
     Serial.print("S ");
     Serial.print(eeprom.data.selectedProgram);
     Serial.print(" ");
+    Serial.print(lastError);
+    Serial.print(" ");
     Serial.print(drive.leftWheel->read());
     Serial.print(" ");
     Serial.print(drive.rightWheel->read());
@@ -809,18 +791,14 @@ class Server
 {
 public:
     Server() : pos(0) {}
-    char * receive();
+    bool receive();
     void loop();
-    char *getCommand()
-    {
-        return command;
-    }
 private:
     char command[MAX_COMMAND_SIZE];
     char pos;
 } server;
 
-char * Server::receive()
+bool Server::receive()
 {
     while(Serial.available() > 0)
     {
@@ -829,13 +807,14 @@ char * Server::receive()
         if (pos == MAX_COMMAND_SIZE)
         {
             pos=0;
+            lastError = ERR_MAX_CMD_SIZ;
             Serial.println("ERR: MAX_CMD_SIZ");
         }
         else if(c == COMMAND_END)
         {
             command[pos]=0;
             pos=0;
-            return command;
+            return true;
         }
         else
         {
@@ -843,7 +822,7 @@ char * Server::receive()
             pos++;
         }
     }
-    return NULL;
+    return false;
 }
 
 void Server::loop()
@@ -853,7 +832,7 @@ void Server::loop()
         char *tok;	// temp
 
         char *pqp;	// not all avr-libc versions contain strtok() so we need this crap bellow:
-#define STRTOK(a, b) strtok_r(a, b, &pqp)
+        #define STRTOK(a, b) strtok_r(a, b, &pqp)
 
         if (tok = STRTOK(command, " "))						// first token is the ACTION
         {
@@ -1174,7 +1153,8 @@ void loop()
 
         if(nunchuck_zbutton())
         {
-            drive.vectorial(map(nunchuck_accely(),70,182,-100,100),map(nunchuck_accelx(),65,173,-100,100));
+            drive.vectorial(map(nunchuck_accely(),70,182,-100,100),
+                            map(nunchuck_accelx(),65,173,-100,100));
         }
 
         delay(10);

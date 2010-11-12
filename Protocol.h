@@ -102,7 +102,7 @@ turns left 90 degrees
 turns right 90 degrees
 */
 
-#define CMD_STATUS	"status"
+#define CMD_STATUS      "status"
 /* CMD_STATUS
 get status
 
@@ -110,27 +110,35 @@ reply:
 S [p] [l] [r] [sx] [sy] [sz]
 */
 
-#define CMD_UNAME	"uname"
+#define CMD_UNAME       "uname"
 /* CMD_UNAME
 */
 
-#define CMD_BEEP	"beep"
+#define CMD_BEEP        "beep"
 /* CMD_BEEP [frequency]
 */
+
+#define CMD_CLEAR_ERR   "clerr"
 
 // programs available:
 enum ProgramID
 {
-	PRG_RC = 0,			// Remote control
-	PRG_SHOW_SENSORS,	// Remote control with sensor monitoring
-	PRG_PHOTOVORE,		//
-	PRG_LINEFOLLOWER,	//
-	PRG_SHARP,			// Sharp IR ranger test
-	PRG_SHARP_CHASE,	//
-	PRG_COLLISION,		//
-	PRG_SENTRY,
-	PRG_WIICHUCK,
-	PRG_TEST
+    PRG_RC = 0,			// Remote control
+    PRG_SHOW_SENSORS,	// Remote control with sensor monitoring
+    PRG_PHOTOVORE,		//
+    PRG_LINEFOLLOWER,	//
+    PRG_SHARP,			// Sharp IR ranger test
+    PRG_SHARP_CHASE,	//
+    PRG_COLLISION,		//
+    PRG_SENTRY,
+    PRG_WIICHUCK,
+    PRG_TEST
+};
+
+enum Errors
+{
+    SUCCESS = 0,
+    ERR_MAX_CMD_SIZ
 };
 
 #endif // PROTOCOL_H_INCLUDED

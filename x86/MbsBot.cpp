@@ -140,6 +140,13 @@ int MbsBot::writeVariable(const char *var, int value)
 	return send(cmd);
 }
 
+int MbsBot::readVariable(const char *var)
+{
+	char cmd[MAX_COMMAND_SIZE];
+	snprintf(cmd, MAX_COMMAND_SIZE, "%s %s\n", CMD_READ, var);
+	return send(cmd);
+}
+
 int MbsBot::wheels(int lw, int rw, int duration)
 {
 	char cmd[MAX_COMMAND_SIZE];

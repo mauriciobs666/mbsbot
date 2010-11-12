@@ -19,10 +19,13 @@
 #define MBSBOT_H
 
 #include <MBSUtil.h>
-#include <MBSTrace.h>
 #include "../Protocol.h"
 
 #define SERIAL_BUFFER_SIZE 1000
+
+// pre-defined baud rates
+const int spd[] = { 9600, 19200, 38400, 57600, 115200 };
+const int n_spd = 5;
 
 class MbsBot
 {
@@ -50,7 +53,17 @@ class MbsBot
 		int send(const char * command, int len=-1);
 		char * receive();
 
+        int save()
+            { return send("save\n"); }
+        int load()
+            { return send("load\n"); }
+        int loadDefault()
+            { return send("default\n"); }
+        int status()
+            { return send("status\n"); }
+
 		int writeVariable(const char *var, int value);
+		int readVariable(const char *var);
 
         int setProgram(enum ProgramID val)
             { return writeVariable("p", val); }
@@ -69,6 +82,8 @@ class MbsBot
 		int setRightWheelCenter(int val)
             { return writeVariable("rc", val); }
 
+        int stop()
+            { return send("stop\n"); }
 		int wheels(int lw, int rw, int duration=0);
 
 		int vectorialDrive(int x, int y, int duration=0);

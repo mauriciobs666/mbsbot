@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Workspace">
+		<Project filename="../mbsutil/MBSUtil.cbp" />
+		<Project filename="cv/cv-win.cbp" />
+		<Project filename="x86/serialcom.cbp" active="1">
+			<Depends filename="../mbsutil/MBSUtil.cbp" />
+		</Project>
+		<Project filename="proksi/proksi.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>

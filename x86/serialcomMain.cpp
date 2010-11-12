@@ -18,10 +18,6 @@
 #include "serialcomMain.h"
 #include <wx/msgdlg.h>
 
-// pre-defined baud rates
-const int spd[] = { 9600, 19200, 38400, 57600, 115200 };
-const int n_spd = 5;
-
 //(*InternalHeaders(serialcomFrame)
 #include <wx/intl.h>
 #include <wx/string.h>
@@ -442,19 +438,19 @@ void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton6Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->send("save\n");
+    MbsBot::getInstance()->save();
 }
 
 void serialcomFrame::OnButton7Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->send("load\n");
-    MbsBot::getInstance()->send("stop\n");
+    MbsBot::getInstance()->load();
+    MbsBot::getInstance()->stop();
 }
 
 void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->send("default\n");
-    MbsBot::getInstance()->send("stop\n");
+    MbsBot::getInstance()->loadDefault();
+    MbsBot::getInstance()->stop();
 }
 
 // ============================================================================
@@ -559,18 +555,22 @@ void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 // Refresh
 void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->send("get l\n");
-    MbsBot::getInstance()->send("get r\n");
-    MbsBot::getInstance()->send("get sx\n");
+    MbsBot::getInstance()->readVariable("l");
+    MbsBot::getInstance()->readVariable("r");
+    MbsBot::getInstance()->readVariable("sx");
+    MbsBot::getInstance()->readVariable("sy");
+    MbsBot::getInstance()->readVariable("sz");
 }
 
 // Stop
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->send("stop\n");
-    MbsBot::getInstance()->send("get l\n");
-    MbsBot::getInstance()->send("get r\n");
-    MbsBot::getInstance()->send("get sx\n");
+    MbsBot::getInstance()->stop();
+    MbsBot::getInstance()->readVariable("l");
+    MbsBot::getInstance()->readVariable("r");
+    MbsBot::getInstance()->readVariable("sx");
+    MbsBot::getInstance()->readVariable("sy");
+    MbsBot::getInstance()->readVariable("sz");
 }
 
 // ============================================================================
@@ -579,7 +579,7 @@ void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton4Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->send("get as\n");
+    MbsBot::getInstance()->readVariable("as");  // All analog Sensors
 }
 
 void serialcomFrame::OnButton5Click(wxCommandEvent& event)
@@ -603,7 +603,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
     if(onceInASecond == 0)
     {
         if(CheckBoxAutoRefresh->IsChecked())
-            MbsBot::getInstance()->send("status\n");
+            MbsBot::getInstance()->status();
         onceInASecond = 20;
     }
     else
@@ -688,30 +688,57 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
                     // current program
                     int value = atoi(tok);
                     ChoicePrg->SetSelection(value);
+
                     tok = strtok(NULL, " ");
                     if (tok)
                     {
-                        // left wheel
-                        value = atoi(tok);
-                        Slider1->SetValue(value);
-                        TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
+                        // last error
+                        int value = atoi(tok);
+                        ChoicePrg->SetSelection(value);
 
                         tok = strtok(NULL, " ");
                         if (tok)
                         {
-                            // right wheel
+                            // left wheel
                             value = atoi(tok);
-                            Slider2->SetValue(value);
-                            TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
+                            Slider1->SetValue(value);
+                            TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
 
                             tok = strtok(NULL, " ");
                             if (tok)
                             {
-                                // head servo
+                                // right wheel
                                 value = atoi(tok);
-                                SliderPan->SetValue(value);
-                                TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
-                                //StatusBar1->SetStatusText(_("Status OK"));
+                                Slider2->SetValue(value);
+                                TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
+
+                                tok = strtok(NULL, " ");
+                                if (tok)
+                                {
+                                    // Pan servo
+                                    value = atoi(tok);
+                                    SliderPan->SetValue(value);
+                                    TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
+
+                                    tok = strtok(NULL, " ");
+                                    if (tok)
+                                    {
+                                        // Tilt servo
+                                        value = atoi(tok);
+                                        SliderTilt->SetValue(value);
+                                        TextCtrlTilt->SetValue(wxString::Format(wxT("%i"), value));
+
+                                        tok = strtok(NULL, " ");
+                                        if (tok)
+                                        {
+                                            // Roll servo
+                                            value = atoi(tok);
+                                            SliderRoll->SetValue(value);
+                                            TextCtrlRoll->SetValue(wxString::Format(wxT("%i"), value));
+                                            //StatusBar1->SetStatusText(_("Status OK"));
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -777,7 +804,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
 void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 {
-
     if( Choice2->GetCurrentSelection() == 0 )
     {
         // Wheel Servo
@@ -790,15 +816,14 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
         Slider1->SetRange(-255,255);
         Slider2->SetRange(-255,255);
     }
-    MbsBot::getInstance()->send("get l\n");
-    MbsBot::getInstance()->send("get r\n");
-    MbsBot::getInstance()->send("get sx\n");
+    MbsBot::getInstance()->readVariable("l");
+    MbsBot::getInstance()->readVariable("r");
 }
 
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 {
     MbsBot::getInstance()->setProgram((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
-    MbsBot::getInstance()->send("stop\n");
+    MbsBot::getInstance()->stop();
 }
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
