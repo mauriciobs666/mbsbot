@@ -141,82 +141,16 @@ static int nunchuck_get_data()
     return 0; //failure
 }
 
-// Print the input data we have recieved
-// accel data is 10 bits long
-// so we read 8 bits, then we have to add
-// on the last 2 bits.  That is why I
-// multiply them by 2 * 2
-static void nunchuck_print_data()
-{
-    static int i=0;
-    int joy_x_axis = nunchuck_buf[0];
-    int joy_y_axis = nunchuck_buf[1];
-    int accel_x_axis = nunchuck_buf[2]; // * 2 * 2;
-    int accel_y_axis = nunchuck_buf[3]; // * 2 * 2;
-    int accel_z_axis = nunchuck_buf[4]; // * 2 * 2;
-
-    int z_button = 0;
-    int c_button = 0;
-
-    // byte nunchuck_buf[5] contains bits for z and c buttons
-    // it also contains the least significant bits for the accelerometer data
-    // so we have to check each bit of byte outbuf[5]
-    if ((nunchuck_buf[5] >> 0) & 1)
-        z_button = 1;
-    if ((nunchuck_buf[5] >> 1) & 1)
-        c_button = 1;
-
-    if ((nunchuck_buf[5] >> 2) & 1)
-        accel_x_axis += 2;
-    if ((nunchuck_buf[5] >> 3) & 1)
-        accel_x_axis += 1;
-
-    if ((nunchuck_buf[5] >> 4) & 1)
-        accel_y_axis += 2;
-    if ((nunchuck_buf[5] >> 5) & 1)
-        accel_y_axis += 1;
-
-    if ((nunchuck_buf[5] >> 6) & 1)
-        accel_z_axis += 2;
-    if ((nunchuck_buf[5] >> 7) & 1)
-        accel_z_axis += 1;
-
-    Serial.print(i,DEC);
-    Serial.print("\t");
-
-    Serial.print("joy:");
-    Serial.print(joy_x_axis,DEC);
-    Serial.print(",");
-    Serial.print(joy_y_axis, DEC);
-    Serial.print("  \t");
-
-    Serial.print("acc:");
-    Serial.print(accel_x_axis, DEC);
-    Serial.print(",");
-    Serial.print(accel_y_axis, DEC);
-    Serial.print(",");
-    Serial.print(accel_z_axis, DEC);
-    Serial.print("\t");
-
-    Serial.print("but:");
-    Serial.print(z_button, DEC);
-    Serial.print(",");
-    Serial.print(c_button, DEC);
-
-    Serial.print("\r\n");  // newline
-    i++;
-}
-
 // returns zbutton state: 1=pressed, 0=notpressed
 static int nunchuck_zbutton()
 {
-    return ((nunchuck_buf[5] >> 0) & 1) ? 0 : 1;  // voodoo
+    return ((nunchuck_buf[5] >> 0) & 1) ? 0 : 1;
 }
 
 // returns zbutton state: 1=pressed, 0=notpressed
 static int nunchuck_cbutton()
 {
-    return ((nunchuck_buf[5] >> 1) & 1) ? 0 : 1;  // voodoo
+    return ((nunchuck_buf[5] >> 1) & 1) ? 0 : 1;
 }
 
 // returns value of x-axis joystick
@@ -234,17 +168,65 @@ static int nunchuck_joyy()
 // returns value of x-axis accelerometer
 static int nunchuck_accelx()
 {
-    return nunchuck_buf[2];   // FIXME: this leaves out 2-bits of the data
+    // accel data is 10 bits long
+    // so we read 8 bits, then we have to add
+    // on the last 2 bits.  That is why I
+    // multiply them by 2 * 2
+
+    int accel_x_axis = nunchuck_buf[2] << 2;
+
+    if ((nunchuck_buf[5] >> 2) & 1)
+        accel_x_axis += 2;
+
+    if ((nunchuck_buf[5] >> 3) & 1)
+        accel_x_axis += 1;
+
+    return accel_x_axis;
 }
 
 // returns value of y-axis accelerometer
 static int nunchuck_accely()
 {
-    return nunchuck_buf[3];   // FIXME: this leaves out 2-bits of the data
+    int accel_y_axis = nunchuck_buf[3] * 2 * 2;
+    if ((nunchuck_buf[5] >> 4) & 1)
+        accel_y_axis += 2;
+    if ((nunchuck_buf[5] >> 5) & 1)
+        accel_y_axis += 1;
+
+    return accel_y_axis;
 }
 
 // returns value of z-axis accelerometer
 static int nunchuck_accelz()
 {
-    return nunchuck_buf[4];   // FIXME: this leaves out 2-bits of the data
+    int accel_z_axis = nunchuck_buf[4] * 2 * 2;
+    if ((nunchuck_buf[5] >> 6) & 1)
+        accel_z_axis += 2;
+    if ((nunchuck_buf[5] >> 7) & 1)
+        accel_z_axis += 1;
+
+    return accel_z_axis;
+}
+
+// Print the input data we have recieved
+static void nunchuck_print_data()
+{
+    Serial.print("joy:");
+    Serial.print(nunchuck_joyx(),DEC);
+    Serial.print(",");
+    Serial.print(nunchuck_joyx(), DEC);
+    Serial.print("  \t");
+
+    Serial.print("acc:");
+    Serial.print(nunchuck_accelx(), DEC);
+    Serial.print(",");
+    Serial.print(nunchuck_accely(), DEC);
+    Serial.print(",");
+    Serial.print(nunchuck_accelz(), DEC);
+    Serial.print("\t");
+
+    Serial.print("but:");
+    Serial.print(nunchuck_zbutton(), DEC);
+    Serial.print(",");
+    Serial.println(nunchuck_cbutton(), DEC);
 }

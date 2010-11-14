@@ -318,28 +318,41 @@ drive;
 
 void Drive::vectorial(int x, int y)
 {
-    if(x < 0)			// turn left
+    if(y > 0)
     {
-        if(y == 0)		// hard turn left
-            left(-x);
-        else if(y > 0)	// smooth left-forward
-            leftSmooth(-x);
-        else if(y < 0)	// smooth left-backward
-            leftSmooth(x);
+        if(x > 0)   // Q1
+        {
+            leftWheel->move( max(x,y) );
+            if(y > x)
+                rightWheel->move( y-x );
+            else
+                rightWheel->move( x-y );
+        }
+        else        // Q2
+        {
+            rightWheel->move( max(-x,y) );
+            if(y > -x)
+                leftWheel->move( x+y );
+            else
+                leftWheel->move( x-y );
+        }
     }
-    else if(x > 0)		// turn right
+    else // (y <= 0)
     {
-        if(y == 0)		// hard turn right
-            right(x);
-        else if(y > 0)	// smooth right-forward
-            rightSmooth(x);
-        else if(y < 0)	// smooth right-backward
-            rightSmooth(-x);
+        if(x < 0)   // Q3
+        {
+            leftWheel->move( min(x,y) );
+            if(x < y)
+                rightWheel->move( -x-y );
+            else
+                rightWheel->move( y-x );
+        }
+        else        // Q4
+        {
+            rightWheel->move( min(-x,y) );
+            leftWheel->move( x+y );
+        }
     }
-    else if(y != 0)		// y > 0 = forward / y < 0 = backward
-        forward(y);
-    else
-        stop();
 }
 
 // ******************************************************************************
@@ -1082,15 +1095,15 @@ void setup()
 // ******************************************************************************
 //		MAIN LOOP
 // ******************************************************************************
-long lastSendStatus = 0;
 
 void loop()
 {
     server.loop();
 
-    if(millis() > lastSendStatus + 10000)
+    static long nextSendStatus = 0;
+    if(millis() > nextSendStatus)
     {
-        lastSendStatus += 10000;
+        nextSendStatus += 10000;
         displayAnalogSensors();
         sendStatus();
     }
@@ -1142,7 +1155,7 @@ void loop()
     case PRG_WIICHUCK:
         nunchuck_get_data();
 
-        //nunchuck_print_data();
+        nunchuck_print_data();
 
         #ifdef PIN_SERVO_PAN
             pan.write(map(nunchuck_joyx(),0,255,5,175));
@@ -1153,9 +1166,11 @@ void loop()
 
         if(nunchuck_zbutton())
         {
-            drive.vectorial(map(nunchuck_accely(),70,182,-100,100),
-                            map(nunchuck_accelx(),65,173,-100,100));
+            drive.vectorial(map(nunchuck_accelx(),200,700,-100,100),
+                            map(nunchuck_accely(),200,700,-100,100));
         }
+        else
+            drive.stop();
 
         delay(10);
     break;
