@@ -169,9 +169,6 @@ static int nunchuck_joyy()
 static int nunchuck_accelx()
 {
     // accel data is 10 bits long
-    // so we read 8 bits, then we have to add
-    // on the last 2 bits.  That is why I
-    // multiply them by 2 * 2
 
     int accel_x_axis = nunchuck_buf[2] << 2;
 
@@ -182,6 +179,8 @@ static int nunchuck_accelx()
         accel_x_axis += 1;
 
     return accel_x_axis;
+
+    //return (nunchuck_buf[2] << 2) | ((nunchuck_buf[5] >> 1) & 2) | ((nunchuck_buf[5] >> 3) & 1);
 }
 
 // returns value of y-axis accelerometer
@@ -194,6 +193,8 @@ static int nunchuck_accely()
         accel_y_axis += 1;
 
     return accel_y_axis;
+
+    //return (nunchuck_buf[3] << 2) | ((nunchuck_buf[5] >> 3) & 2) | ((nunchuck_buf[5] >> 5) & 1);
 }
 
 // returns value of z-axis accelerometer
@@ -206,6 +207,8 @@ static int nunchuck_accelz()
         accel_z_axis += 1;
 
     return accel_z_axis;
+
+    //return (nunchuck_buf[4] << 2) | ((nunchuck_buf[5] >> 5) & 2) | ((nunchuck_buf[5] >> 7) & 1);
 }
 
 // Print the input data we have recieved
