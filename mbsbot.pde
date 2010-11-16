@@ -821,7 +821,7 @@ bool Server::receive()
         {
             pos=0;
             lastError = ERR_MAX_CMD_SIZ;
-            Serial.println("ERR: MAX_CMD_SIZ");
+            Serial.println("ERR_MAX_CMD_SIZ");
         }
         else if(c == COMMAND_END)
         {
@@ -1152,6 +1152,7 @@ void loop()
     }
     break;
 
+    #ifdef WIICHUCK
     case PRG_WIICHUCK:
         nunchuck_get_data();
 
@@ -1174,6 +1175,7 @@ void loop()
 
         delay(10);
     break;
+    #endif
 
     case PRG_TEST:
     {
@@ -1188,6 +1190,14 @@ void loop()
         else
             drive.forward(100);
     }
+    break;
+
+    default:
+        if( lastError != ERR_INVALID_PRG )
+        {
+            lastError = ERR_INVALID_PRG;
+            Serial.println("ERR_INVALID_PRG");
+        }
     break;
     }
     delay(15);

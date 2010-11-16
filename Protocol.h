@@ -138,7 +138,8 @@ enum ProgramID
 enum Errors
 {
     SUCCESS = 0,
-    ERR_MAX_CMD_SIZ
+    ERR_MAX_CMD_SIZ,
+    ERR_INVALID_PRG
 };
 
 #endif // PROTOCOL_H_INCLUDED
