@@ -220,6 +220,7 @@
 													<item>PRG_COLLISION</item>
 													<item>PRG_SENTRY</item>
 													<item>PRG_WIICHUCK</item>
+													<item>PRG_PROCESSING</item>
 													<item>PRG_TEST</item>
 												</content>
 												<handler function="OnChoiceProgram" entry="EVT_CHOICE" />

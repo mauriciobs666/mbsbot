@@ -180,6 +180,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     ChoicePrg->Append(_("PRG_COLLISION"));
     ChoicePrg->Append(_("PRG_SENTRY"));
     ChoicePrg->Append(_("PRG_WIICHUCK"));
+    ChoicePrg->Append(_("PRG_PROCESSING"));
     ChoicePrg->Append(_("PRG_TEST"));
     StaticBoxSizer12->Add(ChoicePrg, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(StaticBoxSizer12, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);

@@ -132,6 +132,7 @@ enum ProgramID
     PRG_COLLISION,		//
     PRG_SENTRY,
     PRG_WIICHUCK,
+    PRG_PROCESSING,
     PRG_TEST
 };
 

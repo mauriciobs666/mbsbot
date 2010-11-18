@@ -1040,6 +1040,7 @@ void Server::loop()
 void setup()
 {
     Serial.begin(115200);
+    Serial.println("MBSBOT");
 
     eeprom.load();
 
@@ -1177,6 +1178,11 @@ void loop()
     break;
     #endif
 
+    case PRG_PROCESSING:
+        Serial.print((analogRead(0) / 4), BYTE);
+        //delay(10);
+    break;
+
     case PRG_TEST:
     {
         short sonar=analogRead(PIN_SONAR);
@@ -1200,5 +1206,5 @@ void loop()
         }
     break;
     }
-    delay(15);
+    delay(10);
 }
