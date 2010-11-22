@@ -40,6 +40,7 @@
 	sx	-	servo "X" (pan)
 	sy	-	servo "Y" (tilt)
 	sz	-	servo "Z" (roll)
+	hb  -   handbrake
 */
 
 #define CMD_WRITE	"set"

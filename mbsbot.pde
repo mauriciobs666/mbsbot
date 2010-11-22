@@ -61,6 +61,8 @@ public:
     {
         short selectedProgram;
 
+        char handBrake;
+
         short leftWheelCenter;
         short rightWheelCenter;
 
@@ -99,6 +101,7 @@ public:
     void loadDefault()
     {
         data.selectedProgram = PRG_RC;
+        data.handBrake = 1;
         data.leftWheelCenter = 1410;
         data.rightWheelCenter = 1384;
         data.mvDelay.inch = 200;
@@ -171,8 +174,10 @@ public:
     }
     virtual void refresh()
     {
+        if(eeprom.data.handBrake)
+            current = center;
         // protect against out of range values
-        if (current < 1000)
+        else if (current < 1000)
             current = 1000;
         else if (current > 2000)
             current = 2000;
@@ -210,8 +215,10 @@ public:
     }
     virtual void refresh()
     {
+        if(eeprom.data.handBrake)
+            current = center;
         // protect against out of range values
-        if(current > 255)
+        else if(current > 255)
             current = 255;
         else if (current < -255)
             current = -255;
@@ -756,19 +763,13 @@ bool RangeFinder::sentry()
 // ******************************************************************************
 void displayAnalogSensors()
 {
-    #ifdef WIICHUCK
-        #define MAX_ANALOG 2
-    #else
-        #define MAX_ANALOG 6
-    #endif
-
     Serial.print("AS ");
     for (int x = 0; x < 6; x++)
     {
-        if(x < MAX_ANALOG)
+        if(x < PIN_ANALOG_CNT)
             Serial.print(analogRead(x));
         else
-            Serial.print("I2C");
+            Serial.print("?");
         Serial.print(" ");
     }
     Serial.println("");
@@ -898,6 +899,8 @@ void Server::loop()
                             if (tok = STRTOK(NULL, " "))	// D
                                 eeprom.data.pid.Kd = atoi(tok);
                         }
+                        else if(strcmp(dest,"hb") == 0)		// hand brake
+                            eeprom.data.handBrake = value;
                     }
                 }
             }
@@ -961,6 +964,12 @@ void Server::loop()
                         Serial.print("SZ ");
                         Serial.println(roll.read());
                     }
+                    else if(strcmp(tok,"hb") == 0)			// hand brake
+                    {
+                        Serial.print("HB ");
+                        Serial.println(eeprom.data.handBrake);
+                    }
+
                     else if(strcmp(tok,"as") == 0)			// all analog sensors
                         displayAnalogSensors();
                     else if(strcmp(tok,"pid") == 0)			// PID
@@ -1104,7 +1113,7 @@ void loop()
     static long nextSendStatus = 0;
     if(millis() > nextSendStatus)
     {
-        nextSendStatus += 10000;
+        nextSendStatus += 30000;
         displayAnalogSensors();
         sendStatus();
     }
@@ -1180,7 +1189,7 @@ void loop()
 
     case PRG_PROCESSING:
         Serial.print((analogRead(0) / 4), BYTE);
-        //delay(10);
+        delay(100);
     break;
 
     case PRG_TEST:

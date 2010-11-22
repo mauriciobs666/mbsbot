@@ -98,6 +98,8 @@ private:
 
     //(*Identifiers(serialcomFrame)
     static const long ID_TEXTCTRL2;
+    static const long ID_CHECKBOX2;
+    static const long ID_BUTTON10;
     static const long ID_PANEL1;
     static const long ID_STATICTEXT1;
     static const long ID_TEXTCTRL6;
@@ -110,8 +112,6 @@ private:
     static const long ID_STATICTEXT5;
     static const long ID_STATICTEXT6;
     static const long ID_BUTTON9;
-    static const long ID_CHECKBOX2;
-    static const long ID_BUTTON10;
     static const long ID_PANEL6;
     static const long ID_CHOICE3;
     static const long ID_BUTTON6;

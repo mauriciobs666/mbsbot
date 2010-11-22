@@ -25,6 +25,8 @@
 
 //(*IdInit(serialcomFrame)
 const long serialcomFrame::ID_TEXTCTRL2 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX2 = wxNewId();
+const long serialcomFrame::ID_BUTTON10 = wxNewId();
 const long serialcomFrame::ID_PANEL1 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT1 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL6 = wxNewId();
@@ -37,8 +39,6 @@ const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT5 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT6 = wxNewId();
 const long serialcomFrame::ID_BUTTON9 = wxNewId();
-const long serialcomFrame::ID_CHECKBOX2 = wxNewId();
-const long serialcomFrame::ID_BUTTON10 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
 const long serialcomFrame::ID_CHOICE3 = wxNewId();
 const long serialcomFrame::ID_BUTTON6 = wxNewId();
@@ -112,8 +112,17 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK2"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
-    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, _("\nSerial command reference:\n\nget [variable]\n\tl\t-\tleft wheel servo\n\tlc\t-\tleft wheel servo center pulse duration (in ms)\n\tr\t-\tright wheel servo\n\trc\t-\tright wheel servo center pulse duration (in ms)\n\tp\t-\tcurrent program\n\tdi\t-\tdrive.inch() delay configuration\n\tdrf\t-\trange finder between readings delay (servo movement)\n\tas\t-\tall analog sensors\n\tsx\t-\tservo \"X\"\n\nprograms available:\n\t0\t-\tRemote control\n\t1\t-\tRemote control with sensor monitoring\n\t2\t-\tPhotovore\n\t3\t-\tLine Follower\n\t4\t-\tSharp IR ranger test\n\nset\t[variable] [value]\n\tvariable\t-\tsame used for \'get\'\n\tvalue\t\t-\tint\n\t\nsave\n\tsave to eeprom\n\nload\n\tdiscard changes and reload from eeprom\n\ncal\n\tline-follower auto calibration\n\ndefault\n\tload default hard-coded values into RAM\n\t\ninch\n\tmove forward one inch\n\nstop\n\tstop wheels\n"), wxDefaultPosition, wxSize(645,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
+    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, _("\nSerial command reference:\n\nget [variable]\n\tl\t-\tleft wheel servo\n\tlc\t-\tleft wheel servo center pulse duration (in ms)\n\tr\t-\tright wheel servo\n\trc\t-\tright wheel servo center pulse duration (in ms)\n\tp\t-\tcurrent program\n\tdi\t-\tdrive.inch() delay configuration\n\tdrf\t-\trange finder between readings delay (servo movement)\n\tas\t-\tall analog sensors\n\tsx\t-\tservo \"X\"\n\nprograms available:\n\t0\t-\tRemote control\n\t1\t-\tRemote control with sensor monitoring\n\t2\t-\tPhotovore\n\t3\t-\tLine Follower\n\t4\t-\tSharp IR ranger test\n\nset\t[variable] [value]\n\tvariable\t-\tsame used for \'get\'\n\tvalue\t\t-\tint\n\t\nsave\n\tsave to eeprom\n\nload\n\tdiscard changes and reload from eeprom\n\ncal\n\tline-follower auto calibration\n\ndefault\n\tload default hard-coded values into RAM\n\t\ninch\n\tmove forward one inch\n\nstop\n\tstop wheels\n"), wxDefaultPosition, wxSize(500,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
     BoxSizer2->Add(Log, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
+    StaticBoxSizer9 = new wxStaticBoxSizer(wxVERTICAL, Panel1, _("Log"));
+    FlexGridSizer8 = new wxFlexGridSizer(0, 1, 0, 0);
+    CheckBoxRXdata = new wxCheckBox(Panel1, ID_CHECKBOX2, _("Dump RX data"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX2"));
+    CheckBoxRXdata->SetValue(false);
+    FlexGridSizer8->Add(CheckBoxRXdata, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    Button10 = new wxButton(Panel1, ID_BUTTON10, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON10"));
+    FlexGridSizer8->Add(Button10, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer9->Add(FlexGridSizer8, 0, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer2->Add(StaticBoxSizer9, 0, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     Panel1->SetSizer(BoxSizer2);
     BoxSizer2->Fit(Panel1);
     BoxSizer2->SetSizeHints(Panel1);
@@ -155,15 +164,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer7->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer13, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
-    StaticBoxSizer9 = new wxStaticBoxSizer(wxHORIZONTAL, Panel6, _("Log"));
-    FlexGridSizer8 = new wxFlexGridSizer(0, 1, 0, 0);
-    CheckBoxRXdata = new wxCheckBox(Panel6, ID_CHECKBOX2, _("Dump RX data"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX2"));
-    CheckBoxRXdata->SetValue(false);
-    FlexGridSizer8->Add(CheckBoxRXdata, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button10 = new wxButton(Panel6, ID_BUTTON10, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON10"));
-    FlexGridSizer8->Add(Button10, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticBoxSizer9->Add(FlexGridSizer8, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    FlexGridSizer5->Add(StaticBoxSizer9, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     Panel6->SetSizer(FlexGridSizer5);
     FlexGridSizer5->Fit(Panel6);
     FlexGridSizer5->SetSizeHints(Panel6);
@@ -336,11 +336,11 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Timer1.Start(50, false);
     BoxSizer1->SetSizeHints(this);
 
+    Connect(ID_BUTTON10,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton10Click);
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
     Connect(ID_CHECKBOX3,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnCheckBoxJoystick);
     Connect(ID_BUTTON9,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton9Click);
-    Connect(ID_BUTTON10,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton10Click);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceProgram);
     Connect(ID_BUTTON6,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton6Click);
     Connect(ID_BUTTON7,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton7Click);
@@ -695,7 +695,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
                     {
                         // last error
                         int value = atoi(tok);
-                        ChoicePrg->SetSelection(value);
 
                         tok = strtok(NULL, " ");
                         if (tok)
@@ -837,7 +836,7 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
         if ( joystick == NULL)	// error or no joystick found
         {
             CheckBoxEnJoystick->SetValue(false);
-            StatusBar1->SetStatusText(_("Error opening Joystick 1"));
+            wxMessageBox(_("Error opening Joystick 1"));
         }
     }
     else

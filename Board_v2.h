@@ -51,7 +51,13 @@
 #define PIN_BEEP 			13
 
 // enable/disable wiichuck stuff
-#define WIICHUCK
-#define WIICHUCK_POWER
+//#define WIICHUCK
+//#define WIICHUCK_POWER
+
+#ifdef WIICHUCK
+    #define PIN_ANALOG_CNT 2
+#else
+    #define PIN_ANALOG_CNT 6
+#endif
 
 #endif // BOARD_H_INCLUDED
