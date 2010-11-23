@@ -209,6 +209,8 @@ int main(int argc, char *argv[])
     if( isWebcam )
     {
         capture = cvCreateCameraCapture(-1);
+        //cvSetCaptureProperty( capture, CV_CAP_PROP_FRAME_WIDTH, 2048 );
+        //cvSetCaptureProperty( capture, CV_CAP_PROP_FRAME_HEIGHT, 1536 );
         TRACE_INFO("Soft limit = %dfps", fps);
     }
 

@@ -35,6 +35,7 @@ const long serialcomFrame::ID_CHOICE1 = wxNewId();
 const long serialcomFrame::ID_BUTTON14 = wxNewId();
 const long serialcomFrame::ID_BUTTON11 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX3 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX1 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT5 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT6 = wxNewId();
@@ -54,7 +55,7 @@ const long serialcomFrame::ID_BUTTON2 = wxNewId();
 const long serialcomFrame::ID_BUTTON1 = wxNewId();
 const long serialcomFrame::ID_BUTTON3 = wxNewId();
 const long serialcomFrame::ID_CHOICE2 = wxNewId();
-const long serialcomFrame::ID_CHECKBOX1 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX5 = wxNewId();
 const long serialcomFrame::ID_SLIDER3 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL5 = wxNewId();
 const long serialcomFrame::ID_SLIDER4 = wxNewId();
@@ -112,7 +113,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK2"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
-    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, _("\nSerial command reference:\n\nget [variable]\n\tl\t-\tleft wheel servo\n\tlc\t-\tleft wheel servo center pulse duration (in ms)\n\tr\t-\tright wheel servo\n\trc\t-\tright wheel servo center pulse duration (in ms)\n\tp\t-\tcurrent program\n\tdi\t-\tdrive.inch() delay configuration\n\tdrf\t-\trange finder between readings delay (servo movement)\n\tas\t-\tall analog sensors\n\tsx\t-\tservo \"X\"\n\nprograms available:\n\t0\t-\tRemote control\n\t1\t-\tRemote control with sensor monitoring\n\t2\t-\tPhotovore\n\t3\t-\tLine Follower\n\t4\t-\tSharp IR ranger test\n\nset\t[variable] [value]\n\tvariable\t-\tsame used for \'get\'\n\tvalue\t\t-\tint\n\t\nsave\n\tsave to eeprom\n\nload\n\tdiscard changes and reload from eeprom\n\ncal\n\tline-follower auto calibration\n\ndefault\n\tload default hard-coded values into RAM\n\t\ninch\n\tmove forward one inch\n\nstop\n\tstop wheels\n"), wxDefaultPosition, wxSize(500,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
+    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, wxEmptyString, wxDefaultPosition, wxSize(500,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
     BoxSizer2->Add(Log, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     StaticBoxSizer9 = new wxStaticBoxSizer(wxVERTICAL, Panel1, _("Log"));
     FlexGridSizer8 = new wxFlexGridSizer(0, 1, 0, 0);
@@ -154,6 +155,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     CheckBoxEnJoystick = new wxCheckBox(Panel6, ID_CHECKBOX3, _("Enable"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX3"));
     CheckBoxEnJoystick->SetValue(false);
     FlexGridSizer7->Add(CheckBoxEnJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    CheckBoxDrvByJoy = new wxCheckBox(Panel6, ID_CHECKBOX1, _("Drive by Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
+    CheckBoxDrvByJoy->SetValue(true);
+    FlexGridSizer7->Add(CheckBoxDrvByJoy, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticTextJoyCurr = new wxStaticText(Panel6, ID_STATICTEXT4, _("curr(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     FlexGridSizer7->Add(StaticTextJoyCurr, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticTextJoyMax = new wxStaticText(Panel6, ID_STATICTEXT5, _("max(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
@@ -211,7 +215,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->Add(StaticBoxSizer2, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     StaticBoxSizer3 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Controls"));
     CheckBoxAutoRefresh = new wxCheckBox(Panel2, ID_CHECKBOX4, _("Auto-refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX4"));
-    CheckBoxAutoRefresh->SetValue(true);
+    CheckBoxAutoRefresh->SetValue(false);
     StaticBoxSizer3->Add(CheckBoxAutoRefresh, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
     StaticBoxSizer3->Add(Button2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -223,9 +227,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Choice2->Append(_("Servo Wheel"));
     Choice2->SetSelection( Choice2->Append(_("PWM Wheel")) );
     StaticBoxSizer3->Add(Choice2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    CheckBoxDrvByJoy = new wxCheckBox(Panel2, ID_CHECKBOX1, _("Drive by Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
-    CheckBoxDrvByJoy->SetValue(true);
-    StaticBoxSizer3->Add(CheckBoxDrvByJoy, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
+    CheckBoxHandBrake = new wxCheckBox(Panel2, ID_CHECKBOX5, _("Handbrake"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX5"));
+    CheckBoxHandBrake->SetValue(true);
+    StaticBoxSizer3->Add(CheckBoxHandBrake, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Pan"));
     SliderPan = new wxSlider(Panel2, ID_SLIDER3, 90, 5, 175, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER3"));
@@ -353,6 +357,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton1Click);
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton3Click);
     Connect(ID_CHOICE2,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceDCServo);
+    Connect(ID_CHECKBOX5,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnCheckBoxHandBrakeClick);
     Connect(ID_SLIDER3,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSlider3CmdSliderUpdated);
     Connect(ID_TEXTCTRL5,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrl3TextEnter);
     Connect(ID_SLIDER4,wxEVT_COMMAND_SLIDER_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnSliderTiltCmdSliderUpdated);
@@ -379,10 +384,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
 
     joystick = NULL;
-    joyMax.x=10;
-    joyMax.y=10;
-    joyMin.x=-10;
-    joyMin.y=-10;
 }
 
 serialcomFrame::~serialcomFrame()
@@ -828,31 +829,102 @@ void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 {
+    if ( joystick != NULL)
+    {
+        delete joystick;
+        joystick = NULL;
+    }
+
     if(CheckBoxEnJoystick->IsChecked())
     {
-        if ( joystick == NULL)
-            if(wxJoystick::GetNumberJoysticks() > 0)
-                joystick = new wxJoystick(wxJOYSTICK1);
-        if ( joystick == NULL)	// error or no joystick found
+        int NumberJoysticks = wxJoystick::GetNumberJoysticks();
+
+        if ( NumberJoysticks <= 0 )
+        {
+            CheckBoxEnJoystick->SetValue(false);
+            wxMessageBox(_("No joysticks available"));
+            Log->AppendText(_("No joysticks available\n"));
+            return;
+        }
+
+        joystick = new wxJoystick(wxJOYSTICK1);
+
+        if ( joystick == NULL )
         {
             CheckBoxEnJoystick->SetValue(false);
             wxMessageBox(_("Error opening Joystick 1"));
+            Log->AppendText(_("Error opening Joystick 1\n"));
+            return;
         }
-    }
-    else
-    {
-        if ( joystick != NULL)
+
+        joyCenter = joystick->GetPosition(); // auto calibrate
+
+        joyMax.x=10;
+        joyMax.y=10;
+        joyMin.x=-10;
+        joyMin.y=-10;
+
+        Log->AppendText(_("\nJoystick information:\n"));
+
+        Log->AppendText(_("ManufacturerId:") + wxString::Format(wxT("%i"), joystick->GetManufacturerId())+_("\n"));
+        Log->AppendText(_("ProductId:") + wxString::Format(wxT("%i"), joystick->GetProductId())+_("\n"));
+        Log->AppendText(_("ProductName:") + joystick->GetProductName()+_("\n"));
+
+        Log->AppendText(_("MovementThreshold:") + wxString::Format(wxT("%i"), joystick->GetMovementThreshold())+_("\n"));
+        Log->AppendText(_("NumberAxes:") + wxString::Format(wxT("%i"), joystick->GetNumberAxes())+_("\n"));
+        Log->AppendText(_("NumberButtons:") + wxString::Format(wxT("%i"), joystick->GetNumberButtons())+_("\n"));
+        Log->AppendText(_("PollingMax:") + wxString::Format(wxT("%i"), joystick->GetPollingMax())+_("\n"));
+        Log->AppendText(_("PollingMin:") + wxString::Format(wxT("%i"), joystick->GetPollingMin())+_("\n"));
+
+        Log->AppendText(_("XMax:") + wxString::Format(wxT("%i"), joystick->GetXMax())+_("\n"));
+        Log->AppendText(_("XMin:") + wxString::Format(wxT("%i"), joystick->GetXMin())+_("\n"));
+        Log->AppendText(_("XPosition:") + wxString::Format(wxT("%i"), joyCenter.x)+_("\n"));
+
+        Log->AppendText(_("YMax:") + wxString::Format(wxT("%i"), joystick->GetYMax())+_("\n"));
+        Log->AppendText(_("YMin:") + wxString::Format(wxT("%i"), joystick->GetYMin())+_("\n"));
+        Log->AppendText(_("YPosition:") + wxString::Format(wxT("%i"), joyCenter.y)+_("\n"));
+
+        if(joystick->HasU())
         {
-            delete joystick;
-            joystick = NULL;
+            Log->AppendText(_("UMax:") + wxString::Format(wxT("%i"), joystick->GetUMax())+_("\n"));
+            Log->AppendText(_("UMin:") + wxString::Format(wxT("%i"), joystick->GetUMin())+_("\n"));
+            Log->AppendText(_("UPosition:") + wxString::Format(wxT("%i"), joystick->GetUPosition())+_("\n"));
+        }
+        if(joystick->HasV())
+        {
+            Log->AppendText(_("VMax:") + wxString::Format(wxT("%i"), joystick->GetVMax())+_("\n"));
+            Log->AppendText(_("VMin:") + wxString::Format(wxT("%i"), joystick->GetVMin())+_("\n"));
+            Log->AppendText(_("VPosition:") + wxString::Format(wxT("%i"), joystick->GetVPosition())+_("\n"));
+        }
+        if(joystick->HasZ())
+        {
+            Log->AppendText(_("GetZMax:") + wxString::Format(wxT("%i"), joystick->GetZMax())+_("\n"));
+            Log->AppendText(_("GetZMin:") + wxString::Format(wxT("%i"), joystick->GetZMin())+_("\n"));
+            Log->AppendText(_("GetZPosition:") + wxString::Format(wxT("%i"), joystick->GetZPosition())+_("\n"));
+        }
+
+        if(joystick->HasPOV())
+        {
+            Log->AppendText(_("POVPosition:") + wxString::Format(wxT("%i"), joystick->GetPOVPosition())+_("\n"));
+        }
+
+        if(joystick->HasPOVCTS())
+        {
+            Log->AppendText(_("POVCTSPosition:") + wxString::Format(wxT("%i"), joystick->GetPOVCTSPosition())+_("\n"));
+        }
+
+        if(joystick->HasRudder())
+        {
+            Log->AppendText(_("RudderMax:") + wxString::Format(wxT("%i"), joystick->GetRudderMax())+_("\n"));
+            Log->AppendText(_("RudderMin:") + wxString::Format(wxT("%i"), joystick->GetRudderMin())+_("\n"));
+            Log->AppendText(_("RudderPosition:") + wxString::Format(wxT("%i"), joystick->GetRudderPosition())+_("\n"));
         }
     }
 }
 
 void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
-    joyCenter.x = joyPos.x;
-    joyCenter.y = joyPos.y;
+    joyCenter = joyPos;
 
     Button9->SetLabel(_("center(") +
                       wxString::Format(wxT("%i"), joyCenter.x) +
@@ -864,4 +936,9 @@ void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)
 {
     Log->Clear();
+}
+
+void serialcomFrame::OnCheckBoxHandBrakeClick(wxCommandEvent& event)
+{
+    MbsBot::getInstance()->writeVariable("hb",CheckBoxHandBrake->IsChecked() ? 0 : 1);
 }

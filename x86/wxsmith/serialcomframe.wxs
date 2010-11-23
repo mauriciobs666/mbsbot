@@ -13,7 +13,6 @@
 							<object class="wxBoxSizer" variable="BoxSizer2" member="no">
 								<object class="sizeritem">
 									<object class="wxTextCtrl" name="ID_TEXTCTRL2" variable="Log" member="yes">
-										<value>&#x0A;Serial command reference:&#x0A;&#x0A;get [variable]&#x0A;&#x09;l&#x09;-&#x09;left wheel servo&#x0A;&#x09;lc&#x09;-&#x09;left wheel servo center pulse duration (in ms)&#x0A;&#x09;r&#x09;-&#x09;right wheel servo&#x0A;&#x09;rc&#x09;-&#x09;right wheel servo center pulse duration (in ms)&#x0A;&#x09;p&#x09;-&#x09;current program&#x0A;&#x09;di&#x09;-&#x09;drive.inch() delay configuration&#x0A;&#x09;drf&#x09;-&#x09;range finder between readings delay (servo movement)&#x0A;&#x09;as&#x09;-&#x09;all analog sensors&#x0A;&#x09;sx&#x09;-&#x09;servo &quot;X&quot;&#x0A;&#x0A;programs available:&#x0A;&#x09;0&#x09;-&#x09;Remote control&#x0A;&#x09;1&#x09;-&#x09;Remote control with sensor monitoring&#x0A;&#x09;2&#x09;-&#x09;Photovore&#x0A;&#x09;3&#x09;-&#x09;Line Follower&#x0A;&#x09;4&#x09;-&#x09;Sharp IR ranger test&#x0A;&#x0A;set&#x09;[variable] [value]&#x0A;&#x09;variable&#x09;-&#x09;same used for &apos;get&apos;&#x0A;&#x09;value&#x09;&#x09;-&#x09;int&#x0A;&#x09;&#x0A;save&#x0A;&#x09;save to eeprom&#x0A;&#x0A;load&#x0A;&#x09;discard changes and reload from eeprom&#x0A;&#x0A;cal&#x0A;&#x09;line-follower auto calibration&#x0A;&#x0A;default&#x0A;&#x09;load default hard-coded values into RAM&#x0A;&#x09;&#x0A;inch&#x0A;&#x09;move forward one inch&#x0A;&#x0A;stop&#x0A;&#x09;stop wheels&#x0A;</value>
 										<size>500,275</size>
 										<style>wxTE_MULTILINE</style>
 									</object>
@@ -145,6 +144,15 @@
 													<object class="wxCheckBox" name="ID_CHECKBOX3" variable="CheckBoxEnJoystick" member="yes">
 														<label>Enable</label>
 														<handler function="OnCheckBoxJoystick" entry="EVT_CHECKBOX" />
+													</object>
+													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxCheckBox" name="ID_CHECKBOX1" variable="CheckBoxDrvByJoy" member="yes">
+														<label>Drive by Joystick</label>
+														<checked>1</checked>
 													</object>
 													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -345,7 +353,6 @@
 										<object class="sizeritem">
 											<object class="wxCheckBox" name="ID_CHECKBOX4" variable="CheckBoxAutoRefresh" member="yes">
 												<label>Auto-refresh</label>
-												<checked>1</checked>
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
@@ -392,11 +399,12 @@
 											<option>1</option>
 										</object>
 										<object class="sizeritem">
-											<object class="wxCheckBox" name="ID_CHECKBOX1" variable="CheckBoxDrvByJoy" member="yes">
-												<label>Drive by Joystick</label>
+											<object class="wxCheckBox" name="ID_CHECKBOX5" variable="CheckBoxHandBrake" member="yes">
+												<label>Handbrake</label>
 												<checked>1</checked>
+												<handler function="OnCheckBoxHandBrakeClick" entry="EVT_CHECKBOX" />
 											</object>
-											<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
+											<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>

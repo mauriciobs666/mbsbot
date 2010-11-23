@@ -94,6 +94,8 @@ private:
     void OnSliderRollCmdSliderUpdated(wxScrollEvent& event);
     void OnTextCtrlRollTextEnter(wxCommandEvent& event);
     void OnTextCtrlRollText(wxCommandEvent& event);
+    void OnCheckBoxHandBrakeClick(wxCommandEvent& event);
+    void OnLogText(wxCommandEvent& event);
     //*)
 
     //(*Identifiers(serialcomFrame)
@@ -108,6 +110,7 @@ private:
     static const long ID_BUTTON14;
     static const long ID_BUTTON11;
     static const long ID_CHECKBOX3;
+    static const long ID_CHECKBOX1;
     static const long ID_STATICTEXT4;
     static const long ID_STATICTEXT5;
     static const long ID_STATICTEXT6;
@@ -127,7 +130,7 @@ private:
     static const long ID_BUTTON1;
     static const long ID_BUTTON3;
     static const long ID_CHOICE2;
-    static const long ID_CHECKBOX1;
+    static const long ID_CHECKBOX5;
     static const long ID_SLIDER3;
     static const long ID_TEXTCTRL5;
     static const long ID_SLIDER4;
@@ -179,6 +182,7 @@ private:
     wxButton* Button10;
     wxButton* Button11;
     wxButton* Button5;
+    wxCheckBox* CheckBoxHandBrake;
     wxTextCtrl* TextCtrlRoll;
     wxButton* Button3;
     wxStaticText* StaticTextJoyMax;
