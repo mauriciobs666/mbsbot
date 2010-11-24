@@ -111,9 +111,7 @@ private:
     static const long ID_BUTTON11;
     static const long ID_CHECKBOX3;
     static const long ID_CHECKBOX1;
-    static const long ID_STATICTEXT4;
-    static const long ID_STATICTEXT5;
-    static const long ID_STATICTEXT6;
+    static const long ID_GRID2;
     static const long ID_BUTTON9;
     static const long ID_PANEL6;
     static const long ID_CHOICE3;
@@ -153,6 +151,7 @@ private:
     //(*Declarations(serialcomFrame)
     wxSlider* Slider1;
     wxSlider* SliderRoll;
+    wxGrid* GridJoy;
     wxCheckBox* CheckBoxEnJoystick;
     wxTextCtrl* TextCtrl4;
     wxPanel* Panel5;
@@ -185,15 +184,12 @@ private:
     wxCheckBox* CheckBoxHandBrake;
     wxTextCtrl* TextCtrlRoll;
     wxButton* Button3;
-    wxStaticText* StaticTextJoyMax;
     wxButton* Button7;
     wxStatusBar* StatusBar1;
     wxButton* Button9;
     wxTextCtrl* TextCtrl2;
-    wxStaticText* StaticTextJoyCurr;
     wxTextCtrl* TextCtrl1;
     wxPanel* Panel2;
-    wxStaticText* StaticTextJoyMin;
     wxSlider* SliderPan;
     wxChoice* Choice1;
     wxChoice* Choice2;

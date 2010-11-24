@@ -36,9 +36,7 @@ const long serialcomFrame::ID_BUTTON14 = wxNewId();
 const long serialcomFrame::ID_BUTTON11 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX3 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX1 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT5 = wxNewId();
-const long serialcomFrame::ID_STATICTEXT6 = wxNewId();
+const long serialcomFrame::ID_GRID2 = wxNewId();
 const long serialcomFrame::ID_BUTTON9 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
 const long serialcomFrame::ID_CHOICE3 = wxNewId();
@@ -158,12 +156,22 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     CheckBoxDrvByJoy = new wxCheckBox(Panel6, ID_CHECKBOX1, _("Drive by Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     CheckBoxDrvByJoy->SetValue(true);
     FlexGridSizer7->Add(CheckBoxDrvByJoy, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextJoyCurr = new wxStaticText(Panel6, ID_STATICTEXT4, _("curr(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
-    FlexGridSizer7->Add(StaticTextJoyCurr, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextJoyMax = new wxStaticText(Panel6, ID_STATICTEXT5, _("max(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
-    FlexGridSizer7->Add(StaticTextJoyMax, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    StaticTextJoyMin = new wxStaticText(Panel6, ID_STATICTEXT6, _("min(x,y)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
-    FlexGridSizer7->Add(StaticTextJoyMin, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    GridJoy = new wxGrid(Panel6, ID_GRID2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_GRID2"));
+    GridJoy->CreateGrid(5,4);
+    GridJoy->EnableEditing(false);
+    GridJoy->EnableGridLines(true);
+    GridJoy->SetColLabelValue(0, _("Curr"));
+    GridJoy->SetColLabelValue(1, _("Min"));
+    GridJoy->SetColLabelValue(2, _("Center"));
+    GridJoy->SetColLabelValue(3, _("Max"));
+    GridJoy->SetRowLabelValue(0, _("X"));
+    GridJoy->SetRowLabelValue(1, _("Y"));
+    GridJoy->SetRowLabelValue(2, _("Z"));
+    GridJoy->SetRowLabelValue(3, _("U"));
+    GridJoy->SetRowLabelValue(4, _("V"));
+    GridJoy->SetDefaultCellFont( GridJoy->GetFont() );
+    GridJoy->SetDefaultCellTextColour( GridJoy->GetForegroundColour() );
+    FlexGridSizer7->Add(GridJoy, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button9 = new wxButton(Panel6, ID_BUTTON9, _("center(0,0)"), wxDefaultPosition, wxSize(127,27), 0, wxDefaultValidator, _T("ID_BUTTON9"));
     FlexGridSizer7->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -762,33 +770,36 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         // y < 0 up
         // y > 0 down
 
-        StaticTextJoyCurr->SetLabel(_("cur(") +
-                                    wxString::Format(wxT("%i"), joyPos.x) +
-                                    _(",") +
-                                    wxString::Format(wxT("%i"), joyPos.y) +
-                                    _(")"));
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyPos.x), 0, 0);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyPos.y), 1, 0);
 
         // Absolute maximum
 
-        if(joyPos.x > joyMax.x) joyMax.x = joyPos.x;
-        if(joyPos.y > joyMax.y) joyMax.y = joyPos.y;
+        if(joyPos.x > joyMax.x)
+        {
+            joyMax.x = joyPos.x;
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMax.x), 0, 3);
+        }
 
-        StaticTextJoyMax->SetLabel(_("max(") +
-                                    wxString::Format(wxT("%i"), joyMax.x) +
-                                    _(",") +
-                                    wxString::Format(wxT("%i"), joyMax.y) +
-                                    _(")"));
+        if(joyPos.y > joyMax.y)
+        {
+            joyMax.y = joyPos.y;
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMax.y), 1, 3);
+        }
 
         // Absolute minimum
 
-        if(joyPos.x < joyMin.x) joyMin.x = joyPos.x;
-        if(joyPos.y < joyMin.y) joyMin.y = joyPos.y;
+        if(joyPos.x < joyMin.x)
+        {
+            joyMin.x = joyPos.x;
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMin.x), 0, 1);
+        }
 
-        StaticTextJoyMin->SetLabel(_("min(") +
-                                    wxString::Format(wxT("%i"), joyMin.x) +
-                                    _(",") +
-                                    wxString::Format(wxT("%i"), joyMin.y) +
-                                    _(")"));
+        if(joyPos.y < joyMin.y)
+        {
+            joyMin.y = joyPos.y;
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMin.y), 1, 1);
+        }
 
         // Drive by Joystick
 

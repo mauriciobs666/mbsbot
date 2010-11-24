@@ -159,26 +159,25 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxStaticText" name="ID_STATICTEXT4" variable="StaticTextJoyCurr" member="yes">
-														<label>curr(x,y)</label>
+													<object class="wxGrid" name="ID_GRID2" variable="GridJoy" member="yes">
+														<cols>4</cols>
+														<rows>5</rows>
+														<readonly>1</readonly>
+														<collabels>
+															<item>Curr</item>
+															<item>Min</item>
+															<item>Center</item>
+															<item>Max</item>
+														</collabels>
+														<rowlabels>
+															<item>X</item>
+															<item>Y</item>
+															<item>Z</item>
+															<item>U</item>
+															<item>V</item>
+														</rowlabels>
 													</object>
-													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-													<border>5</border>
-													<option>1</option>
-												</object>
-												<object class="sizeritem">
-													<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticTextJoyMax" member="yes">
-														<label>max(x,y)</label>
-													</object>
-													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
-													<border>5</border>
-													<option>1</option>
-												</object>
-												<object class="sizeritem">
-													<object class="wxStaticText" name="ID_STATICTEXT6" variable="StaticTextJoyMin" member="yes">
-														<label>min(x,y)</label>
-													</object>
-													<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
