@@ -967,7 +967,7 @@ void Server::loop()
                     else if(strcmp(tok,"hb") == 0)			// hand brake
                     {
                         Serial.print("HB ");
-                        Serial.println(eeprom.data.handBrake);
+                        Serial.println((int)eeprom.data.handBrake);
                     }
 
                     else if(strcmp(tok,"as") == 0)			// all analog sensors
@@ -1038,6 +1038,10 @@ void Server::loop()
                 tok = STRTOK(NULL, " ");
                 if (tok)			        // frequency
                     BEEP(atoi(tok), 200);   // duration = 200ms
+            }
+            else if(strcmp(tok, CMD_CLEAR_ERR) == 0)
+            {
+                lastError = SUCCESS;
             }
         }
     }

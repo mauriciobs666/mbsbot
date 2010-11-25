@@ -52,6 +52,8 @@ public:
     wxPoint joyMax;
     wxPoint joyMin;
     wxPoint joyCenter;
+    int joyButCurr;
+    int joyButLast;
 
     serialcomFrame(wxWindow* parent,wxWindowID id = -1);
     virtual ~serialcomFrame();
@@ -113,6 +115,8 @@ private:
     static const long ID_CHECKBOX1;
     static const long ID_GRID2;
     static const long ID_BUTTON9;
+    static const long ID_STATICTEXT5;
+    static const long ID_STATICTEXT4;
     static const long ID_PANEL6;
     static const long ID_CHOICE3;
     static const long ID_BUTTON6;
@@ -191,9 +195,11 @@ private:
     wxTextCtrl* TextCtrl1;
     wxPanel* Panel2;
     wxSlider* SliderPan;
+    wxStaticText* StaticText4;
     wxChoice* Choice1;
     wxChoice* Choice2;
     wxButton* Button8;
+    wxStaticText* StaticTextJoyButtons;
     wxTimer Timer1;
     wxTextCtrl* SendCommandText;
     //*)

@@ -38,6 +38,8 @@ const long serialcomFrame::ID_CHECKBOX3 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX1 = wxNewId();
 const long serialcomFrame::ID_GRID2 = wxNewId();
 const long serialcomFrame::ID_BUTTON9 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT5 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT4 = wxNewId();
 const long serialcomFrame::ID_PANEL6 = wxNewId();
 const long serialcomFrame::ID_CHOICE3 = wxNewId();
 const long serialcomFrame::ID_BUTTON6 = wxNewId();
@@ -85,8 +87,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer4;
     wxStaticBoxSizer* StaticBoxSizer12;
     wxStaticBoxSizer* StaticBoxSizer4;
+    wxFlexGridSizer* FlexGridSizer10;
     wxFlexGridSizer* FlexGridSizer3;
     wxFlexGridSizer* FlexGridSizer5;
+    wxFlexGridSizer* FlexGridSizer9;
     wxFlexGridSizer* FlexGridSizer2;
     wxStaticBoxSizer* StaticBoxSizer9;
     wxBoxSizer* BoxSizer2;
@@ -150,14 +154,16 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer5->Add(StaticBoxSizer8, 1, wxALL|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     StaticBoxSizer13 = new wxStaticBoxSizer(wxVERTICAL, Panel6, _("Joystick"));
     FlexGridSizer7 = new wxFlexGridSizer(0, 1, 0, 0);
+    FlexGridSizer10 = new wxFlexGridSizer(0, 2, 0, 0);
     CheckBoxEnJoystick = new wxCheckBox(Panel6, ID_CHECKBOX3, _("Enable"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX3"));
     CheckBoxEnJoystick->SetValue(false);
-    FlexGridSizer7->Add(CheckBoxEnJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer10->Add(CheckBoxEnJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     CheckBoxDrvByJoy = new wxCheckBox(Panel6, ID_CHECKBOX1, _("Drive by Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     CheckBoxDrvByJoy->SetValue(true);
-    FlexGridSizer7->Add(CheckBoxDrvByJoy, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer10->Add(CheckBoxDrvByJoy, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer7->Add(FlexGridSizer10, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     GridJoy = new wxGrid(Panel6, ID_GRID2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_GRID2"));
-    GridJoy->CreateGrid(5,4);
+    GridJoy->CreateGrid(6,4);
     GridJoy->EnableEditing(false);
     GridJoy->EnableGridLines(true);
     GridJoy->SetColLabelValue(0, _("Curr"));
@@ -169,11 +175,19 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     GridJoy->SetRowLabelValue(2, _("Z"));
     GridJoy->SetRowLabelValue(3, _("U"));
     GridJoy->SetRowLabelValue(4, _("V"));
+    GridJoy->SetRowLabelValue(5, _("Rudder"));
     GridJoy->SetDefaultCellFont( GridJoy->GetFont() );
     GridJoy->SetDefaultCellTextColour( GridJoy->GetForegroundColour() );
     FlexGridSizer7->Add(GridJoy, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button9 = new wxButton(Panel6, ID_BUTTON9, _("center(0,0)"), wxDefaultPosition, wxSize(127,27), 0, wxDefaultValidator, _T("ID_BUTTON9"));
-    FlexGridSizer7->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer9 = new wxFlexGridSizer(1, 4, 0, 0);
+    Button9 = new wxButton(Panel6, ID_BUTTON9, _("center"), wxDefaultPosition, wxSize(127,27), 0, wxDefaultValidator, _T("ID_BUTTON9"));
+    FlexGridSizer9->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer9->Add(73,20,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText4 = new wxStaticText(Panel6, ID_STATICTEXT5, _("Button:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    FlexGridSizer9->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticTextJoyButtons = new wxStaticText(Panel6, ID_STATICTEXT4, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
+    FlexGridSizer9->Add(StaticTextJoyButtons, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    FlexGridSizer7->Add(FlexGridSizer9, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer13->Add(FlexGridSizer7, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer13, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     Panel6->SetSizer(FlexGridSizer5);
@@ -760,7 +774,51 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
     if(joystick)
     {
-        StatusBar1->SetStatusText(wxString::Format(wxT("%i"), joystick->GetButtonState()));
+        joyButCurr = joystick->GetButtonState();
+        StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), joyButCurr));
+
+        int buttonPress = (joyButCurr ^ joyButLast) & joyButCurr;
+
+        if(buttonPress & 0x001)
+        {
+            MbsBot::getInstance()->writeVariable("hb", 0);
+        }
+        if(buttonPress & 0x002)
+        {
+            MbsBot::getInstance()->writeVariable("hb", 1);
+        }
+        if(buttonPress & 0x004)
+        {
+        }
+        if(buttonPress & 0x008)
+        {
+        }
+        if(buttonPress & 0x010)
+        {
+        }
+        if(buttonPress & 0x020)
+        {
+        }
+        if(buttonPress & 0x040)
+        {
+        }
+        if(buttonPress & 0x080)
+        {
+        }
+        if(buttonPress & 0x100)
+        {
+        }
+        if(buttonPress & 0x200)
+        {
+        }
+        if(buttonPress & 0x400)
+        {
+        }
+        if(buttonPress & 0x800)
+        {
+        }
+
+        joyButLast = joyButCurr;
 
         // Current position
 
@@ -810,6 +868,19 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y is reversed
 
             MbsBot::getInstance()->vectorialDrive(x,y);
+        }
+
+        if(joystick->HasZ())
+        {
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetZPosition()), 2, 0);
+        }
+        if(joystick->HasU())
+        {
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetUPosition()), 3, 0);
+        }
+        if(joystick->HasV())
+        {
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetVPosition()), 4, 0);
         }
     }
 }
@@ -870,66 +941,65 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 
         joyCenter = joystick->GetPosition(); // auto calibrate
 
-        joyMax.x=10;
-        joyMax.y=10;
-        joyMin.x=-10;
-        joyMin.y=-10;
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.x), 0, 2);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.y), 1, 2);
+
+        joyMax.x = joystick->GetXMax();
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMax.x), 0, 3);
+
+        joyMax.y = joystick->GetYMax();
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMax.y), 1, 3);
+
+        joyMin.x = joystick->GetXMin();
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMin.x), 0, 1);
+
+        joyMin.y = joystick->GetYMin();
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMin.y), 1, 1);
 
         Log->AppendText(_("\nJoystick information:\n"));
 
-        Log->AppendText(_("ManufacturerId:") + wxString::Format(wxT("%i"), joystick->GetManufacturerId())+_("\n"));
-        Log->AppendText(_("ProductId:") + wxString::Format(wxT("%i"), joystick->GetProductId())+_("\n"));
-        Log->AppendText(_("ProductName:") + joystick->GetProductName()+_("\n"));
+        Log->AppendText(_("ManufacturerId: ") + wxString::Format(wxT("%i"), joystick->GetManufacturerId())+_("\n"));
+        Log->AppendText(_("ProductId: ") + wxString::Format(wxT("%i"), joystick->GetProductId())+_("\n"));
+        Log->AppendText(_("ProductName: ") + joystick->GetProductName()+_("\n"));
+        Log->AppendText(_("MovementThreshold: ") + wxString::Format(wxT("%i"), joystick->GetMovementThreshold())+_("\n"));
+        Log->AppendText(_("NumberAxes: ") + wxString::Format(wxT("%i"), joystick->GetNumberAxes())+_("\n"));
+        Log->AppendText(_("NumberButtons: ") + wxString::Format(wxT("%i"), joystick->GetNumberButtons())+_("\n"));
+        Log->AppendText(_("PollingMax: ") + wxString::Format(wxT("%i"), joystick->GetPollingMax())+_("\n"));
+        Log->AppendText(_("PollingMin: ") + wxString::Format(wxT("%i"), joystick->GetPollingMin())+_("\n"));
 
-        Log->AppendText(_("MovementThreshold:") + wxString::Format(wxT("%i"), joystick->GetMovementThreshold())+_("\n"));
-        Log->AppendText(_("NumberAxes:") + wxString::Format(wxT("%i"), joystick->GetNumberAxes())+_("\n"));
-        Log->AppendText(_("NumberButtons:") + wxString::Format(wxT("%i"), joystick->GetNumberButtons())+_("\n"));
-        Log->AppendText(_("PollingMax:") + wxString::Format(wxT("%i"), joystick->GetPollingMax())+_("\n"));
-        Log->AppendText(_("PollingMin:") + wxString::Format(wxT("%i"), joystick->GetPollingMin())+_("\n"));
-
-        Log->AppendText(_("XMax:") + wxString::Format(wxT("%i"), joystick->GetXMax())+_("\n"));
-        Log->AppendText(_("XMin:") + wxString::Format(wxT("%i"), joystick->GetXMin())+_("\n"));
-        Log->AppendText(_("XPosition:") + wxString::Format(wxT("%i"), joyCenter.x)+_("\n"));
-
-        Log->AppendText(_("YMax:") + wxString::Format(wxT("%i"), joystick->GetYMax())+_("\n"));
-        Log->AppendText(_("YMin:") + wxString::Format(wxT("%i"), joystick->GetYMin())+_("\n"));
-        Log->AppendText(_("YPosition:") + wxString::Format(wxT("%i"), joyCenter.y)+_("\n"));
-
+        if(joystick->HasZ())
+        {
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetZMin()), 2, 1);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetZPosition()), 2, 2);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetZMax()), 2, 3);
+        }
         if(joystick->HasU())
         {
-            Log->AppendText(_("UMax:") + wxString::Format(wxT("%i"), joystick->GetUMax())+_("\n"));
-            Log->AppendText(_("UMin:") + wxString::Format(wxT("%i"), joystick->GetUMin())+_("\n"));
-            Log->AppendText(_("UPosition:") + wxString::Format(wxT("%i"), joystick->GetUPosition())+_("\n"));
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetUMin()), 3, 1);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetUPosition()), 3, 2);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetUMax()), 3, 3);
         }
         if(joystick->HasV())
         {
-            Log->AppendText(_("VMax:") + wxString::Format(wxT("%i"), joystick->GetVMax())+_("\n"));
-            Log->AppendText(_("VMin:") + wxString::Format(wxT("%i"), joystick->GetVMin())+_("\n"));
-            Log->AppendText(_("VPosition:") + wxString::Format(wxT("%i"), joystick->GetVPosition())+_("\n"));
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetVMin()), 4, 1);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetVPosition()), 4, 2);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetVMax()), 4, 3);
         }
-        if(joystick->HasZ())
+        if(joystick->HasRudder())
         {
-            Log->AppendText(_("GetZMax:") + wxString::Format(wxT("%i"), joystick->GetZMax())+_("\n"));
-            Log->AppendText(_("GetZMin:") + wxString::Format(wxT("%i"), joystick->GetZMin())+_("\n"));
-            Log->AppendText(_("GetZPosition:") + wxString::Format(wxT("%i"), joystick->GetZPosition())+_("\n"));
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetRudderMin()), 5, 1);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetRudderPosition()), 5, 2);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetRudderMax()), 5, 3);
         }
-
         if(joystick->HasPOV())
         {
             Log->AppendText(_("POVPosition:") + wxString::Format(wxT("%i"), joystick->GetPOVPosition())+_("\n"));
         }
-
         if(joystick->HasPOVCTS())
         {
             Log->AppendText(_("POVCTSPosition:") + wxString::Format(wxT("%i"), joystick->GetPOVCTSPosition())+_("\n"));
         }
-
-        if(joystick->HasRudder())
-        {
-            Log->AppendText(_("RudderMax:") + wxString::Format(wxT("%i"), joystick->GetRudderMax())+_("\n"));
-            Log->AppendText(_("RudderMin:") + wxString::Format(wxT("%i"), joystick->GetRudderMin())+_("\n"));
-            Log->AppendText(_("RudderPosition:") + wxString::Format(wxT("%i"), joystick->GetRudderPosition())+_("\n"));
-        }
+        joyButCurr = joyButLast = joystick->GetButtonState();
     }
 }
 
@@ -937,11 +1007,8 @@ void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
     joyCenter = joyPos;
 
-    Button9->SetLabel(_("center(") +
-                      wxString::Format(wxT("%i"), joyCenter.x) +
-                      _(",") +
-                      wxString::Format(wxT("%i"), joyCenter.y) +
-                      _(")"));
+    GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.x), 0, 2);
+    GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.y), 1, 2);
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)
@@ -951,5 +1018,5 @@ void serialcomFrame::OnButton10Click(wxCommandEvent& event)
 
 void serialcomFrame::OnCheckBoxHandBrakeClick(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->writeVariable("hb",CheckBoxHandBrake->IsChecked() ? 0 : 1);
+    MbsBot::getInstance()->writeVariable("hb",CheckBoxHandBrake->IsChecked() ? 1 : 0);
 }
