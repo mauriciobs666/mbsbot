@@ -82,6 +82,10 @@ class MbsBot
 		int setRightWheelCenter(int val)
             { return writeVariable("rc", val); }
 
+        int sqrLeft()
+            { return send("left\n"); }
+        int sqrRight()
+            { return send("right\n"); }
         int stop()
             { return send("stop\n"); }
 		int wheels(int lw, int rw, int duration=0);
