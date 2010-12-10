@@ -53,7 +53,8 @@ enum Errors lastError = SUCCESS;
 // ******************************************************************************
 //		EEPROM - PERSISTENT CONFIGURATION
 // ******************************************************************************
-#include <EEPROM.h>
+
+#include <avr/eeprom.h>
 class Eeprom
 {
 public:
@@ -90,13 +91,13 @@ public:
     {
         char * dest = (char*) &data;
         for(int addr = 0; addr < sizeof(data); addr++, dest++ )
-            *dest = EEPROM.read(addr);
+            *dest = eeprom_read_byte((unsigned char *) addr);
     }
     void save()
     {
         char * dest = (char*) &data;
         for(int addr = 0; addr < sizeof(data); addr++, dest++ )
-            EEPROM.write(addr, *dest);
+            eeprom_write_byte((unsigned char *) addr, *dest);
     }
     void loadDefault()
     {
