@@ -2,7 +2,8 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
 		<Project filename="../mbsutil/MBSUtil.cbp" />
-		<Project filename="x86/serialcom-unix.cbp" active="1" />
+		<Project filename="x86/serialcom-unix.cbp" />
 		<Project filename="cv/cv.cbp" />
+		<Project filename="proksi/proksi.cbp" active="1" />
 	</Workspace>
 </CodeBlocks_workspace_file>
