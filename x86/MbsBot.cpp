@@ -34,7 +34,7 @@ int MbsBot::init(const char *port, int baud)
 		if(strcmp(serialPortDevice, "") == 0)
 		{
 			// use predefined value
-			#ifdef __WXMSW__
+			#ifdef _WIN32
 				strcpy(serialPortDevice,"COM1");
 			#else
 				strcpy(serialPortDevice,"/dev/ttyUSB0");
