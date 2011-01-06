@@ -16,11 +16,13 @@
  */
 
 #include <MBSUtil.h>
+
 #include <iostream>
 #include <fstream>
+
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
-namespace po = boost::program_options;
+#include <boost/thread.hpp>
 
 #ifdef _WIN32
     #define DEFAULT_SERIAL_DEVICE "COM1"
@@ -37,6 +39,17 @@ int listenPort = DEFAULT_LISTEN_PORT;
 
 using namespace std;
 using namespace boost;
+namespace po = boost::program_options;
+
+void print_rx(asio::serial_port &p)
+{
+    char c;
+    for(;;)
+    {
+        asio::read(p, asio::buffer(&c,1));
+        cout << c;
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -64,7 +77,7 @@ int main(int argc, char* argv[])
         ifstream ifs("proksi.cfg");
         if (!ifs)
         {
-            // error ?
+            // error ? i dont think so...
         }
         else
         {
@@ -89,16 +102,14 @@ int main(int argc, char* argv[])
     try
     {
         asio::io_service io;
-        asio::serial_port serial(io, serialPortDevice);
+        asio::serial_port serial(io);
+        serial.open(serialPortDevice);
         serial.set_option(asio::serial_port_base::baud_rate(baudRate));
+
         TRACE_INFO("Opened %s @ %d bps", serialPortDevice.c_str(), baudRate);
 
-        char c;
-        for(;;)
-        {
-            asio::read(serial, asio::buffer(&c,1));
-            cout << c;
-        }
+        boost::thread t(boost::bind(&print_rx, boost::ref(serial)));
+        t.join();
     }
     catch(boost::system::system_error &e)
     {

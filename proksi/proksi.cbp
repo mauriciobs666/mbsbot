@@ -37,6 +37,8 @@
 		<Linker>
 			<Add library="mbsutil" />
 			<Add library="boost_system" />
+			<Add library="boost_program_options" />
+			<Add library="boost_thread" />
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
 		<Unit filename="main.cpp" />
