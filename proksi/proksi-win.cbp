@@ -38,6 +38,8 @@
 			<Add library="boost_system" />
 			<Add library="wsock32" />
 			<Add library="boost_program_options" />
+			<Add library="boost_thread" />
+			<Add library="ws2_32" />
 			<Add directory="$(#mbsutil.lib)" />
 		</Linker>
 		<Unit filename="main.cpp" />
