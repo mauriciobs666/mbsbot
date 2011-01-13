@@ -40,35 +40,51 @@ int baudRate = DEFAULT_SERIAL_BAUD;
 #define DEFAULT_LISTEN_PORT 6661
 int listenPort = DEFAULT_LISTEN_PORT;
 
-//#define SERIAL_BUFFER_SIZE 32
-//char serialBufferRx[SERIAL_BUFFER_SIZE];
-//char serialBufferTx[SERIAL_BUFFER_SIZE];
+bool miniterm = false;
+//bool miniterm = true;
+//bool dumpSerialRX = false;
+bool dumpSerialRX = true;
+//bool dumpSerialTX = false;
+bool dumpSerialTX = true;
 
 asio::io_service io;
 asio::io_service io2;
 asio::serial_port serial(io2);
-asio::ip::tcp::socket tcpsocket(io);
+asio::ip::tcp::socket tcpSocket(io);
 
 void threadRxSerial()
 {
+    //  WTF ?!?! cout != printf
+    //    cout << ios::hex << '\n' << ios::dec << '\n' << endl;
+    //    printf("%X %d\n",'\n','\n');
+
     TRACE_INFO("Serial RX thread started");
 
     asio::streambuf b;
+    std::istream is(&b);
+    std::string line;
 
     for(;;)
     {
-        asio::read_until(serial, b, 10);
-        std::istream is(&b);
-        std::string line;
+        asio::read_until(serial, b, 10); // '\n'
+
         std::getline(is, line);
+        line += '\n';
 
-        cout << line << endl;
+        if( dumpSerialRX )
+            cout << line;
 
-        if(tcpsocket.is_open())
-            asio::write(tcpsocket, asio::buffer(line));
+        if( tcpSocket.is_open() )
+            asio::write( tcpSocket, asio::buffer(line) );
     }
 
-    TRACE_WARN("Serial RX thread finshed");
+    TRACE_WARN("Serial RX thread finished");
+}
+
+void threadRXSocket()
+{
+    TRACE_INFO("Socket RX thread started");
+    TRACE_WARN("Socket RX thread finished");
 }
 
 int main(int argc, char* argv[])
@@ -136,22 +152,19 @@ int main(int argc, char* argv[])
         exit(-2);
     }
 
-//    cout << ios::hex << '\n' << ios::dec << '\n' << endl;
-//    printf("%X %d\n",'\n','\n');
-
     boost::thread t(&threadRxSerial);
 
-    char clinha[80];
-    while(std::cin.getline(clinha,80))
+    if(miniterm)
     {
-        std::string linha(clinha);
-        linha += '\n';
-        asio::write(serial, asio::buffer(linha));
+        char clinha[80];
+        while(std::cin.getline(clinha,80))
+        {
+            std::string linha(clinha);
+            linha += '\n';
+            asio::write(serial, asio::buffer(linha));
+        }
     }
 
-    //boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service));
-
-/*
     try // listen and accept connections
     {
         asio::ip::tcp::acceptor acceptor(io, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), listenPort));
@@ -160,14 +173,37 @@ int main(int argc, char* argv[])
 
         for (;;)
         {
-            acceptor.accept(tcpsocket);
+            acceptor.accept(tcpSocket);
 
-            t.join();
-//            serial.async_read_some(asio::buffer(serialBufferRx,SERIAL_BUFFER_SIZE), &handleRx);
-//            tcpsocket.async_read_some(asio::buffer(serialBufferTx,SERIAL_BUFFER_SIZE), &handleTx);
-//            io.run();
+            TRACE_INFO("Client connected");
 
-            tcpsocket.close();
+            //boost::thread tSocket(&threadRXSocket);
+
+            asio::streambuf sb;
+            std::istream is(&sb);
+            std::string line;
+
+            system::error_code ec;
+
+            for(;;)
+            {
+                asio::read_until(tcpSocket, sb, '\n', ec);
+
+                if( ec.value() ) // != system::errc::success )
+                    break;
+
+                std::getline(is, line);
+                line += '\n';
+
+                if( dumpSerialTX )
+                    cout << line;
+
+                if( serial.is_open() )
+                    asio::write( serial, asio::buffer(line) );
+            }
+
+            tcpSocket.close();
+            TRACE_INFO("Closed socket");
         }
     }
     catch(boost::system::system_error &e)
@@ -182,6 +218,6 @@ int main(int argc, char* argv[])
     {
         TRACE_ERROR("unknown exception");
     }
-*/
+
     return 0;
 }
