@@ -1,8 +1,46 @@
-#include <stdio.h>
-#include <SDL.h>
+/**	Copyright (C) 2011 - Mauricio Bieze Stefani
+ *	This file is part of the MBSBOT project.
+ *
+ *	MBSBOT is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License, or
+ *	(at your option) any later version.
+ *
+ *	MBSBOT is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ *
+ *	You should have received a copy of the GNU General Public License
+ *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#define WIDTH 640
-#define HEIGHT 480
+#include <SDL.h>
+#include <MBSUtil.h>
+
+#include <iostream>
+#include <fstream>
+
+#include <boost/asio.hpp>
+
+using namespace std;
+using namespace boost;
+
+#ifdef _WIN32
+    #define DEFAULT_SERIAL_DEVICE "COM1"
+#else
+	#define DEFAULT_SERIAL_DEVICE "/dev/ttyUSB0"
+#endif
+std::string serialPortDevice(DEFAULT_SERIAL_DEVICE);
+
+#define DEFAULT_SERIAL_BAUD 115200
+int baudRate = DEFAULT_SERIAL_BAUD;
+
+asio::io_service io;
+asio::serial_port mcuPort(io);
+
+#define WIDTH 1000
+#define HEIGHT 256
 #define BPP 4
 #define DEPTH 32
 
@@ -28,8 +66,21 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    try // open serial port
+    {
+        mcuPort.open(serialPortDevice);
+        mcuPort.set_option(asio::serial_port_base::baud_rate(baudRate));
+        TRACE_INFO("Opened %s @ %d bps", serialPortDevice.c_str(), baudRate);
+    }
+    catch(boost::system::system_error &e)
+    {
+        TRACE_ERROR("Error while trying to open %s: \"%s\"", serialPortDevice.c_str(), e.what());
+        exit(-2);
+    }
+
     int y = HEIGHT/2;
     int x = 0;
+    unsigned char data;
 
     while(go)
     {
@@ -39,12 +90,15 @@ int main(int argc, char* argv[])
         for (int yy=0; yy<HEIGHT; yy++)
             setpixel(screen, x, yy, 0, 0, 0);
 
-        //
-        setpixel(screen, x, y);
-
+/*
         (rand() % 2) ? y++ : y--;
         if(y>=HEIGHT) y=HEIGHT-1;
         if(y<0) y=0;
+        setpixel(screen, x, y);
+*/
+
+        mcuPort.read_some(asio::buffer(&data,1));
+        setpixel(screen, x, data);
 
         x++;
         if(x>=WIDTH) x=0;
@@ -56,7 +110,7 @@ int main(int argc, char* argv[])
 
         SDL_Flip(screen);
 
-        SDL_Delay(1);
+        //SDL_Delay(1);
 
         while(SDL_PollEvent(&event))
         {
