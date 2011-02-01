@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -41,17 +41,23 @@ int baudRate = DEFAULT_SERIAL_BAUD;
 int listenPort = DEFAULT_LISTEN_PORT;
 
 bool miniterm = false;
-//bool miniterm = true;
-//bool dumpSerialRX = false;
+
+// all RX and TX names refer to the serial port
 bool dumpSerialRX = true;
-//bool dumpSerialTX = false;
 bool dumpSerialTX = true;
 
 asio::io_service io;
-asio::io_service io2;
-asio::serial_port serial(io2);
+asio::serial_port serial(io);
 asio::ip::tcp::socket tcpSocket(io);
 
+asio::streambuf sbRx;
+asio::streambuf sbTx;
+
+#define BUFFER_SIZE 256
+char bufferRx[BUFFER_SIZE];
+char bufferTx[BUFFER_SIZE];
+
+/*
 void threadRxSerial()
 {
     //  WTF ?!?! cout != printf
@@ -80,11 +86,25 @@ void threadRxSerial()
 
     TRACE_WARN("Serial RX thread finished");
 }
+*/
 
-void threadRXSocket()
+void handleTXWrite(const boost::system::error_code& e, std::size_t size)
 {
-    TRACE_INFO("Socket RX thread started");
-    TRACE_WARN("Socket RX thread finished");
+}
+
+void handleTXRead(const boost::system::error_code& e, std::size_t size)
+{
+    if (!e)
+    {
+        if( dumpSerialTX )
+            cout << std::string(bufferTx, size) << endl;
+
+        asio::async_write(serial, asio::buffer(bufferTx, size), handleTXWrite);
+
+        tcpSocket.async_read_some(asio::buffer(bufferTx, BUFFER_SIZE), handleTXRead);
+    }
+    else
+        TRACE_ERROR("Error reading TCP socket");
 }
 
 int main(int argc, char* argv[])
@@ -103,6 +123,9 @@ int main(int argc, char* argv[])
             ("device,d", po::value<string>(&serialPortDevice)->default_value(DEFAULT_SERIAL_DEVICE), "Serial port device")
             ("baud,b", po::value<int>(&baudRate)->default_value(DEFAULT_SERIAL_BAUD), "Baud rate")
             ("port,p", po::value<int>(&listenPort)->default_value(DEFAULT_LISTEN_PORT), "TCP port to listen")
+//            ("miniterm", po::value<bool>(&miniterm)->default_value(false), "Mini terminal mode")
+//            ("dumprx", po::value<bool>(&dumpSerialRX)->default_value(false), "Dump serial RX")
+//            ("dumptx", po::value<bool>(&dumpSerialTX)->default_value(false), "Dump serial TX")
             ;
 
         po::variables_map vm;
@@ -152,7 +175,7 @@ int main(int argc, char* argv[])
         exit(-2);
     }
 
-    boost::thread t(&threadRxSerial);
+    //boost::thread t(&threadRxSerial);
 
     if(miniterm)
     {
@@ -174,11 +197,13 @@ int main(int argc, char* argv[])
         for (;;)
         {
             acceptor.accept(tcpSocket);
-
             TRACE_INFO("Client connected");
 
-            //boost::thread tSocket(&threadRXSocket);
+            tcpSocket.async_read_some(asio::buffer(bufferTx, BUFFER_SIZE), handleTXRead);
 
+            io.run();
+
+/*
             asio::streambuf sb;
             std::istream is(&sb);
             std::string line;
@@ -201,6 +226,7 @@ int main(int argc, char* argv[])
                 if( serial.is_open() )
                     asio::write( serial, asio::buffer(line) );
             }
+*/
 
             tcpSocket.close();
             TRACE_INFO("Closed socket");
