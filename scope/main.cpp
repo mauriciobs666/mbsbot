@@ -108,7 +108,8 @@ int main(int argc, char* argv[])
 
         if(SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
 
-        SDL_Flip(screen);
+        if(x%10==0)
+            SDL_Flip(screen);
 
         //SDL_Delay(1);
 
