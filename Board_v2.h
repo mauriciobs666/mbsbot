@@ -30,8 +30,8 @@
 #define PIN_RIGHTWHEEL_PWM	3
 
 // number of unused pins (to save power)
-#define PIN_UNUSED_CNT 4
-#define PIN_UNUSED_ARRAY { 6,7,11,12 }
+#define PIN_UNUSED_CNT 3
+#define PIN_UNUSED_ARRAY { 7,11,12 }
 
 // SHARP RANGE FINDER (analog pin!)
 #define PIN_SHARP_RF		0
@@ -50,12 +50,18 @@
 
 #define PIN_BEEP 			13
 
+#define PIN_LASER           6
+
 // enable/disable wiichuck stuff
-//#define WIICHUCK
+#define WIICHUCK
 //#define WIICHUCK_POWER
 
 #ifdef WIICHUCK
-    #define PIN_ANALOG_CNT 2
+    #ifdef WIICHUCK_POWER
+        #define PIN_ANALOG_CNT 2
+    #else
+        #define PIN_ANALOG_CNT 4
+    #endif
 #else
     #define PIN_ANALOG_CNT 6
 #endif

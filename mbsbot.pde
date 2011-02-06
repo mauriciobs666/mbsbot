@@ -1098,6 +1098,11 @@ void setup()
     pinMode(13, OUTPUT);    // Arduino onboard LED
     digitalWrite(13, LOW);
 
+#ifdef PIN_LASER
+    pinMode(PIN_LASER, OUTPUT);
+    digitalWrite(PIN_LASER, LOW);
+#endif
+
 #ifdef WIICHUCK_POWER
     nunchuck_setpowerpins();
 #endif
@@ -1174,10 +1179,46 @@ void loop()
         nunchuck_print_data();
 
         #ifdef PIN_SERVO_PAN
-            pan.write(map(nunchuck_joyx(),0,255,5,175));
+            if(nunchuck_joyx()<100)
+            {
+                int angle = pan.read() + 1;
+                if(nunchuck_joyx() == 0)
+                    angle += 4;
+                if(angle > 170)
+                    angle = 170;
+                pan.write(angle);
+            }
+            else if(nunchuck_joyx()>150)
+            {
+                int angle = pan.read() - 1;
+                if(nunchuck_joyx() == 255)
+                    angle -= 4;
+                if(angle < 10)
+                    angle = 10;
+                pan.write(angle);
+            }
+            //pan.write(map(nunchuck_joyx(),0,255,5,175));
         #endif
         #ifdef PIN_SERVO_TILT
-            tilt.write(map(nunchuck_joyy(),0,255,5,175));
+            if(nunchuck_joyy()>150)
+            {
+                int angle = tilt.read() + 1;
+                if(nunchuck_joyy() == 255)
+                    angle += 4;
+                if(angle > 170)
+                    angle = 170;
+                tilt.write(angle);
+            }
+            else if(nunchuck_joyy()<100)
+            {
+                int angle = tilt.read() - 1;
+                if(nunchuck_joyy() == 0)
+                    angle -= 4;
+                if(angle < 10)
+                    angle = 10;
+                tilt.write(angle);
+            }
+//            tilt.write(map(nunchuck_joyy(),0,255,5,175));
         #endif
 
         if(nunchuck_zbutton())
@@ -1187,6 +1228,11 @@ void loop()
         }
         else
             drive.stop();
+
+        if(nunchuck_cbutton())
+            digitalWrite(PIN_LASER,HIGH);
+        else
+            digitalWrite(PIN_LASER,LOW);
 
         delay(10);
     break;

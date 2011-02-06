@@ -87,28 +87,26 @@ int main(int argc, char* argv[])
         if(SDL_MUSTLOCK(screen)) SDL_LockSurface(screen);
 
         // clear current column
-        for (int yy=0; yy<HEIGHT; yy++)
-            setpixel(screen, x, yy, 0, 0, 0);
+        for (int yy=0; yy < HEIGHT; yy++) setpixel(screen, x, yy, 0, 0, 0);
 
-/*
-        (rand() % 2) ? y++ : y--;
-        if(y>=HEIGHT) y=HEIGHT-1;
-        if(y<0) y=0;
-        setpixel(screen, x, y);
-*/
+        // random data (test)
+//        (rand() % 2) ? ( y < HEIGHT-1 ? y++ : y ) : ( y > 0 ? y-- : y );
 
+        // read data from serial port
         mcuPort.read_some(asio::buffer(&data,1));
-        setpixel(screen, x, data);
+        y = HEIGHT-1 - data;
+
+        setpixel(screen, x, y);
 
         x++;
-        if(x>=WIDTH) x=0;
+        if( x >= WIDTH ) x=0;
 
-        for (int yy=0; yy<HEIGHT; yy++)
-            setpixel(screen, x, yy, 255, 255, 255);
+        //for (int yy=0; yy<HEIGHT; yy++)
+        //    setpixel(screen, x, yy, 255, 255, 255);
 
         if(SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
 
-        if(x%10==0)
+        if(x==0)
             SDL_Flip(screen);
 
         //SDL_Delay(1);

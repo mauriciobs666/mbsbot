@@ -217,7 +217,7 @@ static void nunchuck_print_data()
     Serial.print("joy:");
     Serial.print(nunchuck_joyx(),DEC);
     Serial.print(",");
-    Serial.print(nunchuck_joyx(), DEC);
+    Serial.print(nunchuck_joyy(), DEC);
     Serial.print("  \t");
 
     Serial.print("acc:");
