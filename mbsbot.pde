@@ -23,16 +23,18 @@
 // Arduino /libraries
 #include <Servo.h>
 
-// I2C and wiichuck
-#include <Wire.h>
-#include "nunchuck_funcs.h"
-
 // ******************************************************************************
 //		DEFINES AND SETUP
 // ******************************************************************************
 
 #include "Protocol.h"
 #include "Board.h"
+
+// I2C and wiichuck
+#ifdef WIICHUCK
+    #include <Wire.h>
+    #include "nunchuck_funcs.h"
+#endif
 
 #ifdef PIN_BEEP
 #define BEEP(freq, dur) tone(PIN_BEEP,freq,dur)
@@ -86,6 +88,12 @@ public:
 
         // delay to allow the servo to position between reads
         short RF_delay_reads;
+
+        struct sJoyCenter
+        {
+            int x;
+            int y;
+        } joyCenter;
     } data;
     void load()
     {
@@ -116,8 +124,24 @@ public:
         data.pid.Ki = 0;
         data.pid.Kd = 0;
         data.RF_delay_reads = 100;
+        data.joyCenter.x = 124;
+        data.joyCenter.y = 128;
     }
 } eeprom;
+
+class Sensor
+{
+    unsigned short read();
+
+    unsigned short min, max;
+    int pin;
+    Sensor(int spin) : pin(spin) {}
+};
+
+class Distancia : Sensor
+{
+
+};
 
 // ******************************************************************************
 //		WHEELS CONTROLER
@@ -1134,6 +1158,9 @@ void loop()
         delay(100);
         displayAnalogSensors();
         sendStatus();
+        #ifdef WIICHUCK
+        nunchuck_print_data();
+        #endif
 
     case PRG_RC:
         drive.refresh();
@@ -1178,7 +1205,22 @@ void loop()
 
         nunchuck_print_data();
 
-        #ifdef PIN_SERVO_PAN
+        if(nunchuck_zbutton())
+        {
+            //drive.vectorial(map(nunchuck_accelx(),200,700,-100,100),
+            //                map(nunchuck_accely(),200,700,-100,100));
+            int x = nunchuck_joyx() - eeprom.data.joyCenter.x;
+            int y = nunchuck_joyy() - eeprom.data.joyCenter.y;
+
+            // TODO: mapear 0-100
+
+            drive.vectorial(x, y);
+        }
+        else
+        {
+            drive.stop();
+
+            #ifdef PIN_SERVO_PAN
             if(nunchuck_joyx()<100)
             {
                 int angle = pan.read() + 1;
@@ -1197,9 +1239,9 @@ void loop()
                     angle = 10;
                 pan.write(angle);
             }
-            //pan.write(map(nunchuck_joyx(),0,255,5,175));
-        #endif
-        #ifdef PIN_SERVO_TILT
+            #endif
+
+            #ifdef PIN_SERVO_TILT
             if(nunchuck_joyy()>150)
             {
                 int angle = tilt.read() + 1;
@@ -1218,16 +1260,8 @@ void loop()
                     angle = 10;
                 tilt.write(angle);
             }
-//            tilt.write(map(nunchuck_joyy(),0,255,5,175));
-        #endif
-
-        if(nunchuck_zbutton())
-        {
-            drive.vectorial(map(nunchuck_accelx(),200,700,-100,100),
-                            map(nunchuck_accely(),200,700,-100,100));
+            #endif
         }
-        else
-            drive.stop();
 
         if(nunchuck_cbutton())
             digitalWrite(PIN_LASER,HIGH);
