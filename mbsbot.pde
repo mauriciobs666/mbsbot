@@ -352,8 +352,10 @@ void Drive::vectorial(int x, int y)
 {
     if(y > 0)
     {
+        if(y > 100) y = 100;
         if(x > 0)   // Q1
         {
+            if(x > 100) x = 100;
             leftWheel->move( max(x,y) );
             if(y > x)
                 rightWheel->move( y-x );
@@ -362,6 +364,7 @@ void Drive::vectorial(int x, int y)
         }
         else        // Q2
         {
+            if(x < -100) x = -100;
             rightWheel->move( max(-x,y) );
             if(y > -x)
                 leftWheel->move( x+y );
@@ -371,8 +374,10 @@ void Drive::vectorial(int x, int y)
     }
     else // (y <= 0)
     {
+        if(y < -100) y = -100;
         if(x < 0)   // Q3
         {
+            if(x < -100) x = -100;
             leftWheel->move( min(x,y) );
             if(x < y)
                 rightWheel->move( -x-y );
@@ -381,6 +386,7 @@ void Drive::vectorial(int x, int y)
         }
         else        // Q4
         {
+            if(x > 100) x = 100;
             rightWheel->move( min(-x,y) );
             leftWheel->move( x+y );
         }
@@ -1201,9 +1207,10 @@ void loop()
 
     #ifdef WIICHUCK
     case PRG_WIICHUCK:
-        nunchuck_get_data();
+        if(nunchuck_get_data() == 0)
+            break;
 
-        nunchuck_print_data();
+        //nunchuck_print_data();
 
         if(nunchuck_zbutton())
         {
@@ -1300,5 +1307,5 @@ void loop()
         }
     break;
     }
-    delay(10);
+    //delay(10);
 }
