@@ -231,7 +231,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     ChoicePrg->Append(_("PRG_COLLISION"));
     ChoicePrg->Append(_("PRG_SENTRY"));
     ChoicePrg->Append(_("PRG_WIICHUCK"));
-    ChoicePrg->Append(_("PRG_PROCESSING"));
+    ChoicePrg->Append(_("PRG_SCOPE"));
     ChoicePrg->Append(_("PRG_TEST"));
     FlexGridSizer12->Add(ChoicePrg, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText6 = new wxStaticText(Panel3, ID_STATICTEXT7, _("Delay inch:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));

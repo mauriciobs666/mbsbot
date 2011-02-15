@@ -1151,7 +1151,7 @@ void loop()
     server.loop();
 
     static long nextSendStatus = 0;
-    if(millis() > nextSendStatus)
+    if(millis() > nextSendStatus && eeprom.data.selectedProgram != PRG_SCOPE)
     {
         nextSendStatus += 30000;
         displayAnalogSensors();
@@ -1279,9 +1279,9 @@ void loop()
     break;
     #endif
 
-    case PRG_PROCESSING:
+    case PRG_SCOPE:
         Serial.print((analogRead(0) / 4), BYTE);
-        delay(100);
+        delay(eeprom.data.RF_delay_reads);
     break;
 
     case PRG_TEST:

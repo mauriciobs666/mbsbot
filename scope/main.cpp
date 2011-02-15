@@ -22,104 +22,117 @@
 #include <fstream>
 
 #include <boost/asio.hpp>
-
-using namespace std;
 using namespace boost;
 
 #ifdef _WIN32
-    #define DEFAULT_SERIAL_DEVICE "COM1"
+std::string serialPortDevice("COM1");
 #else
-	#define DEFAULT_SERIAL_DEVICE "/dev/ttyUSB0"
+std::string serialPortDevice("/dev/ttyUSB0");
 #endif
-std::string serialPortDevice(DEFAULT_SERIAL_DEVICE);
 
-#define DEFAULT_SERIAL_BAUD 115200
-int baudRate = DEFAULT_SERIAL_BAUD;
+int baudRate = 115200;
 
+#define RANDOM_TST
+
+// Boost
 asio::io_service io;
 asio::serial_port mcuPort(io);
 
+// SDL
+SDL_Surface *screen;
 #define WIDTH 1000
 #define HEIGHT 256
-#define BPP 4
-#define DEPTH 32
 
-void setpixel(SDL_Surface *screen, int x, int y, Uint8 r=0, Uint8 g=255, Uint8 b=0)
+inline void setpixel(Uint32 x, Uint32 y, Uint32 cor)
 {
-    Uint32 cor = SDL_MapRGB( screen->format, r, g, b );
-    Uint32 *pixmem32 = (Uint32*) screen->pixels  + y * screen->pitch / BPP + x;
-    *pixmem32 = cor;
+    // 4 B/pixel
+    * ((Uint32*) screen->pixels + y * screen->pitch / 4 + x) = cor;
+}
+
+inline void setpixel(Uint32 x, Uint32 y, Uint8 r=0, Uint8 g=255, Uint8 b=0)
+{
+    setpixel( x, y, SDL_MapRGB( screen->format, r, g, b ) );
 }
 
 int main(int argc, char* argv[])
 {
-    SDL_Surface *screen;
     SDL_Event event;
 
-    bool go = true;
+    bool sair = false;
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0 ) return 1;
 
-    if (!(screen = SDL_SetVideoMode(WIDTH, HEIGHT, DEPTH, SDL_HWSURFACE))) //SDL_FULLSCREEN|
+    if (!(screen = SDL_SetVideoMode(WIDTH, HEIGHT, 32, SDL_HWSURFACE))) //SDL_FULLSCREEN|
     {
         SDL_Quit();
         return 1;
     }
 
-    try // open serial port
+    const Uint32 VERDE = SDL_MapRGB( screen->format, 0, 255, 0 );
+    const Uint32 BRANCO = SDL_MapRGB( screen->format, 255, 255, 255 );
+    const Uint32 PRETO = SDL_MapRGB( screen->format, 0, 0, 0 );
+
+    #ifndef RANDOM_TST
+    try // abre serial port
     {
         mcuPort.open(serialPortDevice);
         mcuPort.set_option(asio::serial_port_base::baud_rate(baudRate));
-        TRACE_INFO("Opened %s @ %d bps", serialPortDevice.c_str(), baudRate);
+        TRACE_INFO("Aberto: %s @ %d bps", serialPortDevice.c_str(), baudRate);
     }
     catch(boost::system::system_error &e)
     {
-        TRACE_ERROR("Error while trying to open %s: \"%s\"", serialPortDevice.c_str(), e.what());
+        TRACE_ERROR("%s: %s", e.what(), serialPortDevice.c_str());
         exit(-2);
     }
+    #endif
 
     int y = HEIGHT/2;
     int x = 0;
-    unsigned char data;
 
-    while(go)
+    while( !sair )
     {
         if(SDL_MUSTLOCK(screen)) SDL_LockSurface(screen);
 
-        // clear current column
-        for (int yy=0; yy < HEIGHT; yy++) setpixel(screen, x, yy, 0, 0, 0);
+        // limpa coluna
+        for (int y=0; y < HEIGHT; y++) setpixel(x, y, PRETO);
 
-        // random data (test)
-//        (rand() % 2) ? ( y < HEIGHT-1 ? y++ : y ) : ( y > 0 ? y-- : y );
+        #ifndef RANDOM_TST
 
-        // read data from serial port
+        // le da serial
+        unsigned char data;
         mcuPort.read_some(asio::buffer(&data,1));
         y = HEIGHT-1 - data;
 
-        setpixel(screen, x, y);
+        #else
+
+        // random
+        (rand() % 2) ? ( y < HEIGHT-1 ? ++y : y ) : ( y > 0 ? --y : y );
+        //SDL_Delay(1);
+
+        #endif
+
+        setpixel( x, y, VERDE );
 
         x++;
         if( x >= WIDTH ) x=0;
 
-        //for (int yy=0; yy<HEIGHT; yy++)
-        //    setpixel(screen, x, yy, 255, 255, 255);
+        // linha branca
+        for (int y=0; y<HEIGHT; y++) setpixel(x, y, BRANCO);
 
         if(SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
 
-        if(x==0)
-            SDL_Flip(screen);
+        //if(x==0)
+        //    SDL_Flip(screen);
 
-        //SDL_Delay(1);
+        SDL_UpdateRect(screen, ( x>0 ? x-1 : 0 ), 0, ( x<WIDTH-1 ? 2 : 1 ), HEIGHT-1);
 
         while(SDL_PollEvent(&event))
         {
             switch (event.type)
             {
-            case SDL_QUIT:
-                go = false;
-                break;
             case SDL_KEYDOWN:
-                go = false;
+            case SDL_QUIT:
+                sair = true;
                 break;
             }
         }
