@@ -25,14 +25,15 @@
 using namespace boost;
 
 #ifdef _WIN32
-std::string serialPortDevice("COM1");
+std::string serialDevice("COM1");
 #else
-std::string serialPortDevice("/dev/ttyUSB0");
+//std::string serialDevice("/dev/ttyUSB0");
+std::string serialDevice("/dev/rfcomm0");
 #endif
 
 int baudRate = 115200;
 
-#define RANDOM_TST
+//#define RANDOM_TST
 
 // Boost
 asio::io_service io;
@@ -75,13 +76,15 @@ int main(int argc, char* argv[])
     #ifndef RANDOM_TST
     try // abre serial port
     {
-        mcuPort.open(serialPortDevice);
+        mcuPort.open(serialDevice);
         mcuPort.set_option(asio::serial_port_base::baud_rate(baudRate));
-        TRACE_INFO("Aberto: %s @ %d bps", serialPortDevice.c_str(), baudRate);
+        TRACE_INFO("Aberto: %s @ %d bps", serialDevice.c_str(), baudRate);
+
+        asio::write( mcuPort, asio::buffer("set p 9\n") );
     }
     catch(boost::system::system_error &e)
     {
-        TRACE_ERROR("%s: %s", e.what(), serialPortDevice.c_str());
+        TRACE_ERROR("%s: %s", e.what(), serialDevice.c_str());
         exit(-2);
     }
     #endif

@@ -14,7 +14,7 @@ if [ ! -x $ARDUINO_DIR/hardware/tools/avrdude ]; then
 fi
 
 if [ $# -lt 2 ]; then 
-    echo "Usage: reflash.sh <PORT> <FILE.HEX>"
+    echo "Usage: reflash.sh </dev/> <.hex>"
     exit
 fi
 
