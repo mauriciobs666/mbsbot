@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -20,29 +20,30 @@
 #include <ctype.h>
 #include <string.h>
 
-// Arduino /libraries
+// Arduino
 #include <Servo.h>
 
 // ******************************************************************************
-//		DEFINES AND SETUP
+//		DEFINEs e SETUP
 // ******************************************************************************
 
 #include "Protocol.h"
 #include "Board.h"
 
-// I2C and wiichuck
+// I2C / wiichuck
 #ifdef WIICHUCK
     #include <Wire.h>
     #include "nunchuck_funcs.h"
 #endif
 
+// speaker
 #ifdef PIN_BEEP
 #define BEEP(freq, dur) tone(PIN_BEEP,freq,dur)
 #else
 #define BEEP(freq, dur)
 #endif
 
-// RANGE FINDER
+// range finder
 #define RF_NUMBER_STEPS 30
 #define SHARP_TRESHOLD 300
 
@@ -53,10 +54,10 @@ Servo roll;
 enum Errors lastError = SUCCESS;
 
 // ******************************************************************************
-//		EEPROM - PERSISTENT CONFIGURATION
+//		EEPROM
 // ******************************************************************************
-
 #include <avr/eeprom.h>
+
 class Eeprom
 {
 public:
@@ -69,10 +70,12 @@ public:
         short leftWheelCenter;
         short rightWheelCenter;
 
-        struct sMoveDelays // delay in ms used to make it move (+/-)
+        short balance;      // ajuste balanco rodas esquerda/direita
+
+        struct sMoveDelays  // delay in ms used to make it move (+/-)
         {
-            short inch;		//an inch
-            short right;	//right angle turn (90 degrees)
+            short inch;		// an inch
+            short right;	// right angle turn (90 degrees)
         } mvDelay;
 
         // line follower sensor array parameters(from auto-cal)
@@ -115,6 +118,7 @@ public:
         data.rightWheelCenter = 1384;
         data.mvDelay.inch = 200;
         data.mvDelay.right = 400;
+        data.balance = 0;
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
             data.LF_threshold[x] = 512;
@@ -411,6 +415,8 @@ void photovore()
         drive.right();
     else 									// go ahead
         drive.forward();
+
+    delay(50);
 }
 
 // ******************************************************************************
@@ -1153,20 +1159,20 @@ void loop()
     static long nextSendStatus = 0;
     if(millis() > nextSendStatus && eeprom.data.selectedProgram != PRG_SCOPE)
     {
-        nextSendStatus += 30000;
-        displayAnalogSensors();
+        nextSendStatus += 10000;
+        //displayAnalogSensors();
         sendStatus();
     }
 
     switch(eeprom.data.selectedProgram)
     {
     case PRG_SHOW_SENSORS:
-        delay(100);
         displayAnalogSensors();
         sendStatus();
-        #ifdef WIICHUCK
-        nunchuck_print_data();
-        #endif
+        //#ifdef WIICHUCK
+        //nunchuck_print_data();
+        //#endif
+        delay(100);
 
     case PRG_RC:
         drive.refresh();
@@ -1280,8 +1286,13 @@ void loop()
     #endif
 
     case PRG_SCOPE:
-        Serial.print((analogRead(0) / 4), BYTE);
+        Serial.print(((analogRead(0) >> 2) & 0xFF) , BYTE);
         delay(eeprom.data.RF_delay_reads);
+    break;
+
+    case PRG_KNOB:
+        pan.write(map(analogRead(0), 0, 1023, 5, 174));
+        delay(15);
     break;
 
     case PRG_TEST:

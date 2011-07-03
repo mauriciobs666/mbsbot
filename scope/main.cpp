@@ -27,11 +27,12 @@ using namespace boost;
 #ifdef _WIN32
 std::string serialDevice("COM1");
 #else
-//std::string serialDevice("/dev/ttyUSB0");
-std::string serialDevice("/dev/rfcomm0");
+std::string serialDevice("/dev/ttyUSB0");
+//std::string serialDevice("/dev/rfcomm0");
 #endif
 
 int baudRate = 115200;
+long frame = 0;
 
 //#define RANDOM_TST
 
@@ -61,15 +62,18 @@ int main(int argc, char* argv[])
 
     bool sair = false;
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0 ) return 1;
+    if (SDL_Init(SDL_INIT_VIDEO) < 0 )
+        exit(-1);
 
     if (!(screen = SDL_SetVideoMode(WIDTH, HEIGHT, 32, SDL_HWSURFACE))) //SDL_FULLSCREEN|
+    //if (!(screen = SDL_SetVideoMode(WIDTH, HEIGHT, 32, SDL_FULLSCREEN|SDL_HWSURFACE))) //
     {
         SDL_Quit();
-        return 1;
+        exit(-1);
     }
 
     const Uint32 VERDE = SDL_MapRGB( screen->format, 0, 255, 0 );
+    const Uint32 VERMELHO = SDL_MapRGB( screen->format, 255, 0, 0 );
     const Uint32 BRANCO = SDL_MapRGB( screen->format, 255, 255, 255 );
     const Uint32 PRETO = SDL_MapRGB( screen->format, 0, 0, 0 );
 
@@ -81,6 +85,7 @@ int main(int argc, char* argv[])
         TRACE_INFO("Aberto: %s @ %d bps", serialDevice.c_str(), baudRate);
 
         asio::write( mcuPort, asio::buffer("set p 9\n") );
+        //asio::write( mcuPort, asio::buffer("set drf 1000\n") );
     }
     catch(boost::system::system_error &e)
     {
@@ -97,7 +102,7 @@ int main(int argc, char* argv[])
         if(SDL_MUSTLOCK(screen)) SDL_LockSurface(screen);
 
         // limpa coluna
-        for (int y=0; y < HEIGHT; y++) setpixel(x, y, PRETO);
+        for (int yy=0; yy < HEIGHT; yy++) setpixel(x, yy, PRETO);
 
         #ifndef RANDOM_TST
 
@@ -115,6 +120,7 @@ int main(int argc, char* argv[])
         #endif
 
         setpixel( x, y, VERDE );
+        setpixel( x, 255, VERMELHO );
 
         x++;
         if( x >= WIDTH ) x=0;
@@ -124,10 +130,10 @@ int main(int argc, char* argv[])
 
         if(SDL_MUSTLOCK(screen)) SDL_UnlockSurface(screen);
 
-        //if(x==0)
-        //    SDL_Flip(screen);
+        if(x==0)
+            SDL_Flip(screen);
 
-        SDL_UpdateRect(screen, ( x>0 ? x-1 : 0 ), 0, ( x<WIDTH-1 ? 2 : 1 ), HEIGHT-1);
+        //SDL_UpdateRect(screen, ( x>0 ? x-1 : 0 ), 0, ( x<WIDTH-1 ? 2 : 1 ), HEIGHT-1);
 
         while(SDL_PollEvent(&event))
         {
@@ -139,7 +145,10 @@ int main(int argc, char* argv[])
                 break;
             }
         }
+        frame++;
     }
+
+    printf("frames %ld\n", frame);
 
     SDL_Quit();
     return 0;

@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -51,6 +51,8 @@
 #define PIN_BEEP 			13
 
 #define PIN_LASER           6
+
+#define PIN_LED             13
 
 // enable/disable wiichuck stuff
 #define WIICHUCK

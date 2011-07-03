@@ -2,10 +2,10 @@
 <CodeBlocks_workspace_file>
 	<Workspace title="Workspace">
 		<Project filename="../mbsutil/MBSUtil.cbp" />
-		<Project filename="x86/serialcom-unix.cbp" />
+		<Project filename="x86/serialcom-unix.cbp" active="1" />
 		<Project filename="cv/cv.cbp" />
 		<Project filename="proksi/proksi.cbp" />
 		<Project filename="scope/scope.cbp" />
-		<Project filename="atmega328/atmega328.cbp" active="1" />
+		<Project filename="atmega328/atmega328.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@
 #define PIN_SONAR           0
 
 #define PIN_SERVO_PAN		10
-//#define PIN_SERVO_TILT		
-//#define PIN_SERVO_ROLL		
+//#define PIN_SERVO_TILT
+//#define PIN_SERVO_ROLL
 
 // LINE FOLLOWER (analog pins!)
 #define NUM_IR_TRACK		3
@@ -48,8 +48,20 @@
 
 #define PIN_BEEP 			13
 
+#define PIN_LED             13
+
 // enable/disable wiichuck stuff
-#define WIICHUCK
-#define WIICHUCK_POWER
+//#define WIICHUCK
+//#define WIICHUCK_POWER
+
+#ifdef WIICHUCK
+    #ifdef WIICHUCK_POWER
+        #define PIN_ANALOG_CNT 2
+    #else
+        #define PIN_ANALOG_CNT 4
+    #endif
+#else
+    #define PIN_ANALOG_CNT 6
+#endif
 
 #endif // BOARD_H_INCLUDED

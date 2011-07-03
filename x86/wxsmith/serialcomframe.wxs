@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <wxsmith>
 	<object class="wxFrame" name="serialcomFrame">
-		<title>MBSBOT - (c) 2010 GPL - Mauricio Bieze Stefani</title>
+		<title>MBSBOT - (c) 2010-2011 GPL - Mauricio Bieze Stefani</title>
 		<size>640,480</size>
 		<id_arg>0</id_arg>
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
@@ -285,6 +285,7 @@
 															<item>PRG_SENTRY</item>
 															<item>PRG_WIICHUCK</item>
 															<item>PRG_SCOPE</item>
+															<item>PRG_KNOB</item>
 															<item>PRG_TEST</item>
 														</content>
 														<handler function="OnChoiceProgram" entry="EVT_CHOICE" />
@@ -793,7 +794,7 @@
 								<rows>3</rows>
 								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
-										<label>&#x0A;Copyright (C) 2010 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</label>
+										<label>&#x0A;Copyright (C) 2010-2011 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</label>
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 									<border>5</border>

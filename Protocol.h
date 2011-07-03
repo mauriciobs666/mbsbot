@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -124,17 +124,18 @@ S [p] [l] [r] [sx] [sy] [sz]
 // programs available:
 enum ProgramID
 {
-    PRG_RC = 0,			// Remote control
-    PRG_SHOW_SENSORS,	// Remote control with sensor monitoring
-    PRG_PHOTOVORE,		//
-    PRG_LINEFOLLOWER,	//
-    PRG_SHARP,			// Sharp IR ranger test
-    PRG_SHARP_CHASE,	//
-    PRG_COLLISION,		//
-    PRG_SENTRY,
-    PRG_WIICHUCK,
-    PRG_SCOPE,
-    PRG_TEST
+    PRG_RC = 0,	            // Remote control
+    PRG_SHOW_SENSORS = 1,   // Remote control with sensor monitoring
+    PRG_PHOTOVORE = 2,      //
+    PRG_LINEFOLLOWER = 3,   //
+    PRG_SHARP = 4,          // Sharp IR ranger test
+    PRG_SHARP_CHASE = 5,    //
+    PRG_COLLISION = 6,      //
+    PRG_SENTRY = 7,         //
+    PRG_WIICHUCK = 8,       //
+    PRG_SCOPE = 9,          //
+    PRG_KNOB = 10,          //
+    PRG_TEST = 11           //
 };
 
 enum Errors
