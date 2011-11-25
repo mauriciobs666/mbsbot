@@ -60,6 +60,7 @@
 			<Add option="-D__GNUWIN32__" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DwxUSE_UNICODE" />
+			<Add option="-DWXUSINGDLL" />
 			<Add directory="$(#wx.include)" />
 			<Add directory="$(#wx)\contrib\include" />
 			<Add directory="$(#wx.lib)\gcc_dll\mswu" />

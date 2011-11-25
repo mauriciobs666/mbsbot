@@ -32,15 +32,17 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 			<Add directory="$(#mbsutil.include)" />
+			<Add directory="$(#boost)" />
 		</Compiler>
 		<Linker>
 			<Add library="mbsutil" />
-			<Add library="boost_system" />
+			<Add library="boost_system-mgw44-mt-1_47" />
 			<Add library="wsock32" />
-			<Add library="boost_program_options" />
-			<Add library="boost_thread" />
+			<Add library="boost_program_options-mgw44-mt-1_47" />
+			<Add library="boost_thread-mgw44-mt-s-1_47" />
 			<Add library="ws2_32" />
 			<Add directory="$(#mbsutil.lib)" />
+			<Add directory="$(#boost.lib)" />
 		</Linker>
 		<Unit filename="main.cpp" />
 		<Extensions>
