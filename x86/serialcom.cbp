@@ -40,7 +40,7 @@
 					<Add directory="$(#wx)\lib\gcc_lib\mswu" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="$(#wx)\lib\gcc_lib\mswu" />
+					<Add directory="$(#wx.lib)\gcc_dll\mswu" />
 				</ResourceCompiler>
 				<Linker>
 					<Add option="-s" />
@@ -60,9 +60,9 @@
 			<Add option="-D__GNUWIN32__" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add directory="$(#wx)\include" />
+			<Add directory="$(#wx.include)" />
 			<Add directory="$(#wx)\contrib\include" />
-			<Add directory="$(#wx)\lib\gcc_lib\mswu" />
+			<Add directory="$(#wx.lib)\gcc_dll\mswu" />
 			<Add directory="$(#mbsutil.include)" />
 		</Compiler>
 		<ResourceCompiler>
@@ -85,7 +85,7 @@
 			<Add library="mbsutil" />
 			<Add library="libwinmm.a" />
 			<Add directory="$(#mbsutil.lib)" />
-			<Add directory="$(#wx)\lib\gcc_lib" />
+			<Add directory="$(#wx.lib)\gcc_dll" />
 		</Linker>
 		<Unit filename="..\Board.h" />
 		<Unit filename="..\Board_v1.h" />
@@ -109,7 +109,7 @@
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="serialcomApp.cpp" main="serialcomFrame" init_handlers="necessary" language="CPP" />
 				<resources>
-					<wxFrame wxs="wxsmith/serialcomframe.wxs" src="serialcomMain.cpp" hdr="serialcomMain.h" name="serialcomFrame" language="CPP" />
+					<wxFrame wxs="wxsmith/serialcomframe.wxs" src="serialcomMain.cpp" hdr="serialcomMain.h" fwddecl="0" i18n="1" name="serialcomFrame" language="CPP" />
 				</resources>
 			</wxsmith>
 		</Extensions>

@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -154,6 +154,11 @@ int main(int argc, char *argv[])
             strcpy(inFile, argv[narg]);
             isWebcam = false;
             capture = cvCreateFileCapture(inFile);
+            if( !capture )
+            {
+                TRACE_ERROR("Invalid file %s", inFile);
+                exit(-1);
+            }
             fps = cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
             TRACE_INFO("Input from file %s (%d frames @%dfps)", inFile,
                        (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FRAME_COUNT),
