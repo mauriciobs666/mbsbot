@@ -138,7 +138,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2->Add(Log, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     StaticBoxSizer9 = new wxStaticBoxSizer(wxVERTICAL, Panel1, _("Log"));
     FlexGridSizer8 = new wxFlexGridSizer(0, 1, 0, 0);
-    CheckBoxRXdata = new wxCheckBox(Panel1, ID_CHECKBOX2, _("Dump RX data"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX2"));
+    CheckBoxRXdata = new wxCheckBox(Panel1, ID_CHECKBOX2, _("Dump RX"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX2"));
     CheckBoxRXdata->SetValue(false);
     FlexGridSizer8->Add(CheckBoxRXdata, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button10 = new wxButton(Panel1, ID_BUTTON10, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON10"));
@@ -150,13 +150,13 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     BoxSizer2->SetSizeHints(Panel1);
     Panel6 = new wxPanel(Notebook1, ID_PANEL6, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL6"));
     FlexGridSizer5 = new wxFlexGridSizer(0, 3, 0, 0);
-    StaticBoxSizer8 = new wxStaticBoxSizer(wxHORIZONTAL, Panel6, _("Serial Port"));
+    StaticBoxSizer8 = new wxStaticBoxSizer(wxHORIZONTAL, Panel6, _("Serial"));
     FlexGridSizer6 = new wxFlexGridSizer(0, 2, 0, 0);
-    StaticText1 = new wxStaticText(Panel6, ID_STATICTEXT1, _("Device"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+    StaticText1 = new wxStaticText(Panel6, ID_STATICTEXT1, _("Porta"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     FlexGridSizer6->Add(StaticText1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrl4 = new wxTextCtrl(Panel6, ID_TEXTCTRL6, _("/dev/ttyUSB0"), wxDefaultPosition, wxSize(129,25), 0, wxDefaultValidator, _T("ID_TEXTCTRL6"));
     FlexGridSizer6->Add(TextCtrl4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText2 = new wxStaticText(Panel6, ID_STATICTEXT2, _("Speed"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
+    StaticText2 = new wxStaticText(Panel6, ID_STATICTEXT2, _("Baud"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
     FlexGridSizer6->Add(StaticText2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Choice1 = new wxChoice(Panel6, ID_CHOICE1, wxDefaultPosition, wxSize(124,25), 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE1"));
     Choice1->Append(_("9600"));
@@ -165,22 +165,22 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Choice1->Append(_("57600"));
     Choice1->SetSelection( Choice1->Append(_("115200")) );
     FlexGridSizer6->Add(Choice1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button14 = new wxButton(Panel6, ID_BUTTON14, _("Discard"), wxDefaultPosition, wxSize(-1,-1), 0, wxDefaultValidator, _T("ID_BUTTON14"));
+    Button14 = new wxButton(Panel6, ID_BUTTON14, _("Cancela"), wxDefaultPosition, wxSize(-1,-1), 0, wxDefaultValidator, _T("ID_BUTTON14"));
     FlexGridSizer6->Add(Button14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button11 = new wxButton(Panel6, ID_BUTTON11, _("Set"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON11"));
+    Button11 = new wxButton(Panel6, ID_BUTTON11, _("Conecta"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON11"));
     FlexGridSizer6->Add(Button11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer8->Add(FlexGridSizer6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer5->Add(StaticBoxSizer8, 1, wxALL|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     StaticBoxSizer13 = new wxStaticBoxSizer(wxVERTICAL, Panel6, _("Joystick"));
     FlexGridSizer7 = new wxFlexGridSizer(0, 1, 0, 0);
     FlexGridSizer10 = new wxFlexGridSizer(0, 3, 0, 0);
-    CheckBoxEnJoystick = new wxCheckBox(Panel6, ID_CHECKBOX3, _("Enable"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX3"));
+    CheckBoxEnJoystick = new wxCheckBox(Panel6, ID_CHECKBOX3, _("Habilitar"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX3"));
     CheckBoxEnJoystick->SetValue(false);
     FlexGridSizer10->Add(CheckBoxEnJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     CheckBoxDrvByJoy = new wxCheckBox(Panel6, ID_CHECKBOX1, _("Drive by Joystick"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
     CheckBoxDrvByJoy->SetValue(true);
     FlexGridSizer10->Add(CheckBoxDrvByJoy, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-    CheckBoxJoyServos = new wxCheckBox(Panel6, ID_CHECKBOX6, _("Control servos"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX6"));
+    CheckBoxJoyServos = new wxCheckBox(Panel6, ID_CHECKBOX6, _("Servos"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX6"));
     CheckBoxJoyServos->SetValue(false);
     FlexGridSizer10->Add(CheckBoxJoyServos, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer7->Add(FlexGridSizer10, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
@@ -188,9 +188,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     GridJoy->CreateGrid(6,4);
     GridJoy->EnableEditing(false);
     GridJoy->EnableGridLines(true);
-    GridJoy->SetColLabelValue(0, _("Curr"));
+    GridJoy->SetColLabelValue(0, _("Atual"));
     GridJoy->SetColLabelValue(1, _("Min"));
-    GridJoy->SetColLabelValue(2, _("Center"));
+    GridJoy->SetColLabelValue(2, _("Centro"));
     GridJoy->SetColLabelValue(3, _("Max"));
     GridJoy->SetRowLabelValue(0, _("X"));
     GridJoy->SetRowLabelValue(1, _("Y"));
@@ -202,10 +202,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     GridJoy->SetDefaultCellTextColour( GridJoy->GetForegroundColour() );
     FlexGridSizer7->Add(GridJoy, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9 = new wxFlexGridSizer(1, 4, 0, 0);
-    Button9 = new wxButton(Panel6, ID_BUTTON9, _("center"), wxDefaultPosition, wxSize(127,27), 0, wxDefaultValidator, _T("ID_BUTTON9"));
+    Button9 = new wxButton(Panel6, ID_BUTTON9, _("Centrar Joy"), wxDefaultPosition, wxSize(127,27), 0, wxDefaultValidator, _T("ID_BUTTON9"));
     FlexGridSizer9->Add(Button9, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer9->Add(73,20,1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText4 = new wxStaticText(Panel6, ID_STATICTEXT5, _("Button:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
+    StaticText4 = new wxStaticText(Panel6, ID_STATICTEXT5, _("Status dos botoes:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
     FlexGridSizer9->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticTextJoyButtons = new wxStaticText(Panel6, ID_STATICTEXT4, _("0"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     FlexGridSizer9->Add(StaticTextJoyButtons, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -217,9 +217,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer5->SetSizeHints(Panel6);
     Panel3 = new wxPanel(Notebook1, ID_PANEL3, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL3"));
     FlexGridSizer3 = new wxFlexGridSizer(0, 3, 0, 0);
-    StaticBoxSizer12 = new wxStaticBoxSizer(wxVERTICAL, Panel3, _("Variables"));
+    StaticBoxSizer12 = new wxStaticBoxSizer(wxVERTICAL, Panel3, _("Variaveis"));
     FlexGridSizer12 = new wxFlexGridSizer(0, 2, 0, 0);
-    StaticText5 = new wxStaticText(Panel3, ID_STATICTEXT6, _("Program:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
+    StaticText5 = new wxStaticText(Panel3, ID_STATICTEXT6, _("Programa:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT6"));
     FlexGridSizer12->Add(StaticText5, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     ChoicePrg = new wxChoice(Panel3, ID_CHOICE3, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE3"));
     ChoicePrg->Append(_("PRG_RC"));
@@ -235,11 +235,11 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     ChoicePrg->Append(_("PRG_KNOB"));
     ChoicePrg->Append(_("PRG_TEST"));
     FlexGridSizer12->Add(ChoicePrg, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText6 = new wxStaticText(Panel3, ID_STATICTEXT7, _("Delay inch:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
+    StaticText6 = new wxStaticText(Panel3, ID_STATICTEXT7, _("Delay pol:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT7"));
     FlexGridSizer12->Add(StaticText6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrlDelayInch = new wxTextCtrl(Panel3, ID_TEXTCTRL9, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL9"));
     FlexGridSizer12->Add(TextCtrlDelayInch, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText7 = new wxStaticText(Panel3, ID_STATICTEXT8, _("Delay turn:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
+    StaticText7 = new wxStaticText(Panel3, ID_STATICTEXT8, _("Delay 90:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
     FlexGridSizer12->Add(StaticText7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrlDelayTurn = new wxTextCtrl(Panel3, ID_TEXTCTRL10, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL10"));
     FlexGridSizer12->Add(TextCtrlDelayTurn, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -264,9 +264,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer12->Add(FlexGridSizer13, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer3->Add(StaticBoxSizer12, 1, wxALL|wxALIGN_LEFT|wxALIGN_TOP, 5);
     StaticBoxSizer6 = new wxStaticBoxSizer(wxVERTICAL, Panel3, _("Controls"));
-    Button6 = new wxButton(Panel3, ID_BUTTON6, _("Save"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON6"));
+    Button6 = new wxButton(Panel3, ID_BUTTON6, _("Salvar"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON6"));
     StaticBoxSizer6->Add(Button6, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button7 = new wxButton(Panel3, ID_BUTTON7, _("Load"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON7"));
+    Button7 = new wxButton(Panel3, ID_BUTTON7, _("Carregar"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON7"));
     StaticBoxSizer6->Add(Button7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button8 = new wxButton(Panel3, ID_BUTTON8, _("Default"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON8"));
     StaticBoxSizer6->Add(Button8, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -278,7 +278,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer3->SetSizeHints(Panel3);
     Panel2 = new wxPanel(Notebook1, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
     FlexGridSizer1 = new wxFlexGridSizer(1, 6, 0, 0);
-    StaticBoxSizer14 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Wheels"));
+    StaticBoxSizer14 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Rodas"));
     FlexGridSizer11 = new wxFlexGridSizer(2, 2, 0, 0);
     Slider1 = new wxSlider(Panel2, ID_SLIDER1, 0, -255, 255, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER1"));
     FlexGridSizer11->Add(Slider1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -300,11 +300,11 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer3->Add(CheckBoxAutoRefresh, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
     StaticBoxSizer3->Add(Button2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button1 = new wxButton(Panel2, ID_BUTTON1, _("Save as center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
+    Button1 = new wxButton(Panel2, ID_BUTTON1, _("Salva centro"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
     StaticBoxSizer3->Add(Button1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button3 = new wxButton(Panel2, ID_BUTTON3, _("Stop / Center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
+    Button3 = new wxButton(Panel2, ID_BUTTON3, _("Parar / Center"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON3"));
     StaticBoxSizer3->Add(Button3, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    CheckBoxHandBrake = new wxCheckBox(Panel2, ID_CHECKBOX5, _("Handbrake"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX5"));
+    CheckBoxHandBrake = new wxCheckBox(Panel2, ID_CHECKBOX5, _("Freio de mao"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX5"));
     CheckBoxHandBrake->SetValue(true);
     StaticBoxSizer3->Add(CheckBoxHandBrake, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer1->Add(StaticBoxSizer3, 1, wxALL|wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
@@ -323,7 +323,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer1->Add(StaticBoxSizer7, 0, wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     StaticBoxSizer11 = new wxStaticBoxSizer(wxHORIZONTAL, Panel2, _("Roll"));
     SliderRoll = new wxSlider(Panel2, ID_SLIDER5, 90, 5, 175, wxDefaultPosition, wxSize(150,25), wxSL_HORIZONTAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER5"));
-    StaticBoxSizer11->Add(SliderRoll, 0, wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticBoxSizer11->Add(SliderRoll, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrlRoll = new wxTextCtrl(Panel2, ID_TEXTCTRL8, _("90"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL8"));
     StaticBoxSizer11->Add(TextCtrlRoll, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer1->Add(StaticBoxSizer11, 0, wxEXPAND|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
@@ -338,11 +338,11 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Grid1->CreateGrid(6,5);
     Grid1->EnableEditing(true);
     Grid1->EnableGridLines(true);
-    Grid1->SetColLabelValue(0, _("Now"));
+    Grid1->SetColLabelValue(0, _("Agora"));
     Grid1->SetColLabelValue(1, _("Min"));
     Grid1->SetColLabelValue(2, _("Max"));
-    Grid1->SetColLabelValue(3, _("Avg/10"));
-    Grid1->SetColLabelValue(4, _("tbd"));
+    Grid1->SetColLabelValue(3, _("Media/10"));
+    Grid1->SetColLabelValue(4, _("Seilah"));
     Grid1->SetRowLabelValue(0, _("0"));
     Grid1->SetRowLabelValue(1, _("1"));
     Grid1->SetRowLabelValue(2, _("2"));
@@ -405,8 +405,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Notebook1->AddPage(Panel1, _("Log"), false);
     Notebook1->AddPage(Panel6, _("Local Setup"), false);
     Notebook1->AddPage(Panel3, _("EEPROM"), false);
-    Notebook1->AddPage(Panel2, _("Motors"), false);
-    Notebook1->AddPage(Panel4, _("Sensors"), false);
+    Notebook1->AddPage(Panel2, _("Motores"), false);
+    Notebook1->AddPage(Panel4, _("Sensores"), false);
     Notebook1->AddPage(Panel5, _("About"), false);
     BoxSizer1->Add(Notebook1, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SendCommandText = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL1"));
@@ -426,6 +426,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
     Connect(ID_CHECKBOX3,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnCheckBoxJoystick);
+    Connect(ID_GRID2,wxEVT_GRID_CELL_LEFT_CLICK,(wxObjectEventFunction)&serialcomFrame::OnGridJoyCellLeftClick);
     Connect(ID_BUTTON9,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton9Click);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceProgram);
     Connect(ID_BUTTON6,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton6Click);
@@ -1129,4 +1130,8 @@ void serialcomFrame::OnButton12Click(wxCommandEvent& event)
     MbsBot::getInstance()->readVariable("dr");
     MbsBot::getInstance()->readVariable("drf");
     MbsBot::getInstance()->readVariable("pid");
+}
+
+void serialcomFrame::OnGridJoyCellLeftClick(wxGridEvent& event)
+{
 }

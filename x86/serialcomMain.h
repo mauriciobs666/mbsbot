@@ -99,6 +99,7 @@ private:
     void OnCheckBoxHandBrakeClick(wxCommandEvent& event);
     void OnLogText(wxCommandEvent& event);
     void OnButton12Click(wxCommandEvent& event);
+    void OnGridJoyCellLeftClick(wxGridEvent& event);
     //*)
 
     //(*Identifiers(serialcomFrame)
