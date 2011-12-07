@@ -11,9 +11,11 @@
  *
  * 2010 - MBS -  fixed with patch found at:
  *               http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1264805255/10
+ *
+ * 2011 - MBS -  portado pra Arduino 1.0 
  */
 
-#include <WProgram.h>
+#include <Arduino.h>
 
 static uint8_t nunchuck_buf[6];   // array to store nunchuck data,
 
@@ -46,19 +48,19 @@ static void nunchuck_init()
 // init controller
     delay(1);
     Wire.beginTransmission(0x52);   // device address
-    Wire.send(0xF0);              // 1st initialisation register
-    Wire.send(0x55);              // 1st initialisation value
+    Wire.write(0xF0);              // 1st initialisation register
+    Wire.write(0x55);              // 1st initialisation value
     Wire.endTransmission();
     delay(1);
     Wire.beginTransmission(0x52);
-    Wire.send(0xFB);              // 2nd initialisation register
-    Wire.send(0x00);              // 2nd initialisation value
+    Wire.write(0xFB);              // 2nd initialisation register
+    Wire.write((uint8_t)0x00);              // 2nd initialisation value
     Wire.endTransmission();
     delay(1);
 
 // read the extension type from the register block
     Wire.beginTransmission(0x52);
-    Wire.send(0xFA);              // extension type register
+    Wire.write(0xFA);              // extension type register
     Wire.endTransmission();
     Wire.beginTransmission(0x52);
     Wire.requestFrom(0x52, 6);            // request data from controller
@@ -66,7 +68,7 @@ static void nunchuck_init()
     {
         if (Wire.available())
         {
-            nunchuck_buf[cnt] = Wire.receive(); // Should be 0x0000 A420 0101 for Classic Controller, 0x0000 A420 0000 for nunchuck
+            nunchuck_buf[cnt] = Wire.read(); // Should be 0x0000 A420 0101 for Classic Controller, 0x0000 A420 0000 for nunchuck
         }
     }
     Wire.endTransmission();
@@ -74,29 +76,29 @@ static void nunchuck_init()
 
 // send the crypto key (zeros), in 3 blocks of 6, 6 & 4.
     Wire.beginTransmission(0x52);
-    Wire.send(0xF0);              // crypto key command register
-    Wire.send(0xAA);              // sends crypto enable notice
+    Wire.write(0xF0);              // crypto key command register
+    Wire.write(0xAA);              // sends crypto enable notice
     Wire.endTransmission();
     delay(1);
     Wire.beginTransmission(0x52);
-    Wire.send(0x40);              // crypto key data address
+    Wire.write(0x40);              // crypto key data address
     for (cnt = 0; cnt < 6; cnt++)
     {
-        Wire.send(0x00);              // sends 1st key block (zeros)
+        Wire.write((uint8_t)0x00);              // sends 1st key block (zeros)
     }
     Wire.endTransmission();
     Wire.beginTransmission(0x52);
-    Wire.send(0x40);              // sends memory address
+    Wire.write(0x40);              // sends memory address
     for (cnt = 6; cnt < 12; cnt++)
     {
-        Wire.send(0x00);              // sends 2nd key block (zeros)
+        Wire.write((uint8_t)0x00);              // sends 2nd key block (zeros)
     }
     Wire.endTransmission();
     Wire.beginTransmission(0x52);
-    Wire.send(0x40);              // sends memory address
+    Wire.write(0x40);              // sends memory address
     for (cnt = 12; cnt < 16; cnt++)
     {
-        Wire.send(0x00);              // sends 3rd key block (zeros)
+        Wire.write((uint8_t)0x00);              // sends 3rd key block (zeros)
     }
     Wire.endTransmission();
     delay(1);
@@ -108,7 +110,7 @@ static void nunchuck_init()
 static void nunchuck_send_request()
 {
     Wire.beginTransmission(0x52);// transmit to device 0x52
-    Wire.send(0x00);// sends one byte
+    Wire.write((uint8_t)0x00);// sends one byte
     Wire.endTransmission();// stop transmitting
 }
 
@@ -129,7 +131,7 @@ static int nunchuck_get_data()
     while (Wire.available ())
     {
         // receive byte as an integer
-        nunchuck_buf[cnt] = nunchuk_decode_byte(Wire.receive());
+        nunchuck_buf[cnt] = nunchuk_decode_byte(Wire.read());
         cnt++;
     }
     nunchuck_send_request();  // send request for next data payload

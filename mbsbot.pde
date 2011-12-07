@@ -1164,15 +1164,16 @@ void loop()
         sendStatus();
     }
 
+    int dorme_ms = 10;
     switch(eeprom.data.selectedProgram)
     {
     case PRG_SHOW_SENSORS:
         displayAnalogSensors();
         sendStatus();
+        dorme_ms = 100;
         //#ifdef WIICHUCK
         //nunchuck_print_data();
         //#endif
-        delay(100);
 
     case PRG_RC:
         drive.refresh();
@@ -1286,13 +1287,13 @@ void loop()
     #endif
 
     case PRG_SCOPE:
-        Serial.print(((analogRead(0) >> 2) & 0xFF) , BYTE);
-        delay(eeprom.data.RF_delay_reads);
+		Serial.write((analogRead(0) >> 2) & 0xFF);
+        dorme_ms = eeprom.data.RF_delay_reads;
     break;
 
     case PRG_KNOB:
         pan.write(map(analogRead(0), 0, 1023, 5, 174));
-        delay(15);
+        dorme_ms = 50;
     break;
 
     case PRG_TEST:
@@ -1318,5 +1319,5 @@ void loop()
         }
     break;
     }
-    //delay(10);
+    delay(dorme_ms);
 }
