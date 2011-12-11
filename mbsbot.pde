@@ -845,7 +845,7 @@ public:
     bool receive();
     void loop();
 private:
-    char command[MAX_COMMAND_SIZE];
+    char command[MAX_CMD];
     char pos;
 } server;
 
@@ -855,23 +855,20 @@ bool Server::receive()
     {
         char c = Serial.read();
 
-        if (pos == MAX_COMMAND_SIZE)
+        if (pos == MAX_CMD)
         {
-            pos=0;
-            lastError = ERR_MAX_CMD_SIZ;
+            pos = 0;
             Serial.println("ERR_MAX_CMD_SIZ");
+            lastError = ERR_MAX_CMD_SIZ;
         }
-        else if(c == COMMAND_END)
+        else if(c == CMD_EOL)
         {
-            command[pos]=0;
-            pos=0;
+            command[pos] = 0;
+            pos = 0;
             return true;
         }
         else
-        {
-            command[pos]=c;
-            pos++;
-        }
+            command[pos++] = c;
     }
     return false;
 }
@@ -880,55 +877,49 @@ void Server::loop()
 {
     if( server.receive() )
     {
-        char *tok;	// temp
+        char *tok;
 
-        char *pqp;	// not all avr-libc versions contain strtok() so we need this crap bellow:
+        char *pqp;	// algumas avr-libc linux naum tem strtok():
         #define STRTOK(a, b) strtok_r(a, b, &pqp)
 
-        if (tok = STRTOK(command, " "))						// first token is the ACTION
+        if (tok = STRTOK(command, " "))						// primeiro token eh o comando/acao
         {
-            if(strcmp(tok, CMD_WRITE) == 0)					// assign a value to some variable
+            if(strcmp(tok, CMD_WRITE) == 0)					// atribui um valor a uma variavel
             {
-                if (tok = STRTOK(NULL, " ="))				// second token is the DESTINATION VAR
+                if (tok = STRTOK(NULL, " ="))				// segundo token eh o nome da variavel
                 {
                     char dest[10];
                     strcpy(dest,tok);
 
-                    if (tok = STRTOK(NULL, " "))			// third token is the actual value
+                    if (tok = STRTOK(NULL, " "))			// terceiro token eh o valor a ser atribuido
                     {
                         int value = atoi(tok);
 
-                        if(isdigit(dest[0]))                // digital pin number
+                        if(isdigit(dest[0]))                // se destino for um numero entaum eh um pino digital
                             digitalWrite(atoi(dest), value ? HIGH : LOW);
-                        else if(strcmp(dest, "l") == 0)		// left motor
+                        else if(strcmp(dest, VAR_RODA_ESQ) == 0)
                             drive.leftWheel->write(value);
-                        else if(strcmp(dest, "lc") == 0)	// left motor center
-                        {
-                            drive.leftWheel->setCenter(value);
-                            eeprom.data.leftWheelCenter = value;
-                        }
-                        else if(strcmp(dest, "r") == 0)		// right motor
+                        else if(strcmp(dest, VAR_RODA_DIR) == 0)
                             drive.rightWheel->write(value);
-                        else if(strcmp(dest, "rc") == 0)	// right motor center
-                        {
-                            drive.rightWheel->setCenter(value);
-                            eeprom.data.rightWheelCenter = value;
-                        }
-                        else if(strcmp(dest,"p") == 0)		// program
+                        else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
+                            drive.leftWheel->setCenter(eeprom.data.leftWheelCenter = value);
+                        else if(strcmp(dest, VAR_ZERO_DIR) == 0)
+                            drive.rightWheel->setCenter(eeprom.data.rightWheelCenter = value);
+                        else if(strcmp(dest, VAR_PROGRAMA) == 0)
                             eeprom.data.selectedProgram = value;
-                        else if(strcmp(dest,"di") == 0)		// inch delay
+                        else if(strcmp(dest, VAR_T_POL) == 0)
                             eeprom.data.mvDelay.inch = value;
-                        else if(strcmp(dest,"dr") == 0)		// right-angle turn delay
+                        else if(strcmp(dest, VAR_T_90) == 0)
                             eeprom.data.mvDelay.right = value;
-                        else if(strcmp(dest,"drf") == 0)	// range finder delay
+                        else if(strcmp(dest, VAR_T_RF) == 0)
                             eeprom.data.RF_delay_reads = value;
-                        else if(strcmp(dest,"sx") == 0)		// servo x position
+                        else if(strcmp(dest, VAR_SERVO_X) == 0)
                             pan.write(value);
-                        else if(strcmp(dest,"sy") == 0)		// servo x position
+                        else if(strcmp(dest, VAR_SERVO_Y) == 0)
                             tilt.write(value);
-                        else if(strcmp(dest,"sz") == 0)		// servo x position
+                        else if(strcmp(dest, VAR_SERVO_Z) == 0)
                             roll.write(value);
-                        else if(strcmp(dest,"pid") == 0)	// PID parameters
+                        else if(strcmp(dest, VAR_PID) == 0)
                         {
                             eeprom.data.pid.Kp = value;		// P
                             if (tok = STRTOK(NULL, " "))	// I
@@ -936,80 +927,79 @@ void Server::loop()
                             if (tok = STRTOK(NULL, " "))	// D
                                 eeprom.data.pid.Kd = atoi(tok);
                         }
-                        else if(strcmp(dest,"hb") == 0)		// hand brake
+                        else if(strcmp(dest, VAR_FREIO) == 0)
                             eeprom.data.handBrake = value;
                     }
                 }
             }
-            else if(strcmp(tok, CMD_READ) == 0)	// action GET reads a variable
+            else if(strcmp(tok, CMD_READ) == 0)	// le uma variavel
             {
                 tok = STRTOK(NULL, " ");
                 if (tok)			// second token is the VAR to be read
                 {
-                    if(strcmp(tok, "l") == 0)				// left motor
+                    if(strcmp(tok, VAR_RODA_ESQ) == 0)
                     {
                         Serial.print("L ");
                         Serial.println(drive.leftWheel->read());
                     }
-                    else if(strcmp(tok, "lc") == 0)			// left motor center
+                    else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
                     {
                         Serial.print("LC ");
                         Serial.println(eeprom.data.leftWheelCenter);
                     }
-                    else if(strcmp(tok, "r") == 0)			// right motor
+                    else if(strcmp(tok, VAR_RODA_DIR) == 0)
                     {
                         Serial.print("R ");
                         Serial.println(drive.rightWheel->read());
                     }
-                    else if(strcmp(tok, "rc") == 0)			// right motor center
+                    else if(strcmp(tok, VAR_ZERO_DIR) == 0)
                     {
                         Serial.print("RC ");
                         Serial.println(eeprom.data.rightWheelCenter);
                     }
-                    else if(strcmp(tok,"p") == 0)			// program
+                    else if(strcmp(tok, VAR_PROGRAMA) == 0)
                     {
                         Serial.print("P ");
                         Serial.println(eeprom.data.selectedProgram);
                     }
-                    else if(strcmp(tok,"di") == 0)			// inch delay
+                    else if(strcmp(tok, VAR_T_POL) == 0)
                     {
                         Serial.print("DI ");
                         Serial.println(eeprom.data.mvDelay.inch);
                     }
-                    else if(strcmp(tok,"dr") == 0)			// right-angle turn delay
+                    else if(strcmp(tok, VAR_T_90) == 0)
                     {
                         Serial.print("DR ");
                         Serial.println(eeprom.data.mvDelay.right);
                     }
-                    else if(strcmp(tok,"drf") == 0)			// range finder delay
+                    else if(strcmp(tok, VAR_T_RF) == 0)
                     {
                         Serial.print("DRF ");
                         Serial.println(eeprom.data.RF_delay_reads);
                     }
-                    else if(strcmp(tok,"sx") == 0)			// servo x
+                    else if(strcmp(tok, VAR_SERVO_X) == 0)
                     {
                         Serial.print("SX ");
                         Serial.println(pan.read());
                     }
-                    else if(strcmp(tok,"sy") == 0)			// servo y
+                    else if(strcmp(tok, VAR_SERVO_Y) == 0)
                     {
                         Serial.print("SY ");
                         Serial.println(tilt.read());
                     }
-                    else if(strcmp(tok,"sz") == 0)			// servo z
+                    else if(strcmp(tok, VAR_SERVO_Z) == 0)
                     {
                         Serial.print("SZ ");
                         Serial.println(roll.read());
                     }
-                    else if(strcmp(tok,"hb") == 0)			// hand brake
+                    else if(strcmp(tok, VAR_FREIO) == 0)
                     {
                         Serial.print("HB ");
                         Serial.println((int)eeprom.data.handBrake);
                     }
-
-                    else if(strcmp(tok,"as") == 0)			// all analog sensors
+                    else if(strcmp(tok, VAR_AS) == 0)
                         displayAnalogSensors();
-                    else if(strcmp(tok,"pid") == 0)			// PID
+                    else if(strcmp(tok, VAR_PID) == 0)
                     {
                         Serial.print("PID ");
                         Serial.print(eeprom.data.pid.Kp);
@@ -1023,9 +1013,15 @@ void Server::loop()
             else if(strcmp(tok, CMD_SAVE) == 0)	// save stuff to eeprom
                 eeprom.save();
             else if(strcmp(tok, CMD_LOAD) == 0)	// discard changes and reload from eeprom
+            {
                 eeprom.load();
+                drive.stop();
+            }
             else if(strcmp(tok, CMD_DEFAULT) == 0)
+            {
                 eeprom.loadDefault();
+                drive.stop();
+            }
             else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibrate line following IR sensors
                 lineFollower.autoCalibrate();
             else if(strcmp(tok, CMD_MV_INCH) == 0)
@@ -1070,11 +1066,18 @@ void Server::loop()
                 Serial.print(" sw ");
                 Serial.println(PROTOCOL_VERSION);
             }
-            else if(strcmp(tok, CMD_BEEP) == 0)
+            else if(strcmp(tok, CMD_BIP) == 0)
             {
                 tok = STRTOK(NULL, " ");
-                if (tok)			        // frequency
-                    BEEP(atoi(tok), 200);   // duration = 200ms
+                if (tok)			        // frequencia
+                {
+                    int hz = atoi(tok);
+                    tok = STRTOK(NULL, " ");
+                    if (tok)                // duracao
+                        BEEP(hz, atoi(tok));
+                    else
+                        BEEP(hz, 200);
+                }
             }
             else if(strcmp(tok, CMD_CLEAR_ERR) == 0)
             {

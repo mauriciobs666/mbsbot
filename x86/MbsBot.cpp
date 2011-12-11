@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -99,6 +99,18 @@ int MbsBot::loadLocalConfig(const char *filename)
 	return -1;
 }
 
+int MbsBot::envia(const char *formato, ...)
+{
+    char cmd[MAX_CMD];
+    va_list args;
+
+    va_start(args, formato);
+    vsprintf(cmd, formato, args);
+    va_end(args);
+
+    return send(cmd);
+}
+
 int MbsBot::send(const char * command, int len)
 {
 	if(len == -1)
@@ -118,7 +130,7 @@ char * MbsBot::receive()
 		{
 			pos=0;
 		}
-		else if(c == COMMAND_END)
+		else if(c == CMD_EOL)
 		{
 			response[pos]=0;
 			pos=0;
@@ -133,23 +145,9 @@ char * MbsBot::receive()
 	return NULL;
 }
 
-int MbsBot::writeVariable(const char *var, int value)
-{
-	char cmd[MAX_COMMAND_SIZE];
-	snprintf(cmd, MAX_COMMAND_SIZE, "%s %s %d\n", CMD_WRITE, var, value);
-	return send(cmd);
-}
-
-int MbsBot::readVariable(const char *var)
-{
-	char cmd[MAX_COMMAND_SIZE];
-	snprintf(cmd, MAX_COMMAND_SIZE, "%s %s\n", CMD_READ, var);
-	return send(cmd);
-}
-
 int MbsBot::wheels(int lw, int rw, int duration)
 {
-	char cmd[MAX_COMMAND_SIZE];
+	char cmd[MAX_CMD];
 	int rc=0;
 
 	// optimization: remember last values and only send command if changed
@@ -162,9 +160,9 @@ int MbsBot::wheels(int lw, int rw, int duration)
 		lastR = rw;
 
         if(duration > 0)
-            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d %d\n", CMD_MV_WHEELS, lw, rw, duration);
+            snprintf(cmd, MAX_CMD, "%s %d %d %d\n", CMD_MV_WHEELS, lw, rw, duration);
 		else
-            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d\n", CMD_MV_WHEELS, lw, rw);
+            snprintf(cmd, MAX_CMD, "%s %d %d\n", CMD_MV_WHEELS, lw, rw);
 
 		rc = send(cmd);
 	}
@@ -174,7 +172,7 @@ int MbsBot::wheels(int lw, int rw, int duration)
 int MbsBot::vectorialDrive(int x, int y, int duration)
 // x and y are % of power
 {
-	char cmd[MAX_COMMAND_SIZE];
+	char cmd[MAX_CMD];
 	int rc=0;
 
 	// optimization: remember last values and only send command if changed
@@ -212,9 +210,9 @@ int MbsBot::vectorialDrive(int x, int y, int duration)
 		lastY = y;
 
         if(duration > 0)
-            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d %d\n", CMD_MV_VECT, x, y, duration);
+            snprintf(cmd, MAX_CMD, "%s %d %d %d\n", CMD_MV_VECT, x, y, duration);
 		else
-            snprintf(cmd, MAX_COMMAND_SIZE, "%s %d %d\n", CMD_MV_VECT, x, y);
+            snprintf(cmd, MAX_CMD, "%s %d %d\n", CMD_MV_VECT, x, y);
 
 		rc = send(cmd);
 	}

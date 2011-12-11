@@ -20,122 +20,111 @@
 
 #define PROTOCOL_VERSION 1
 
-/* General packet format
-<command> [arguments] COMMAND_END
+/*
+O protocolo do MBS-BOT imita uma sessao de console e consiste em mnemonicos numa string
+ascii com quebra de linha como terminador.
+
+Este arquivo eh compilado na IHM e no robo e define os mnemonicos usados pelo protocolo.
+
+Formato geral do pacote:
+
+<comando> [argumentos] CMD_EOL
 */
-#define COMMAND_END '\n'
-#define MAX_COMMAND_SIZE 50
+
+#define CMD_EOL '\n'
+#define MAX_CMD 50 /* bytes, tamanho maximo de um comando */
+
+/*
+   Lista de <comando>
+*/
 
 #define CMD_READ	"get"
-/* CMD_READ [variable]
-	l	-	left wheel servo
-	lc	-	left wheel servo center pulse duration (in ms)
-	r	-	right wheel servo
-	rc	-	right wheel servo center pulse duration (in ms)
-	p	-	current program
-	di	-	drive.inch() delay configuration
-	dr	-	drive.left() and drive.right() delay configuration
-	drf	-	range finder between readings delay (servo movement)
-	as	-	all analog sensors
-	sx	-	servo "X" (pan)
-	sy	-	servo "Y" (tilt)
-	sz	-	servo "Z" (roll)
-	hb  -   handbrake
-*/
+/* CMD_READ <variavel> */
 
 #define CMD_WRITE	"set"
-/* CMD_WRITE [variable] [=] [value]
-	variable	-	same used for CMD_WRITE
-	value		-	int
-*/
+/* CMD_WRITE <variavel> = [int] ou [str] */
 
 #define CMD_SAVE	"save"
-/* CMD_SAVE
-save to eeprom
-*/
+/* CMD_SAVE : grava sConfigurationData na eeprom */
 
 #define CMD_LOAD	"load"
-/* CMD_LOAD
-discard changes and reload from eeprom
-*/
+/* CMD_LOAD : descarta alteracoes e recarrega sConfigurationData da eeprom */
 
 #define CMD_DEFAULT	"default"
-/* CMD_DEFAULT
-load default hard-coded values into RAM
-*/
+/* CMD_DEFAULT : carrega sConfigurationData com valores default */
 
 #define CMD_LF_CAL	"cal"
-/* CMD_LF_CAL
-line-follower auto calibration
-*/
+/* CMD_LF_CAL : auto calibra sensores do line-follower */
 
 #define CMD_MV_INCH	"inch"
-/* CMD_MV_INCH
-move forward one inch
-*/
+/* CMD_MV_INCH : anda uma polegada pra frente (ajuste via VAR_T_INCH) */
 
-#define CMD_MV_STOP	"stop"
-/* CMD_MV_STOP
-stop wheels
-*/
+#define CMD_MV_STOP "stop"
+/* CMD_MV_STOP : para imediatamente */
 
-#define CMD_MV_WHEELS	"drv"
-/* CMD_MV_WHEELS leftwheel rightwheel [duration]
-	leftwheel	+/- 0-100 %
-	rightwheel 	+/- 0-100 %
-	duration    time in ms
+#define CMD_MV_WHEELS "drv"
+/* CMD_MV_WHEELS esquerda direita [duracao em ms]
+        esquerda, direita: +/- 0-100%
 */
 
 #define CMD_MV_VECT "vect"
-/* CMD_MV_VECT X_axis Y_axis [duration]
-	X_axis	    +/- 0-100 %
-	Y_axis 	    +/- 0-100 %
-	duration    time in ms
+/* CMD_MV_VECT eixo_X eixo_Y [duracao em ms]
+    eixo_X, eixo_Y: +/- 0-100 %
 */
 
-#define CMD_TURN_LEFT	"left"
-/* CMD_TURN_LEFT
-turns left 90 degrees
+#define CMD_TURN_LEFT "left"
+/* CMD_TURN_LEFT : 90 graus pra esquerda */
+
+#define CMD_TURN_RIGHT "right"
+/* CMD_TURN_RIGHT : 90 graus pra direita */
+
+#define CMD_STATUS "status"
+/* CMD_STATUS : pede status
+formato da resposta:
+S VAR_PROGRAMA VAR_RODA_ESQ VAR_RODA_DIR VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
 */
 
-#define CMD_TURN_RIGHT	"right"
-/* CMD_TURN_RIGHT
-turns right 90 degrees
+#define CMD_UNAME "uname"
+/* CMD_UNAME */
+
+#define CMD_BIP "bip"
+/* CMD_BIP [Hz] [ms] */
+
+#define CMD_CLEAR_ERR "clerr"
+
+/*
+   Lista de <variavel>
 */
 
-#define CMD_STATUS      "status"
-/* CMD_STATUS
-get status
+#define VAR_RODA_ESQ "l"    // motor da roda esquerda
+#define VAR_RODA_DIR "r"    // motor da roda direita
+#define VAR_ZERO_ESQ "lc"	// offset da posicao parada ("centro") da roda esquerda (pot do servo mal calibrado)
+#define VAR_ZERO_DIR "rc"	// offset da posicao parada da roda direita (pot do servo mal calibrado)
+#define VAR_PROGRAMA "p"    // enum ProgramID sendo executado
+#define VAR_SERVO_X  "sx"   // servo "X" (pan)
+#define VAR_SERVO_Y  "sy"   // servo "Y" (tilt)
+#define VAR_SERVO_Z  "sz"   // servo "Z" (roll)
+#define VAR_FREIO    "hb"   // handbrake, freio de mao
+#define VAR_T_POL    "di"   // delay do drive.inch(), anda 1 polegada pra frente
+#define VAR_T_90     "d90"	// delay do drive.left() e drive.right(), vira 90 graus
+#define VAR_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
+#define VAR_AS       "as"	// todas entradas analogicas
+#define VAR_PID      "pid"  // coeficientes do algoritmo de PID
 
-reply:
-S [p] [l] [r] [sx] [sy] [sz]
-*/
-
-#define CMD_UNAME       "uname"
-/* CMD_UNAME
-*/
-
-#define CMD_BEEP        "beep"
-/* CMD_BEEP [frequency]
-*/
-
-#define CMD_CLEAR_ERR   "clerr"
-
-// programs available:
 enum ProgramID
 {
-    PRG_RC = 0,	            // Remote control
-    PRG_SHOW_SENSORS = 1,   // Remote control with sensor monitoring
+    PRG_RC = 0,	            // Controle remoto
+    PRG_SHOW_SENSORS = 1,   // Controle remoto com monitoramento das analogicas
     PRG_PHOTOVORE = 2,      //
     PRG_LINEFOLLOWER = 3,   //
-    PRG_SHARP = 4,          // Sharp IR ranger test
+    PRG_SHARP = 4,          // Sharp IR range finder
     PRG_SHARP_CHASE = 5,    //
     PRG_COLLISION = 6,      //
     PRG_SENTRY = 7,         //
     PRG_WIICHUCK = 8,       //
     PRG_SCOPE = 9,          //
-    PRG_KNOB = 10,          //
-    PRG_TEST = 11           //
+    PRG_KNOB = 10,          // Movimenta o servo X de acordo com A0
+    PRG_TEST = 11           // Dummy
 };
 
 enum Errors

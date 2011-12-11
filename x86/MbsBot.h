@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -18,12 +18,13 @@
 #ifndef MBSBOT_H
 #define MBSBOT_H
 
+#include <stdarg.h>
 #include <MBSUtil.h>
 #include "../Protocol.h"
 
 #define SERIAL_BUFFER_SIZE 1000
 
-// pre-defined baud rates
+// baud rate da porta serial
 const int spd[] = { 9600, 19200, 38400, 57600, 115200 };
 const int n_spd = 5;
 
@@ -50,50 +51,62 @@ class MbsBot
 		int getBaud() { return baudRate; }
 		char* getPort() { return serialPortDevice; }
 
-		int send(const char * command, int len=-1);
-		char * receive();
+		int envia(const char *formato, ...);
+		char* receive();
+
+		int enviaVar(const char *var, int valor)
+            { return envia("%s %s %d%c", CMD_WRITE, var, valor, CMD_EOL); }
+		int pedeVar(const char *var)
+            { return envia("%s %s%c", CMD_READ, var, CMD_EOL); }
+        int pedeVars()
+        {
+            int rc = 0;
+            // TODO (mbs#1#): pede todas vars
+            return rc;
+        }
 
         int save()
-            { return send("save\n"); }
+            { return envia("%s%c", CMD_SAVE, CMD_EOL); }
         int load()
-            { return send("load\n"); }
+            { return envia("%s%c", CMD_LOAD, CMD_EOL); }
         int loadDefault()
-            { return send("default\n"); }
+            { return envia("%s%c", CMD_DEFAULT, CMD_EOL); }
         int status()
-            { return send("status\n"); }
-
-		int writeVariable(const char *var, int value);
-		int readVariable(const char *var);
+            { return envia("%s%c", CMD_STATUS, CMD_EOL); }
 
         int setProgram(enum ProgramID val)
-            { return writeVariable("p", val); }
+            { return enviaVar(VAR_PROGRAMA, val); }
 		int setLeftWheel(int val)
-            { return writeVariable("l", val); }
+            { return enviaVar(VAR_RODA_ESQ, val); }
 		int setRightWheel(int val)
-            { return writeVariable("r", val); }
+            { return enviaVar(VAR_RODA_DIR, val); }
 		int setPan(int val)
-            { return writeVariable("sx", val); }
+            { return enviaVar(VAR_SERVO_X, val); }
         int setTilt(int val)
-            { return writeVariable("sy", val); }
+            { return enviaVar(VAR_SERVO_Y, val); }
 		int setRoll(int val)
-            { return writeVariable("sz", val); }
+            { return enviaVar(VAR_SERVO_Z, val); }
 		int setLeftWheelCenter(int val)
-            { return writeVariable("lc", val); }
+            { return enviaVar(VAR_ZERO_ESQ, val); }
 		int setRightWheelCenter(int val)
-            { return writeVariable("rc", val); }
+            { return enviaVar(VAR_ZERO_DIR, val); }
 
         int sqrLeft()
-            { return send("left\n"); }
+            { return envia("%s\n", CMD_TURN_LEFT); }
         int sqrRight()
-            { return send("right\n"); }
+            { return envia("%s\n", CMD_TURN_RIGHT); }
         int stop()
-            { return send("stop\n"); }
+            { return envia("%s\n", CMD_MV_STOP); }
+
 		int wheels(int lw, int rw, int duration=0);
 
 		int vectorialDrive(int x, int y, int duration=0);
 		void setAccelStep(int step) { accelStep = step; }
 		int getAccelStep() { return accelStep; }
+
 	private:
+        int send(const char *command, int len=-1);
+
 		SerialPort serialPort;
 		char serialPortDevice[100];
 		int baudRate;

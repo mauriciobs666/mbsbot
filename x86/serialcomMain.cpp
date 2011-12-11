@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -457,9 +457,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     // Default serial port
 
     if( MbsBot::getInstance()->init() == 0)
-        StatusBar1->SetStatusText(_("Connected"));
+        StatusBar1->SetStatusText(_("Conectado"));
     else
-        StatusBar1->SetStatusText(_("Error opening serial port"));
+        StatusBar1->SetStatusText(_("Erro na porta serial"));
 
     int currSpd = MbsBot::getInstance()->getBaud();
     for(int x=0; x < n_spd; x++)
@@ -482,15 +482,14 @@ serialcomFrame::~serialcomFrame()
 
 void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 {
-    wxString cmd=SendCommandText->GetLineText(0)+_("\n");
-
-    char command[SERIAL_BUFFER_SIZE];
-    strncpy(command, cmd.mb_str(wxConvUTF8), SERIAL_BUFFER_SIZE);
-
-    MbsBot::getInstance()->send(command);
-
-    Log->AppendText(cmd);
+    wxString wx_cmd=SendCommandText->GetLineText(0);
+    Log->AppendText(wx_cmd+_("\n"));
     SendCommandText->Clear();
+
+    char cmd[MAX_CMD];
+    strncpy(cmd, wx_cmd.mb_str(wxConvUTF8), MAX_CMD -1);
+
+    MbsBot::getInstance()->envia("%s%c", cmd, CMD_EOL);
 }
 
 // ============================================================================
@@ -501,12 +500,11 @@ void serialcomFrame::OnButton11Click(wxCommandEvent& event)
 {
     if(MbsBot::getInstance()->init(TextCtrl4->GetValue().mb_str(wxConvUTF8), spd[Choice1->GetCurrentSelection()]) == 0)
     {
-        StatusBar1->SetStatusText(_("Connected"));
+        StatusBar1->SetStatusText(_("Conectado"));
     }
     else
-        StatusBar1->SetStatusText(_("Error opening serial port"));
+        StatusBar1->SetStatusText(_("Erro na porta serial"));
 }
-
 void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 {
     int currSpd = MbsBot::getInstance()->getBaud();
@@ -526,17 +524,13 @@ void serialcomFrame::OnButton6Click(wxCommandEvent& event)
 {
     MbsBot::getInstance()->save();
 }
-
 void serialcomFrame::OnButton7Click(wxCommandEvent& event)
 {
     MbsBot::getInstance()->load();
-    MbsBot::getInstance()->stop();
 }
-
 void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 {
     MbsBot::getInstance()->loadDefault();
-    MbsBot::getInstance()->stop();
 }
 
 // ============================================================================
@@ -629,6 +623,7 @@ void serialcomFrame::OnTextCtrlRollTextEnter(wxCommandEvent& event)
 }
 
 // Set center
+
 void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
     if(wxYES == wxMessageBox(_("R U sure?"), _("OVERWRITE"), wxYES_NO))
@@ -639,24 +634,26 @@ void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 }
 
 // Refresh
+
 void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->readVariable("l");
-    MbsBot::getInstance()->readVariable("r");
-    MbsBot::getInstance()->readVariable("sx");
-    MbsBot::getInstance()->readVariable("sy");
-    MbsBot::getInstance()->readVariable("sz");
+    MbsBot::getInstance()->pedeVar(VAR_RODA_ESQ);
+    MbsBot::getInstance()->pedeVar(VAR_RODA_DIR);
+    MbsBot::getInstance()->pedeVar(VAR_SERVO_X);
+    MbsBot::getInstance()->pedeVar(VAR_SERVO_Y);
+    MbsBot::getInstance()->pedeVar(VAR_SERVO_Z);
 }
 
 // Stop
+
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 {
     MbsBot::getInstance()->stop();
-    MbsBot::getInstance()->readVariable("l");
-    MbsBot::getInstance()->readVariable("r");
-    MbsBot::getInstance()->readVariable("sx");
-    MbsBot::getInstance()->readVariable("sy");
-    MbsBot::getInstance()->readVariable("sz");
+    MbsBot::getInstance()->pedeVar(VAR_RODA_ESQ);
+    MbsBot::getInstance()->pedeVar(VAR_RODA_DIR);
+    MbsBot::getInstance()->pedeVar(VAR_SERVO_X);
+    MbsBot::getInstance()->pedeVar(VAR_SERVO_Y);
+    MbsBot::getInstance()->pedeVar(VAR_SERVO_Z);
 }
 
 // ============================================================================
@@ -665,7 +662,7 @@ void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton4Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->readVariable("as");  // All analog Sensors
+    MbsBot::getInstance()->pedeVar(VAR_AS);  // todas entradas analogicas An
 }
 
 void serialcomFrame::OnButton5Click(wxCommandEvent& event)
@@ -691,7 +688,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(CheckBoxAutoRefresh->IsChecked())
             MbsBot::getInstance()->status();
         if(CheckBoxAutoRefreshSensors->IsChecked())
-            MbsBot::getInstance()->readVariable("as");
+            MbsBot::getInstance()->pedeVar(VAR_AS);
         onceInASecond = 20;
     }
     else
@@ -887,25 +884,25 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         }
         if(buttonPress & 0x010)
         {
+            MbsBot::getInstance()->sqrLeft();
         }
         if(buttonPress & 0x020)
         {
+            MbsBot::getInstance()->sqrRight();
         }
         if(buttonPress & 0x040)
         {
-            MbsBot::getInstance()->sqrLeft();
         }
         if(buttonPress & 0x080)
         {
-            MbsBot::getInstance()->sqrRight();
         }
         if(buttonPress & 0x100)
         {
-            MbsBot::getInstance()->writeVariable("hb", 1);
+            MbsBot::getInstance()->enviaVar(VAR_FREIO, 1);
         }
         if(buttonPress & 0x200)
         {
-            MbsBot::getInstance()->writeVariable("hb", 0);
+            MbsBot::getInstance()->enviaVar(VAR_FREIO, 0);
         }
         if(buttonPress & 0x400)
         {
@@ -1002,8 +999,8 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
         Slider1->SetRange(-255,255);
         Slider2->SetRange(-255,255);
     }
-    MbsBot::getInstance()->readVariable("l");
-    MbsBot::getInstance()->readVariable("r");
+    MbsBot::getInstance()->pedeVar(VAR_RODA_ESQ);
+    MbsBot::getInstance()->pedeVar(VAR_RODA_DIR);
 }
 
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
@@ -1121,15 +1118,15 @@ void serialcomFrame::OnButton10Click(wxCommandEvent& event)
 
 void serialcomFrame::OnCheckBoxHandBrakeClick(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->writeVariable("hb",CheckBoxHandBrake->IsChecked() ? 1 : 0);
+    MbsBot::getInstance()->enviaVar(VAR_FREIO, CheckBoxHandBrake->IsChecked() ? 1 : 0);
 }
 
 void serialcomFrame::OnButton12Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->readVariable("di");
-    MbsBot::getInstance()->readVariable("dr");
-    MbsBot::getInstance()->readVariable("drf");
-    MbsBot::getInstance()->readVariable("pid");
+    MbsBot::getInstance()->pedeVar(VAR_T_POL);
+    MbsBot::getInstance()->pedeVar(VAR_T_90);
+    MbsBot::getInstance()->pedeVar(VAR_T_RF);
+    MbsBot::getInstance()->pedeVar(VAR_PID);
 }
 
 void serialcomFrame::OnGridJoyCellLeftClick(wxGridEvent& event)
