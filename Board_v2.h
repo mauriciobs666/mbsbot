@@ -30,8 +30,8 @@
 #define PIN_RIGHTWHEEL_PWM	3
 
 // number of unused pins (to save power)
-#define PIN_UNUSED_CNT 3
-#define PIN_UNUSED_ARRAY { 7,11,12 }
+#define PIN_UNUSED_CNT 2
+#define PIN_UNUSED_ARRAY { 7,11 }
 
 // SHARP RANGE FINDER (analog pin!)
 #define PIN_SHARP_RF		0
@@ -48,7 +48,7 @@
 #define PIN_FIRST_IR_SENSOR 1
 // where NUM_IR_TRACK=3 and PIN_FIRST_IR_SENSOR=2 means pins A2, A3 and A4 are connected
 
-#define PIN_BEEP 			13
+#define PIN_BIP 			12
 
 #define PIN_LASER           6
 

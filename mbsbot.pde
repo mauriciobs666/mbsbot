@@ -37,8 +37,8 @@
 #endif
 
 // speaker
-#ifdef PIN_BEEP
-#define BEEP(freq, dur) tone(PIN_BEEP,freq,dur)
+#ifdef PIN_BIP
+#define BEEP(freq, dur) tone(PIN_BIP,freq,dur)
 #else
 #define BEEP(freq, dur)
 #endif
@@ -1208,9 +1208,28 @@ void loop()
         {
             digitalWrite(13, HIGH);
             Serial.println("ALARM");
-            delay(1000);
+
+            #define SIRENE_TOM_MIN  1000
+            #define SIRENE_TOM_MAX  3000
+            #define SIRENE_PASSO    2
+            #define SIRENE_COMPASSO 150
+
+            for(int x=0; x<1; x++)
+            {
+                for(int tom=SIRENE_TOM_MIN;tom<SIRENE_TOM_MAX;tom+=SIRENE_PASSO)
+                {
+                    BEEP(tom,SIRENE_COMPASSO);
+                }
+
+                for(int tom=SIRENE_TOM_MAX;tom>SIRENE_TOM_MIN;tom-=SIRENE_PASSO)
+                {
+                    BEEP(tom,SIRENE_COMPASSO/2);
+                }
+            }
+
+            //delay(1000);
             digitalWrite(13, LOW);
-            delay(1000);
+            //delay(1000);
         }
     }
     break;
