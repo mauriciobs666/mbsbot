@@ -81,7 +81,7 @@ Formato geral do pacote:
 #define CMD_STATUS "status"
 /* CMD_STATUS : pede status
 formato da resposta:
-S VAR_PROGRAMA VAR_RODA_ESQ VAR_RODA_DIR VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
+S VAR_PROGRAMA ERRO VAR_RODA_ESQ VAR_RODA_DIR VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
 */
 
 #define CMD_UNAME "uname"

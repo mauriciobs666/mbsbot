@@ -27,8 +27,8 @@
 //		DEFINEs e SETUP
 // ******************************************************************************
 
-#include "Protocol.h"
-#include "Board.h"
+#include "protocolo.h"
+#include "placa.h"
 
 // I2C / wiichuck
 #ifdef WIICHUCK
@@ -63,14 +63,14 @@ class Eeprom
 public:
     struct sConfigurationData
     {
-        short selectedProgram;
+        short programa;
 
         char handBrake;
 
-        short leftWheelCenter;
-        short rightWheelCenter;
+        short centroMotorEsq;
+        short centroMotorDir;
 
-        short balance;      // ajuste balanco rodas esquerda/direita
+        short balancoEsqDir;  // ajuste balanco rodas esquerda/direita
 
         struct sMoveDelays  // delay in ms used to make it move (+/-)
         {
@@ -112,13 +112,13 @@ public:
     }
     void loadDefault()
     {
-        data.selectedProgram = PRG_RC;
+        data.programa = PRG_RC;
         data.handBrake = 1;
-        data.leftWheelCenter = 1410;
-        data.rightWheelCenter = 1384;
+        data.centroMotorEsq = 1410;
+        data.centroMotorDir = 1384;
         data.mvDelay.inch = 200;
         data.mvDelay.right = 400;
-        data.balance = 0;
+        data.balancoEsqDir = 0;
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
             data.LF_threshold[x] = 512;
@@ -148,44 +148,44 @@ class Distancia : Sensor
 };
 
 // ******************************************************************************
-//		WHEELS CONTROLER
+//		Controlador de motoree
 // ******************************************************************************
-class Wheel
+class Motor // interface
 {
 public:
     void stop()
     {
-        current = center;
+        atual = centro;
         refresh();
     }
     virtual void move(char percent);
     virtual void refresh();
-    void write(int value)
+    void write(int valor)
     {
-        current = value;
+        atual = valor;
         refresh();
     }
     short read()
     {
-        return current;
+        return atual;
     }
-    void setCenter(short value)
+    void setCenter(short valor)
     {
-        center = value;
+        centro = valor;
     }
     void setReverse(bool rev)
     {
-        reverse = rev;
+        invertido = rev;
     }
 protected:
-    bool reverse;
-    short current;
-    short center;
+    bool invertido;
+    short atual;
+    short centro;
 };
 
 #ifndef WHEEL_DC
 
-class WheelServo : public Wheel
+class MotorServo : public Motor
 {
 public:
     void init(int pin, short centerAng=1500, bool reverseDirection=false)
@@ -198,29 +198,29 @@ public:
     virtual void move(char percent)
     {
         // typical servos use from 1000-2000us
-        current = reverse ? (center - percent*5) : (center + percent*5);
+        atual = invertido ? (centro - percent*5) : (centro + percent*5);
         refresh();
     }
     virtual void refresh()
     {
         if(eeprom.data.handBrake)
-            current = center;
+            atual = centro;
         // protect against out of range values
-        else if (current < 1000)
-            current = 1000;
-        else if (current > 2000)
-            current = 2000;
+        else if (atual < 1000)
+            atual = 1000;
+        else if (atual > 2000)
+            atual = 2000;
 
-        servo.writeMicroseconds(current);
+        servo.writeMicroseconds(atual);
     }
 private:
     Servo servo;
 }
-leftWheel, rightWheel;
+motorEsq, motorDir;
 
 #else
 
-class WheelDC : public Wheel
+class MotorDC : public Motor
 {
 public:
     void init(int PWMpin, int DIRpin, bool reverseDirection=false)
@@ -239,43 +239,43 @@ public:
     }
     virtual void move(char percent)
     {
-        current = reverse ? ( center - (percent*5)/2 ) : ( center + (percent*5)/2 );
+        atual = invertido ? ( centro - (percent*5)/2 ) : ( centro + (percent*5)/2 );
         refresh();
     }
     virtual void refresh()
     {
         if(eeprom.data.handBrake)
-            current = center;
+            atual = centro;
         // protect against out of range values
-        else if(current > 255)
-            current = 255;
-        else if (current < -255)
-            current = -255;
+        else if(atual > 255)
+            atual = 255;
+        else if (atual < -255)
+            atual = -255;
 
-        if(current < center)
+        if(atual < centro)
             digitalWrite(dir, HIGH);
         else
             digitalWrite(dir, LOW);
 
-        analogWrite(pwm, abs(current));
+        analogWrite(pwm, abs(atual));
     }
 private:
     int pwm;
     int dir;
 }
-leftWheel, rightWheel;
+motorEsq, motorDir;
 
 #endif
 
 class Drive
 {
 public:
-    Wheel *leftWheel;
-    Wheel *rightWheel;
+    Motor *motorEsq;
+    Motor *motorDir;
     void forward(char percent=100, int period=0)
     {
-        leftWheel->move(percent);
-        rightWheel->move(percent);
+        motorEsq->move(percent);
+        motorDir->move(percent);
         if(period > 0)
         {
             delay(period);
@@ -288,8 +288,8 @@ public:
     }
     void left(char percent=100, int period=0)
     {
-        leftWheel->move(-percent);
-        rightWheel->move(percent);
+        motorEsq->move(-percent);
+        motorDir->move(percent);
         if(period > 0)
         {
             delay(period);
@@ -298,8 +298,8 @@ public:
     }
     void leftSmooth(char percent=100, int period=0)
     {
-        leftWheel->stop();
-        rightWheel->move(percent);
+        motorEsq->stop();
+        motorDir->move(percent);
         if(period > 0)
         {
             delay(period);
@@ -308,8 +308,8 @@ public:
     }
     void right(char percent=100, int period=0)
     {
-        leftWheel->move(percent);
-        rightWheel->move(-percent);
+        motorEsq->move(percent);
+        motorDir->move(-percent);
         if(period > 0)
         {
             delay(period);
@@ -318,8 +318,8 @@ public:
     }
     void rightSmooth(char percent=100, int period=0)
     {
-        leftWheel->move(percent);
-        rightWheel->stop();
+        motorEsq->move(percent);
+        motorDir->stop();
         if(period > 0)
         {
             delay(period);
@@ -328,13 +328,13 @@ public:
     }
     void stop()
     {
-        leftWheel->stop();
-        rightWheel->stop();
+        motorEsq->stop();
+        motorDir->stop();
     }
     void refresh()
     {
-        leftWheel->refresh();
-        rightWheel->refresh();
+        motorEsq->refresh();
+        motorDir->refresh();
     }
     void inch(bool goForward=true)
     {
@@ -360,20 +360,20 @@ void Drive::vectorial(int x, int y)
         if(x > 0)   // Q1
         {
             if(x > 100) x = 100;
-            leftWheel->move( max(x,y) );
+            motorEsq->move( max(x,y) );
             if(y > x)
-                rightWheel->move( y-x );
+                motorDir->move( y-x );
             else
-                rightWheel->move( x-y );
+                motorDir->move( x-y );
         }
         else        // Q2
         {
             if(x < -100) x = -100;
-            rightWheel->move( max(-x,y) );
+            motorDir->move( max(-x,y) );
             if(y > -x)
-                leftWheel->move( x+y );
+                motorEsq->move( x+y );
             else
-                leftWheel->move( x-y );
+                motorEsq->move( x-y );
         }
     }
     else // (y <= 0)
@@ -382,38 +382,38 @@ void Drive::vectorial(int x, int y)
         if(x < 0)   // Q3
         {
             if(x < -100) x = -100;
-            leftWheel->move( min(x,y) );
+            motorEsq->move( min(x,y) );
             if(x < y)
-                rightWheel->move( -x-y );
+                motorDir->move( -x-y );
             else
-                rightWheel->move( y-x );
+                motorDir->move( y-x );
         }
         else        // Q4
         {
             if(x > 100) x = 100;
-            rightWheel->move( min(-x,y) );
-            leftWheel->move( x+y );
+            motorDir->move( min(-x,y) );
+            motorEsq->move( x+y );
         }
     }
 }
 
 // ******************************************************************************
-//		PHOTOVORE
+//		FOTOVORO
 // ******************************************************************************
 void photovore()
 {
     const int threshold = 25;
 
-    int left = analogRead(0);
-    int right = analogRead(1);
+    int ldrEsq = analogRead(0);
+    int ldrDir = analogRead(1);
 
-    // smaller numbers mean more light
+    // numeros menores significam mais luz
 
-    if ( (right - left) > threshold )		// turn left
+    if ( (ldrDir - ldrEsq) > threshold )		// vira pra esq
         drive.left();
-    else if ( (left - right) > threshold )	// turn right
+    else if ( (ldrEsq - ldrDir) > threshold )	// vira pra direita
         drive.right();
-    else 									// go ahead
+    else
         drive.forward();
 
     delay(50);
@@ -475,8 +475,8 @@ void LineFollower::loop()
 
         int MV = Pterm + Iterm + Dterm;
 
-        drive.leftWheel->move ( (MV < 0) ? (100 + MV) : 100 );
-        drive.rightWheel->move( (MV > 0) ? (100 - MV) : 100 );
+        drive.motorEsq->move ( (MV < 0) ? (100 + MV) : 100 );
+        drive.motorDir->move( (MV > 0) ? (100 - MV) : 100 );
 
         lastError = error;
     }
@@ -815,13 +815,13 @@ void displayAnalogSensors()
 void sendStatus()
 {
     Serial.print("S ");
-    Serial.print(eeprom.data.selectedProgram);
+    Serial.print(eeprom.data.programa);
     Serial.print(" ");
     Serial.print(lastError);
     Serial.print(" ");
-    Serial.print(drive.leftWheel->read());
+    Serial.print(drive.motorEsq->read());
     Serial.print(" ");
-    Serial.print(drive.rightWheel->read());
+    Serial.print(drive.motorDir->read());
     Serial.print(" ");
     Serial.print(pan.read());
     Serial.print(" ");
@@ -893,42 +893,42 @@ void Server::loop()
 
                     if (tok = STRTOK(NULL, " "))			// terceiro token eh o valor a ser atribuido
                     {
-                        int value = atoi(tok);
+                        int valor = atoi(tok);
 
                         if(isdigit(dest[0]))                // se destino for um numero entaum eh um pino digital
-                            digitalWrite(atoi(dest), value ? HIGH : LOW);
+                            digitalWrite(atoi(dest), valor ? HIGH : LOW);
                         else if(strcmp(dest, VAR_RODA_ESQ) == 0)
-                            drive.leftWheel->write(value);
+                            drive.motorEsq->write(valor);
                         else if(strcmp(dest, VAR_RODA_DIR) == 0)
-                            drive.rightWheel->write(value);
+                            drive.motorDir->write(valor);
                         else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
-                            drive.leftWheel->setCenter(eeprom.data.leftWheelCenter = value);
+                            drive.motorEsq->setCenter(eeprom.data.centroMotorEsq = valor);
                         else if(strcmp(dest, VAR_ZERO_DIR) == 0)
-                            drive.rightWheel->setCenter(eeprom.data.rightWheelCenter = value);
+                            drive.motorDir->setCenter(eeprom.data.centroMotorDir = valor);
                         else if(strcmp(dest, VAR_PROGRAMA) == 0)
-                            eeprom.data.selectedProgram = value;
+                            eeprom.data.programa = valor;
                         else if(strcmp(dest, VAR_T_POL) == 0)
-                            eeprom.data.mvDelay.inch = value;
+                            eeprom.data.mvDelay.inch = valor;
                         else if(strcmp(dest, VAR_T_90) == 0)
-                            eeprom.data.mvDelay.right = value;
+                            eeprom.data.mvDelay.right = valor;
                         else if(strcmp(dest, VAR_T_RF) == 0)
-                            eeprom.data.RF_delay_reads = value;
+                            eeprom.data.RF_delay_reads = valor;
                         else if(strcmp(dest, VAR_SERVO_X) == 0)
-                            pan.write(value);
+                            pan.write(valor);
                         else if(strcmp(dest, VAR_SERVO_Y) == 0)
-                            tilt.write(value);
+                            tilt.write(valor);
                         else if(strcmp(dest, VAR_SERVO_Z) == 0)
-                            roll.write(value);
+                            roll.write(valor);
                         else if(strcmp(dest, VAR_PID) == 0)
                         {
-                            eeprom.data.pid.Kp = value;		// P
+                            eeprom.data.pid.Kp = valor;		// P
                             if (tok = STRTOK(NULL, " "))	// I
                                 eeprom.data.pid.Ki = atoi(tok);
                             if (tok = STRTOK(NULL, " "))	// D
                                 eeprom.data.pid.Kd = atoi(tok);
                         }
                         else if(strcmp(dest, VAR_FREIO) == 0)
-                            eeprom.data.handBrake = value;
+                            eeprom.data.handBrake = valor;
                     }
                 }
             }
@@ -940,27 +940,27 @@ void Server::loop()
                     if(strcmp(tok, VAR_RODA_ESQ) == 0)
                     {
                         Serial.print("L ");
-                        Serial.println(drive.leftWheel->read());
+                        Serial.println(drive.motorEsq->read());
                     }
                     else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
                     {
                         Serial.print("LC ");
-                        Serial.println(eeprom.data.leftWheelCenter);
+                        Serial.println(eeprom.data.centroMotorEsq);
                     }
                     else if(strcmp(tok, VAR_RODA_DIR) == 0)
                     {
                         Serial.print("R ");
-                        Serial.println(drive.rightWheel->read());
+                        Serial.println(drive.motorDir->read());
                     }
                     else if(strcmp(tok, VAR_ZERO_DIR) == 0)
                     {
                         Serial.print("RC ");
-                        Serial.println(eeprom.data.rightWheelCenter);
+                        Serial.println(eeprom.data.centroMotorDir);
                     }
                     else if(strcmp(tok, VAR_PROGRAMA) == 0)
                     {
                         Serial.print("P ");
-                        Serial.println(eeprom.data.selectedProgram);
+                        Serial.println(eeprom.data.programa);
                     }
                     else if(strcmp(tok, VAR_T_POL) == 0)
                     {
@@ -1037,8 +1037,8 @@ void Server::loop()
                     tok = STRTOK(NULL, " ");
                     if (tok)		// third token is the right wheel power percent
                     {
-                        drive.leftWheel->move(lw);
-                        drive.rightWheel->move(atoi(tok));
+                        drive.motorEsq->move(lw);
+                        drive.motorDir->move(atoi(tok));
                     }
                 }
             }
@@ -1106,15 +1106,15 @@ void setup()
     }
 
 #ifndef WHEEL_DC
-    leftWheel.init(PIN_LEFTWHEEL, eeprom.data.leftWheelCenter);
-    rightWheel.init(PIN_RIGHTWHEEL, eeprom.data.rightWheelCenter, true);
+    motorEsq.init(PIN_LEFTWHEEL, eeprom.data.centroMotorEsq);
+    motorDir.init(PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, true);
 #else
-    leftWheel.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL);
-    rightWheel.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL);
+    motorEsq.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL);
+    motorDir.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL);
 #endif
     // bellow is needed for polimorphism
-    drive.leftWheel = &leftWheel;
-    drive.rightWheel = &rightWheel;
+    drive.motorEsq = &motorEsq;
+    drive.motorDir = &motorDir;
 
 #ifdef PIN_SERVO_PAN
     pan.attach(PIN_SERVO_PAN);
@@ -1131,7 +1131,7 @@ void setup()
     roll.write(90);
 #endif
 
-    if (eeprom.data.selectedProgram == PRG_LINEFOLLOWER)
+    if (eeprom.data.programa == PRG_LINEFOLLOWER)
         lineFollower.autoCalibrate();
 
     pinMode(13, OUTPUT);    // Arduino onboard LED
@@ -1160,7 +1160,7 @@ void loop()
     server.loop();
 
     static long nextSendStatus = 0;
-    if(millis() > nextSendStatus && eeprom.data.selectedProgram != PRG_SCOPE)
+    if(millis() > nextSendStatus && eeprom.data.programa != PRG_SCOPE)
     {
         nextSendStatus += 10000;
         //displayAnalogSensors();
@@ -1168,7 +1168,7 @@ void loop()
     }
 
     int dorme_ms = 10;
-    switch(eeprom.data.selectedProgram)
+    switch(eeprom.data.programa)
     {
     case PRG_SHOW_SENSORS:
         displayAnalogSensors();

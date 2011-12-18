@@ -52,8 +52,7 @@ public:
     wxPoint joyMax;
     wxPoint joyMin;
     wxPoint joyCenter;
-    int joyButCurr;
-    int joyButLast;
+    int botoesAntes;
 
     serialcomFrame(wxWindow* parent,wxWindowID id = -1);
     virtual ~serialcomFrame();

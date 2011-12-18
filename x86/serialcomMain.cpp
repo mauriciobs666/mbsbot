@@ -865,66 +865,82 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
     if(joystick)
     {
-        joyButCurr = joystick->GetButtonState();
-        StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), joyButCurr));
+        int botoesAgora = joystick->GetButtonState();
+        StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), botoesAgora));
 
-        int buttonPress = (joyButCurr ^ joyButLast) & joyButCurr;
+        #define BT_90_ESQ 0x010
+        #define BT_90_DIR 0x020
+        #define BT_FREIO  0x100
+        #define BT_START  0x200
 
-        if(buttonPress & 0x001)
-        {
-        }
-        if(buttonPress & 0x002)
-        {
-        }
-        if(buttonPress & 0x004)
-        {
-        }
-        if(buttonPress & 0x008)
-        {
-        }
-        if(buttonPress & 0x010)
+        int clicados = (botoesAgora ^ botoesAntes) & botoesAgora;
+
+        // vira 90 graus pra esquerda
+        if(clicados & BT_90_ESQ)
         {
             MbsBot::getInstance()->sqrLeft();
         }
-        if(buttonPress & 0x020)
+        // vira 90 graus pra direita
+        if(clicados & BT_90_DIR)
         {
             MbsBot::getInstance()->sqrRight();
         }
-        if(buttonPress & 0x040)
-        {
-        }
-        if(buttonPress & 0x080)
-        {
-        }
-        if(buttonPress & 0x100)
+
+        if(clicados & BT_FREIO)
         {
             MbsBot::getInstance()->enviaVar(VAR_FREIO, 1);
         }
-        if(buttonPress & 0x200)
+
+        if(clicados & BT_START)
         {
+            // solta freio de mao
             MbsBot::getInstance()->enviaVar(VAR_FREIO, 0);
+
+            // auto calibra centro joystick
+            joyCenter = joystick->GetPosition();
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.x), 0, 2);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.y), 1, 2);
         }
-        if(buttonPress & 0x400)
+
+        if(clicados & 0x001)
         {
         }
-        if(buttonPress & 0x800)
+        if(clicados & 0x002)
+        {
+        }
+        if(clicados & 0x004)
+        {
+        }
+        if(clicados & 0x008)
+        {
+        }
+        if(clicados & 0x040)
+        {
+        }
+        if(clicados & 0x080)
+        {
+        }
+        if(clicados & 0x400)
+        {
+        }
+        if(clicados & 0x800)
         {
         }
 
-        joyButLast = joyButCurr;
+        botoesAntes = botoesAgora;
 
         // Current position
 
         joyPos = joystick->GetPosition();
-        // x < 0 left
-        // x > 0 right
-        // y < 0 up
-        // y > 0 down
+        // x < centro = esquerda
+        // x > centro = direita
+        // y < centro = p/ cima
+        // y > centro = p/ baixo
 
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyPos.x), 0, 0);
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyPos.y), 1, 0);
 
-        // Absolute maximum
+        // Lembra maximo absoluto
 
         if(joyPos.x > joyMax.x)
         {
@@ -938,7 +954,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMax.y), 1, 3);
         }
 
-        // Absolute minimum
+        // Lembra minimo absoluto
 
         if(joyPos.x < joyMin.x)
         {
@@ -952,22 +968,21 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyMin.y), 1, 1);
         }
 
-        // Drive by Joystick
+        // Direcao vetorial
 
         if(CheckBoxDrvByJoy->IsChecked())
         {
-            // Drive mode
             int x = ((joyPos.x - joyCenter.x) * 100) / ((joyMax.x - joyMin.x) / 2);
-            int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y is reversed
+            int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y eh invertido
 
             MbsBot::getInstance()->vectorialDrive(x,y);
         }
 
-        // Control Servos Pan Tilt Roll
+        // Servos Pan Tilt Roll
 
         if(CheckBoxJoyServos->IsChecked())
         {
-
+            // TODO (mbs#1#): Controlar os Servos via joystick
         }
 
         if(joystick->HasZ())
@@ -1060,7 +1075,7 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 
         Log->AppendText(_("ManufacturerId: ") + wxString::Format(wxT("%i"), joystick->GetManufacturerId())+_("\n"));
         Log->AppendText(_("ProductId: ") + wxString::Format(wxT("%i"), joystick->GetProductId())+_("\n"));
-        Log->AppendText(_("ProductName: ") + joystick->GetProductName()+_("\n"));
+//        Log->AppendText(_("ProductName: ") + joystick->GetProductName()+_("\n"));
         Log->AppendText(_("MovementThreshold: ") + wxString::Format(wxT("%i"), joystick->GetMovementThreshold())+_("\n"));
         Log->AppendText(_("NumberAxes: ") + wxString::Format(wxT("%i"), joystick->GetNumberAxes())+_("\n"));
         Log->AppendText(_("NumberButtons: ") + wxString::Format(wxT("%i"), joystick->GetNumberButtons())+_("\n"));
@@ -1099,7 +1114,7 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
         {
             Log->AppendText(_("POVCTSPosition:") + wxString::Format(wxT("%i"), joystick->GetPOVCTSPosition())+_("\n"));
         }
-        joyButCurr = joyButLast = joystick->GetButtonState();
+        botoesAntes = joystick->GetButtonState();
     }
 }
 

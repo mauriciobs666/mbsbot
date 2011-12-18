@@ -20,7 +20,7 @@
 
 #include <stdarg.h>
 #include <MBSUtil.h>
-#include "../Protocol.h"
+#include "../protocolo.h"
 
 #define SERIAL_BUFFER_SIZE 1000
 
