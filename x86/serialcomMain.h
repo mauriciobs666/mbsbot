@@ -160,6 +160,8 @@ private:
     static const long ID_CHECKBOX7;
     static const long ID_BUTTON4;
     static const long ID_BUTTON5;
+    static const long ID_STATICTEXT13;
+    static const long ID_TEXTCTRL15;
     static const long ID_PANEL4;
     static const long ID_STATICTEXT3;
     static const long ID_PANEL5;
@@ -223,11 +225,13 @@ private:
     wxButton* Button9;
     wxTextCtrl* TextCtrl2;
     wxTextCtrl* TextCtrl1;
+    wxStaticText* StaticText12;
     wxTextCtrl* TextCtrlDelayTurn;
     wxPanel* Panel2;
     wxSlider* SliderPan;
     wxTextCtrl* TextCtrlKi;
     wxStaticText* StaticText4;
+    wxTextCtrl* TextCtrl3;
     wxChoice* Choice1;
     wxChoice* Choice2;
     wxButton* Button8;

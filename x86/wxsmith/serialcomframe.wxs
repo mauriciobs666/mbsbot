@@ -686,11 +686,11 @@
 					<object class="notebookpage">
 						<object class="wxPanel" name="ID_PANEL4" variable="Panel4" member="yes">
 							<object class="wxFlexGridSizer" variable="FlexGridSizer2" member="no">
-								<cols>2</cols>
-								<rows>1</rows>
+								<cols>1</cols>
+								<rows>2</rows>
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer4" member="no">
-										<label>Sensor Values</label>
+										<label>Entradas analogicas</label>
 										<object class="sizeritem">
 											<object class="wxGrid" name="ID_GRID1" variable="Grid1" member="yes">
 												<cols>5</cols>
@@ -700,7 +700,7 @@
 													<item>Min</item>
 													<item>Max</item>
 													<item>Media/10</item>
-													<item>Seilah</item>
+													<item>f(X)</item>
 												</collabels>
 												<rowlabels>
 													<item>0</item>
@@ -755,8 +755,7 @@
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer5" member="no">
-										<label>Controls</label>
-										<orient>wxVERTICAL</orient>
+										<label>Controles</label>
 										<object class="sizeritem">
 											<object class="wxCheckBox" name="ID_CHECKBOX7" variable="CheckBoxAutoRefreshSensors" member="yes">
 												<label>Auto refresh</label>
@@ -779,6 +778,24 @@
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticText12" member="yes">
+												<label>f(X) = </label>
+												<size>41,13</size>
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxTextCtrl" name="ID_TEXTCTRL15" variable="TextCtrl3" member="yes">
+												<value>Text</value>
+												<size>102,21</size>
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
 										</object>
 									</object>
 									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>

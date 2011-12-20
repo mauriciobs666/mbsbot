@@ -82,6 +82,8 @@ const long serialcomFrame::ID_GRID1 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX7 = wxNewId();
 const long serialcomFrame::ID_BUTTON4 = wxNewId();
 const long serialcomFrame::ID_BUTTON5 = wxNewId();
+const long serialcomFrame::ID_STATICTEXT13 = wxNewId();
+const long serialcomFrame::ID_TEXTCTRL15 = wxNewId();
 const long serialcomFrame::ID_PANEL4 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
 const long serialcomFrame::ID_PANEL5 = wxNewId();
@@ -332,8 +334,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->Fit(Panel2);
     FlexGridSizer1->SetSizeHints(Panel2);
     Panel4 = new wxPanel(Notebook1, ID_PANEL4, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL4"));
-    FlexGridSizer2 = new wxFlexGridSizer(1, 2, 0, 0);
-    StaticBoxSizer4 = new wxStaticBoxSizer(wxHORIZONTAL, Panel4, _("Sensor Values"));
+    FlexGridSizer2 = new wxFlexGridSizer(2, 1, 0, 0);
+    StaticBoxSizer4 = new wxStaticBoxSizer(wxHORIZONTAL, Panel4, _("Entradas analogicas"));
     Grid1 = new wxGrid(Panel4, ID_GRID1, wxDefaultPosition, wxSize(492,182), 0, _T("ID_GRID1"));
     Grid1->CreateGrid(6,5);
     Grid1->EnableEditing(true);
@@ -342,7 +344,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Grid1->SetColLabelValue(1, _("Min"));
     Grid1->SetColLabelValue(2, _("Max"));
     Grid1->SetColLabelValue(3, _("Media/10"));
-    Grid1->SetColLabelValue(4, _("Seilah"));
+    Grid1->SetColLabelValue(4, _("f(X)"));
     Grid1->SetRowLabelValue(0, _("0"));
     Grid1->SetRowLabelValue(1, _("1"));
     Grid1->SetRowLabelValue(2, _("2"));
@@ -383,7 +385,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Grid1->SetDefaultCellTextColour( Grid1->GetForegroundColour() );
     StaticBoxSizer4->Add(Grid1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer2->Add(StaticBoxSizer4, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
-    StaticBoxSizer5 = new wxStaticBoxSizer(wxVERTICAL, Panel4, _("Controls"));
+    StaticBoxSizer5 = new wxStaticBoxSizer(wxHORIZONTAL, Panel4, _("Controles"));
     CheckBoxAutoRefreshSensors = new wxCheckBox(Panel4, ID_CHECKBOX7, _("Auto refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX7"));
     CheckBoxAutoRefreshSensors->SetValue(false);
     StaticBoxSizer5->Add(CheckBoxAutoRefreshSensors, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -391,6 +393,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer5->Add(Button4, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button5 = new wxButton(Panel4, ID_BUTTON5, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON5"));
     StaticBoxSizer5->Add(Button5, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText12 = new wxStaticText(Panel4, ID_STATICTEXT13, _("f(X) = "), wxDefaultPosition, wxSize(41,13), 0, _T("ID_STATICTEXT13"));
+    StaticBoxSizer5->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrl3 = new wxTextCtrl(Panel4, ID_TEXTCTRL15, _("Text"), wxDefaultPosition, wxSize(102,21), 0, wxDefaultValidator, _T("ID_TEXTCTRL15"));
+    StaticBoxSizer5->Add(TextCtrl3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer2->Add(StaticBoxSizer5, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     Panel4->SetSizer(FlexGridSizer2);
     FlexGridSizer2->Fit(Panel4);

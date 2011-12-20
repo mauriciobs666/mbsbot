@@ -70,12 +70,15 @@ public:
         short centroMotorEsq;
         short centroMotorDir;
 
+        short acelMotorEsq;
+        short acelMotorDir;
+
         short balancoEsqDir;  // ajuste balanco rodas esquerda/direita
 
-        struct sMoveDelays  // delay in ms used to make it move (+/-)
+        struct sMoveDelays  // duracao (ms) de movimentos pra animacao
         {
-            short inch;		// an inch
-            short right;	// right angle turn (90 degrees)
+            short inch;		// tempo pra mover 1 polegada
+            short right;	// tempo pra girar 90 graus (angulo reto)
         } mvDelay;
 
         // line follower sensor array parameters(from auto-cal)
@@ -153,11 +156,7 @@ class Distancia : Sensor
 class Motor // interface
 {
 public:
-    void stop()
-    {
-        atual = centro;
-        refresh();
-    }
+    virtual void stop();
     virtual void move(char percent);
     virtual void refresh();
     void write(int valor)
@@ -181,6 +180,8 @@ protected:
     bool invertido;
     short atual;
     short centro;
+    short aceleracao;
+    short meta;
 };
 
 #ifndef WHEEL_DC
@@ -194,6 +195,11 @@ public:
         setCenter(centerAng);
         setReverse(reverseDirection);
         stop();
+    }
+    virtual void stop()
+    {
+        atual = centro;
+        refresh();
     }
     virtual void move(char percent)
     {
@@ -222,8 +228,9 @@ motorEsq, motorDir;
 
 class MotorDC : public Motor
 {
+// TODO (mbs#1#): Configurar aceleracao na eeprom
 public:
-    void init(int PWMpin, int DIRpin, bool reverseDirection=false)
+    void init(int PWMpin, int DIRpin, short offsetZero=0, short acel=255, bool reverseDirection=false)
     {
         pwm = PWMpin;
         pinMode(pwm, OUTPUT);
@@ -233,30 +240,56 @@ public:
         pinMode(dir, OUTPUT);
         digitalWrite(dir, 0);
 
-        setCenter(0);
+        setCenter(offsetZero);
         setReverse(reverseDirection);
+        aceleracao = acel;
         stop();
     }
-    virtual void move(char percent)
+    virtual void stop()
     {
-        atual = invertido ? ( centro - (percent*5)/2 ) : ( centro + (percent*5)/2 );
+        meta = atual = 0;
+        refresh();
+    }
+    virtual void move(char potencia100)
+    {
+        meta = invertido ? ( -centro - (potencia100*5)/2 ) : ( centro + (potencia100*5)/2 );
         refresh();
     }
     virtual void refresh()
     {
-        if(eeprom.data.handBrake)
-            atual = centro;
-        // protect against out of range values
-        else if(atual > 255)
+        // TODO (mbs#1#): Delimitar tempo entre os passos de aceleracao
+
+        if ( meta > atual)
+        {
+            atual += aceleracao;
+
+            if( meta > atual) // inverteu sinal = passou do ponto
+                atual = meta;
+        }
+        else if ( meta < atual)
+        {
+            atual -= aceleracao;
+
+            if ( meta > atual)
+                atual = meta;
+        }
+
+        // protecao out of range
+        if(atual > 255)
             atual = 255;
         else if (atual < -255)
             atual = -255;
 
-        if(atual < centro)
+        // direcao
+        if(atual < 0)
             digitalWrite(dir, HIGH);
         else
             digitalWrite(dir, LOW);
 
+        if(eeprom.data.handBrake)
+            meta = atual = 0;
+
+        // vai
         analogWrite(pwm, abs(atual));
     }
 private:
@@ -460,8 +493,8 @@ void LineFollower::loop()
         // Integral
         accError += error;
 
-        // TODO (mbs#1#): limit accumulation
-        /* TODO: limit accumulation
+        // TODO (mbs#1#): limitar acumulacao do componente integral
+        /*
         if (accErr > MAX_ERROR)
         	accErr = MAX_ERROR;
         else if (accErr < MIN_ERROR)
@@ -710,13 +743,13 @@ void RangeFinder::chase()
         refreshServo();
     }
 
-    /* TODO:
+    /*
     if scanner is pointing far left
-    	robot turns left
+    	turns left
     else if scanner is pointing far right
-    	robot turns right
+    	turns right
     else //scanner pointing forward
-    	robot drives straight
+    	drives straight
     */
 }
 
@@ -1109,8 +1142,8 @@ void setup()
     motorEsq.init(PIN_LEFTWHEEL, eeprom.data.centroMotorEsq);
     motorDir.init(PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, true);
 #else
-    motorEsq.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL);
-    motorDir.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL);
+    motorEsq.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL, eeprom.data.centroMotorEsq);
+    motorDir.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL, eeprom.data.centroMotorDir);
 #endif
     // bellow is needed for polimorphism
     drive.motorEsq = &motorEsq;
@@ -1134,7 +1167,7 @@ void setup()
     if (eeprom.data.programa == PRG_LINEFOLLOWER)
         lineFollower.autoCalibrate();
 
-    pinMode(13, OUTPUT);    // Arduino onboard LED
+    pinMode(13, OUTPUT);    // LED onboard
     digitalWrite(13, LOW);
 
 #ifdef PIN_LASER
