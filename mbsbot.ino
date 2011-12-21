@@ -230,7 +230,7 @@ class MotorDC : public Motor
 {
 // TODO (mbs#1#): Configurar aceleracao na eeprom
 public:
-    void init(int PWMpin, int DIRpin, short offsetZero=0, short acel=255, bool reverseDirection=false)
+    void init(int PWMpin, int DIRpin, short offsetZero=0, short acel=2, bool reverseDirection=false)
     {
         pwm = PWMpin;
         pinMode(pwm, OUTPUT);
@@ -252,18 +252,30 @@ public:
     }
     virtual void move(char potencia100)
     {
-        meta = invertido ? ( -centro - (potencia100*5)/2 ) : ( centro + (potencia100*5)/2 );
+        if( potencia100 > 0 )
+            meta = centro + (potencia100*5)/2;
+        else
+            meta = -centro + (potencia100*5)/2;
+
+        if (invertido) meta = -meta;
+
         refresh();
     }
     virtual void refresh()
     {
         // TODO (mbs#1#): Delimitar tempo entre os passos de aceleracao
 
+        // protecao de range
+        if(meta > 255)
+            meta = 255;
+        else if (meta < -255)
+            meta = -255;
+
         if ( meta > atual)
         {
             atual += aceleracao;
 
-            if( meta > atual) // inverteu sinal = passou do ponto
+            if( meta < atual) // inverteu sinal = passou do ponto
                 atual = meta;
         }
         else if ( meta < atual)
@@ -274,27 +286,19 @@ public:
                 atual = meta;
         }
 
-        // protecao out of range
-        if(atual > 255)
-            atual = 255;
-        else if (atual < -255)
-            atual = -255;
-
-        // direcao
-        if(atual < 0)
-            digitalWrite(dir, HIGH);
-        else
-            digitalWrite(dir, LOW);
-
+        // uma ultima olhada no freio de mao
         if(eeprom.data.handBrake)
             meta = atual = 0;
 
-        // vai
+        // direcao
+        digitalWrite(dir, (atual < 0) ? HIGH : LOW);
+
+        // potencia
         analogWrite(pwm, abs(atual));
     }
 private:
-    int pwm;
-    int dir;
+    int pwm; // pino PWM ( no atmega328)
+    int dir; // pino digital comum do Arduino
 }
 motorEsq, motorDir;
 
@@ -387,12 +391,22 @@ drive;
 
 void Drive::vectorial(int x, int y)
 {
+    // protecao range
+    if(y > 100)
+        y = 100;
+    else if(y < -100)
+        y = -100;
+
+    if(x > 100)
+        x = 100;
+    else if(x < -100)
+        x = -100;
+
+    // pra interpolar os movimentos de giro dividi td em 4 quadrantes
     if(y > 0)
     {
-        if(y > 100) y = 100;
         if(x > 0)   // Q1
         {
-            if(x > 100) x = 100;
             motorEsq->move( max(x,y) );
             if(y > x)
                 motorDir->move( y-x );
@@ -401,7 +415,6 @@ void Drive::vectorial(int x, int y)
         }
         else        // Q2
         {
-            if(x < -100) x = -100;
             motorDir->move( max(-x,y) );
             if(y > -x)
                 motorEsq->move( x+y );
@@ -411,10 +424,9 @@ void Drive::vectorial(int x, int y)
     }
     else // (y <= 0)
     {
-        if(y < -100) y = -100;
         if(x < 0)   // Q3
         {
-            if(x < -100) x = -100;
+
             motorEsq->move( min(x,y) );
             if(x < y)
                 motorDir->move( -x-y );
@@ -423,7 +435,6 @@ void Drive::vectorial(int x, int y)
         }
         else        // Q4
         {
-            if(x > 100) x = 100;
             motorDir->move( min(-x,y) );
             motorEsq->move( x+y );
         }
@@ -1078,12 +1089,19 @@ void Server::loop()
             else if(strcmp(tok, CMD_MV_VECT) == 0)
             {
                 tok = STRTOK(NULL, " ");
-                if (tok)			// second token is the X-axis power percent
+                if (tok)			// segundo token eh o percentual de potencia p/ eixo X
                 {
                     int x = atoi(tok);
                     tok = STRTOK(NULL, " ");
-                    if (tok)		// third token is the Y-axis power percent
-                        drive.vectorial(x, atoi(tok));
+                    if (tok)		// terceiro token eh o percentual de potencia p/ eixo Y
+                    {
+                        int y = atoi(tok);
+
+                        if( x || y )
+                            drive.vectorial(x, y);
+                        else
+                            drive.stop();
+                    }
                 }
             }
             else if(strcmp(tok, CMD_TURN_LEFT) == 0)
