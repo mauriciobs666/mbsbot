@@ -42,21 +42,21 @@ Formato geral do pacote:
 /* CMD_READ <variavel> */
 
 #define CMD_WRITE	"set"
-/* CMD_WRITE <variavel> = [int] ou [str] */
+/* CMD_WRITE <variavel> = [int] */
 
-#define CMD_SAVE	"save"
+#define CMD_SAVE	"sv"
 /* CMD_SAVE : grava sConfigurationData na eeprom */
 
-#define CMD_LOAD	"load"
+#define CMD_LOAD	"ld"
 /* CMD_LOAD : descarta alteracoes e recarrega sConfigurationData da eeprom */
 
-#define CMD_DEFAULT	"default"
+#define CMD_DEFAULT	"dft"
 /* CMD_DEFAULT : carrega sConfigurationData com valores default */
 
 #define CMD_LF_CAL	"cal"
 /* CMD_LF_CAL : auto calibra sensores do line-follower */
 
-#define CMD_MV_INCH	"inch"
+#define CMD_MV_INCH	"pol"
 /* CMD_MV_INCH : anda uma polegada pra frente (ajuste via VAR_T_INCH) */
 
 #define CMD_MV_STOP "stop"
@@ -95,21 +95,28 @@ S VAR_PROGRAMA ERRO VAR_RODA_ESQ VAR_RODA_DIR VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_
 /*
    Lista de <variavel>
 */
+#define VAR_PROGRAMA "p"    // enum ProgramID sendo executado
+
+#define VAR_AS       "as"	// todas entradas analogicas
+#define VAR_PID      "pid"  // coeficientes do algoritmo de PID
+#define VAR_FREIO    "hb"   // handbrake, freio de mao
 
 #define VAR_RODA_ESQ "l"    // motor da roda esquerda
 #define VAR_RODA_DIR "r"    // motor da roda direita
+
 #define VAR_ZERO_ESQ "lc"	// offset da posicao parada ("centro") da roda esquerda (pot do servo mal calibrado)
 #define VAR_ZERO_DIR "rc"	// offset da posicao parada da roda direita (pot do servo mal calibrado)
-#define VAR_PROGRAMA "p"    // enum ProgramID sendo executado
+
+#define VAR_ACEL_ESQ "la"   // aceleracao do motor da roda esquerda
+#define VAR_ACEL_DIR "ra"   // aceleracao do motor da roda direita
+
 #define VAR_SERVO_X  "sx"   // servo "X" (pan)
 #define VAR_SERVO_Y  "sy"   // servo "Y" (tilt)
 #define VAR_SERVO_Z  "sz"   // servo "Z" (roll)
-#define VAR_FREIO    "hb"   // handbrake, freio de mao
+
 #define VAR_T_POL    "di"   // delay do drive.inch(), anda 1 polegada pra frente
 #define VAR_T_90     "d90"	// delay do drive.left() e drive.right(), vira 90 graus
 #define VAR_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
-#define VAR_AS       "as"	// todas entradas analogicas
-#define VAR_PID      "pid"  // coeficientes do algoritmo de PID
 
 enum ProgramID
 {

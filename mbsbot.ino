@@ -117,8 +117,15 @@ public:
     {
         data.programa = PRG_RC;
         data.handBrake = 1;
+
+        #ifdef WHEEL_DC
+        data.centroMotorEsq = 80;
+        data.centroMotorDir = 60;
+        #else
         data.centroMotorEsq = 1410;
         data.centroMotorDir = 1384;
+        #endif
+
         data.mvDelay.inch = 200;
         data.mvDelay.right = 400;
         data.balancoEsqDir = 0;
@@ -176,12 +183,16 @@ public:
     {
         invertido = rev;
     }
+    void setAceleracao(short acel)
+    {
+        aceleracao = acel;
+    }
 protected:
-    bool invertido;
     short atual;
     short centro;
     short aceleracao;
     short meta;
+    bool invertido;
 };
 
 #ifndef WHEEL_DC
@@ -250,17 +261,25 @@ public:
         meta = atual = 0;
         refresh();
     }
+
     virtual void move(char potencia100)
     {
-        if( potencia100 > 0 )
-            meta = centro + (potencia100*5)/2;
-        else
-            meta = -centro + (potencia100*5)/2;
+        /* onde:
+            atual = pwm a ser escrito pro motor
+            potencia100 = +/- potencia em %
+            centro = pwm a partir do qual o motor comeca a se mover
+        */
 
-        if (invertido) meta = -meta;
+        short c = potencia100 > 0 ? centro : -centro; // com sinal
+
+        meta = c + ( potencia100 * 5 ) / 2; // converte % de potencia em pwm 8 bits
+
+        if( ! atual ) // estava parado
+            atual = c;
 
         refresh();
     }
+
     virtual void refresh()
     {
         // TODO (mbs#1#): Delimitar tempo entre os passos de aceleracao
@@ -291,7 +310,7 @@ public:
             meta = atual = 0;
 
         // direcao
-        digitalWrite(dir, (atual < 0) ? HIGH : LOW);
+        digitalWrite(dir, (atual < 0) ^ invertido ? HIGH : LOW);
 
         // potencia
         analogWrite(pwm, abs(atual));
@@ -973,6 +992,10 @@ void Server::loop()
                         }
                         else if(strcmp(dest, VAR_FREIO) == 0)
                             eeprom.data.handBrake = valor;
+                        else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
+                            drive.motorEsq->setAceleracao(eeprom.data.acelMotorEsq = valor);
+                        else if(strcmp(dest, VAR_ACEL_DIR) == 0)
+                            drive.motorDir->setAceleracao(eeprom.data.acelMotorDir = valor);
                     }
                 }
             }
@@ -1051,6 +1074,16 @@ void Server::loop()
                         Serial.print(eeprom.data.pid.Ki);
                         Serial.print(" ");
                         Serial.println(eeprom.data.pid.Kd);
+                    }
+                    else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
+                    {
+                        Serial.print("LA ");
+                        Serial.println((int)eeprom.data.acelMotorEsq);
+                    }
+                    else if(strcmp(tok, VAR_ACEL_DIR) == 0)
+                    {
+                        Serial.print("RA ");
+                        Serial.println((int)eeprom.data.acelMotorDir);
                     }
                 }
             }
@@ -1160,10 +1193,10 @@ void setup()
     motorEsq.init(PIN_LEFTWHEEL, eeprom.data.centroMotorEsq);
     motorDir.init(PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, true);
 #else
-    motorEsq.init(PIN_LEFTWHEEL_PWM, PIN_LEFTWHEEL, eeprom.data.centroMotorEsq);
-    motorDir.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL, eeprom.data.centroMotorDir);
+    motorEsq.init(PIN_LEFTWHEEL_PWM,  PIN_LEFTWHEEL,  eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
+    motorDir.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
 #endif
-    // bellow is needed for polimorphism
+    // I dont wanna live in this planet anymore
     drive.motorEsq = &motorEsq;
     drive.motorDir = &motorDir;
 
@@ -1203,7 +1236,7 @@ void setup()
 }
 
 // ******************************************************************************
-//		MAIN LOOP
+//		LOOP PRINCIPAL
 // ******************************************************************************
 
 void loop()
@@ -1211,7 +1244,7 @@ void loop()
     server.loop();
 
     static long nextSendStatus = 0;
-    if(millis() > nextSendStatus && eeprom.data.programa != PRG_SCOPE)
+    if(millis() >= nextSendStatus && eeprom.data.programa != PRG_SCOPE)
     {
         nextSendStatus += 10000;
         //displayAnalogSensors();

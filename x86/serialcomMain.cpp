@@ -425,7 +425,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StatusBar1->SetStatusStyles(2,__wxStatusBarStyles_1);
     SetStatusBar(StatusBar1);
     Timer1.SetOwner(this, ID_TIMER1);
-    Timer1.Start(50, false);
+    Timer1.Start(100, false);
     BoxSizer1->SetSizeHints(this);
 
     Connect(ID_BUTTON10,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton10Click);
@@ -688,14 +688,14 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 
 void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
-    static char onceInASecond = 20;
+    static char onceInASecond = 10;
     if(onceInASecond == 0)
     {
         if(CheckBoxAutoRefresh->IsChecked())
             MbsBot::getInstance()->status();
         if(CheckBoxAutoRefreshSensors->IsChecked())
             MbsBot::getInstance()->pedeVar(VAR_AS);
-        onceInASecond = 20;
+        onceInASecond = 10;
     }
     else
         onceInASecond--;
