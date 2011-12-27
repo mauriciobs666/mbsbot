@@ -1104,7 +1104,10 @@ void Server::loop()
             else if(strcmp(tok, CMD_MV_INCH) == 0)
                 drive.inch();
             else if(strcmp(tok, CMD_MV_STOP) == 0)
+            {
                 drive.stop();
+                eeprom.data.programa = PRG_SHOW_SENSORS;
+            }
             else if(strcmp(tok, CMD_MV_WHEELS) == 0)
             {
                 tok = STRTOK(NULL, " ");
@@ -1406,14 +1409,12 @@ void loop()
     {
         short sonar=analogRead(PIN_SONAR);
         if(sonar < 16)
-        {
             drive.left(100);
-            delay(100);
-        }
         else if(sonar < 20)
             drive.leftSmooth(100);
         else
             drive.forward(100);
+        dorme_ms = eeprom.data.RF_delay_reads;
     }
     break;
 

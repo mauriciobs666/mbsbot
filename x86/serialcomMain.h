@@ -99,6 +99,7 @@ private:
     void OnLogText(wxCommandEvent& event);
     void OnButton12Click(wxCommandEvent& event);
     void OnGridJoyCellLeftClick(wxGridEvent& event);
+    void OnNotebook1PageChanged(wxNotebookEvent& event);
     //*)
 
     //(*Identifiers(serialcomFrame)

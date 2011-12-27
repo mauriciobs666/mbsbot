@@ -34,10 +34,10 @@
 #define PIN_UNUSED_ARRAY { 7,11 }
 
 // SHARP RANGE FINDER (analog pin!)
-#define PIN_SHARP_RF		0
+#define PIN_SHARP_RF		3
 
 // SONAR (analog pin!)
-#define PIN_SONAR           0
+#define PIN_SONAR           2
 
 #define PIN_SERVO_PAN		9
 #define PIN_SERVO_TILT		10
