@@ -988,8 +988,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
         if(CheckBoxDrvByJoy->IsChecked())
         {
-            int x = ((joyPos.x - joyCenter.x) * 100) / ((joyMax.x - joyMin.x) / 2);
-            int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y eh invertido
+            int x = ((joyPos.x - joyCenter.x) * 110) / ((joyMax.x - joyMin.x) / 2);
+            int y = ((joyCenter.y - joyPos.y) * 110) / ((joyMax.y - joyMin.y) / 2); // y eh invertido
 
             MbsBot::getInstance()->vectorialDrive(x,y);
         }
@@ -999,6 +999,9 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(CheckBoxJoyServos->IsChecked())
         {
             // TODO (mbs#1#): Controlar os Servos via joystick
+
+            int x = ((joyPos.x - joyCenter.x) * 100) / ((joyMax.x - joyMin.x) / 2);
+            int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y eh invertido
         }
 
         if(joystick->HasZ())

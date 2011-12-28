@@ -265,17 +265,20 @@ public:
     virtual void move(char potencia100)
     {
         /* onde:
-            atual = pwm a ser escrito pro motor
-            potencia100 = +/- potencia em %
+            potencia100 = +/- 0-100 %
             centro = pwm a partir do qual o motor comeca a se mover
         */
 
-        short c = potencia100 > 0 ? centro : -centro; // com sinal
+        if ( potencia100 )
+        {
+            short c = potencia100 > 0 ? centro : -centro; // centro com sinal
 
-        meta = c + ( potencia100 * 5 ) / 2; // converte % de potencia em pwm 8 bits
+            meta = c + ( potencia100 * 5 ) / 2; // converte % de potencia em pwm 8 bits
 
-        if( ! atual ) // estava parado
-            atual = c;
+            meta = constrain(meta, -255, 255); // protecao de range
+        }
+        else
+            meta = 0;
 
         refresh();
     }
@@ -284,22 +287,25 @@ public:
     {
         // TODO (mbs#1#): Delimitar tempo entre os passos de aceleracao
 
-        // protecao de range
-        if(meta > 255)
-            meta = 255;
-        else if (meta < -255)
-            meta = -255;
+        if ( abs(atual) < centro )
+            atual = 0;
 
         if ( meta > atual)
         {
-            atual += aceleracao;
+            if( ! atual ) // estava parado
+                atual = centro;
+            else
+                atual += aceleracao;
 
-            if( meta < atual) // inverteu sinal = passou do ponto
+            if( meta < atual) // passou do ponto
                 atual = meta;
         }
         else if ( meta < atual)
         {
-            atual -= aceleracao;
+            if( ! atual ) // estava parado
+                atual = -centro;
+            else
+                atual -= aceleracao;
 
             if ( meta > atual)
                 atual = meta;
@@ -411,48 +417,43 @@ drive;
 void Drive::vectorial(int x, int y)
 {
     // protecao range
-    if(y > 100)
-        y = 100;
-    else if(y < -100)
-        y = -100;
+    x = constrain(x, -100, 100);
+    y = constrain(y, -100, 100);
 
-    if(x > 100)
-        x = 100;
-    else if(x < -100)
-        x = -100;
+    /* as equacoes de interpolacao dos movimentos de giro a esquerda
+       e a direita estao divididas em 4 quadrantes:
 
-    // pra interpolar os movimentos de giro dividi td em 4 quadrantes
-    if(y > 0)
+              y
+              |
+     Q2 (-,+) | Q1 (+,+)
+    __________|__________ x
+              |
+     Q3 (-,-) | Q4 (+,-)
+              |
+    */
+
+    if(y >= 0)
     {
-        if(x > 0)   // Q1
+        if(x >= 0)   // Q1 (+,+)
         {
             motorEsq->move( max(x,y) );
-            if(y > x)
-                motorDir->move( y-x );
-            else
-                motorDir->move( x-y );
+            motorDir->move( y - x );
         }
-        else        // Q2
+        else        // Q2 (-,+)
         {
             motorDir->move( max(-x,y) );
-            if(y > -x)
-                motorEsq->move( x+y );
-            else
-                motorEsq->move( x-y );
+            motorEsq->move( x + y );
         }
     }
-    else // (y <= 0)
+    else // (y < 0)
     {
-        if(x < 0)   // Q3
+        if(x < 0)   // Q3(-,-)
         {
 
             motorEsq->move( min(x,y) );
-            if(x < y)
-                motorDir->move( -x-y );
-            else
-                motorDir->move( y-x );
+            motorDir->move( y-x );
         }
-        else        // Q4
+        else        // Q4 (+,-)
         {
             motorDir->move( min(-x,y) );
             motorEsq->move( x+y );

@@ -150,7 +150,7 @@ int MbsBot::wheels(int lw, int rw, int duration)
 	char cmd[MAX_CMD];
 	int rc=0;
 
-	// optimization: remember last values and only send command if changed
+	// otimizacao pra naum mandar repetido
 	static int lastL = 0;
 	static int lastR = 0;
 
@@ -170,39 +170,15 @@ int MbsBot::wheels(int lw, int rw, int duration)
 }
 
 int MbsBot::vectorialDrive(int x, int y, int duration)
-// x and y are % of power
 {
+    // x e y sao % potencia, duracao em ms
+
 	char cmd[MAX_CMD];
 	int rc=0;
 
-	// optimization: remember last values and only send command if changed
+	// otimizacao pra naum mandar repetido
 	static int lastX = 0;
 	static int lastY = 0;
-
-    if(accelStep)
-    {
-        // TODO: if lastx + accel > x
-        if((x>0) && (x>lastX))
-        {
-            x = lastX + accelStep;
-            if(x>100) x = 100;
-        }
-        else if((x<0) && (x<lastX))
-        {
-            x = lastX - accelStep;
-            if(x<-100) x = -100;
-        }
-        if((y>0) && (y>lastY))
-        {
-            y = lastY + accelStep;
-            if(y>100) y = 100;
-        }
-        else if((y<0) && (y<lastY))
-        {
-            y = lastY - accelStep;
-            if(y<-100) y = -100;
-        }
-    }
 
 	if ((x != lastX) || (y != lastY) || (duration>0))
 	{
