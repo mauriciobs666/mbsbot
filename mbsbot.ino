@@ -145,16 +145,24 @@ public:
 
 class Sensor
 {
-    unsigned short read();
+    unsigned short valor, minimo, maximo;
+    bool invertido;
+    int pino;
+    int a, b; // = ax + b
 
-    unsigned short min, max;
-    int pin;
-    Sensor(int spin) : pin(spin) {}
-};
-
-class Distancia : Sensor
-{
-
+    Sensor(int pin, bool inverso = false) : pino(pin), invertido(inverso)
+        { /* No comment */ }
+    unsigned short refresh()
+        {
+            valor = analogRead(pino);
+            if (valor < minimo) minimo = valor;
+            if (valor > maximo) maximo = valor;
+            return valor;
+        }
+    bool ehMinimo()
+        { return ( valor == minimo ); }
+    bool ehMaximo()
+        { return ( valor == maximo ); }
 };
 
 // ******************************************************************************
