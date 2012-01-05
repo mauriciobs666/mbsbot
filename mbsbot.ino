@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2012 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -104,13 +104,13 @@ public:
     void load()
     {
         char * dest = (char*) &data;
-        for(int addr = 0; addr < sizeof(data); addr++, dest++ )
+        for(unsigned int addr = 0; addr < sizeof(data); addr++, dest++ )
             *dest = eeprom_read_byte((unsigned char *) addr);
     }
     void save()
     {
         char * dest = (char*) &data;
-        for(int addr = 0; addr < sizeof(data); addr++, dest++ )
+        for(unsigned int addr = 0; addr < sizeof(data); addr++, dest++ )
             eeprom_write_byte((unsigned char *) addr, *dest);
     }
     void loadDefault()
@@ -145,12 +145,14 @@ public:
 
 class Sensor
 {
-    unsigned short valor, minimo, maximo;
-    bool invertido;
     int pino;
-    int a, b; // = ax + b
+    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING } tipo;
+    bool invertido;
+    unsigned short valor, minimo, maximo;
+    int a, b, offsetZero; // = a*x + b - off
 
-    Sensor(int pin, bool inverso = false) : pino(pin), invertido(inverso)
+    Sensor(int pin, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
+        : pino(pin), tipo(t), invertido(inverso)
         { /* No comment */ }
     unsigned short refresh()
         {
@@ -159,10 +161,16 @@ class Sensor
             if (valor > maximo) maximo = valor;
             return valor;
         }
-    bool ehMinimo()
-        { return ( valor == minimo ); }
-    bool ehMaximo()
-        { return ( valor == maximo ); }
+    bool ehMinimo(unsigned short margem = 0)
+        { return ( invertido ? (maximo - valor) <= margem : (valor - minimo) <= margem ); }
+    bool ehMaximo(unsigned short margem = 0)
+        { return ( invertido ? (valor - minimo) <= margem : (maximo - valor) <= margem ); }
+    void setOffsetZero(int offset)
+        { offsetZero = ( offset == -1 ) ? minimo : offset; }
+    void setReta(int aa=1, int bb=0)
+        { a = aa; b = bb; }
+    int getReta()
+        { return ( a * valor + b - offsetZero ); }
 };
 
 // ******************************************************************************
@@ -410,7 +418,7 @@ public:
     {
         forward((goForward ? 100 : -100), eeprom.data.mvDelay.inch);
     }
-    void vectorial(int x, int y);
+    void vetorial(int x, int y);
     void turnLeft()
     {
         left(100, eeprom.data.mvDelay.right);
@@ -422,7 +430,7 @@ public:
 }
 drive;
 
-void Drive::vectorial(int x, int y)
+void Drive::vetorial(int x, int y)
 {
     // protecao range
     x = constrain(x, -100, 100);
@@ -721,10 +729,10 @@ public:
     bool collision();
     bool sentry();
 private:
+    unsigned long nextRead;
     short currentStep;
     char stepDir;
     short dataArray[RF_NUMBER_STEPS];
-    unsigned long nextRead;
     short currValue;
     short lastValue;
 } rangeFinder;
@@ -918,7 +926,7 @@ public:
     void loop();
 private:
     char command[MAX_CMD];
-    char pos;
+    short pos;
 } server;
 
 bool Server::receive()
@@ -954,16 +962,16 @@ void Server::loop()
         char *pqp;	// algumas avr-libc linux naum tem strtok():
         #define STRTOK(a, b) strtok_r(a, b, &pqp)
 
-        if (tok = STRTOK(command, " "))						// primeiro token eh o comando/acao
+        if((tok = STRTOK(command, " ")))					// primeiro token eh o comando/acao
         {
             if(strcmp(tok, CMD_WRITE) == 0)					// atribui um valor a uma variavel
             {
-                if (tok = STRTOK(NULL, " ="))				// segundo token eh o nome da variavel
+                if((tok = STRTOK(NULL, " =")))				// segundo token eh o nome da variavel
                 {
                     char dest[10];
                     strcpy(dest,tok);
 
-                    if (tok = STRTOK(NULL, " "))			// terceiro token eh o valor a ser atribuido
+                    if((tok = STRTOK(NULL, " ")))			// terceiro token eh o valor a ser atribuido
                     {
                         int valor = atoi(tok);
 
@@ -994,9 +1002,9 @@ void Server::loop()
                         else if(strcmp(dest, VAR_PID) == 0)
                         {
                             eeprom.data.pid.Kp = valor;		// P
-                            if (tok = STRTOK(NULL, " "))	// I
+                            if((tok = STRTOK(NULL, " ")))	// I
                                 eeprom.data.pid.Ki = atoi(tok);
-                            if (tok = STRTOK(NULL, " "))	// D
+                            if((tok = STRTOK(NULL, " ")))	// D
                                 eeprom.data.pid.Kd = atoi(tok);
                         }
                         else if(strcmp(dest, VAR_FREIO) == 0)
@@ -1010,8 +1018,7 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_READ) == 0)	// le uma variavel
             {
-                tok = STRTOK(NULL, " ");
-                if (tok)			// second token is the VAR to be read
+                if((tok = STRTOK(NULL, " ")))	// second token is the VAR to be read
                 {
                     if(strcmp(tok, VAR_RODA_ESQ) == 0)
                     {
@@ -1143,7 +1150,7 @@ void Server::loop()
                         int y = atoi(tok);
 
                         if( x || y )
-                            drive.vectorial(x, y);
+                            drive.vetorial(x, y);
                         else
                             drive.stop();
                     }
@@ -1255,7 +1262,7 @@ void loop()
 {
     server.loop();
 
-    static long nextSendStatus = 0;
+    static unsigned long nextSendStatus = 0;
     if(millis() >= nextSendStatus && eeprom.data.programa != PRG_SCOPE)
     {
         nextSendStatus += 10000;
@@ -1339,14 +1346,14 @@ void loop()
 
         if(nunchuck_zbutton())
         {
-            //drive.vectorial(map(nunchuck_accelx(),200,700,-100,100),
+            //drive.vetorial(map(nunchuck_accelx(),200,700,-100,100),
             //                map(nunchuck_accely(),200,700,-100,100));
             int x = nunchuck_joyx() - eeprom.data.joyCenter.x;
             int y = nunchuck_joyy() - eeprom.data.joyCenter.y;
 
             // TODO: mapear 0-100
 
-            drive.vectorial(x, y);
+            drive.vetorial(x, y);
         }
         else
         {
