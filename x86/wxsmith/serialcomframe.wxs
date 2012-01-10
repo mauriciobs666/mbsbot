@@ -783,16 +783,15 @@
 										<object class="sizeritem">
 											<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticText12" member="yes">
 												<label>f(X) = </label>
-												<size>41,13</size>
+												<size>-1,-1</size>
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
-											<option>1</option>
 										</object>
 										<object class="sizeritem">
 											<object class="wxTextCtrl" name="ID_TEXTCTRL15" variable="TextCtrl3" member="yes">
-												<value>Text</value>
-												<size>102,21</size>
+												<value>x</value>
+												<size>-1,-1</size>
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
@@ -837,9 +836,9 @@
 			</object>
 		</object>
 		<object class="wxStatusBar" name="ID_STATUSBAR1" variable="StatusBar1" member="yes">
-			<fields>2</fields>
-			<widths>-10,-10</widths>
-			<styles>wxSB_NORMAL,wxSB_NORMAL</styles>
+			<fields>3</fields>
+			<widths>-10,-10,-10</widths>
+			<styles>wxSB_NORMAL,wxSB_NORMAL,wxSB_NORMAL</styles>
 		</object>
 		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes">
 			<interval>100</interval>

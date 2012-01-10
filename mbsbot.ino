@@ -138,39 +138,67 @@ public:
         data.pid.Ki = 0;
         data.pid.Kd = 0;
         data.RF_delay_reads = 100;
-        data.joyCenter.x = 124;
-        data.joyCenter.y = 128;
+        data.joyCenter.x = 174;
+        data.joyCenter.y = 174;
     }
 } eeprom;
 
 class Sensor
 {
-    int pino;
-    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING } tipo;
+    unsigned char pino;
+    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL } tipo;
     bool invertido;
     unsigned short valor, minimo, maximo;
-    int a, b, offsetZero; // = a*x + b - off
+    int a, b; // = a*x + b
 
-    Sensor(int pin, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
+public:
+    Sensor(unsigned char  pin, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
         : pino(pin), tipo(t), invertido(inverso)
-        { /* No comment */ }
-    unsigned short refresh()
         {
-            valor = analogRead(pino);
+            minimo = 65535; maximo = 0;
+            a = 1; b = 0;
+        }
+    unsigned short getValor()
+        { return valor; }
+    unsigned short setValor(unsigned short v)
+        {
+            valor = v;
             if (valor < minimo) minimo = valor;
             if (valor > maximo) maximo = valor;
+            return valor;
+        }
+    unsigned short refresh()
+        {
+            switch(tipo)
+            {
+                case SENSOR_ANALOGICO:
+                    setValor(analogRead(pino));
+                break;
+                case SENSOR_PING:
+                    // manda pulso de 2ms pro ping))) pra acionar leitura
+                    pinMode(pino, OUTPUT);
+                    digitalWrite(pino, LOW);
+                    delayMicroseconds(2);
+                    digitalWrite(pino, HIGH);
+                    delayMicroseconds(5);
+                    digitalWrite(pino, LOW);
+
+                    // duracao do pulso = distancia
+                    pinMode(pino, INPUT);
+                    setValor(pulseIn(pino, HIGH));
+                default:
+                break;
+            }
             return valor;
         }
     bool ehMinimo(unsigned short margem = 0)
         { return ( invertido ? (maximo - valor) <= margem : (valor - minimo) <= margem ); }
     bool ehMaximo(unsigned short margem = 0)
         { return ( invertido ? (valor - minimo) <= margem : (maximo - valor) <= margem ); }
-    void setOffsetZero(int offset)
-        { offsetZero = ( offset == -1 ) ? minimo : offset; }
-    void setReta(int aa=1, int bb=0)
+    void setReta(int aa, int bb)
         { a = aa; b = bb; }
     int getReta()
-        { return ( a * valor + b - offsetZero ); }
+        { return ( a * valor + b ); }
 };
 
 // ******************************************************************************
@@ -272,6 +300,7 @@ public:
         aceleracao = acel;
         stop();
     }
+
     virtual void stop()
     {
         meta = atual = 0;
@@ -284,7 +313,6 @@ public:
             potencia100 = +/- 0-100 %
             centro = pwm a partir do qual o motor comeca a se mover
         */
-
         if ( potencia100 )
         {
             short c = potencia100 > 0 ? centro : -centro; // centro com sinal
@@ -1237,8 +1265,8 @@ void setup()
     if (eeprom.data.programa == PRG_LINEFOLLOWER)
         lineFollower.autoCalibrate();
 
-    pinMode(13, OUTPUT);    // LED onboard
-    digitalWrite(13, LOW);
+    pinMode(PIN_LED, OUTPUT);
+    digitalWrite(PIN_LED, LOW);
 
 #ifdef PIN_LASER
     pinMode(PIN_LASER, OUTPUT);
@@ -1342,16 +1370,24 @@ void loop()
         if(nunchuck_get_data() == 0)
             break;
 
-        //nunchuck_print_data();
+        // nunchuck_print_data();
 
-        if(nunchuck_zbutton())
+        if( ! nunchuck_zbutton())
         {
             //drive.vetorial(map(nunchuck_accelx(),200,700,-100,100),
             //                map(nunchuck_accely(),200,700,-100,100));
             int x = nunchuck_joyx() - eeprom.data.joyCenter.x;
             int y = nunchuck_joyy() - eeprom.data.joyCenter.y;
 
-            // TODO: mapear 0-100
+            // TODO: mapear 0-100 direito
+            x *= 10; // joga x lah pra frente
+            y *= 10;
+
+            //Serial.print("vetorial(");
+            //Serial.print(x);
+            //Serial.print(",");
+            //Serial.print(y);
+            //Serial.println(")");
 
             drive.vetorial(x, y);
         }
@@ -1403,11 +1439,14 @@ void loop()
         }
 
         if(nunchuck_cbutton())
+        {
+            eeprom.data.handBrake = 0;
             digitalWrite(PIN_LASER,HIGH);
+        }
         else
             digitalWrite(PIN_LASER,LOW);
 
-        delay(10);
+        dorme_ms = 100;
     break;
     #endif
 

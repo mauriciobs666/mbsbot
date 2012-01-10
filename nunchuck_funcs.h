@@ -12,7 +12,7 @@
  * 2010 - MBS -  fixed with patch found at:
  *               http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1264805255/10
  *
- * 2011 - MBS -  portado pra Arduino 1.0 
+ * 2011 - MBS -  portado pra Arduino 1.0
  */
 
 #include <Arduino.h>
@@ -127,13 +127,12 @@ static char nunchuk_decode_byte (char x)
 static int nunchuck_get_data()
 {
     int cnt=0;
+
     Wire.requestFrom (0x52, 6);// request data from nunchuck
-    while (Wire.available ())
-    {
-        // receive byte as an integer
+
+    for(cnt = 0; cnt < 6 && Wire.available(); cnt++ )
         nunchuck_buf[cnt] = nunchuk_decode_byte(Wire.read());
-        cnt++;
-    }
+
     nunchuck_send_request();  // send request for next data payload
     // If we recieved the 6 bytes, then go print them
     if (cnt >= 5)
@@ -144,15 +143,15 @@ static int nunchuck_get_data()
 }
 
 // returns zbutton state: 1=pressed, 0=notpressed
-static int nunchuck_zbutton()
+static bool nunchuck_zbutton()
 {
-    return ((nunchuck_buf[5] >> 0) & 1) ? 0 : 1;
+    return ! ( nunchuck_buf[5] & 1 );
 }
 
 // returns zbutton state: 1=pressed, 0=notpressed
-static int nunchuck_cbutton()
+static bool nunchuck_cbutton()
 {
-    return ((nunchuck_buf[5] >> 1) & 1) ? 0 : 1;
+    return ! ((nunchuck_buf[5] >> 1) & 1);
 }
 
 // returns value of x-axis joystick
@@ -220,7 +219,7 @@ static void nunchuck_print_data()
     Serial.print(nunchuck_joyx(),DEC);
     Serial.print(",");
     Serial.print(nunchuck_joyy(), DEC);
-    Serial.print("  \t");
+    Serial.print("\t\t");
 
     Serial.print("acc:");
     Serial.print(nunchuck_accelx(), DEC);
@@ -230,8 +229,11 @@ static void nunchuck_print_data()
     Serial.print(nunchuck_accelz(), DEC);
     Serial.print("\t");
 
-    Serial.print("but:");
-    Serial.print(nunchuck_zbutton(), DEC);
+    //Serial.print("but:");
+    Serial.print(nunchuck_buf[5], DEC);
+
+    Serial.print(" but:");
+    Serial.print(nunchuck_zbutton() ? 1 : 0, DEC);
     Serial.print(",");
-    Serial.println(nunchuck_cbutton(), DEC);
+    Serial.println(nunchuck_cbutton() ? 1 : 0, DEC);
 }

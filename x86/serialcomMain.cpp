@@ -393,9 +393,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     StaticBoxSizer5->Add(Button4, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button5 = new wxButton(Panel4, ID_BUTTON5, _("Clear"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON5"));
     StaticBoxSizer5->Add(Button5, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText12 = new wxStaticText(Panel4, ID_STATICTEXT13, _("f(X) = "), wxDefaultPosition, wxSize(41,13), 0, _T("ID_STATICTEXT13"));
-    StaticBoxSizer5->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl3 = new wxTextCtrl(Panel4, ID_TEXTCTRL15, _("Text"), wxDefaultPosition, wxSize(102,21), 0, wxDefaultValidator, _T("ID_TEXTCTRL15"));
+    StaticText12 = new wxStaticText(Panel4, ID_STATICTEXT13, _("f(X) = "), wxDefaultPosition, wxSize(-1,-1), 0, _T("ID_STATICTEXT13"));
+    StaticBoxSizer5->Add(StaticText12, 0, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrl3 = new wxTextCtrl(Panel4, ID_TEXTCTRL15, _("x"), wxDefaultPosition, wxSize(-1,-1), 0, wxDefaultValidator, _T("ID_TEXTCTRL15"));
     StaticBoxSizer5->Add(TextCtrl3, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer2->Add(StaticBoxSizer5, 1, wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL, 5);
     Panel4->SetSizer(FlexGridSizer2);
@@ -419,10 +419,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     BoxSizer1->Add(SendCommandText, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SetSizer(BoxSizer1);
     StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, 0, _T("ID_STATUSBAR1"));
-    int __wxStatusBarWidths_1[2] = { -10, -10 };
-    int __wxStatusBarStyles_1[2] = { wxSB_NORMAL, wxSB_NORMAL };
-    StatusBar1->SetFieldsCount(2,__wxStatusBarWidths_1);
-    StatusBar1->SetStatusStyles(2,__wxStatusBarStyles_1);
+    int __wxStatusBarWidths_1[3] = { -10, -10, -10 };
+    int __wxStatusBarStyles_1[3] = { wxSB_NORMAL, wxSB_NORMAL, wxSB_NORMAL };
+    StatusBar1->SetFieldsCount(3,__wxStatusBarWidths_1);
+    StatusBar1->SetStatusStyles(3,__wxStatusBarStyles_1);
     SetStatusBar(StatusBar1);
     Timer1.SetOwner(this, ID_TIMER1);
     Timer1.Start(100, false);
