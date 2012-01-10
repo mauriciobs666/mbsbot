@@ -1336,32 +1336,7 @@ void loop()
     case PRG_SENTRY:
     {
         if(rangeFinder.sentry())
-        {
-            digitalWrite(13, HIGH);
-            Serial.println("ALARM");
-
-            #define SIRENE_TOM_MIN  1000
-            #define SIRENE_TOM_MAX  3000
-            #define SIRENE_PASSO    2
-            #define SIRENE_COMPASSO 150
-
-            for(int x=0; x<1; x++)
-            {
-                for(int tom=SIRENE_TOM_MIN;tom<SIRENE_TOM_MAX;tom+=SIRENE_PASSO)
-                {
-                    BEEP(tom,SIRENE_COMPASSO);
-                }
-
-                for(int tom=SIRENE_TOM_MAX;tom>SIRENE_TOM_MIN;tom-=SIRENE_PASSO)
-                {
-                    BEEP(tom,SIRENE_COMPASSO/2);
-                }
-            }
-
-            //delay(1000);
-            digitalWrite(13, LOW);
-            //delay(1000);
-        }
+            eeprom.data.programa = PRG_ALARME;
     }
     break;
 
@@ -1395,44 +1370,33 @@ void loop()
         {
             drive.stop();
 
+            const int VELOCIDADE_SERVO = 2;
             #ifdef PIN_SERVO_PAN
-            if(nunchuck_joyx()<100)
+            if( nunchuck_joyx() < eeprom.data.joyCenter.x )
             {
-                int angle = pan.read() + 1;
-                if(nunchuck_joyx() == 0)
-                    angle += 4;
-                if(angle > 170)
-                    angle = 170;
+                int angle = pan.read() + VELOCIDADE_SERVO;
+                if(angle > 170) angle = 170;
                 pan.write(angle);
             }
-            else if(nunchuck_joyx()>150)
+            else if( nunchuck_joyx() > eeprom.data.joyCenter.x )
             {
-                int angle = pan.read() - 1;
-                if(nunchuck_joyx() == 255)
-                    angle -= 4;
-                if(angle < 10)
-                    angle = 10;
+                int angle = pan.read() - VELOCIDADE_SERVO;
+                if(angle < 10) angle = 10;
                 pan.write(angle);
             }
             #endif
 
             #ifdef PIN_SERVO_TILT
-            if(nunchuck_joyy()>150)
+            if( nunchuck_joyy() > eeprom.data.joyCenter.y )
             {
-                int angle = tilt.read() + 1;
-                if(nunchuck_joyy() == 255)
-                    angle += 4;
-                if(angle > 170)
-                    angle = 170;
+                int angle = tilt.read() + VELOCIDADE_SERVO;
+                if(angle > 170) angle = 170;
                 tilt.write(angle);
             }
-            else if(nunchuck_joyy()<100)
+            else if( nunchuck_joyy() < eeprom.data.joyCenter.y )
             {
-                int angle = tilt.read() - 1;
-                if(nunchuck_joyy() == 0)
-                    angle -= 4;
-                if(angle < 10)
-                    angle = 10;
+                int angle = tilt.read() - VELOCIDADE_SERVO;
+                if(angle < 10) angle = 10;
                 tilt.write(angle);
             }
             #endif
@@ -1471,6 +1435,34 @@ void loop()
             drive.forward(100);
         dorme_ms = eeprom.data.RF_delay_reads;
     }
+    break;
+
+    case PRG_ALARME:
+        digitalWrite(13, HIGH);
+        Serial.println("ALARM");
+
+        #define SIRENE_TOM_MIN  1000
+        #define SIRENE_TOM_MAX  3000
+        #define SIRENE_PASSO    2
+        #define SIRENE_COMPASSO 150
+
+        for(int x=0; x<1; x++)
+        {
+            for(int tom=SIRENE_TOM_MIN;tom<SIRENE_TOM_MAX;tom+=SIRENE_PASSO)
+            {
+                BEEP(tom,SIRENE_COMPASSO);
+            }
+
+            for(int tom=SIRENE_TOM_MAX;tom>SIRENE_TOM_MIN;tom-=SIRENE_PASSO)
+            {
+                BEEP(tom,SIRENE_COMPASSO/2);
+            }
+        }
+
+        //delay(1000);
+        digitalWrite(13, LOW);
+        //delay(1000);
+        eeprom.data.programa = PRG_SHOW_SENSORS;
     break;
 
     default:

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <wxsmith>
 	<object class="wxFrame" name="serialcomFrame">
-		<title>MBSBOT - (c) 2010-2011 GPL - Mauricio Bieze Stefani</title>
+		<title>MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani</title>
 		<size>640,480</size>
 		<id_arg>0</id_arg>
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
@@ -812,8 +812,16 @@
 								<cols>1</cols>
 								<rows>3</rows>
 								<object class="sizeritem">
+									<object class="wxStaticBitmap" name="ID_STATICBITMAP1" variable="StaticBitmap1" member="yes">
+										<bitmap>D:\prg\mbsbot\x86\m2d2.jpg</bitmap>
+									</object>
+									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
+								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
-										<label>&#x0A;Copyright (C) 2010-2011 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</label>
+										<label>&#x0A;Copyright (C) 2010-2012 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</label>
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 									<border>5</border>
@@ -821,7 +829,7 @@
 								</object>
 							</object>
 						</object>
-						<label>Sobre</label>
+						<label>GPL</label>
 					</object>
 				</object>
 				<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>

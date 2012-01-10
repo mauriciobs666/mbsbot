@@ -29,6 +29,7 @@
 #include <wx/panel.h>
 #include <wx/grid.h>
 #include <wx/choice.h>
+#include <wx/statbmp.h>
 #include <wx/button.h>
 #include <wx/frame.h>
 #include <wx/timer.h>
@@ -164,6 +165,7 @@ private:
     static const long ID_STATICTEXT13;
     static const long ID_TEXTCTRL15;
     static const long ID_PANEL4;
+    static const long ID_STATICBITMAP1;
     static const long ID_STATICTEXT3;
     static const long ID_PANEL5;
     static const long ID_NOTEBOOK2;
@@ -194,6 +196,7 @@ private:
     wxButton* Button1;
     wxCheckBox* CheckBoxAutoRefresh;
     wxStaticText* StaticText6;
+    wxStaticBitmap* StaticBitmap1;
     wxChoice* ChoicePrg;
     wxTextCtrl* TextCtrlPan;
     wxButton* Button14;

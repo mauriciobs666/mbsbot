@@ -19,7 +19,9 @@
 #include <wx/msgdlg.h>
 
 //(*InternalHeaders(serialcomFrame)
+#include <wx/bitmap.h>
 #include <wx/intl.h>
+#include <wx/image.h>
 #include <wx/string.h>
 //*)
 
@@ -85,6 +87,7 @@ const long serialcomFrame::ID_BUTTON5 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT13 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL15 = wxNewId();
 const long serialcomFrame::ID_PANEL4 = wxNewId();
+const long serialcomFrame::ID_STATICBITMAP1 = wxNewId();
 const long serialcomFrame::ID_STATICTEXT3 = wxNewId();
 const long serialcomFrame::ID_PANEL5 = wxNewId();
 const long serialcomFrame::ID_NOTEBOOK2 = wxNewId();
@@ -130,7 +133,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer11;
     wxStaticBoxSizer* StaticBoxSizer5;
 
-    Create(parent, wxID_ANY, _("MBSBOT - (c) 2010-2011 GPL - Mauricio Bieze Stefani"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+    Create(parent, wxID_ANY, _("MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     SetClientSize(wxSize(640,480));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK2"));
@@ -403,7 +406,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer2->SetSizeHints(Panel4);
     Panel5 = new wxPanel(Notebook1, ID_PANEL5, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL5"));
     FlexGridSizer4 = new wxFlexGridSizer(3, 1, 0, 0);
-    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("\nCopyright (C) 2010-2011 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    StaticBitmap1 = new wxStaticBitmap(Panel5, ID_STATICBITMAP1, wxBitmap(wxImage(_T("m2d2.jpg"))), wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER, _T("ID_STATICBITMAP1"));
+    FlexGridSizer4->Add(StaticBitmap1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("\nCopyright (C) 2010-2012 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
     FlexGridSizer4->Add(StaticText3, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
     Panel5->SetSizer(FlexGridSizer4);
     FlexGridSizer4->Fit(Panel5);
