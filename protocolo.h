@@ -127,11 +127,12 @@ enum ProgramID
     PRG_SHARP = 4,          // Sharp IR range finder
     PRG_SHARP_CHASE = 5,    //
     PRG_COLLISION = 6,      //
-    PRG_SENTRY = 7,         //
+    PRG_SENTINELA = 7,      //
     PRG_WIICHUCK = 8,       //
     PRG_SCOPE = 9,          //
     PRG_KNOB = 10,          // Movimenta o servo X de acordo com A0
-    PRG_TEST = 11           // Dummy
+    PRG_TEST = 11,           // Dummy
+    PRG_ALARME = 12
 };
 
 enum Errors

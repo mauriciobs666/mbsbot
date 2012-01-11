@@ -199,7 +199,7 @@ public:
         { a = aa; b = bb; }
     int getReta()
         { return ( a * valor + b ); }
-};
+} sensorFrente(PIN_SONAR), sensorEsquerda(1), sensorDireita(3);
 
 // ******************************************************************************
 //		Controlador de motoree
@@ -1280,6 +1280,9 @@ void setup()
 #ifdef WIICHUCK
     nunchuck_init();
 #endif
+
+    //sensorFrente
+    //, sensorEsquerda, sensorDireita
 }
 
 // ******************************************************************************
@@ -1333,11 +1336,9 @@ void loop()
         rangeFinder.collision();
         break;
 
-    case PRG_SENTRY:
-    {
+    case PRG_SENTINELA:
         if(rangeFinder.sentry())
             eeprom.data.programa = PRG_ALARME;
-    }
     break;
 
     #ifdef WIICHUCK
@@ -1371,6 +1372,7 @@ void loop()
             drive.stop();
 
             const int VELOCIDADE_SERVO = 2;
+
             #ifdef PIN_SERVO_PAN
             if( nunchuck_joyx() < eeprom.data.joyCenter.x )
             {
@@ -1415,6 +1417,8 @@ void loop()
     #endif
 
     case PRG_SCOPE:
+        // pra conseguir performance melhor descartamos os 2 bits menos significativos
+        // e envia somente um byte
 		Serial.write((analogRead(0) >> 2) & 0xFF);
         dorme_ms = eeprom.data.RF_delay_reads;
     break;
@@ -1426,19 +1430,25 @@ void loop()
 
     case PRG_TEST:
     {
-        short sonar=analogRead(PIN_SONAR);
-        if(sonar < 16)
-            drive.left(100);
-        else if(sonar < 20)
-            drive.leftSmooth(100);
+        sensorFrente.refresh();
+
+        if( sensorFrente.ehMinimo(10) ) // 10 de margem
+        {
+            digitalWrite(PIN_LED, HIGH);
+            drive.stop();
+        }
         else
+        {
+            digitalWrite(PIN_LED, LOW);
             drive.forward(100);
+        }
+
         dorme_ms = eeprom.data.RF_delay_reads;
     }
     break;
 
     case PRG_ALARME:
-        digitalWrite(13, HIGH);
+        digitalWrite(PIN_LED, HIGH);
         Serial.println("ALARM");
 
         #define SIRENE_TOM_MIN  1000
@@ -1460,7 +1470,7 @@ void loop()
         }
 
         //delay(1000);
-        digitalWrite(13, LOW);
+        digitalWrite(PIN_LED, LOW);
         //delay(1000);
         eeprom.data.programa = PRG_SHOW_SENSORS;
     break;
