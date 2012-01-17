@@ -119,12 +119,15 @@ public:
         data.handBrake = 1;
 
         #ifdef WHEEL_DC
-        data.centroMotorEsq = 80;
-        data.centroMotorDir = 60;
+        data.centroMotorEsq = 70;
+        data.centroMotorDir = 70;
         #else
         data.centroMotorEsq = 1410;
         data.centroMotorDir = 1384;
         #endif
+
+        data.acelMotorEsq = 40;
+        data.acelMotorDir = 40;
 
         data.mvDelay.inch = 200;
         data.mvDelay.right = 400;
@@ -143,15 +146,18 @@ public:
     }
 } eeprom;
 
+// ******************************************************************************
+//		Sensor universal
+// ******************************************************************************
 class Sensor
 {
     unsigned char pino;
-    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL } tipo;
     bool invertido;
     unsigned short valor, minimo, maximo;
     int a, b; // = a*x + b
 
 public:
+    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL } tipo;
     Sensor(unsigned char  pin, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
         : pino(pin), tipo(t), invertido(inverso)
         {
@@ -199,11 +205,12 @@ public:
         { a = aa; b = bb; }
     int getReta()
         { return ( a * valor + b ); }
-} sensorFrente(PIN_SONAR), sensorEsquerda(1), sensorDireita(3);
+} sensorFrente(PIN_SONAR), sensorEsquerda(3, Sensor::SENSOR_ANALOGICO, true), sensorDireita(1, Sensor::SENSOR_ANALOGICO, true);
 
 // ******************************************************************************
 //		Controlador de motoree
 // ******************************************************************************
+// TODO (mbs#1#): Acabar com essa frescura de polimorfismo e deixar igual o Sensor: com tipo e switch.
 class Motor // interface
 {
 public:
@@ -283,9 +290,8 @@ motorEsq, motorDir;
 
 class MotorDC : public Motor
 {
-// TODO (mbs#1#): Configurar aceleracao na eeprom
 public:
-    void init(int PWMpin, int DIRpin, short offsetZero=0, short acel=2, bool reverseDirection=false)
+    void init(int PWMpin, int DIRpin, short offsetZero=0, short acel=255, bool reverseDirection=false)
     {
         pwm = PWMpin;
         pinMode(pwm, OUTPUT);
@@ -1241,7 +1247,7 @@ void setup()
     motorDir.init(PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, true);
 #else
     motorEsq.init(PIN_LEFTWHEEL_PWM,  PIN_LEFTWHEEL,  eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
-    motorDir.init(PIN_RIGHTWHEEL_PWM ,PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
+    motorDir.init(PIN_RIGHTWHEEL_PWM, PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
 #endif
     // I dont wanna live in this planet anymore
     drive.motorEsq = &motorEsq;
@@ -1356,7 +1362,7 @@ void loop()
             int y = nunchuck_joyy() - eeprom.data.joyCenter.y;
 
             // TODO: mapear 0-100 direito
-            x *= 10; // joga x lah pra frente
+            x *= 10; // joga x lah pra pqp
             y *= 10;
 
             //Serial.print("vetorial(");
@@ -1431,7 +1437,24 @@ void loop()
     case PRG_TEST:
     {
         sensorFrente.refresh();
+        sensorEsquerda.refresh();
+        sensorDireita.refresh();
 
+        if( ! (sensorEsquerda.ehMinimo(100) || sensorDireita.ehMinimo(100)) ) // ambos livres
+        {
+            digitalWrite(PIN_LED, LOW);
+            drive.forward();
+        }
+        else
+        {
+            digitalWrite(PIN_LED, HIGH);
+
+            if( sensorEsquerda.ehMinimo(100) )
+                drive.right();
+            else if( sensorDireita.ehMinimo(100) )
+                drive.left();
+        }
+/*
         if( sensorFrente.ehMinimo(10) ) // 10 de margem
         {
             digitalWrite(PIN_LED, HIGH);
@@ -1442,7 +1465,7 @@ void loop()
             digitalWrite(PIN_LED, LOW);
             drive.forward(100);
         }
-
+*/
         dorme_ms = eeprom.data.RF_delay_reads;
     }
     break;
