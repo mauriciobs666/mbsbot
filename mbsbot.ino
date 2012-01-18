@@ -205,7 +205,10 @@ public:
         { a = aa; b = bb; }
     int getReta()
         { return ( a * valor + b ); }
-} sensorFrente(PIN_SONAR), sensorEsquerda(3, Sensor::SENSOR_ANALOGICO, true), sensorDireita(1, Sensor::SENSOR_ANALOGICO, true);
+}
+sensorFrente(PIN_SONAR, Sensor::SENSOR_PING),
+sensorEsquerda(3, Sensor::SENSOR_ANALOGICO, true),
+sensorDireita(2, Sensor::SENSOR_ANALOGICO, true);
 
 // ******************************************************************************
 //		Controlador de motoree
@@ -1440,7 +1443,8 @@ void loop()
         sensorEsquerda.refresh();
         sensorDireita.refresh();
 
-        if( ! (sensorEsquerda.ehMinimo(100) || sensorDireita.ehMinimo(100)) ) // ambos livres
+        #define MARGEM_SHARP 200
+        if( ! (sensorEsquerda.ehMinimo(MARGEM_SHARP) || sensorDireita.ehMinimo(MARGEM_SHARP)) ) // ambos livres
         {
             digitalWrite(PIN_LED, LOW);
             drive.forward();
@@ -1449,9 +1453,9 @@ void loop()
         {
             digitalWrite(PIN_LED, HIGH);
 
-            if( sensorEsquerda.ehMinimo(100) )
+            if( sensorEsquerda.ehMinimo(MARGEM_SHARP) )
                 drive.right();
-            else if( sensorDireita.ehMinimo(100) )
+            else if( sensorDireita.ehMinimo(MARGEM_SHARP) )
                 drive.left();
         }
 /*
