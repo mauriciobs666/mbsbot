@@ -37,8 +37,8 @@
 #endif
 
 // speaker
-#ifdef PIN_BIP
-#define BEEP(freq, dur) tone(PIN_BIP,freq,dur)
+#ifdef PINO_BIP
+#define BEEP(freq, dur) tone(PINO_BIP,freq,dur)
 #else
 #define BEEP(freq, dur)
 #endif
@@ -46,6 +46,11 @@
 // range finder
 #define RF_NUMBER_STEPS 30
 #define SHARP_TRESHOLD 300
+
+
+// ******************************************************************************
+//		Plin-plin
+// ******************************************************************************
 
 Servo pan;
 Servo tilt;
@@ -151,18 +156,24 @@ public:
 // ******************************************************************************
 class Sensor
 {
+public:
     unsigned char pino;
     bool invertido;
     unsigned short valor, minimo, maximo;
     int a, b; // = a*x + b
-
-public:
     enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL } tipo;
-    Sensor(unsigned char  pin, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
-        : pino(pin), tipo(t), invertido(inverso)
+
+    Sensor(unsigned char  pin=0, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
+        { init(pin, t, inverso); }
+    void init(unsigned char  pin=0, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
         {
-            minimo = 65535; maximo = 0;
-            a = 1; b = 0;
+            pino = pin;
+            tipo = t;
+            invertido = inverso;
+            minimo = 65535;
+            valor = maximo = 0;
+            if(invertido) a = -1; else a = 1;
+            b = 0;
         }
     unsigned short getValor()
         { return valor; }
@@ -205,10 +216,9 @@ public:
         { a = aa; b = bb; }
     int getReta()
         { return ( a * valor + b ); }
-}
-sensorFrente(PIN_SONAR, Sensor::SENSOR_PING),
-sensorEsquerda(3, Sensor::SENSOR_ANALOGICO, true),
-sensorDireita(2, Sensor::SENSOR_ANALOGICO, true);
+};
+
+Sensor sensores[6], *sensorFrente, *sensorEsquerda, *sensorDireita;
 
 // ******************************************************************************
 //		Controlador de motoree
@@ -619,7 +629,7 @@ void LineFollower::readSensors(bool * isIRSensorOverLine)
     // read IR sensor data and map into IRSensor[]
     for(int x = 0; x < NUM_IR_TRACK; x++)
     {
-        IRSensor[x] = analogRead(PIN_FIRST_IR_SENSOR + x);
+        IRSensor[x] = analogRead(PINO_FIRST_IR_SENSOR + x);
         isIRSensorOverLine[x] = (IRSensor[x] > eeprom.data.LF_threshold[x]) ^ eeprom.data.LF_reverseColor;
     }
 }
@@ -645,7 +655,7 @@ void LineFollower::autoCalibrate()
 
     for(int y=0; y < NUM_IR_TRACK; y++)
     {
-        sensorTrack[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
+        sensorTrack[y] = analogRead(PINO_FIRST_IR_SENSOR + y);
 
         Serial.print(sensorTrack[y]);
         Serial.print(" ");
@@ -662,7 +672,7 @@ void LineFollower::autoCalibrate()
 
     for(int y=0; y < NUM_IR_TRACK; y++)
     {
-        sensorOut[y] = analogRead(PIN_FIRST_IR_SENSOR + y);
+        sensorOut[y] = analogRead(PINO_FIRST_IR_SENSOR + y);
 
         Serial.print(sensorOut[y]);
         Serial.print(" ");
@@ -736,7 +746,7 @@ public:
     short readSensor()
     {
         lastValue = currValue;
-        return currValue = analogRead(PIN_SHARP_RF);
+        return currValue = analogRead(PINO_SHARP_RF);
     }
     bool stepUp();
     bool stepDown();
@@ -920,8 +930,8 @@ void displayAnalogSensors()
     Serial.print("AS ");
     for (int x = 0; x < 6; x++)
     {
-        if(x < PIN_ANALOG_CNT)
-            Serial.print(analogRead(x));
+        if(x < PINO_ANALOG_CNT)
+            Serial.print(sensores[x].refresh());
         else
             Serial.print("?");
         Serial.print(" ");
@@ -1237,49 +1247,49 @@ void setup()
 
     eeprom.load();
 
-    // set all free pins as INPUT with PULL-UP to save power
-    int unused[] = PIN_UNUSED_ARRAY;
-    for(int p=0; p < PIN_UNUSED_CNT; p++)
+    // liga pull-up de pinos livres pra economizar energia
+    int unused[] = PINO_UNUSED_ARRAY;
+    for(int p=0; p < PINO_UNUSED_CNT; p++)
     {
         pinMode(unused[p], INPUT);
         digitalWrite(unused[p], HIGH);
     }
 
 #ifndef WHEEL_DC
-    motorEsq.init(PIN_LEFTWHEEL, eeprom.data.centroMotorEsq);
-    motorDir.init(PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, true);
+    motorEsq.init(PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq);
+    motorDir.init(PINO_MOTOR_DIR, eeprom.data.centroMotorDir, true);
 #else
-    motorEsq.init(PIN_LEFTWHEEL_PWM,  PIN_LEFTWHEEL,  eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
-    motorDir.init(PIN_RIGHTWHEEL_PWM, PIN_RIGHTWHEEL, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
+    motorEsq.init(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
+    motorDir.init(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
 #endif
     // I dont wanna live in this planet anymore
     drive.motorEsq = &motorEsq;
     drive.motorDir = &motorDir;
 
-#ifdef PIN_SERVO_PAN
-    pan.attach(PIN_SERVO_PAN);
+#ifdef PINO_SERVO_PAN
+    pan.attach(PINO_SERVO_PAN);
     pan.write(90);
 #endif
 
-#ifdef PIN_SERVO_TILT
-    tilt.attach(PIN_SERVO_TILT);
+#ifdef PINO_SERVO_TILT
+    tilt.attach(PINO_SERVO_TILT);
     tilt.write(90);
 #endif
 
-#ifdef PIN_SERVO_ROLL
-    roll.attach(PIN_SERVO_ROLL);
+#ifdef PINO_SERVO_ROLL
+    roll.attach(PINO_SERVO_ROLL);
     roll.write(90);
 #endif
 
     if (eeprom.data.programa == PRG_LINEFOLLOWER)
         lineFollower.autoCalibrate();
 
-    pinMode(PIN_LED, OUTPUT);
-    digitalWrite(PIN_LED, LOW);
+    pinMode(PINO_LED, OUTPUT);
+    digitalWrite(PINO_LED, LOW);
 
-#ifdef PIN_LASER
-    pinMode(PIN_LASER, OUTPUT);
-    digitalWrite(PIN_LASER, LOW);
+#ifdef PINO_LASER
+    pinMode(PINO_LASER, OUTPUT);
+    digitalWrite(PINO_LASER, LOW);
 #endif
 
 #ifdef WIICHUCK_POWER
@@ -1290,8 +1300,17 @@ void setup()
     nunchuck_init();
 #endif
 
-    //sensorFrente
-    //, sensorEsquerda, sensorDireita
+    sensores[0].init(); // potenciometro
+    sensores[1].init(15, Sensor::SENSOR_PING);
+    sensores[2].init(2, Sensor::SENSOR_ANALOGICO, true);
+    sensores[3].init(3, Sensor::SENSOR_ANALOGICO, true);
+
+    sensores[1].minimo = 60;
+    sensores[2].minimo = sensores[3].minimo = 630;
+
+    sensorFrente = &sensores[1];
+    sensorDireita = &sensores[2];
+    sensorEsquerda = &sensores[3];
 }
 
 // ******************************************************************************
@@ -1300,23 +1319,17 @@ void setup()
 
 void loop()
 {
+    bool mandarStatus = true;
+    unsigned short dorme_ms = 10;
+
     server.loop();
 
-    static unsigned long nextSendStatus = 0;
-    if(millis() >= nextSendStatus && eeprom.data.programa != PRG_SCOPE)
-    {
-        nextSendStatus += 10000;
-        //displayAnalogSensors();
-        sendStatus();
-    }
-
-    int dorme_ms = 10;
     switch(eeprom.data.programa)
     {
     case PRG_SHOW_SENSORS:
         displayAnalogSensors();
         sendStatus();
-        dorme_ms = 100;
+        dorme_ms = 50;
         //#ifdef WIICHUCK
         //nunchuck_print_data();
         //#endif
@@ -1382,7 +1395,7 @@ void loop()
 
             const int VELOCIDADE_SERVO = 2;
 
-            #ifdef PIN_SERVO_PAN
+            #ifdef PINO_SERVO_PAN
             if( nunchuck_joyx() < eeprom.data.joyCenter.x )
             {
                 int angle = pan.read() + VELOCIDADE_SERVO;
@@ -1397,7 +1410,7 @@ void loop()
             }
             #endif
 
-            #ifdef PIN_SERVO_TILT
+            #ifdef PINO_SERVO_TILT
             if( nunchuck_joyy() > eeprom.data.joyCenter.y )
             {
                 int angle = tilt.read() + VELOCIDADE_SERVO;
@@ -1416,10 +1429,10 @@ void loop()
         if(nunchuck_cbutton())
         {
             eeprom.data.handBrake = 0;
-            digitalWrite(PIN_LASER,HIGH);
+            digitalWrite(PINO_LASER,HIGH);
         }
         else
-            digitalWrite(PIN_LASER,LOW);
+            digitalWrite(PINO_LASER,LOW);
 
         dorme_ms = 100;
     break;
@@ -1430,6 +1443,7 @@ void loop()
         // e envia somente um byte
 		Serial.write((analogRead(0) >> 2) & 0xFF);
         dorme_ms = eeprom.data.RF_delay_reads;
+        mandarStatus = false;
     break;
 
     case PRG_KNOB:
@@ -1439,43 +1453,57 @@ void loop()
 
     case PRG_TEST:
     {
-        sensorFrente.refresh();
-        sensorEsquerda.refresh();
-        sensorDireita.refresh();
+        sensorFrente->refresh();
+        sensorEsquerda->refresh();
+        sensorDireita->refresh();
+
+        static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
         #define MARGEM_SHARP 200
-        if( ! (sensorEsquerda.ehMinimo(MARGEM_SHARP) || sensorDireita.ehMinimo(MARGEM_SHARP)) ) // ambos livres
+        #define MARGEM_PING 200
+        if( !sensorEsquerda->ehMinimo(MARGEM_SHARP) &&
+            !sensorDireita->ehMinimo(MARGEM_SHARP) &&
+            !sensorFrente->ehMinimo(MARGEM_PING) ) // ambos livres
         {
-            digitalWrite(PIN_LED, LOW);
-            drive.forward();
-        }
-        else
-        {
-            digitalWrite(PIN_LED, HIGH);
+            digitalWrite(PINO_LED, LOW);
 
-            if( sensorEsquerda.ehMinimo(MARGEM_SHARP) )
-                drive.right();
-            else if( sensorDireita.ehMinimo(MARGEM_SHARP) )
-                drive.left();
-        }
-/*
-        if( sensorFrente.ehMinimo(10) ) // 10 de margem
-        {
-            digitalWrite(PIN_LED, HIGH);
-            drive.stop();
+            if( sensorEsquerda->ehMinimo(MARGEM_SHARP*3) ||
+                sensorDireita->ehMinimo(MARGEM_SHARP*3) ||
+                sensorFrente->ehMinimo(MARGEM_PING*3) )
+                drive.forward(25);
+            else
+                drive.forward(50);
+
+            palpite = 0;
         }
         else
         {
-            digitalWrite(PIN_LED, LOW);
-            drive.forward(100);
+            digitalWrite(PINO_LED, HIGH);
+
+            if( sensorFrente->ehMinimo(MARGEM_PING) )
+            {
+                if( ! palpite )
+                {
+
+                    //palpite = constrain sensorDireita->getReta() - sensorEsquerda->getReta();
+                }
+                if( sensorEsquerda->getReta() > sensorDireita->getReta() )
+                    drive.left(25);
+                else
+                    drive.right(25);
+            }
+            else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
+                drive.right(25);
+            else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
+                drive.left(25);
         }
-*/
+
         dorme_ms = eeprom.data.RF_delay_reads;
     }
     break;
 
     case PRG_ALARME:
-        digitalWrite(PIN_LED, HIGH);
+        digitalWrite(PINO_LED, HIGH);
         Serial.println("ALARM");
 
         #define SIRENE_TOM_MIN  1000
@@ -1497,7 +1525,7 @@ void loop()
         }
 
         //delay(1000);
-        digitalWrite(PIN_LED, LOW);
+        digitalWrite(PINO_LED, LOW);
         //delay(1000);
         eeprom.data.programa = PRG_SHOW_SENSORS;
     break;
@@ -1510,5 +1538,18 @@ void loop()
         }
     break;
     }
-    delay(dorme_ms);
+
+    if(dorme_ms)
+        delay(dorme_ms);
+
+    static unsigned long nextSendStatus = 0;
+    if(millis() >= nextSendStatus)
+    {
+        nextSendStatus += 10000;
+        if(mandarStatus)
+        {
+            //displayAnalogSensors();
+            sendStatus();
+        }
+    }
 }

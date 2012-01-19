@@ -25,6 +25,7 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/checkbox.h>
+#include <wx/toolbar.h>
 #include <wx/slider.h>
 #include <wx/panel.h>
 #include <wx/grid.h>
@@ -172,6 +173,10 @@ private:
     static const long ID_TEXTCTRL1;
     static const long ID_STATUSBAR1;
     static const long ID_TIMER1;
+    static const long ID_TOOLBAR_DEFAULT;
+    static const long ID_TOOLBAR_SALVAR;
+    static const long ID_TOOLBAR_CARREGAR;
+    static const long ID_TOOLBAR1;
     //*)
 
     //(*Declarations(serialcomFrame)
@@ -184,10 +189,12 @@ private:
     wxCheckBox* CheckBoxEnJoystick;
     wxTextCtrl* TextCtrl4;
     wxPanel* Panel5;
+    wxToolBar* ToolBar1;
     wxTextCtrl* Log;
     wxButton* Button4;
     wxSlider* Slider2;
     wxNotebook* Notebook1;
+    wxToolBarToolBase* ToolBarItem3;
     wxTextCtrl* TextCtrlTilt;
     wxStaticText* StaticText2;
     wxPanel* Panel4;
@@ -216,6 +223,7 @@ private:
     wxButton* Button6;
     wxCheckBox* CheckBoxDrvByJoy;
     wxButton* Button10;
+    wxToolBarToolBase* ToolBarItem1;
     wxTextCtrl* TextCtrlDelayRead;
     wxButton* Button11;
     wxButton* Button5;
@@ -237,6 +245,7 @@ private:
     wxStaticText* StaticText4;
     wxTextCtrl* TextCtrl3;
     wxChoice* Choice1;
+    wxToolBarToolBase* ToolBarItem2;
     wxChoice* Choice2;
     wxButton* Button8;
     wxStaticText* StaticTextJoyButtons;

@@ -36,7 +36,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON10" variable="Button10" member="yes">
-														<label>Limpa</label>
+														<label>Limpar</label>
 														<handler function="OnButton10Click" entry="EVT_BUTTON" />
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -107,7 +107,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON14" variable="Button14" member="yes">
-														<label>Cancela</label>
+														<label>Cancelar</label>
 														<size>-1,-1</size>
 														<handler function="OnButton14Click" entry="EVT_BUTTON" />
 													</object>
@@ -117,7 +117,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON11" variable="Button11" member="yes">
-														<label>Conecta</label>
+														<label>Conectar</label>
 														<handler function="OnButton11Click" entry="EVT_BUTTON" />
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -155,7 +155,7 @@
 														</object>
 														<object class="sizeritem">
 															<object class="wxCheckBox" name="ID_CHECKBOX1" variable="CheckBoxDrvByJoy" member="yes">
-																<label>Drive by Joystick</label>
+																<label>Drive by</label>
 																<checked>1</checked>
 															</object>
 															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
@@ -222,7 +222,7 @@
 														</object>
 														<object class="sizeritem">
 															<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticText4" member="yes">
-																<label>Botoes:</label>
+																<label>Botões:</label>
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 															<border>5</border>
@@ -549,7 +549,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON1" variable="Button1" member="yes">
-												<label>Salva centro</label>
+												<label>Salvar centro</label>
 												<handler function="OnButton1Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -558,7 +558,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON3" variable="Button3" member="yes">
-												<label>Parar / Center</label>
+												<label>Parar</label>
 												<handler function="OnButton3Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -759,7 +759,7 @@
 										<label>Controles</label>
 										<object class="sizeritem">
 											<object class="wxCheckBox" name="ID_CHECKBOX7" variable="CheckBoxAutoRefreshSensors" member="yes">
-												<label>Auto refresh</label>
+												<label>Auto-refresh</label>
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
@@ -774,7 +774,7 @@
 										</object>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON5" variable="Button5" member="yes">
-												<label>Clear</label>
+												<label>Limpar</label>
 												<handler function="OnButton5Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -851,6 +851,23 @@
 		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes">
 			<interval>100</interval>
 			<handler function="OnTimer1Trigger" entry="EVT_TIMER" />
+		</object>
+		<object class="wxToolBar" name="ID_TOOLBAR1" variable="ToolBar1" member="yes">
+			<object class="tool" name="ID_TOOLBAR_DEFAULT" variable="ToolBarItem1" member="yes">
+				<label>Novo</label>
+				<bitmap stock_id="wxART_NEW" />
+				<tooltip>Carrega defaults</tooltip>
+			</object>
+			<object class="tool" name="ID_TOOLBAR_SALVAR" variable="ToolBarItem2" member="yes">
+				<label>Salvar</label>
+				<bitmap stock_id="wxART_FILE_SAVE" stock_client="wxART_TOOLBAR" />
+				<tooltip>Salva dados na EEPROM</tooltip>
+			</object>
+			<object class="tool" name="ID_TOOLBAR_CARREGAR" variable="ToolBarItem3" member="yes">
+				<label>Carregar</label>
+				<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_TOOLBAR" />
+				<tooltip>Carrega config da EEPROM</tooltip>
+			</object>
 		</object>
 	</object>
 </wxsmith>

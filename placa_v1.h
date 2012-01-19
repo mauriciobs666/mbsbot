@@ -24,31 +24,31 @@
 //#define WHEEL_DC 1 // DC motor through 754410 driver
 #undef WHEEL_DC // servo (old board)
 
-#define PIN_LEFTWHEEL		8
-#define PIN_RIGHTWHEEL		9
+#define PINO_MOTOR_ESQ		8
+#define PINO_MOTOR_DIR		9
 
 // number of unused pins (to save power)
-#define PIN_UNUSED_CNT 4
-#define PIN_UNUSED_ARRAY { 6,7,11,12 }
+#define PINO_UNUSED_CNT 4
+#define PINO_UNUSED_ARRAY { 6,7,11,12 }
 
 // SHARP RANGE FINDER (analog pin!)
-#define PIN_SHARP_RF		0
+#define PINO_SHARP_RF		0
 
 // SONAR (analog pin!)
-#define PIN_SONAR           0
+#define PINO_SONAR           0
 
-#define PIN_SERVO_PAN		10
-//#define PIN_SERVO_TILT
-//#define PIN_SERVO_ROLL
+#define PINO_SERVO_PAN		10
+//#define PINO_SERVO_TILT
+//#define PINO_SERVO_ROLL
 
 // LINE FOLLOWER (analog pins!)
 #define NUM_IR_TRACK		3
-#define PIN_FIRST_IR_SENSOR 1
-// where NUM_IR_TRACK=3 and PIN_FIRST_IR_SENSOR=2 means pins A2, A3 and A4 are connected
+#define PINO_FIRST_IR_SENSOR 1
+// where NUM_IR_TRACK=3 and PINO_FIRST_IR_SENSOR=2 means pins A2, A3 and A4 are connected
 
-#define PIN_BEEP 			13
+#define PINO_BIP 			13
 
-#define PIN_LED             13
+#define PINO_LED             13
 
 // enable/disable wiichuck stuff
 //#define WIICHUCK
@@ -56,12 +56,12 @@
 
 #ifdef WIICHUCK
     #ifdef WIICHUCK_POWER
-        #define PIN_ANALOG_CNT 2
+        #define PINO_ANALOG_CNT 2
     #else
-        #define PIN_ANALOG_CNT 4
+        #define PINO_ANALOG_CNT 4
     #endif
 #else
-    #define PIN_ANALOG_CNT 6
+    #define PINO_ANALOG_CNT 6
 #endif
 
 #endif // BOARD_H_INCLUDED

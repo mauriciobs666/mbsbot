@@ -131,7 +131,7 @@ enum ProgramID
     PRG_WIICHUCK = 8,       //
     PRG_SCOPE = 9,          //
     PRG_KNOB = 10,          // Movimenta o servo X de acordo com A0
-    PRG_TEST = 11,           // Dummy
+    PRG_TEST = 11,          // Dummy
     PRG_ALARME = 12
 };
 
