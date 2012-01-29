@@ -1460,19 +1460,19 @@ void loop()
         static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
         #define MARGEM_SHARP 200
-        #define MARGEM_PING 300
+        #define MARGEM_PING 50
         if( !sensorEsquerda->ehMinimo(MARGEM_SHARP) &&
             !sensorDireita->ehMinimo(MARGEM_SHARP) &&
             !sensorFrente->ehMinimo(MARGEM_PING) ) // ambos livres
         {
             digitalWrite(PINO_LED, LOW);
 
-            if( sensorEsquerda->ehMinimo(MARGEM_SHARP*3) ||
-                sensorDireita->ehMinimo(MARGEM_SHARP*3) ||
-                sensorFrente->ehMinimo(MARGEM_PING*3) )
-                drive.forward(25);
-            else
-                drive.forward(50);
+//            if( sensorEsquerda->ehMinimo(MARGEM_SHARP*3) ||
+//                sensorDireita->ehMinimo(MARGEM_SHARP*3) ||
+//                sensorFrente->ehMinimo(MARGEM_PING+50) )
+//                drive.forward(50);
+//            else
+                drive.forward(100);
 
             palpite = 0;
         }
@@ -1487,14 +1487,14 @@ void loop()
                     palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
                 }
                 if(palpite < 0)
-                    drive.left(25);
+                    drive.left(50);
                 else
-                    drive.right(25);
+                    drive.right(50);
             }
             else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
-                drive.right(25);
+                drive.right(50);
             else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
-                drive.left(25);
+                drive.left(50);
         }
 
         dorme_ms = eeprom.data.RF_delay_reads;
