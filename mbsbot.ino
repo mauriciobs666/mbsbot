@@ -1305,8 +1305,9 @@ void setup()
     sensores[2].init(2, Sensor::SENSOR_ANALOGICO, true);
     sensores[3].init(3, Sensor::SENSOR_ANALOGICO, true);
 
-    sensores[1].minimo = 60;
-    sensores[2].minimo = sensores[3].minimo = 630;
+    sensores[1].minimo = 150;
+    sensores[2].maximo = 630;
+    sensores[3].maximo = 630;
 
     sensorFrente = &sensores[1];
     sensorDireita = &sensores[2];
@@ -1460,7 +1461,7 @@ void loop()
         static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
         #define MARGEM_SHARP 200
-        #define MARGEM_PING 50
+        #define MARGEM_PING 400
         if( !sensorEsquerda->ehMinimo(MARGEM_SHARP) &&
             !sensorDireita->ehMinimo(MARGEM_SHARP) &&
             !sensorFrente->ehMinimo(MARGEM_PING) ) // ambos livres
