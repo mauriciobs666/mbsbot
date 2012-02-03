@@ -148,6 +148,7 @@ private:
     static const long ID_TEXTCTRL4;
     static const long ID_CHOICE2;
     static const long ID_CHECKBOX4;
+    static const long ID_CHECKBOX8;
     static const long ID_BUTTON2;
     static const long ID_BUTTON1;
     static const long ID_BUTTON3;
@@ -252,6 +253,7 @@ private:
     wxTimer Timer1;
     wxButton* Button12;
     wxTextCtrl* SendCommandText;
+    wxCheckBox* CheckBoxPoll;
     //*)
 
     DECLARE_EVENT_TABLE()

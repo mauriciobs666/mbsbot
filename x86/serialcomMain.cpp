@@ -70,6 +70,7 @@ const long serialcomFrame::ID_TEXTCTRL3 = wxNewId();
 const long serialcomFrame::ID_TEXTCTRL4 = wxNewId();
 const long serialcomFrame::ID_CHOICE2 = wxNewId();
 const long serialcomFrame::ID_CHECKBOX4 = wxNewId();
+const long serialcomFrame::ID_CHECKBOX8 = wxNewId();
 const long serialcomFrame::ID_BUTTON2 = wxNewId();
 const long serialcomFrame::ID_BUTTON1 = wxNewId();
 const long serialcomFrame::ID_BUTTON3 = wxNewId();
@@ -308,6 +309,9 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     CheckBoxAutoRefresh = new wxCheckBox(Panel2, ID_CHECKBOX4, _("Auto-refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX4"));
     CheckBoxAutoRefresh->SetValue(false);
     StaticBoxSizer3->Add(CheckBoxAutoRefresh, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    CheckBoxPoll = new wxCheckBox(Panel2, ID_CHECKBOX8, _("Polling"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX8"));
+    CheckBoxPoll->SetValue(false);
+    StaticBoxSizer3->Add(CheckBoxPoll, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON2"));
     StaticBoxSizer3->Add(Button2, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button1 = new wxButton(Panel2, ID_BUTTON1, _("Salvar centro"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
@@ -708,7 +712,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
     static char onceInASecond = 10;
     if(onceInASecond == 0)
     {
-        if(CheckBoxAutoRefresh->IsChecked())
+        if(CheckBoxPoll->IsChecked())
             MbsBot::getInstance()->status();
         if(CheckBoxAutoRefreshSensors->IsChecked())
             MbsBot::getInstance()->pedeVar(VAR_AS);
@@ -808,41 +812,55 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
                         {
                             // left wheel
                             value = atoi(tok);
-                            Slider1->SetValue(value);
-                            TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
+                            if(CheckBoxAutoRefresh->IsChecked())
+                            {
+                                Slider1->SetValue(value);
+                                TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
+                            }
 
                             tok = strtok(NULL, " ");
                             if (tok)
                             {
                                 // right wheel
                                 value = atoi(tok);
-                                Slider2->SetValue(value);
-                                TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
+                                if(CheckBoxAutoRefresh->IsChecked())
+                                {
+                                    Slider2->SetValue(value);
+                                    TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
+                                }
 
                                 tok = strtok(NULL, " ");
                                 if (tok)
                                 {
                                     // Pan servo
                                     value = atoi(tok);
-                                    SliderPan->SetValue(value);
-                                    TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
+                                    if(CheckBoxAutoRefresh->IsChecked())
+                                    {
+                                        SliderPan->SetValue(value);
+                                        TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
+                                    }
 
                                     tok = strtok(NULL, " ");
                                     if (tok)
                                     {
                                         // Tilt servo
                                         value = atoi(tok);
-                                        SliderTilt->SetValue(value);
-                                        TextCtrlTilt->SetValue(wxString::Format(wxT("%i"), value));
+                                        if(CheckBoxAutoRefresh->IsChecked())
+                                        {
+                                            SliderTilt->SetValue(value);
+                                            TextCtrlTilt->SetValue(wxString::Format(wxT("%i"), value));
+                                        }
 
                                         tok = strtok(NULL, " ");
                                         if (tok)
                                         {
                                             // Roll servo
                                             value = atoi(tok);
-                                            SliderRoll->SetValue(value);
-                                            TextCtrlRoll->SetValue(wxString::Format(wxT("%i"), value));
-                                            //StatusBar1->SetStatusText(_("Status OK"));
+                                            if(CheckBoxAutoRefresh->IsChecked())
+                                            {
+                                                SliderRoll->SetValue(value);
+                                                TextCtrlRoll->SetValue(wxString::Format(wxT("%i"), value));
+                                            }
                                         }
                                     }
                                 }
