@@ -22,7 +22,7 @@ MbsBot *MbsBot::instance = 0;
 MbsBot::MbsBot()
 {
 	memset(serialPortDevice, 0, sizeof(serialPortDevice));
-	accelStep = 10;
+	sensores = std::vector<int>(6);
 }
 
 int MbsBot::init(const char *port, int baud)
@@ -111,12 +111,120 @@ int MbsBot::envia(const char *formato, ...)
     return send(cmd);
 }
 
+char * MbsBot::recebe()
+{
+    char *rx = receive();
+    if(rx)
+    {
+        char temp[SERIAL_BUFFER_SIZE];
+        memcpy(temp, rx, SERIAL_BUFFER_SIZE);
+
+        char * tok = strtok(temp, " ");
+        if (tok)
+        {
+            if(strcmp(tok, VAR_RODA_ESQ) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    rodaEsquerda = atoi(tok);
+            }
+            else if(strcmp(tok, VAR_RODA_DIR) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    rodaDireita = atoi(tok);
+            }
+            else if(strcmp(tok, VAR_SERVO_X) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    servoPan = atoi(tok);
+            }
+            else if(strcmp(tok, VAR_SERVO_Y) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    servoTilt = atoi(tok);
+            }
+            else if(strcmp(tok, VAR_SERVO_Z) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    servoRoll = atoi(tok);
+            }
+            else if(strcmp(tok, VAR_AS) == 0)	// todos sensores analogicos
+            {
+                for(int s = 0; s < 6; s++)
+                {
+                    if ( (tok = strtok(NULL, " ")) )
+                        sensores[s] = atoi(tok);
+                    else
+                        break;
+                }
+            }
+            else if(strcmp(tok, CMD_STATUS) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                {
+                    programa = atoi(tok);
+                    if ( (tok = strtok(NULL, " ")) )
+                    {
+                        erro = atoi(tok);
+                        if ( (tok = strtok(NULL, " ")) )
+                        {
+                            freioMao = atoi(tok);
+                            if ( (tok = strtok(NULL, " ")) )
+                            {
+                                rodaEsquerda = atoi(tok);
+                                if ( (tok = strtok(NULL, " ")) )
+                                {
+                                    rodaDireita = atoi(tok);
+                                    if ( (tok = strtok(NULL, " ")) )
+                                    {
+                                        servoPan = atoi(tok);
+                                        if ( (tok = strtok(NULL, " ")) )
+                                        {
+                                            servoTilt = atoi(tok);
+                                            if ( (tok = strtok(NULL, " ")) )
+                                            {
+                                                servoRoll = atoi(tok);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if(strcmp(tok, VAR_T_POL) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    tempoPol = atoi(tok);
+            }
+            else if(strcmp(tok, VAR_T_90) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    tempo90 = atoi(tok);
+            }
+            else if(strcmp(tok, VAR_T_RF) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    tempoRF = atoi(tok);
+            }
+            else if(strcmp(tok, "PID") == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    pidKP = atoi(tok);
+                if ( (tok = strtok(NULL, " ")) )
+                    pidKI = atoi(tok);
+                if ( (tok = strtok(NULL, " ")) )
+                    pidKD = atoi(tok);
+            }
+        }
+        return resposta;
+    }
+    return NULL;
+}
+
 int MbsBot::send(const char * command, int len)
 {
-	if(len == -1)
-		len = strlen(command);
-
-	return serialPort.Write(command, len);
+	return serialPort.Write(command, (len > 0 ? len : strlen(command)) );
 }
 
 char * MbsBot::receive()
@@ -132,13 +240,13 @@ char * MbsBot::receive()
 		}
 		else if(c == CMD_EOL)
 		{
-			response[pos]=0;
+			resposta[pos]=0;
 			pos=0;
-			return response;
+			return resposta;
 		}
 		else
 		{
-			response[pos]=c;
+			resposta[pos]=c;
 			pos++;
 		}
 	}

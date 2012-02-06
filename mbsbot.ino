@@ -925,9 +925,13 @@ bool RangeFinder::sentry()
 // ******************************************************************************
 //		DEBUG / SENSORS INFORMATION
 // ******************************************************************************
-void displayAnalogSensors()
+void enviaSensores(bool enviaComando = true)
 {
-    Serial.print("AS ");
+    if(enviaComando)
+    {
+        Serial.print(VAR_AS);
+        Serial.print(" ");
+    }
     for (int x = 0; x < 6; x++)
     {
         if(x < PINO_ANALOG_CNT)
@@ -939,12 +943,18 @@ void displayAnalogSensors()
     Serial.println("");
 }
 
-void sendStatus()
+void enviaStatus(bool enviaComando = true)
 {
-    Serial.print("S ");
+    if(enviaComando)
+    {
+        Serial.print(CMD_STATUS);
+        Serial.print(" ");
+    }
     Serial.print(eeprom.data.programa);
     Serial.print(" ");
     Serial.print(lastError);
+    Serial.print(" ");
+    Serial.print((int)eeprom.data.handBrake);
     Serial.print(" ");
     Serial.print(drive.motorEsq->read());
     Serial.print(" ");
@@ -1033,7 +1043,10 @@ void Server::loop()
                         else if(strcmp(dest, VAR_ZERO_DIR) == 0)
                             drive.motorDir->setCenter(eeprom.data.centroMotorDir = valor);
                         else if(strcmp(dest, VAR_PROGRAMA) == 0)
+                        {
+                            drive.stop();
                             eeprom.data.programa = valor;
+                        }
                         else if(strcmp(dest, VAR_T_POL) == 0)
                             eeprom.data.mvDelay.inch = valor;
                         else if(strcmp(dest, VAR_T_90) == 0)
@@ -1065,73 +1078,39 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_READ) == 0)	// le uma variavel
             {
-                if((tok = STRTOK(NULL, " ")))	// second token is the VAR to be read
+                if((tok = STRTOK(NULL, " ")))	// segundo token eh o nome da variavel a ser lida
                 {
+                    Serial.print(tok);          // ecoa nome da variavel
+                    Serial.print(" ");
+
                     if(strcmp(tok, VAR_RODA_ESQ) == 0)
-                    {
-                        Serial.print("L ");
                         Serial.println(drive.motorEsq->read());
-                    }
                     else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
-                    {
-                        Serial.print("LC ");
                         Serial.println(eeprom.data.centroMotorEsq);
-                    }
                     else if(strcmp(tok, VAR_RODA_DIR) == 0)
-                    {
-                        Serial.print("R ");
                         Serial.println(drive.motorDir->read());
-                    }
                     else if(strcmp(tok, VAR_ZERO_DIR) == 0)
-                    {
-                        Serial.print("RC ");
                         Serial.println(eeprom.data.centroMotorDir);
-                    }
                     else if(strcmp(tok, VAR_PROGRAMA) == 0)
-                    {
-                        Serial.print("P ");
                         Serial.println(eeprom.data.programa);
-                    }
                     else if(strcmp(tok, VAR_T_POL) == 0)
-                    {
-                        Serial.print("DI ");
                         Serial.println(eeprom.data.mvDelay.inch);
-                    }
                     else if(strcmp(tok, VAR_T_90) == 0)
-                    {
-                        Serial.print("DR ");
                         Serial.println(eeprom.data.mvDelay.right);
-                    }
                     else if(strcmp(tok, VAR_T_RF) == 0)
-                    {
-                        Serial.print("DRF ");
                         Serial.println(eeprom.data.RF_delay_reads);
-                    }
                     else if(strcmp(tok, VAR_SERVO_X) == 0)
-                    {
-                        Serial.print("SX ");
                         Serial.println(pan.read());
-                    }
                     else if(strcmp(tok, VAR_SERVO_Y) == 0)
-                    {
-                        Serial.print("SY ");
                         Serial.println(tilt.read());
-                    }
                     else if(strcmp(tok, VAR_SERVO_Z) == 0)
-                    {
-                        Serial.print("SZ ");
                         Serial.println(roll.read());
-                    }
                     else if(strcmp(tok, VAR_FREIO) == 0)
-                    {
-                        Serial.print("HB ");
                         Serial.println((int)eeprom.data.handBrake);
-                    }
                     else if(strcmp(tok, VAR_AS) == 0)
-                        displayAnalogSensors();
+                        enviaSensores(false);
                     else if(strcmp(tok, VAR_PID) == 0)
                     {
-                        Serial.print("PID ");
                         Serial.print(eeprom.data.pid.Kp);
                         Serial.print(" ");
                         Serial.print(eeprom.data.pid.Ki);
@@ -1139,25 +1118,19 @@ void Server::loop()
                         Serial.println(eeprom.data.pid.Kd);
                     }
                     else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
-                    {
-                        Serial.print("LA ");
                         Serial.println((int)eeprom.data.acelMotorEsq);
-                    }
                     else if(strcmp(tok, VAR_ACEL_DIR) == 0)
-                    {
-                        Serial.print("RA ");
                         Serial.println((int)eeprom.data.acelMotorDir);
-                    }
                 }
             }
-            else if(strcmp(tok, CMD_SAVE) == 0)	// save stuff to eeprom
+            else if(strcmp(tok, CMD_SAVE) == 0)	// salva temporarios na EEPROM
                 eeprom.save();
-            else if(strcmp(tok, CMD_LOAD) == 0)	// discard changes and reload from eeprom
+            else if(strcmp(tok, CMD_LOAD) == 0)	// descarta mudancas e recarrega da EEPROM
             {
                 eeprom.load();
                 drive.stop();
             }
-            else if(strcmp(tok, CMD_DEFAULT) == 0)
+            else if(strcmp(tok, CMD_DEFAULT) == 0)  // hard-coded
             {
                 eeprom.loadDefault();
                 drive.stop();
@@ -1208,7 +1181,7 @@ void Server::loop()
             else if(strcmp(tok, CMD_TURN_RIGHT) == 0)
                 drive.turnRight();
             else if(strcmp(tok, CMD_STATUS) == 0)
-                sendStatus();
+                enviaStatus();
             else if(strcmp(tok, CMD_UNAME) == 0)
             {
                 Serial.print("Mbsbot hw ");
@@ -1328,8 +1301,8 @@ void loop()
     switch(eeprom.data.programa)
     {
     case PRG_SHOW_SENSORS:
-        displayAnalogSensors();
-        sendStatus();
+        enviaSensores();
+        enviaStatus();
         dorme_ms = 50;
         //#ifdef WIICHUCK
         //nunchuck_print_data();
@@ -1548,8 +1521,8 @@ void loop()
         nextSendStatus += 10000;
         if(mandarStatus)
         {
-            //displayAnalogSensors();
-            sendStatus();
+            //enviaSensores();
+            enviaStatus();
         }
     }
 }

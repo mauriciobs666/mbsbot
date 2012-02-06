@@ -78,10 +78,10 @@ Formato geral do pacote:
 #define CMD_TURN_RIGHT "right"
 /* CMD_TURN_RIGHT : 90 graus pra direita */
 
-#define CMD_STATUS "status"
+#define CMD_STATUS "s"
 /* CMD_STATUS : pede status
 formato da resposta:
-S VAR_PROGRAMA ERRO VAR_RODA_ESQ VAR_RODA_DIR VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
+S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
 */
 
 #define CMD_UNAME "uname"

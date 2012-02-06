@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <MBSUtil.h>
 #include "../protocolo.h"
+#include <vector>
 
 #define SERIAL_BUFFER_SIZE 1000
 
@@ -40,11 +41,9 @@ class MbsBot
 		}
 
 		MbsBot();
-		virtual ~MbsBot()
-			{}
+		virtual ~MbsBot() {}
 
 		int init(const char *port=NULL, int baud=-1);
-
 		int saveLocalConfig(const char *filename="./mbsbot.cfg");
 		int loadLocalConfig(const char *filename="./mbsbot.cfg");
 
@@ -52,7 +51,7 @@ class MbsBot
 		char* getPort() { return serialPortDevice; }
 
 		int envia(const char *formato, ...);
-		char* receive();
+		char* recebe();
 
 		int enviaVar(const char *var, int valor)
             { return envia("%s %s %d%c", CMD_WRITE, var, valor, CMD_EOL); }
@@ -101,18 +100,51 @@ class MbsBot
 		int wheels(int lw, int rw, int duration=0);
 
 		int vectorialDrive(int x, int y, int duration=0);
-		void setAccelStep(int step) { accelStep = step; }
-		int getAccelStep() { return accelStep; }
+//		void setAccelStep(int step) { accelStep = step; }
+//		int getAccelStep() { return accelStep; }
 
+        int getPrograma() { return programa; }
+		int getErro() { return erro; }
+		int getFreioMao() { return freioMao; }
+		int getRodaEsquerda() { return rodaEsquerda; }
+		int getRodaDireita() { return rodaDireita; }
+		int getServoPan() { return servoPan; }
+		int getServoTilt() { return servoTilt; }
+		int getServoRoll() { return servoRoll; }
+		int getSensor(int i) { return sensores[i]; }
+		int getTempoPol() { return tempoPol; }
+		int getTempo90() { return tempo90; }
+		int getTempoRF() { return tempoRF; }
+		int getPidKP() { return pidKP; }
+		int getPidKI() { return pidKI; }
+		int getPidKD() { return pidKD; }
 	private:
         int send(const char *command, int len=-1);
+        char* receive();
 
 		SerialPort serialPort;
 		char serialPortDevice[100];
 		int baudRate;
-		char response[SERIAL_BUFFER_SIZE];
+		char resposta[SERIAL_BUFFER_SIZE];
 
-		int accelStep;
+//		int accelStep;
+
+		//variaveis remotas
+		int programa;
+		int erro;
+		int freioMao;
+		int rodaEsquerda;
+		int rodaDireita;
+		int servoPan;
+		int servoTilt;
+		int servoRoll;
+		std::vector<int> sensores;
+		int tempoPol;
+		int tempo90;
+		int tempoRF;
+		int pidKP;
+		int pidKI;
+		int pidKD;
 };
 
 #endif // MBSBOT_H

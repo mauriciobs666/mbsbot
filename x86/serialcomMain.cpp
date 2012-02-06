@@ -709,198 +709,80 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 
 void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
+    MbsBot *mbsbot = MbsBot::getInstance();
+
     static char onceInASecond = 10;
     if(onceInASecond == 0)
     {
         if(CheckBoxPoll->IsChecked())
-            MbsBot::getInstance()->status();
+            mbsbot->status();
         if(CheckBoxAutoRefreshSensors->IsChecked())
-            MbsBot::getInstance()->pedeVar(VAR_AS);
+            mbsbot->pedeVar(VAR_AS);
         onceInASecond = 10;
     }
     else
         onceInASecond--;
 
     char *rx;
-    while ((rx = MbsBot::getInstance()->receive()))
+    while ((rx = mbsbot->recebe()))
     {
         wxString str = wxString(rx,wxConvUTF8);
 
         if(CheckBoxRXdata->IsChecked())
             Log->AppendText(str);
 
-        char * tok = strtok(rx, " ");
-        if (tok)
+        if(*rx == 's')	// status (gambi)
+            StatusBar1->SetStatusText(str);
+
+        // telinha "Motores"
+        if(CheckBoxAutoRefresh->IsChecked())
         {
-            if(strcmp(tok, "L") == 0)		// left wheel
-            {
-                tok = strtok(NULL, " ");
-                if (tok)
-                {
-                    int value = atoi(tok);
-                    Slider1->SetValue(value);
-                    TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
-                }
-            }
-            else if(strcmp(tok, "R") == 0)	// right wheel
-            {
-                tok = strtok(NULL, " ");
-                if (tok)
-                {
-                    int value = atoi(tok);
-                    Slider2->SetValue(value);
-                    TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
-                }
-            }
-            else if(strcmp(tok, "SX") == 0)	// head servo
-            {
-                tok = strtok(NULL, " ");
-                if (tok)
-                {
-                    int value = atoi(tok);
-                    SliderPan->SetValue(value);
-                    TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
-                }
-            }
-            else if(strcmp(tok, "AS") == 0)	// all analog sensors
-            {
-                for(int s = 0; s < 6; s++)
-                {
-                    tok = strtok(NULL, " ");
-                    if (tok)
-                    {
-                        int value = atoi(tok);
+            Slider1->SetValue(mbsbot->getRodaEsquerda());
+            TextCtrl1->SetValue(wxString::Format(wxT("%i"), mbsbot->getRodaEsquerda()));
 
-                        // current value
-                        wxString str=wxString::Format(wxT("%i"), value);
-                        Grid1->SetCellValue (str, s, 0);
+            Slider2->SetValue(mbsbot->getRodaDireita());
+            TextCtrl2->SetValue(wxString::Format(wxT("%i"), mbsbot->getRodaDireita()));
 
-                        // minimum value
-                        if(value < atoi(Grid1->GetCellValue (s, 1).mb_str(wxConvUTF8)))
-                            Grid1->SetCellValue (str, s, 1);
+            SliderPan->SetValue(mbsbot->getServoPan());
+            TextCtrlPan->SetValue(wxString::Format(wxT("%i"), mbsbot->getServoPan()));
 
-                        // maximum value
-                        if(value > atoi(Grid1->GetCellValue (s, 2).mb_str(wxConvUTF8)))
-                            Grid1->SetCellValue (str, s, 2);
+            SliderTilt->SetValue(mbsbot->getServoTilt());
+            TextCtrlTilt->SetValue(wxString::Format(wxT("%i"), mbsbot->getServoTilt()));
 
-                        // average of last 10 measures
-                        sensorAvg[s].read(value);
-                        str = wxString::Format(wxT("%i"), sensorAvg[s].getAverage());
-                        Grid1->SetCellValue (str, s, 3);
-                    }
-                }
-            }
-            else if(strcmp(tok, "S") == 0)	// status
-            {
-                StatusBar1->SetStatusText(str);
+            SliderRoll->SetValue(mbsbot->getServoRoll());
+            TextCtrlRoll->SetValue(wxString::Format(wxT("%i"), mbsbot->getServoRoll()));
 
-                tok = strtok(NULL, " ");
-                if (tok)
-                {
-                    // current program
-                    int value = atoi(tok);
-                    ChoicePrg->SetSelection(value);
+        }
 
-                    tok = strtok(NULL, " ");
-                    if (tok)
-                    {
-                        // last error
-                        int value = atoi(tok);
+        ChoicePrg->SetSelection(mbsbot->getPrograma());
+        TextCtrlDelayInch->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempoPol()));
+        TextCtrlDelayTurn->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempo90()));
+        TextCtrlDelayRead->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempoRF()));
+        TextCtrlKp->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKP()));
+        TextCtrlKi->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKI()));
+        TextCtrlKd->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKD()));
 
-                        tok = strtok(NULL, " ");
-                        if (tok)
-                        {
-                            // left wheel
-                            value = atoi(tok);
-                            if(CheckBoxAutoRefresh->IsChecked())
-                            {
-                                Slider1->SetValue(value);
-                                TextCtrl1->SetValue(wxString::Format(wxT("%i"), value));
-                            }
+        for(int s = 0; s < 6; s++)
+        {
+            int valor = mbsbot->getSensor(s);
 
-                            tok = strtok(NULL, " ");
-                            if (tok)
-                            {
-                                // right wheel
-                                value = atoi(tok);
-                                if(CheckBoxAutoRefresh->IsChecked())
-                                {
-                                    Slider2->SetValue(value);
-                                    TextCtrl2->SetValue(wxString::Format(wxT("%i"), value));
-                                }
+            // leitura atual
+            wxString str=wxString::Format(wxT("%i"), valor);
+            Grid1->SetCellValue (str, s, 0);
 
-                                tok = strtok(NULL, " ");
-                                if (tok)
-                                {
-                                    // Pan servo
-                                    value = atoi(tok);
-                                    if(CheckBoxAutoRefresh->IsChecked())
-                                    {
-                                        SliderPan->SetValue(value);
-                                        TextCtrlPan->SetValue(wxString::Format(wxT("%i"), value));
-                                    }
+            // valor minimo
+            if(valor < atoi(Grid1->GetCellValue (s, 1).mb_str(wxConvUTF8)))
+                Grid1->SetCellValue (str, s, 1);
 
-                                    tok = strtok(NULL, " ");
-                                    if (tok)
-                                    {
-                                        // Tilt servo
-                                        value = atoi(tok);
-                                        if(CheckBoxAutoRefresh->IsChecked())
-                                        {
-                                            SliderTilt->SetValue(value);
-                                            TextCtrlTilt->SetValue(wxString::Format(wxT("%i"), value));
-                                        }
-
-                                        tok = strtok(NULL, " ");
-                                        if (tok)
-                                        {
-                                            // Roll servo
-                                            value = atoi(tok);
-                                            if(CheckBoxAutoRefresh->IsChecked())
-                                            {
-                                                SliderRoll->SetValue(value);
-                                                TextCtrlRoll->SetValue(wxString::Format(wxT("%i"), value));
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            else if(strcmp(tok, "DI") == 0)	// delay inch
-            {
-                tok = strtok(NULL, " ");
-                if (tok)
-                    TextCtrlDelayInch->SetValue(wxString::Format(wxT("%i"), atoi(tok)));
-            }
-            else if(strcmp(tok, "DR") == 0)	// delay right turn
-            {
-                tok = strtok(NULL, " ");
-                if (tok)
-                    TextCtrlDelayTurn->SetValue(wxString::Format(wxT("%i"), atoi(tok)));
-            }
-            else if(strcmp(tok, "DRF") == 0) // delay range finder reads
-            {
-                tok = strtok(NULL, " ");
-                if (tok)
-                    TextCtrlDelayRead->SetValue(wxString::Format(wxT("%i"), atoi(tok)));
-            }
-            else if(strcmp(tok, "PID") == 0)	// delay inch
-            {
-                tok = strtok(NULL, " ");
-                if (tok)
-                    TextCtrlKp->SetValue(wxString::Format(wxT("%i"), atoi(tok)));
-                tok = strtok(NULL, " ");
-                if (tok)
-                    TextCtrlKi->SetValue(wxString::Format(wxT("%i"), atoi(tok)));
-                tok = strtok(NULL, " ");
-                if (tok)
-                    TextCtrlKd->SetValue(wxString::Format(wxT("%i"), atoi(tok)));
-            }
-            else if(!CheckBoxRXdata->IsChecked())
-                Log->AppendText(str);
+            // valor maximo
+            if(valor > atoi(Grid1->GetCellValue (s, 2).mb_str(wxConvUTF8)))
+                Grid1->SetCellValue (str, s, 2);
+/*
+            // average of last 10 measures
+            sensorAvg[s].read(valor);
+            str = wxString::Format(wxT("%i"), sensorAvg[s].getAverage());
+            Grid1->SetCellValue (str, s, 3);
+*/
         }
     }
 
@@ -1074,7 +956,6 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 {
     MbsBot::getInstance()->setProgram((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
-    MbsBot::getInstance()->stop();
 }
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
