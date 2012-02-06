@@ -462,7 +462,7 @@
 												<cols>2</cols>
 												<rows>2</rows>
 												<object class="sizeritem">
-													<object class="wxSlider" name="ID_SLIDER1" variable="Slider1" member="yes">
+													<object class="wxSlider" name="ID_SLIDER1" variable="SliderRodaEsquerda" member="yes">
 														<min>-255</min>
 														<max>255</max>
 														<size>50,150</size>
@@ -474,7 +474,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxSlider" name="ID_SLIDER2" variable="Slider2" member="yes">
+													<object class="wxSlider" name="ID_SLIDER2" variable="SliderRodaDireita" member="yes">
 														<min>-255</min>
 														<max>255</max>
 														<size>50,150</size>
@@ -486,7 +486,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL3" variable="TextCtrl1" member="yes">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL3" variable="TextCtrlRodaEsquerda" member="yes">
 														<value>0</value>
 														<size>50,25</size>
 														<style>wxTE_PROCESS_ENTER</style>
@@ -496,7 +496,7 @@
 													<border>5</border>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL4" variable="TextCtrl2" member="yes">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL4" variable="TextCtrlRodaDireita" member="yes">
 														<value>0</value>
 														<size>50,25</size>
 														<style>wxTE_PROCESS_ENTER</style>

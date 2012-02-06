@@ -181,7 +181,6 @@ private:
     //*)
 
     //(*Declarations(serialcomFrame)
-    wxSlider* Slider1;
     wxStaticText* StaticText10;
     wxCheckBox* CheckBoxAutoRefreshSensors;
     wxSlider* SliderRoll;
@@ -193,7 +192,7 @@ private:
     wxToolBar* ToolBar1;
     wxTextCtrl* Log;
     wxButton* Button4;
-    wxSlider* Slider2;
+    wxTextCtrl* TextCtrlRodaEsquerda;
     wxNotebook* Notebook1;
     wxToolBarToolBase* ToolBarItem3;
     wxTextCtrl* TextCtrlTilt;
@@ -236,17 +235,18 @@ private:
     wxStaticText* StaticText7;
     wxStatusBar* StatusBar1;
     wxButton* Button9;
-    wxTextCtrl* TextCtrl2;
-    wxTextCtrl* TextCtrl1;
+    wxSlider* SliderRodaEsquerda;
     wxStaticText* StaticText12;
     wxTextCtrl* TextCtrlDelayTurn;
     wxPanel* Panel2;
     wxSlider* SliderPan;
+    wxTextCtrl* TextCtrlRodaDireita;
     wxTextCtrl* TextCtrlKi;
     wxStaticText* StaticText4;
     wxTextCtrl* TextCtrl3;
     wxChoice* Choice1;
     wxToolBarToolBase* ToolBarItem2;
+    wxSlider* SliderRodaDireita;
     wxChoice* Choice2;
     wxButton* Button8;
     wxStaticText* StaticTextJoyButtons;

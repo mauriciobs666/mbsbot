@@ -207,7 +207,7 @@ char * MbsBot::recebe()
                 if ( (tok = strtok(NULL, " ")) )
                     tempoRF = atoi(tok);
             }
-            else if(strcmp(tok, "PID") == 0)
+            else if(strcmp(tok, VAR_PID) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     pidKP = atoi(tok);

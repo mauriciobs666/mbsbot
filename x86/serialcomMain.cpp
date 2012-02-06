@@ -291,14 +291,14 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1 = new wxFlexGridSizer(1, 6, 0, 0);
     StaticBoxSizer14 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Rodas"));
     FlexGridSizer11 = new wxFlexGridSizer(2, 2, 0, 0);
-    Slider1 = new wxSlider(Panel2, ID_SLIDER1, 0, -255, 255, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER1"));
-    FlexGridSizer11->Add(Slider1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Slider2 = new wxSlider(Panel2, ID_SLIDER2, 0, -255, 255, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER2"));
-    FlexGridSizer11->Add(Slider2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl1 = new wxTextCtrl(Panel2, ID_TEXTCTRL3, _("0"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL3"));
-    FlexGridSizer11->Add(TextCtrl1, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrl2 = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("0"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
-    FlexGridSizer11->Add(TextCtrl2, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    SliderRodaEsquerda = new wxSlider(Panel2, ID_SLIDER1, 0, -255, 255, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER1"));
+    FlexGridSizer11->Add(SliderRodaEsquerda, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    SliderRodaDireita = new wxSlider(Panel2, ID_SLIDER2, 0, -255, 255, wxDefaultPosition, wxSize(50,150), wxSL_VERTICAL|wxSL_INVERSE, wxDefaultValidator, _T("ID_SLIDER2"));
+    FlexGridSizer11->Add(SliderRodaDireita, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrlRodaEsquerda = new wxTextCtrl(Panel2, ID_TEXTCTRL3, _("0"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL3"));
+    FlexGridSizer11->Add(TextCtrlRodaEsquerda, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrlRodaDireita = new wxTextCtrl(Panel2, ID_TEXTCTRL4, _("0"), wxDefaultPosition, wxSize(50,25), wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_TEXTCTRL4"));
+    FlexGridSizer11->Add(TextCtrlRodaDireita, 0, wxALL|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer14->Add(FlexGridSizer11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Choice2 = new wxChoice(Panel2, ID_CHOICE2, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE2"));
     Choice2->Append(_("Servo"));
@@ -561,40 +561,36 @@ void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 }
 
 // ============================================================================
-//      MOTORS
+//      MOTORES
 // ============================================================================
 
-// left wheel
+// controles da roda esquerda
 
 void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
 {
-    int val = Slider1->GetValue();
-    TextCtrl1->SetValue(wxString::Format(wxT("%i"), val));
-
+    int val = SliderRodaEsquerda->GetValue();
+//    TextCtrlRodaEsquerda->SetValue(wxString::Format(wxT("%i"), val));
     MbsBot::getInstance()->setLeftWheel(val);
 }
 void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
 {
-    int val = atoi(TextCtrl1->GetValue().mb_str(wxConvUTF8));
-    Slider1->SetValue(val);
-
+    int val = atoi(TextCtrlRodaEsquerda->GetValue().mb_str(wxConvUTF8));
+//    SliderRodaEsquerda->SetValue(val);
     MbsBot::getInstance()->setLeftWheel(val);
 }
 
-// right wheel
+// controles da roda direita
 
 void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
 {
-    int val = Slider2->GetValue();
-    TextCtrl2->SetValue(wxString::Format(wxT("%i"), val));
-
+    int val = SliderRodaDireita->GetValue();
+//    TextCtrlRodaDireita->SetValue(wxString::Format(wxT("%i"), val));
     MbsBot::getInstance()->setRightWheel(val);
 }
 void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
 {
-    int val = atoi(TextCtrl2->GetValue().mb_str(wxConvUTF8));
-    Slider2->SetValue(val);
-
+    int val = atoi(TextCtrlRodaDireita->GetValue().mb_str(wxConvUTF8));
+//    SliderRodaDireita->SetValue(val);
     MbsBot::getInstance()->setRightWheel(val);
 }
 
@@ -655,8 +651,8 @@ void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
     if(wxYES == wxMessageBox(_("R U sure?"), _("OVERWRITE"), wxYES_NO))
     {
-        MbsBot::getInstance()->setLeftWheelCenter(Slider1->GetValue());
-        MbsBot::getInstance()->setRightWheelCenter(Slider2->GetValue());
+        MbsBot::getInstance()->setLeftWheelCenter(SliderRodaEsquerda->GetValue());
+        MbsBot::getInstance()->setRightWheelCenter(SliderRodaDireita->GetValue());
     }
 }
 
@@ -737,11 +733,11 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         // telinha "Motores"
         if(CheckBoxAutoRefresh->IsChecked())
         {
-            Slider1->SetValue(mbsbot->getRodaEsquerda());
-            TextCtrl1->SetValue(wxString::Format(wxT("%i"), mbsbot->getRodaEsquerda()));
+            SliderRodaEsquerda->SetValue(mbsbot->getRodaEsquerda());
+            TextCtrlRodaEsquerda->SetValue(wxString::Format(wxT("%i"), mbsbot->getRodaEsquerda()));
 
-            Slider2->SetValue(mbsbot->getRodaDireita());
-            TextCtrl2->SetValue(wxString::Format(wxT("%i"), mbsbot->getRodaDireita()));
+            SliderRodaDireita->SetValue(mbsbot->getRodaDireita());
+            TextCtrlRodaDireita->SetValue(wxString::Format(wxT("%i"), mbsbot->getRodaDireita()));
 
             SliderPan->SetValue(mbsbot->getServoPan());
             TextCtrlPan->SetValue(wxString::Format(wxT("%i"), mbsbot->getServoPan()));
@@ -916,8 +912,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         {
             // TODO (mbs#1#): Controlar os Servos via joystick
 
-            int x = ((joyPos.x - joyCenter.x) * 100) / ((joyMax.x - joyMin.x) / 2);
-            int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y eh invertido
+            //int x = ((joyPos.x - joyCenter.x) * 100) / ((joyMax.x - joyMin.x) / 2);
+            //int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y eh invertido
         }
 
         if(joystick->HasZ())
@@ -940,14 +936,14 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
     if( Choice2->GetCurrentSelection() == 0 )
     {
         // Wheel Servo
-        Slider1->SetRange(1000,2000);
-        Slider2->SetRange(1000,2000);
+        SliderRodaEsquerda->SetRange(1000,2000);
+        SliderRodaDireita->SetRange(1000,2000);
     }
     else if ( Choice2->GetCurrentSelection() == 1 )
     {
         // Wheel PWM
-        Slider1->SetRange(-255,255);
-        Slider2->SetRange(-255,255);
+        SliderRodaEsquerda->SetRange(-255,255);
+        SliderRodaDireita->SetRange(-255,255);
     }
     MbsBot::getInstance()->pedeVar(VAR_RODA_ESQ);
     MbsBot::getInstance()->pedeVar(VAR_RODA_DIR);
@@ -1072,6 +1068,7 @@ void serialcomFrame::OnCheckBoxHandBrakeClick(wxCommandEvent& event)
 
 void serialcomFrame::OnButton12Click(wxCommandEvent& event)
 {
+    MbsBot::getInstance()->pedeVar(VAR_PROGRAMA);
     MbsBot::getInstance()->pedeVar(VAR_T_POL);
     MbsBot::getInstance()->pedeVar(VAR_T_90);
     MbsBot::getInstance()->pedeVar(VAR_T_RF);
