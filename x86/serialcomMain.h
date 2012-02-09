@@ -50,10 +50,19 @@ public:
 
     // Joystick
     wxJoystick *joystick;
+
+    // eixos X,Y
     wxPoint joyPos;
     wxPoint joyMax;
     wxPoint joyMin;
     wxPoint joyCenter;
+
+    // eixos Z,Rudder
+    wxPoint joy2Pos;
+    wxPoint joy2Max;
+    wxPoint joy2Min;
+    wxPoint joy2Center;
+
     int botoesAntes;
 
     serialcomFrame(wxWindow* parent,wxWindowID id = -1);
@@ -146,12 +155,12 @@ private:
     static const long ID_SLIDER2;
     static const long ID_TEXTCTRL3;
     static const long ID_TEXTCTRL4;
-    static const long ID_CHOICE2;
     static const long ID_CHECKBOX4;
     static const long ID_CHECKBOX8;
     static const long ID_BUTTON2;
     static const long ID_BUTTON1;
     static const long ID_BUTTON3;
+    static const long ID_CHOICE2;
     static const long ID_CHECKBOX5;
     static const long ID_SLIDER4;
     static const long ID_TEXTCTRL7;
