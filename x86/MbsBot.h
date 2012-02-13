@@ -99,7 +99,7 @@ class MbsBot
 
 		int wheels(int lw, int rw, int duration=0);
 
-		int vectorialDrive(int x, int y, int duration=0);
+		int vectorialDrive(int x, int y, int x2, int y2, int duration=0);
 //		void setAccelStep(int step) { accelStep = step; }
 //		int getAccelStep() { return accelStep; }
 

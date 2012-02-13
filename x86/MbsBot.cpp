@@ -277,7 +277,7 @@ int MbsBot::wheels(int lw, int rw, int duration)
 	return rc;
 }
 
-int MbsBot::vectorialDrive(int x, int y, int duration)
+int MbsBot::vectorialDrive(int x, int y, int x2, int y2, int duration)
 {
     // x e y sao % potencia, duracao em ms
 
@@ -287,16 +287,20 @@ int MbsBot::vectorialDrive(int x, int y, int duration)
 	// otimizacao pra naum mandar repetido
 	static int lastX = 0;
 	static int lastY = 0;
+	static int lastX2 = 0;
+	static int lastY2 = 0;
 
-	if ((x != lastX) || (y != lastY) || (duration>0))
+	if ((x != lastX) || (y != lastY) || (x2 != lastX2) || (y2 != lastY2) || (duration>0))
 	{
 		lastX = x;
 		lastY = y;
+		lastX2 = x2;
+		lastY2 = y2;
 
         if(duration > 0)
-            snprintf(cmd, MAX_CMD, "%s %d %d %d\n", CMD_MV_VECT, x, y, duration);
+            snprintf(cmd, MAX_CMD, "%s %d %d %d %d %d\n", CMD_MV_VECT, x, y, x2, y2, duration);
 		else
-            snprintf(cmd, MAX_CMD, "%s %d %d\n", CMD_MV_VECT, x, y);
+            snprintf(cmd, MAX_CMD, "%s %d %d %d %d\n", CMD_MV_VECT, x, y, x2, y2);
 
 		rc = send(cmd);
 	}

@@ -822,6 +822,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
         if(clicados & BT_START)
         {
+            MbsBot::getInstance()->stop();
+
             // solta freio de mao
             MbsBot::getInstance()->enviaVar(VAR_FREIO, 0);
 
@@ -829,6 +831,11 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             joyCenter = joystick->GetPosition();
             GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.x), 0, 2);
             GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.y), 1, 2);
+
+            joy2Center.x = joystick->GetRudderPosition();
+            joy2Center.y = joystick->GetZPosition();
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joy2Center.x), 2, 2);
+            GridJoy->SetCellValue (wxString::Format(wxT("%i"), joy2Center.y), 3, 2);
 
             CheckBoxDrvByJoy->SetValue(true);
             CheckBoxJoyServos->SetValue(false);
@@ -948,7 +955,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             int x2 = ((joy2Pos.x - joy2Center.x) * 110) / ((joy2Max.x - joy2Min.x) / 2);
             int y2 = ((joy2Center.y - joy2Pos.y) * 110) / ((joy2Max.y - joy2Min.y) / 2); // y eh invertido
 
-            MbsBot::getInstance()->vectorialDrive(x,y);
+            MbsBot::getInstance()->vectorialDrive(x,y,x2,y2);
         }
 
         // Servos Pan Tilt Roll
@@ -1088,9 +1095,12 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
     joyCenter = joyPos;
+    joy2Center = joy2Pos;
 
     GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.x), 0, 2);
     GridJoy->SetCellValue (wxString::Format(wxT("%i"), joyCenter.y), 1, 2);
+    GridJoy->SetCellValue (wxString::Format(wxT("%i"), joy2Center.x), 2, 2);
+    GridJoy->SetCellValue (wxString::Format(wxT("%i"), joy2Center.y), 3, 2);
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)

@@ -75,10 +75,16 @@ public:
         short centroMotorEsq;
         short centroMotorDir;
 
+        short centroMotorEsqT;
+        short centroMotorDirT;
+
         short acelMotorEsq;
         short acelMotorDir;
 
-        short balancoEsqDir;  // ajuste balanco rodas esquerda/direita
+        short acelMotorEsqT;
+        short acelMotorDirT;
+
+//        short balancoEsqDir;  // ajuste balanco rodas esquerda/direita
 
         struct sMoveDelays  // duracao (ms) de movimentos pra animacao
         {
@@ -126,17 +132,21 @@ public:
         #ifdef WHEEL_DC
         data.centroMotorEsq = 70;
         data.centroMotorDir = 70;
+        data.centroMotorEsqT = 70;
+        data.centroMotorDirT = 70;
         #else
         data.centroMotorEsq = 1410;
         data.centroMotorDir = 1384;
         #endif
 
-        data.acelMotorEsq = 40;
-        data.acelMotorDir = 40;
+        data.acelMotorEsq = 100;
+        data.acelMotorDir = 100;
+        data.acelMotorEsqT = 100;
+        data.acelMotorDirT = 100;
 
         data.mvDelay.inch = 200;
         data.mvDelay.right = 400;
-        data.balancoEsqDir = 0;
+//        data.balancoEsqDir = 0;
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
             data.LF_threshold[x] = 512;
@@ -388,7 +398,11 @@ private:
     int pwm; // pino PWM ( no atmega328)
     int dir; // pino digital comum do Arduino
 }
+#ifdef WHEEL_DC_4WD
+motorEsq, motorDir, motorEsqT, motorDirT;
+#else
 motorEsq, motorDir;
+#endif
 
 #endif
 
@@ -475,7 +489,7 @@ public:
         right(100, eeprom.data.mvDelay.right);
     }
 }
-drive;
+drive, drive2;
 
 void Drive::vetorial(int x, int y)
 {
@@ -960,6 +974,14 @@ void enviaStatus(bool enviaComando = true)
     Serial.print(" ");
     Serial.print(drive.motorDir->read());
     Serial.print(" ");
+    #ifdef WHEEL_DC_4WD
+        Serial.print(drive2.motorEsq->read());
+        Serial.print(" ");
+        Serial.print(drive2.motorDir->read());
+        Serial.print(" ");
+    #else
+        Serial.print("- - ");
+    #endif
     Serial.print(pan.read());
     Serial.print(" ");
     Serial.print(tilt.read());
@@ -1142,6 +1164,7 @@ void Server::loop()
             else if(strcmp(tok, CMD_MV_STOP) == 0)
             {
                 drive.stop();
+                drive2.stop();
                 eeprom.data.programa = PRG_SHOW_SENSORS;
             }
             else if(strcmp(tok, CMD_MV_WHEELS) == 0)
@@ -1160,12 +1183,10 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_MV_VECT) == 0)
             {
-                tok = STRTOK(NULL, " ");
-                if (tok)			// segundo token eh o percentual de potencia p/ eixo X
+                if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
                 {
                     int x = atoi(tok);
-                    tok = STRTOK(NULL, " ");
-                    if (tok)		// terceiro token eh o percentual de potencia p/ eixo Y
+                    if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
                     {
                         int y = atoi(tok);
 
@@ -1173,6 +1194,20 @@ void Server::loop()
                             drive.vetorial(x, y);
                         else
                             drive.stop();
+
+                        if ((tok = STRTOK(NULL, " ")))  // segundo token eh o percentual de potencia p/ eixo X
+                        {
+                            int xt = atoi(tok);
+                            if ((tok = STRTOK(NULL, " ")))// terceiro token eh o percentual de potencia p/ eixo Y
+                            {
+                                int yt = atoi(tok);
+
+                                if( xt || yt )
+                                    drive2.vetorial(xt, yt);
+                                else
+                                    drive2.stop();
+                            }
+                        }
                     }
                 }
             }
@@ -1234,10 +1269,18 @@ void setup()
 #else
     motorEsq.init(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
     motorDir.init(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
+    #ifdef WHEEL_DC_4WD
+        motorEsqT.init(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.data.centroMotorEsqT, eeprom.data.acelMotorEsqT);
+        motorDirT.init(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.data.centroMotorDirT, eeprom.data.acelMotorDirT);
+    #endif
 #endif
     // I dont wanna live in this planet anymore
     drive.motorEsq = &motorEsq;
     drive.motorDir = &motorDir;
+    #ifdef WHEEL_DC_4WD
+    drive2.motorEsq = &motorEsqT;
+    drive2.motorDir = &motorDirT;
+    #endif
 
 #ifdef PINO_SERVO_PAN
     pan.attach(PINO_SERVO_PAN);
@@ -1310,6 +1353,7 @@ void loop()
 
     case PRG_RC:
         drive.refresh();
+        drive2.refresh();
         break;
 
     case PRG_PHOTOVORE:
