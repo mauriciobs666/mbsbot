@@ -108,6 +108,8 @@ class MbsBot
 		int getFreioMao() { return freioMao; }
 		int getRodaEsquerda() { return rodaEsquerda; }
 		int getRodaDireita() { return rodaDireita; }
+		int getRodaEsquerdaT() { return rodaEsquerdaTraseira; }
+		int getRodaDireitaT() { return rodaDireitaTraseira; }
 		int getServoPan() { return servoPan; }
 		int getServoTilt() { return servoTilt; }
 		int getServoRoll() { return servoRoll; }
@@ -135,6 +137,8 @@ class MbsBot
 		int freioMao;
 		int rodaEsquerda;
 		int rodaDireita;
+		int rodaEsquerdaTraseira;
+		int rodaDireitaTraseira;
 		int servoPan;
 		int servoTilt;
 		int servoRoll;

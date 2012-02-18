@@ -176,13 +176,21 @@ char * MbsBot::recebe()
                                     rodaDireita = atoi(tok);
                                     if ( (tok = strtok(NULL, " ")) )
                                     {
-                                        servoPan = atoi(tok);
+                                        rodaEsquerdaTraseira = atoi(tok);
                                         if ( (tok = strtok(NULL, " ")) )
                                         {
-                                            servoTilt = atoi(tok);
+                                            rodaDireitaTraseira = atoi(tok);
                                             if ( (tok = strtok(NULL, " ")) )
                                             {
-                                                servoRoll = atoi(tok);
+                                                servoPan = atoi(tok);
+                                                if ( (tok = strtok(NULL, " ")) )
+                                                {
+                                                    servoTilt = atoi(tok);
+                                                    if ( (tok = strtok(NULL, " ")) )
+                                                    {
+                                                        servoRoll = atoi(tok);
+                                                    }
+                                                }
                                             }
                                         }
                                     }
