@@ -20,8 +20,7 @@
 
 #define BOARD_VERSION 3
 
-// WHEELS - are them conected to a Servo or a DC motor? Pick one:
-#define WHEEL_DC 1 // DC motor through 754410 driver
+#define WHEEL_DC 1 // Se definido inicializa rodas com motor DC e driver 754410 / LM393
 //#undef WHEEL_DC // servo (old board)
 
 #define WHEEL_DC_4WD 1
@@ -39,11 +38,11 @@
 #define PINO_MOTOR_DIR          26
 #define PINO_MOTOR_DIR_PWM      2
 
-// number of unused pins (to save power)
+// economia de energia
 #define PINO_UNUSED_CNT 2
 #define PINO_UNUSED_ARRAY { 7,11 }
 
-// SHARP RANGE FINDER (analog pin!)
+// SHARP RANGE FINDER (pino analogico)
 #define PINO_SHARP_RF		3
 
 // SONAR
@@ -53,10 +52,10 @@
 #define PINO_SERVO_TILT		10
 #define PINO_SERVO_ROLL		8
 
-// LINE FOLLOWER (analog pins!)
+// LINE FOLLOWER (pinos analogicos!)
 #define NUM_IR_TRACK		5
 #define PINO_FIRST_IR_SENSOR 1
-// where NUM_IR_TRACK=3 and PINO_FIRST_IR_SENSOR=2 means pins A2, A3 and A4 are connected
+// onde NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
 
 #define PINO_BIP 			12
 
@@ -64,8 +63,8 @@
 
 #define PINO_LED             13
 
-// enable/disable wiichuck stuff
-#define WIICHUCK
+// habilita wiichuck
+//#define WIICHUCK
 //#define WIICHUCK_POWER
 
 #ifdef WIICHUCK
