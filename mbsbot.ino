@@ -1218,11 +1218,14 @@ void setup()
     drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq);
     drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.data.centroMotorDir, true);
 #else
-    drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
-    drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
     #ifdef WHEEL_DC_4WD
-        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.data.centroMotorEsqT, eeprom.data.acelMotorEsqT, true);
-        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.data.centroMotorDirT, eeprom.data.acelMotorDirT, true);
+        drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq, true);
+        drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir, true);
+        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.data.centroMotorEsqT, eeprom.data.acelMotorEsqT);
+        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.data.centroMotorDirT, eeprom.data.acelMotorDirT);
+    #else
+        drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
+        drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
     #endif
 #endif
 
