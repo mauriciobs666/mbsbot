@@ -45,12 +45,14 @@ class serialcomFrame: public wxFrame
 {
 public:
 
-    // Sensor data analysis stuff
+    // Dados dos sensores
     Average sensorAvg[6];
 
     // Joystick
     wxJoystick *joystick;
 
+    MbsGamePad mbsJoystick;
+/*
     // eixos X,Y
     wxPoint joyPos;
     wxPoint joyMax;
@@ -62,8 +64,8 @@ public:
     wxPoint joy2Max;
     wxPoint joy2Min;
     wxPoint joy2Center;
+*/
 
-    int botoesAntes;
 
     serialcomFrame(wxWindow* parent,wxWindowID id = -1);
     virtual ~serialcomFrame();

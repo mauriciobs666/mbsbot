@@ -189,8 +189,8 @@
 														<rowlabels>
 															<item>X</item>
 															<item>Y</item>
-															<item>Rudder</item>
 															<item>Z</item>
+															<item>Rudder</item>
 															<item>U</item>
 															<item>V</item>
 														</rowlabels>
@@ -520,9 +520,10 @@
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
 											<object class="wxCheckBox" name="ID_CHECKBOX4" variable="CheckBoxAutoRefresh" member="yes">
-												<label>Auto-refresh</label>
+												<label>Refresh</label>
+												<size>52,25</size>
 											</object>
-											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>

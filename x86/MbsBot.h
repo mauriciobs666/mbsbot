@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2012 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -100,8 +100,6 @@ class MbsBot
 		int wheels(int lw, int rw, int duration=0);
 
 		int vectorialDrive(int x, int y, int x2, int y2, int duration=0);
-//		void setAccelStep(int step) { accelStep = step; }
-//		int getAccelStep() { return accelStep; }
 
         int getPrograma() { return programa; }
 		int getErro() { return erro; }
@@ -129,8 +127,6 @@ class MbsBot
 		int baudRate;
 		char resposta[SERIAL_BUFFER_SIZE];
 
-//		int accelStep;
-
 		//variaveis remotas
 		int programa;
 		int erro;
@@ -149,6 +145,70 @@ class MbsBot
 		int pidKP;
 		int pidKI;
 		int pidKD;
+};
+
+// Mapeamento dos botoes no protocolo "antigo"
+
+#define BT_X   0x001 //    1 - X ou quadrado
+#define BT_A   0x002 //    2 - A ou xis
+#define BT_B   0x004 //    4 - B ou bola
+#define BT_Y   0x008 //    8 - Y ou triangulo
+#define BT_LB  0x010 //   16 - LB ou L1
+#define BT_RB  0x020 //   32 - RB ou R1
+#define BT_LT  0x040 //   64 - LT ou L2
+#define BT_RT  0x080 //  128 - RT ou R2
+#define BT_SEL 0x100 //  256 - Select
+#define BT_STR 0x200 //  512 - Start
+#define BT_L3  0x400 // 1024 - L3
+#define BT_R3  0x800 // 2048 - R3
+
+class EixoGamePad
+{
+public:
+    int valor, minimo, maximo, centro;
+    EixoGamePad() :
+        minimo(0),
+        maximo(65535),
+        centro(32767),
+        valor (32767)
+    { }
+    int setValor(int novo)
+    {
+        if( novo < minimo ) minimo = novo;
+        if( novo > maximo ) maximo = novo;
+        return valor = novo;
+    }
+    int autoCentro()
+        { return centro = valor; }
+};
+
+class MbsGamePad
+{
+public:
+    EixoGamePad x, y, z, r, u, v;
+    int botoesAntes, botoesAgora, botoesEdge;
+    MbsGamePad() :
+        botoesAntes(0),
+        botoesAgora(0),
+        botoesEdge(0)
+    {}
+    int refreshBotoes(int novo)
+    {
+        botoesAntes = botoesAgora;
+        botoesEdge = (novo ^ botoesAntes) & novo;
+        return botoesAgora = novo;
+    }
+    void autoCentro()
+    {
+        x.autoCentro();
+        y.autoCentro();
+        z.autoCentro();
+        r.autoCentro();
+        u.autoCentro();
+        v.autoCentro();
+    }
+private:
+
 };
 
 #endif // MBSBOT_H
