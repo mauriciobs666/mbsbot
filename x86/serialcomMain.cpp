@@ -915,6 +915,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
         if(CheckBoxDrvByJoy->IsChecked())
         {
+            /*
             int x = ((mbsJoystick.x.valor - mbsJoystick.x.centro) * 110)
                     / ((mbsJoystick.x.maximo - mbsJoystick.x.minimo) / 2);
             int y = ((mbsJoystick.y.centro - mbsJoystick.y.valor) * 110)
@@ -926,6 +927,11 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
                     / ((mbsJoystick.r.maximo - mbsJoystick.r.minimo) / 2); // y eh invertido
 
             MbsBot::getInstance()->vectorialDrive(x,y,x2,y2);
+            */
+            MbsBot::getInstance()->vectorialDrive( mbsJoystick.x.getPorcentoAprox(),
+                                                  -mbsJoystick.y.getPorcentoAprox(),
+                                                  -mbsJoystick.x.getPorcentoAprox(),
+                                                  -mbsJoystick.y.getPorcentoAprox());
         }
 
         // Servos Pan Tilt Roll

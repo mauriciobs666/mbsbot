@@ -180,6 +180,13 @@ public:
     }
     int autoCentro()
         { return centro = valor; }
+    int getPorcentoAprox(int grude=5)
+    {
+        int x = ((valor - centro) * 100) / ((maximo - minimo) / 2);
+        if(abs(x) < grude)
+            x = 0;
+        return x;
+    }
 };
 
 class MbsGamePad
