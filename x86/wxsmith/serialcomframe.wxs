@@ -866,7 +866,7 @@
 			<object class="tool" name="ID_TOOLBAR_DEFAULT" variable="ToolBarItem1" member="yes">
 				<label>Novo</label>
 				<bitmap stock_id="wxART_NEW" />
-				<tooltip>Carrega defaults</tooltip>
+				<tooltip>Carrega valores default</tooltip>
 			</object>
 			<object class="tool" name="ID_TOOLBAR_SALVAR" variable="ToolBarItem2" member="yes">
 				<label>Salvar</label>

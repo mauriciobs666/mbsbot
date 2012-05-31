@@ -167,10 +167,10 @@ class EixoGamePad
 public:
     int valor, minimo, maximo, centro;
     EixoGamePad() :
+        valor (32767),
         minimo(0),
         maximo(65535),
-        centro(32767),
-        valor (32767)
+        centro(32767)
     { }
     int setValor(int novo)
     {

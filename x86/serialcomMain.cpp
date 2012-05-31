@@ -441,7 +441,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Timer1.SetOwner(this, ID_TIMER1);
     Timer1.Start(100, false);
     ToolBar1 = new wxToolBar(this, ID_TOOLBAR1, wxDefaultPosition, wxDefaultSize, wxTB_HORIZONTAL|wxNO_BORDER, _T("ID_TOOLBAR1"));
-    ToolBarItem1 = ToolBar1->AddTool(ID_TOOLBAR_DEFAULT, _("Novo"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_NEW")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Carrega defaults"), wxEmptyString);
+    ToolBarItem1 = ToolBar1->AddTool(ID_TOOLBAR_DEFAULT, _("Novo"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_NEW")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Carrega valores default"), wxEmptyString);
     ToolBarItem2 = ToolBar1->AddTool(ID_TOOLBAR_SALVAR, _("Salvar"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FILE_SAVE")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Salva dados na EEPROM"), wxEmptyString);
     ToolBarItem3 = ToolBar1->AddTool(ID_TOOLBAR_CARREGAR, _("Carregar"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FILE_OPEN")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Carrega config da EEPROM"), wxEmptyString);
     ToolBar1->Realize();
@@ -705,19 +705,20 @@ void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 
 void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
+    // tempo do timer = 100ms
+
     MbsBot *mbsbot = MbsBot::getInstance();
 
-    static char onceInASecond = 10;
-    if(onceInASecond == 0)
+    // executa coisas uma vez por segundo
+    static char conta1s = 10;
+    if( --conta1s == 0)
     {
         if(CheckBoxPoll->IsChecked())
             mbsbot->status();
         if(CheckBoxAutoRefreshSensors->IsChecked())
             mbsbot->pedeVar(VAR_AS);
-        onceInASecond = 10;
+        conta1s = 10;
     }
-    else
-        onceInASecond--;
 
     char *rx;
     while ((rx = mbsbot->recebe()))
@@ -728,9 +729,11 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             Log->AppendText(str);
 
         if(*rx == 's')	// status (gambi)
+        {
             StatusBar1->SetStatusText(str);
+        }
 
-        // telinha "Motores"
+        // aba "Motores"
         if(CheckBoxAutoRefresh->IsChecked())
         {
             SliderRodaEsquerda->SetValue(mbsbot->getRodaEsquerda());
@@ -751,6 +754,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         }
         CheckBoxHandBrake->SetValue(mbsbot->getFreioMao());
 
+        // aba "EEPROM"
         ChoicePrg->SetSelection(mbsbot->getPrograma());
         TextCtrlDelayInch->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempoPol()));
         TextCtrlDelayTurn->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempo90()));
@@ -783,6 +787,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         }
     }
 
+    // verifica erros no joystick
     if ( joystick && !joystick->IsOk())
     {
         delete joystick;
@@ -792,31 +797,25 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
     if( joystick )
     {
-        // Acoes
-
-        #define ACAO_90_ESQ BT_LB
-        #define ACAO_90_DIR BT_RB
-
         mbsJoystick.refreshBotoes(joystick->GetButtonState());
 
         StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), mbsJoystick.botoesAgora));
 
+        // vira 90 graus pra esquerda
         if(mbsJoystick.botoesEdge & BT_LB)
-        {
-            // vira 90 graus pra esquerda
             MbsBot::getInstance()->sqrLeft();
-        }
+
+        // vira 90 graus pra direita
         if(mbsJoystick.botoesEdge & BT_RB)
-        {
-            // vira 90 graus pra direita
             MbsBot::getInstance()->sqrRight();
-        }
+
         if(mbsJoystick.botoesEdge & BT_SEL)
         {
             MbsBot::getInstance()->enviaVar(VAR_FREIO, 1);
             CheckBoxDrvByJoy->SetValue(false);
             CheckBoxJoyServos->SetValue(true);
         }
+
         if(mbsJoystick.botoesEdge & BT_STR)
         {
             MbsBot::getInstance()->stop();
@@ -830,29 +829,37 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             CheckBoxDrvByJoy->SetValue(true);
             CheckBoxJoyServos->SetValue(false);
         }
+
         if(mbsJoystick.botoesEdge & BT_Y)
         {
             MbsBot::getInstance()->setProgram(PRG_TEST);
         }
+
         if(mbsJoystick.botoesEdge & BT_A)
         {
             MbsBot::getInstance()->stop();
         }
+
         if(mbsJoystick.botoesEdge & BT_X)
         {
         }
+
         if(mbsJoystick.botoesEdge & BT_B)
         {
         }
+
         if(mbsJoystick.botoesEdge & BT_LT)
         {
         }
+
         if(mbsJoystick.botoesEdge & BT_RT)
         {
         }
+
         if(mbsJoystick.botoesEdge & BT_L3)
         {
         }
+
         if(mbsJoystick.botoesEdge & BT_R3)
         {
         }
@@ -875,7 +882,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(joystick->HasRudder())
             mbsJoystick.r.setValor(joystick->GetRudderPosition());
 
-        // nao usado (ainda)
+        // nao usado
         if(joystick->HasU())
             mbsJoystick.u.setValor(joystick->GetUPosition());
         if(joystick->HasV())
@@ -950,13 +957,13 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 {
     if( Choice2->GetCurrentSelection() == 0 )
     {
-        // Wheel Servo
+        // Limites Servo
         SliderRodaEsquerda->SetRange(1000,2000);
         SliderRodaDireita->SetRange(1000,2000);
     }
     else if ( Choice2->GetCurrentSelection() == 1 )
     {
-        // Wheel PWM
+        // Limites PWM
         SliderRodaEsquerda->SetRange(-255,255);
         SliderRodaDireita->SetRange(-255,255);
     }
