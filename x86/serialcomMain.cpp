@@ -16,6 +16,8 @@
  */
 
 #include "serialcomMain.h"
+#include "../version.h"
+
 #include <wx/msgdlg.h>
 
 //(*InternalHeaders(serialcomFrame)
@@ -433,7 +435,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     BoxSizer1->Add(SendCommandText, 0, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     SetSizer(BoxSizer1);
     StatusBar1 = new wxStatusBar(this, ID_STATUSBAR1, 0, _T("ID_STATUSBAR1"));
-    int __wxStatusBarWidths_1[3] = { -10, -10, -10 };
+    int __wxStatusBarWidths_1[3] = { -10, -10, 70 };
     int __wxStatusBarStyles_1[3] = { wxSB_NORMAL, wxSB_NORMAL, wxSB_NORMAL };
     StatusBar1->SetFieldsCount(3,__wxStatusBarWidths_1);
     StatusBar1->SetStatusStyles(3,__wxStatusBarStyles_1);
@@ -446,7 +448,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     ToolBarItem3 = ToolBar1->AddTool(ID_TOOLBAR_CARREGAR, _("Carregar"), wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FILE_OPEN")),wxART_TOOLBAR), wxNullBitmap, wxITEM_NORMAL, _("Carrega config da EEPROM"), wxEmptyString);
     ToolBar1->Realize();
     SetToolBar(ToolBar1);
-    BoxSizer1->SetSizeHints(this);
+    SetSizer(BoxSizer1);
+    Layout();
 
     Connect(ID_BUTTON10,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton10Click);
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
@@ -481,12 +484,21 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
 
+    // Mostra numero de versao
+
+
+    SetStatusText( _("v") +
+                  wxString(AutoVersion::UBUNTU_VERSION_STYLE, wxConvUTF8) + _(".") +
+                  wxString(AutoVersion::SVN_REVISION, wxConvUTF8),
+                  2);
+// "MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani"
+
     // Default serial port
 
     if( MbsBot::getInstance()->init() == 0)
-        StatusBar1->SetStatusText(_("Conectado"));
+        SetStatusText(_("Conectado"));
     else
-        StatusBar1->SetStatusText(_("Erro na porta serial"));
+        SetStatusText(_("Erro na porta serial"));
 
     int currSpd = MbsBot::getInstance()->getBaud();
     for(int x=0; x < n_spd; x++)
@@ -526,11 +538,9 @@ void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 void serialcomFrame::OnButton11Click(wxCommandEvent& event)
 {
     if(MbsBot::getInstance()->init(TextCtrl4->GetValue().mb_str(wxConvUTF8), spd[Choice1->GetCurrentSelection()]) == 0)
-    {
-        StatusBar1->SetStatusText(_("Conectado"));
-    }
+        SetStatusText(_("Conectado"));
     else
-        StatusBar1->SetStatusText(_("Erro na porta serial"));
+        SetStatusText(_("Erro na porta serial"));
 }
 void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 {
@@ -730,7 +740,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
         if(*rx == 's')	// status
         {
-            StatusBar1->SetStatusText(str); // gambeta feia
+            SetStatusText(str,1); // gambeta feia
         }
 
         // aba "Motores"

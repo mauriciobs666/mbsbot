@@ -855,7 +855,7 @@
 		</object>
 		<object class="wxStatusBar" name="ID_STATUSBAR1" variable="StatusBar1" member="yes">
 			<fields>3</fields>
-			<widths>-10,-10,-10</widths>
+			<widths>-10,-10,70</widths>
 			<styles>wxSB_NORMAL,wxSB_NORMAL,wxSB_NORMAL</styles>
 		</object>
 		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes">
