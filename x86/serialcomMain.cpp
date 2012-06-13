@@ -492,7 +492,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     for(int x=0; x < n_spd; x++)
         if( currSpd == spd[x])
             Choice1->SetSelection(x);
-    TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
+    TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPorta(), wxConvUTF8));
 
     joystick = NULL;
 }
@@ -540,7 +540,7 @@ void serialcomFrame::OnButton14Click(wxCommandEvent& event)
         if( currSpd == spd[x])
             Choice1->SetSelection(x);
 
-    TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPort(), wxConvUTF8));
+    TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPorta(), wxConvUTF8));
 }
 
 // ============================================================================
@@ -549,15 +549,15 @@ void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton6Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->save();
+    MbsBot::getInstance()->salva();
 }
 void serialcomFrame::OnButton7Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->load();
+    MbsBot::getInstance()->carrega();
 }
 void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->loadDefault();
+    MbsBot::getInstance()->carregaDefaults();
 }
 
 // ============================================================================
@@ -570,13 +570,13 @@ void serialcomFrame::OnSlider1CmdSliderUpdated(wxScrollEvent& event)
 {
     int val = SliderRodaEsquerda->GetValue();
 //    TextCtrlRodaEsquerda->SetValue(wxString::Format(wxT("%i"), val));
-    MbsBot::getInstance()->setLeftWheel(val);
+    MbsBot::getInstance()->setRodaEsquerda(val);
 }
 void serialcomFrame::OnTextCtrl1TextEnter(wxCommandEvent& event)
 {
     int val = atoi(TextCtrlRodaEsquerda->GetValue().mb_str(wxConvUTF8));
 //    SliderRodaEsquerda->SetValue(val);
-    MbsBot::getInstance()->setLeftWheel(val);
+    MbsBot::getInstance()->setRodaEsquerda(val);
 }
 
 // controles da roda direita
@@ -585,13 +585,13 @@ void serialcomFrame::OnSlider2CmdSliderUpdated(wxScrollEvent& event)
 {
     int val = SliderRodaDireita->GetValue();
 //    TextCtrlRodaDireita->SetValue(wxString::Format(wxT("%i"), val));
-    MbsBot::getInstance()->setRightWheel(val);
+    MbsBot::getInstance()->setRodaDireita(val);
 }
 void serialcomFrame::OnTextCtrl2TextEnter(wxCommandEvent& event)
 {
     int val = atoi(TextCtrlRodaDireita->GetValue().mb_str(wxConvUTF8));
 //    SliderRodaDireita->SetValue(val);
-    MbsBot::getInstance()->setRightWheel(val);
+    MbsBot::getInstance()->setRodaDireita(val);
 }
 
 // Pan servo
@@ -645,18 +645,18 @@ void serialcomFrame::OnTextCtrlRollTextEnter(wxCommandEvent& event)
     MbsBot::getInstance()->setRoll(val);
 }
 
-// Set center
+// Botao salvar centro
 
 void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 {
-    if(wxYES == wxMessageBox(_("R U sure?"), _("OVERWRITE"), wxYES_NO))
+    if(wxYES == wxMessageBox(_("Certeza?"), _("Sobrescrever centro?"), wxYES_NO))
     {
-        MbsBot::getInstance()->setLeftWheelCenter(SliderRodaEsquerda->GetValue());
-        MbsBot::getInstance()->setRightWheelCenter(SliderRodaDireita->GetValue());
+        MbsBot::getInstance()->setCentroRodaEsquerda(SliderRodaEsquerda->GetValue());
+        MbsBot::getInstance()->setCentroRodaDireita(SliderRodaDireita->GetValue());
     }
 }
 
-// Refresh
+// Botao Refresh
 
 void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
@@ -667,7 +667,7 @@ void serialcomFrame::OnButton2Click(wxCommandEvent& event)
     MbsBot::getInstance()->pedeVar(VAR_SERVO_Z);
 }
 
-// Stop
+// Botao Parar
 
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 {
@@ -728,9 +728,9 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(CheckBoxRXdata->IsChecked())
             Log->AppendText(str);
 
-        if(*rx == 's')	// status (gambi)
+        if(*rx == 's')	// status
         {
-            StatusBar1->SetStatusText(str);
+            StatusBar1->SetStatusText(str); // gambeta feia
         }
 
         // aba "Motores"
@@ -779,7 +779,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             if(valor > atoi(Grid1->GetCellValue (s, 2).mb_str(wxConvUTF8)))
                 Grid1->SetCellValue (str, s, 2);
 /*
-            // average of last 10 measures
+            // media das 10 ultimas
             sensorAvg[s].read(valor);
             str = wxString::Format(wxT("%i"), sensorAvg[s].getAverage());
             Grid1->SetCellValue (str, s, 3);
@@ -821,7 +821,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
             MbsBot::getInstance()->stop();
 
             // auto calibra centro joystick
-            mbsJoystick.autoCentro();
+            mbsJoystick.centrar();
 
             // solta freio de mao
             MbsBot::getInstance()->enviaVar(VAR_FREIO, 0);
@@ -832,7 +832,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
         if(mbsJoystick.botoesEdge & BT_Y)
         {
-            MbsBot::getInstance()->setProgram(PRG_TEST);
+            MbsBot::getInstance()->setPrograma(PRG_TEST);
         }
 
         if(mbsJoystick.botoesEdge & BT_A)
@@ -973,7 +973,7 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
 
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->setProgram((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
+    MbsBot::getInstance()->setPrograma((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
 }
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
@@ -1059,7 +1059,7 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 
 void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
-    mbsJoystick.autoCentro();
+    mbsJoystick.centrar();
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)

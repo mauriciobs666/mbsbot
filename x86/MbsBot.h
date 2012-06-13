@@ -32,23 +32,23 @@ const int n_spd = 5;
 class MbsBot
 {
 	public:
-		static MbsBot *instance;
+		static MbsBot *instancia;
 		static MbsBot *getInstance()
 		{
-			if (!instance)
-				instance = new MbsBot();
-			return instance;
+			if (!instancia)
+				instancia = new MbsBot();
+			return instancia;
 		}
 
 		MbsBot();
 		virtual ~MbsBot() {}
 
 		int init(const char *port=NULL, int baud=-1);
-		int saveLocalConfig(const char *filename="./mbsbot.cfg");
-		int loadLocalConfig(const char *filename="./mbsbot.cfg");
+		int salvaConfig(const char *filename="./mbsbot.cfg");
+		int carregaConfig(const char *filename="./mbsbot.cfg");
 
 		int getBaud() { return baudRate; }
-		char* getPort() { return serialPortDevice; }
+		char* getPorta() { return serialPortDevice; }
 
 		int envia(const char *formato, ...);
 		char* recebe();
@@ -64,20 +64,20 @@ class MbsBot
             return rc;
         }
 
-        int save()
+        int salva()
             { return envia("%s%c", CMD_SAVE, CMD_EOL); }
-        int load()
+        int carrega()
             { return envia("%s%c", CMD_LOAD, CMD_EOL); }
-        int loadDefault()
+        int carregaDefaults()
             { return envia("%s%c", CMD_DEFAULT, CMD_EOL); }
         int status()
             { return envia("%s%c", CMD_STATUS, CMD_EOL); }
 
-        int setProgram(enum ProgramID val)
+        int setPrograma(enum ProgramID val)
             { return enviaVar(VAR_PROGRAMA, val); }
-		int setLeftWheel(int val)
+		int setRodaEsquerda(int val)
             { return enviaVar(VAR_RODA_ESQ, val); }
-		int setRightWheel(int val)
+		int setRodaDireita(int val)
             { return enviaVar(VAR_RODA_DIR, val); }
 		int setPan(int val)
             { return enviaVar(VAR_SERVO_X, val); }
@@ -85,17 +85,17 @@ class MbsBot
             { return enviaVar(VAR_SERVO_Y, val); }
 		int setRoll(int val)
             { return enviaVar(VAR_SERVO_Z, val); }
-		int setLeftWheelCenter(int val)
+		int setCentroRodaEsquerda(int val)
             { return enviaVar(VAR_ZERO_ESQ, val); }
-		int setRightWheelCenter(int val)
+		int setCentroRodaDireita(int val)
             { return enviaVar(VAR_ZERO_DIR, val); }
 
         int sqrLeft()
-            { return envia("%s\n", CMD_TURN_LEFT); }
+            { return envia("%s%c", CMD_TURN_LEFT, CMD_EOL); }
         int sqrRight()
-            { return envia("%s\n", CMD_TURN_RIGHT); }
+            { return envia("%s%c", CMD_TURN_RIGHT, CMD_EOL); }
         int stop()
-            { return envia("%s\n", CMD_MV_STOP); }
+            { return envia("%s%c", CMD_MV_STOP, CMD_EOL); }
 
 		int wheels(int lw, int rw, int duration=0);
 
@@ -178,7 +178,7 @@ public:
         if( novo > maximo ) maximo = novo;
         return valor = novo;
     }
-    int autoCentro()
+    int centrar()
         { return centro = valor; }
     int getPorcentoAprox(int grude=5)
     {
@@ -205,14 +205,14 @@ public:
         botoesEdge = (novo ^ botoesAntes) & novo;
         return botoesAgora = novo;
     }
-    void autoCentro()
+    void centrar()
     {
-        x.autoCentro();
-        y.autoCentro();
-        z.autoCentro();
-        r.autoCentro();
-        u.autoCentro();
-        v.autoCentro();
+        x.centrar();
+        y.centrar();
+        z.centrar();
+        r.centrar();
+        u.centrar();
+        v.centrar();
     }
 private:
 

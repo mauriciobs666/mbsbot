@@ -17,7 +17,7 @@
 
 #include "MbsBot.h"
 
-MbsBot *MbsBot::instance = 0;
+MbsBot *MbsBot::instancia = 0;
 
 MbsBot::MbsBot()
 {
@@ -27,7 +27,7 @@ MbsBot::MbsBot()
 
 int MbsBot::init(const char *port, int baud)
 {
-	loadLocalConfig();
+	carregaConfig();
 
 	if(port == NULL)
 	{
@@ -57,7 +57,7 @@ int MbsBot::init(const char *port, int baud)
 	if( rc == 0) // connected, no error
 	{
 		TRACE_INFO("Opened %s @ %d bps\n", serialPortDevice, baudRate);
-		saveLocalConfig();
+		salvaConfig();
 	}
 	else
 		TRACE_ERROR("Error %d while trying to open %s\n", rc, serialPortDevice);
@@ -65,7 +65,7 @@ int MbsBot::init(const char *port, int baud)
 	return rc;
 }
 
-int MbsBot::saveLocalConfig(const char *filename)
+int MbsBot::salvaConfig(const char *filename)
 {
 	FILE *hnd = fopen(filename,"w");
 	if(hnd)
@@ -78,7 +78,7 @@ int MbsBot::saveLocalConfig(const char *filename)
 	return -1;
 }
 
-int MbsBot::loadLocalConfig(const char *filename)
+int MbsBot::carregaConfig(const char *filename)
 {
 	FILE *hnd = fopen(filename,"r");
 	if(hnd)
