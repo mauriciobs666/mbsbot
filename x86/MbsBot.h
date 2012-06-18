@@ -57,11 +57,23 @@ class MbsBot
             { return envia("%s %s %d%c", CMD_WRITE, var, valor, CMD_EOL); }
 		int pedeVar(const char *var)
             { return envia("%s %s%c", CMD_READ, var, CMD_EOL); }
-        int pedeVars()
+        void pedeVars()
         {
-            int rc = 0;
             // TODO (mbs#1#): pede todas vars
-            return rc;
+
+            pedeVar(VAR_PROGRAMA);
+            pedeVar(VAR_T_POL);
+            pedeVar(VAR_T_90);
+            pedeVar(VAR_T_RF);
+            pedeVar(VAR_PID);
+
+            pedeVar(VAR_RODA_ESQ);
+            pedeVar(VAR_RODA_DIR);
+            pedeVar(VAR_SERVO_X);
+            pedeVar(VAR_SERVO_Y);
+            pedeVar(VAR_SERVO_Z);
+
+            pedeVar(VAR_AS);
         }
 
         int salva()

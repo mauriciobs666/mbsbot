@@ -68,7 +68,7 @@ class Eeprom
 public:
     struct sConfigurationData
     {
-        short programa;
+        char programa;
 
         char handBrake;
 
@@ -1116,7 +1116,7 @@ void Server::loop()
             {
                 drive.stop();
                 drive2.stop();
-                eeprom.data.programa = PRG_SHOW_SENSORS;
+                eeprom.data.programa = PRG_RC;
             }
             else if(strcmp(tok, CMD_MV_WHEELS) == 0)
             {

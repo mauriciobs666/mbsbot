@@ -142,7 +142,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxStaticBoxSizer* StaticBoxSizer5;
 
     Create(parent, wxID_ANY, _("MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
-    SetClientSize(wxSize(640,480));
+    SetClientSize(wxSize(800,480));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK2"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
@@ -191,7 +191,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     CheckBoxEnJoystick->SetValue(false);
     FlexGridSizer10->Add(CheckBoxEnJoystick, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     CheckBoxDrvByJoy = new wxCheckBox(Panel6, ID_CHECKBOX1, _("Drive by"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
-    CheckBoxDrvByJoy->SetValue(true);
+    CheckBoxDrvByJoy->SetValue(false);
     FlexGridSizer10->Add(CheckBoxDrvByJoy, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
     CheckBoxJoyServos = new wxCheckBox(Panel6, ID_CHECKBOX6, _("Servos"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX6"));
     CheckBoxJoyServos->SetValue(false);
@@ -496,7 +496,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     // Default serial port
 
     if( MbsBot::getInstance()->init() == 0)
+    {
         SetStatusText(_("Conectado"));
+        MbsBot::getInstance()->pedeVars();
+    }
     else
         SetStatusText(_("Erro na porta serial"));
 
@@ -507,6 +510,13 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPorta(), wxConvUTF8));
 
     joystick = NULL;
+
+    if ( wxJoystick::GetNumberJoysticks() > 0 )
+    {
+        // abre joystick
+        if ( (joystick = new wxJoystick(wxJOYSTICK1)) )
+            CheckBoxEnJoystick->SetValue(true);
+    }
 }
 
 serialcomFrame::~serialcomFrame()
@@ -532,13 +542,16 @@ void serialcomFrame::OnSendCommandTextTextEnter(wxCommandEvent& event)
 }
 
 // ============================================================================
-//      SETUP
+//      Dispositivos locais
 // ============================================================================
 
 void serialcomFrame::OnButton11Click(wxCommandEvent& event)
 {
     if(MbsBot::getInstance()->init(TextCtrl4->GetValue().mb_str(wxConvUTF8), spd[Choice1->GetCurrentSelection()]) == 0)
+    {
         SetStatusText(_("Conectado"));
+        MbsBot::getInstance()->pedeVars();
+    }
     else
         SetStatusText(_("Erro na porta serial"));
 }
@@ -568,6 +581,10 @@ void serialcomFrame::OnButton7Click(wxCommandEvent& event)
 void serialcomFrame::OnButton8Click(wxCommandEvent& event)
 {
     MbsBot::getInstance()->carregaDefaults();
+}
+void serialcomFrame::OnButton12Click(wxCommandEvent& event)
+{
+    MbsBot::getInstance()->pedeVars();
 }
 
 // ============================================================================
@@ -670,11 +687,7 @@ void serialcomFrame::OnButton1Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->pedeVar(VAR_RODA_ESQ);
-    MbsBot::getInstance()->pedeVar(VAR_RODA_DIR);
-    MbsBot::getInstance()->pedeVar(VAR_SERVO_X);
-    MbsBot::getInstance()->pedeVar(VAR_SERVO_Y);
-    MbsBot::getInstance()->pedeVar(VAR_SERVO_Z);
+    MbsBot::getInstance()->pedeVars();
 }
 
 // Botao Parar
@@ -682,11 +695,7 @@ void serialcomFrame::OnButton2Click(wxCommandEvent& event)
 void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 {
     MbsBot::getInstance()->stop();
-    MbsBot::getInstance()->pedeVar(VAR_RODA_ESQ);
-    MbsBot::getInstance()->pedeVar(VAR_RODA_DIR);
-    MbsBot::getInstance()->pedeVar(VAR_SERVO_X);
-    MbsBot::getInstance()->pedeVar(VAR_SERVO_Y);
-    MbsBot::getInstance()->pedeVar(VAR_SERVO_Z);
+    MbsBot::getInstance()->pedeVars();
 }
 
 // ============================================================================
@@ -1080,15 +1089,6 @@ void serialcomFrame::OnButton10Click(wxCommandEvent& event)
 void serialcomFrame::OnCheckBoxHandBrakeClick(wxCommandEvent& event)
 {
     MbsBot::getInstance()->enviaVar(VAR_FREIO, CheckBoxHandBrake->IsChecked() ? 1 : 0);
-}
-
-void serialcomFrame::OnButton12Click(wxCommandEvent& event)
-{
-    MbsBot::getInstance()->pedeVar(VAR_PROGRAMA);
-    MbsBot::getInstance()->pedeVar(VAR_T_POL);
-    MbsBot::getInstance()->pedeVar(VAR_T_90);
-    MbsBot::getInstance()->pedeVar(VAR_T_RF);
-    MbsBot::getInstance()->pedeVar(VAR_PID);
 }
 
 void serialcomFrame::OnGridJoyCellLeftClick(wxGridEvent& event)

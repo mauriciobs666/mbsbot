@@ -2,7 +2,7 @@
 <wxsmith>
 	<object class="wxFrame" name="serialcomFrame">
 		<title>MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani</title>
-		<size>640,480</size>
+		<size>800,480</size>
 		<id_arg>0</id_arg>
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
 			<orient>wxVERTICAL</orient>
@@ -156,7 +156,6 @@
 														<object class="sizeritem">
 															<object class="wxCheckBox" name="ID_CHECKBOX1" variable="CheckBoxDrvByJoy" member="yes">
 																<label>Drive by</label>
-																<checked>1</checked>
 															</object>
 															<flag>wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
 															<border>5</border>
