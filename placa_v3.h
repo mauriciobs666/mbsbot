@@ -18,12 +18,13 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define BOARD_VERSION 3
+#define VERSAO_PLACA 3
 
-#define WHEEL_DC 1 // Se definido inicializa rodas com motor DC e driver 754410 / LM393
-//#undef WHEEL_DC // servo (old board)
+// Tipo de controle do motor das rodas
+#define RODAS_PWM 1 // PWM
+//#undef RODAS_PWM // servo (placa_v1.h)
 
-#define WHEEL_DC_4WD 1
+#define RODAS_PWM_x4 1
 
 // canal 1 - roda esquerda traseira
 #define PINO_MOTOR_ESQ_T        23

@@ -68,7 +68,7 @@ class Eeprom
 public:
     struct sConfigurationData
     {
-        char programa;
+        short programa;
 
         char handBrake;
 
@@ -129,7 +129,7 @@ public:
         data.programa = PRG_RC;
         data.handBrake = 1;
 
-        #ifdef WHEEL_DC
+        #ifdef RODAS_PWM
         data.centroMotorEsq = 70;
         data.centroMotorDir = 70;
         data.centroMotorEsqT = 70;
@@ -1171,7 +1171,7 @@ void Server::loop()
             else if(strcmp(tok, CMD_UNAME) == 0)
             {
                 Serial.print("Mbsbot hw ");
-                Serial.print(BOARD_VERSION);
+                Serial.print(VERSAO_PLACA);
                 Serial.print(" sw ");
                 Serial.println(PROTOCOL_VERSION);
             }
@@ -1214,11 +1214,11 @@ void setup()
         digitalWrite(unused[p], HIGH);
     }
 
-#ifndef WHEEL_DC
+#ifndef RODAS_PWM
     drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq);
     drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.data.centroMotorDir, true);
 #else
-    #ifdef WHEEL_DC_4WD
+    #ifdef RODAS_PWM_x4
         drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq, true);
         drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir, true);
         drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.data.centroMotorEsqT, eeprom.data.acelMotorEsqT);
