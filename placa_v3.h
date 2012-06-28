@@ -20,11 +20,17 @@
 
 #define VERSAO_PLACA 3
 
-// Tipo de controle do motor das rodas
-#define RODAS_PWM 1 // PWM
-//#undef RODAS_PWM // servo (placa_v1.h)
+// Habilita controle PWM (se undef controla por largura de pulso/servo)
+#define RODAS_PWM 1
 
+// 4 rodas mechanum
 #define RODAS_PWM_x4 1
+
+// inverte direcao de giro dos motores
+#define MOTOR_ESQ_INV 1
+#define MOTOR_DIR_INV 1
+#define MOTOR_E_T_INV 0
+#define MOTOR_D_T_INV 0
 
 // canal 1 - roda esquerda traseira
 #define PINO_MOTOR_ESQ_T        23
@@ -60,7 +66,7 @@
 
 #define PINO_BIP 			12
 
-#define PINO_LASER           6
+#define PINO_ARMA           6
 
 #define PINO_LED             13
 

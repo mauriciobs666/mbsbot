@@ -81,7 +81,7 @@ Formato geral do pacote:
 #define CMD_STATUS "s"
 /* CMD_STATUS : pede status
 formato da resposta:
-S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ VAR_RODA_DIR VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
+S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_T VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
 */
 
 #define CMD_UNAME "uname"
@@ -91,6 +91,9 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ VAR_RODA_DIR VA
 /* CMD_BIP [Hz] [ms] */
 
 #define CMD_CLEAR_ERR "clerr"
+
+#define CMD_JOYPAD "j"
+/* CMD_JOYPAD BOTOES X Y Z R */
 
 /*
    Lista de <variavel>
@@ -141,5 +144,20 @@ enum Errors
     ERR_MAX_CMD_SIZ,
     ERR_INVALID_PRG
 };
+
+// Mapeamento dos botoes de Joypad (API antiga)
+
+#define BT_X   0x001 //    1 - X ou quadrado
+#define BT_A   0x002 //    2 - A ou xis
+#define BT_B   0x004 //    4 - B ou bola
+#define BT_Y   0x008 //    8 - Y ou triangulo
+#define BT_LB  0x010 //   16 - LB ou L1
+#define BT_RB  0x020 //   32 - RB ou R1
+#define BT_LT  0x040 //   64 - LT ou L2
+#define BT_RT  0x080 //  128 - RT ou R2
+#define BT_SEL 0x100 //  256 - Select
+#define BT_STR 0x200 //  512 - Start
+#define BT_L3  0x400 // 1024 - L3
+#define BT_R3  0x800 // 2048 - R3
 
 #endif // PROTOCOL_H_INCLUDED

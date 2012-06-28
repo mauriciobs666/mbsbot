@@ -57,6 +57,7 @@ Servo tilt;
 Servo roll;
 
 enum Errors lastError = SUCCESS;
+unsigned long agora = 0;
 
 // ******************************************************************************
 //		EEPROM
@@ -233,11 +234,13 @@ Sensor sensores[6], *sensorFrente, *sensorEsquerda, *sensorDireita;
 // ******************************************************************************
 //		Controlador de motoree
 // ******************************************************************************
-// TODO (mbs#1#): Acabar com essa frescura de polimorfismo e deixar igual o Sensor: com tipo e switch.
-class Motor // interface
+class Motor
 {
 public:
     enum eTipoMotor { MOTOR_SERVO, MOTOR_DC } tipo;
+
+    Motor() : tipo(MOTOR_DC), atual(0), centro(0), aceleracao(0), ultimoAcel(0), meta(0),
+        invertido(false), pwm(-1), dir(-1) { }
 
     void initServo(int pin, short centerAng=1500, bool inverso=false)
     {
@@ -248,14 +251,14 @@ public:
         stop();
     }
 
-    void initDC(int PWMpin, int DIRpin, short offsetZero=0, short acel=255, bool inverso=false)
+    void initDC(int pinoPWM, int pinoDIR, short offsetZero=0, short acel=255, bool inverso=false)
     {
         tipo = MOTOR_DC;
-        pwm = PWMpin;
+        pwm = pinoPWM;
         pinMode(pwm, OUTPUT);
         analogWrite(pwm, 0);
 
-        dir = DIRpin;
+        dir = pinoDIR;
         pinMode(dir, OUTPUT);
         digitalWrite(dir, 0);
 
@@ -274,7 +277,8 @@ public:
     {
         if ( tipo == MOTOR_SERVO )
         {
-            // servos tipicos aceitam pulsos entre 1000us e 2000us ou 1500us +/- 500us
+            // TODO (mbs#1#): usar aceleracao pro servo tb
+            // servos tipicos aceitam pulsos entre 1000us e 2000us, ou seja, centro(1500us) +/- 500us
             write( invertido ? (centro - potencia100*5) : (centro + potencia100*5) );
             return;
         }
@@ -284,9 +288,13 @@ public:
         */
         if ( potencia100 )
         {
-            short c = potencia100 > 0 ? centro : -centro; // centro com sinal
-            meta = c + ( potencia100 * 5 ) / 2; // converte % de potencia em pwm 8 bits
-            meta = constrain(meta, -255, 255); // protecao de range
+            potencia100 = constrain(potencia100, -100, 100);    // protecao de range
+            short c = potencia100 > 0 ? centro : -centro;       // c = "centro" com sinal
+            short fator = 255 - centro;                         // faixa de controle (linear?)
+            meta = c + ( potencia100 * fator ) / 100;           // converte % de potencia em pwm 8 bits
+            meta = constrain(meta, -255, 255);
+
+            // range de saida: +/- centro ... 255
         }
         else
             meta = 0;
@@ -302,30 +310,32 @@ public:
 
     void refresh()
     {
-        // TODO (mbs#1#): Delimitar tempo entre os passos de aceleracao
-
-        if ( abs(atual) < centro )
-            atual = 0;
-
-        if ( meta > atual)
+        while(agora >= ultimoAcel + 10)
         {
-            if( ! atual ) // estava parado
-                atual = centro;
-            else
-                atual += aceleracao;
-
-            if( meta < atual) // passou do ponto
-                atual = meta;
-        }
-        else if ( meta < atual)
-        {
-            if( ! atual ) // estava parado
-                atual = -centro;
-            else
-                atual -= aceleracao;
-
+            ultimoAcel += 10;
             if ( meta > atual)
-                atual = meta;
+            {
+                if( ! atual ) // estava parado
+                    atual = centro;
+                else
+                    atual += aceleracao;
+
+                if( meta < atual) // passou do ponto
+                    atual = meta;
+            }
+            else if ( meta < atual)
+            {
+                if( ! atual ) // estava parado
+                    atual = -centro;
+                else
+                    atual -= aceleracao;
+
+                if ( meta > atual)
+                    atual = meta;
+            }
+
+            if ( abs(atual) < centro )
+                atual = 0;
         }
 
         if( tipo == MOTOR_DC )
@@ -354,6 +364,7 @@ protected:
     short atual;
     short centro;
     short aceleracao;
+    unsigned long ultimoAcel;
     short meta;
     bool invertido;
 
@@ -891,6 +902,54 @@ bool RangeFinder::sentry()
     return false;
 }
 
+class EixoGamePad
+{
+public:
+    unsigned int valor, minimo, maximo, centro;
+    EixoGamePad() : valor (32767), minimo(0), maximo(65535), centro(32767)
+        { }
+    unsigned int setValor(unsigned int novo)
+    {
+        if( novo < minimo ) minimo = novo;
+        if( novo > maximo ) maximo = novo;
+        return valor = novo;
+    }
+    unsigned int centrar()
+        { return centro = valor; }
+    int getPorcentoAprox(int grude=5)
+    {
+        int x = ((valor - centro) * 100) / ((maximo - minimo) / 2);
+        if(abs(x) < grude)
+            x = 0;
+        return x;
+    }
+};
+
+class MbsGamePad
+{
+public:
+    EixoGamePad x, y, z, r;
+    int botoesAntes, botoesAgora, botoesEdge;
+    MbsGamePad() :
+        botoesAntes(0),
+        botoesAgora(0),
+        botoesEdge(0)
+    {}
+    int refreshBotoes(int novo)
+    {
+        botoesAntes = botoesAgora;
+        botoesEdge = (novo ^ botoesAntes) & novo;
+        return botoesAgora = novo;
+    }
+    void centrar()
+    {
+        x.centrar();
+        y.centrar();
+        z.centrar();
+        r.centrar();
+    }
+} gamepad;
+
 // ******************************************************************************
 //		DEBUG / SENSORS INFORMATION
 // ******************************************************************************
@@ -1134,6 +1193,7 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_MV_VECT) == 0)
             {
+                eeprom.data.programa = PRG_RC;
                 if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
                 {
                     int x = atoi(tok);
@@ -1192,6 +1252,33 @@ void Server::loop()
             {
                 lastError = SUCCESS;
             }
+            else if(strcmp(tok, CMD_JOYPAD) == 0)
+            {
+                if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
+                {
+                    gamepad.refreshBotoes(atoi(tok));
+                    if ((tok = STRTOK(NULL, " ")))		        // terceiro token eh o eixo X
+                    {
+                        gamepad.x.setValor(atoi(tok));
+                        if ((tok = STRTOK(NULL, " ")))	        // quarto token eh o eixo Y
+                        {
+                            gamepad.y.setValor(atoi(tok));
+                            if ((tok = STRTOK(NULL, " ")))		// quinto token eh o eixo Z
+                            {
+                                gamepad.z.setValor(atoi(tok));
+                                if ((tok = STRTOK(NULL, " ")))	// sexto token eh o eixo Rudder
+                                {
+                                    gamepad.r.setValor(atoi(tok));
+                                }
+                            }
+                        }
+                    }
+                }
+                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
+                    drive.vetorial(gamepad.x.getPorcentoAprox(), gamepad.y.getPorcentoAprox());
+                else
+                    drive.stop();
+            }
         }
     }
 }
@@ -1218,14 +1305,11 @@ void setup()
     drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq);
     drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.data.centroMotorDir, true);
 #else
+    drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq, MOTOR_ESQ_INV);
+    drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir, MOTOR_DIR_INV);
     #ifdef RODAS_PWM_x4
-        drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq, true);
-        drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir, true);
-        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.data.centroMotorEsqT, eeprom.data.acelMotorEsqT);
-        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.data.centroMotorDirT, eeprom.data.acelMotorDirT);
-    #else
-        drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq);
-        drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir);
+        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.data.centroMotorEsqT, eeprom.data.acelMotorEsqT, MOTOR_E_T_INV);
+        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.data.centroMotorDirT, eeprom.data.acelMotorDirT, MOTOR_D_T_INV);
     #endif
 #endif
 
@@ -1250,9 +1334,9 @@ void setup()
     pinMode(PINO_LED, OUTPUT);
     digitalWrite(PINO_LED, LOW);
 
-#ifdef PINO_LASER
-    pinMode(PINO_LASER, OUTPUT);
-    digitalWrite(PINO_LASER, LOW);
+#ifdef PINO_ARMA
+    pinMode(PINO_ARMA, OUTPUT);
+    digitalWrite(PINO_ARMA, LOW);
 #endif
 
 #ifdef WIICHUCK_POWER
@@ -1285,6 +1369,8 @@ void loop()
 {
     bool mandarStatus = true;
     unsigned short dorme_ms = 10;
+
+    agora = millis();
 
     server.loop();
 
@@ -1394,10 +1480,10 @@ void loop()
         if(nunchuck_cbutton())
         {
             eeprom.data.handBrake = 0;
-            digitalWrite(PINO_LASER,HIGH);
+            digitalWrite(PINO_ARMA,HIGH);
         }
         else
-            digitalWrite(PINO_LASER,LOW);
+            digitalWrite(PINO_ARMA,LOW);
 
         dorme_ms = 100;
     break;
@@ -1503,17 +1589,17 @@ void loop()
     break;
     }
 
-    if(dorme_ms)
-        delay(dorme_ms);
-
-    static unsigned long nextSendStatus = 0;
-    if(millis() >= nextSendStatus)
+    static unsigned long ultimoStatus = 0;
+    if(agora >= ultimoStatus)
     {
-        nextSendStatus += 10000;
+        ultimoStatus += 10000;
         if(mandarStatus)
         {
             //enviaSensores();
             enviaStatus();
         }
     }
+
+    if(dorme_ms)
+        delay(dorme_ms);
 }
