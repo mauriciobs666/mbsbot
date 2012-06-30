@@ -51,22 +51,6 @@ public:
     // Joystick
     wxJoystick *joystick;
 
-    MbsGamePad mbsJoystick;
-/*
-    // eixos X,Y
-    wxPoint joyPos;
-    wxPoint joyMax;
-    wxPoint joyMin;
-    wxPoint joyCenter;
-
-    // eixos Z,Rudder
-    wxPoint joy2Pos;
-    wxPoint joy2Max;
-    wxPoint joy2Min;
-    wxPoint joy2Center;
-*/
-
-
     serialcomFrame(wxWindow* parent,wxWindowID id = -1);
     virtual ~serialcomFrame();
 

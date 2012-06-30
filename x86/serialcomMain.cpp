@@ -510,14 +510,14 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
             Choice1->SetSelection(x);
     TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPorta(), wxConvUTF8));
 
-    joystick = NULL;
-
     if ( wxJoystick::GetNumberJoysticks() > 0 )
     {
         // abre joystick
         if ( (joystick = new wxJoystick(wxJOYSTICK1)) )
             CheckBoxEnJoystick->SetValue(true);
     }
+    else
+        joystick = NULL;
 }
 
 serialcomFrame::~serialcomFrame()
@@ -817,6 +817,8 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
     if( joystick )
     {
+        unsigned short bt = joystick->GetButtonState();
+
         // le valores atuais
         // onde:
         //      x < centro = esquerda
@@ -827,17 +829,18 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         // X e Y
         wxPoint wxpt = joystick->GetPosition();
 
+        int z = 0;
+        int r = 0;
+        int u = 0;
+        int v = 0;
+
         // X2 (Z) e Y2 (Rudder)
-        if(joystick->HasZ())
-            mbsJoystick.z.setValor(joystick->GetZPosition());
-        if(joystick->HasRudder())
-            mbsJoystick.r.setValor(joystick->GetRudderPosition());
+        if(joystick->HasZ())        z = joystick->GetZPosition();
+        if(joystick->HasRudder())   r = joystick->GetRudderPosition();
 
         // nao usado
-        if(joystick->HasU())
-            mbsJoystick.u.setValor(joystick->GetUPosition());
-        if(joystick->HasV())
-            mbsJoystick.v.setValor(joystick->GetVPosition());
+        if(joystick->HasU())    u = joystick->GetUPosition();
+        if(joystick->HasV())    v = joystick->GetVPosition();
 
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), wxpt.x),  0, 0);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.minimo), 0, 1);
@@ -849,69 +852,45 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.centro), 1, 2);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.maximo), 1, 3);
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetZPosition()),  2, 0);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), z),  2, 0);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.minimo), 2, 1);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.centro), 2, 2);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.maximo), 2, 3);
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetRudderPosition()),  3, 0);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), r),  3, 0);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.minimo), 3, 1);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.centro), 3, 2);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.maximo), 3, 3);
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.valor),  4, 0);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), u),  4, 0);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.minimo), 4, 1);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.centro), 4, 2);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.maximo), 4, 3);
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.valor),  5, 0);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), v),  5, 0);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.minimo), 5, 1);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.centro), 5, 2);
 //        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.maximo), 5, 3);
 
-        StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), joystick->GetButtonState()));
+        StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), bt));
 
-        // Direcao vetorial
+        // Envia posicoes joystick
 
         if(CheckBoxDrvByJoy->IsChecked())
         {
-            /*
-            int x = ((mbsJoystick.x.valor - mbsJoystick.x.centro) * 110)
-                    / ((mbsJoystick.x.maximo - mbsJoystick.x.minimo) / 2);
-            int y = ((mbsJoystick.y.centro - mbsJoystick.y.valor) * 110)
-                    / ((mbsJoystick.y.maximo - mbsJoystick.y.minimo) / 2); // y eh invertido
-
-            int x2 = ((mbsJoystick.z.valor - mbsJoystick.z.centro) * 110)
-                    / ((mbsJoystick.z.maximo - mbsJoystick.z.minimo) / 2);
-            int y2 = ((mbsJoystick.r.centro - mbsJoystick.r.valor) * 110)
-                    / ((mbsJoystick.r.maximo - mbsJoystick.r.minimo) / 2); // y eh invertido
-
-            MbsBot::getInstance()->vectorialDrive(x,y,x2,y2);
-
-            MbsBot::getInstance()->vectorialDrive( mbsJoystick.x.getPorcentoAprox(),
-                                                  -mbsJoystick.y.getPorcentoAprox(),
-                                                  -mbsJoystick.x.getPorcentoAprox(),
-                                                  -mbsJoystick.y.getPorcentoAprox());
-            */
-
             MbsBot::getInstance()->envia("%s %d %d %d %d %d%c",
                                          CMD_JOYPAD,
-                                         joystick->GetButtonState(),
+                                         (unsigned short) bt,
                                          (unsigned short) wxpt.x,
                                          (unsigned short) wxpt.y,
-                                         (unsigned short) joystick->GetZPosition(),
-                                         (unsigned short) joystick->GetRudderPosition(),
+                                         (unsigned short) z,
+                                         (unsigned short) r,
                                          CMD_EOL);
         }
-
-        // Servos Pan Tilt Roll
 
         if(CheckBoxJoyServos->IsChecked())
         {
             // TODO (mbs#1#): Controlar os Servos via joystick
-
-            //int x = ((joyPos.x - joyCenter.x) * 100) / ((joyMax.x - joyMin.x) / 2);
-            //int y = ((joyCenter.y - joyPos.y) * 100) / ((joyMax.y - joyMin.y) / 2); // y eh invertido
         }
     }
 }
@@ -1004,7 +983,8 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
 
 void serialcomFrame::OnButton9Click(wxCommandEvent& event)
 {
-    mbsJoystick.centrar();
+// TODO (mbs#1#): Mandar comando pra centrar joystick
+//    mbsJoystick.centrar();
 }
 
 void serialcomFrame::OnButton10Click(wxCommandEvent& event)

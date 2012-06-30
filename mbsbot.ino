@@ -145,7 +145,7 @@ public:
 
         dados.mvDelay.inch = 200;
         dados.mvDelay.right = 400;
-//        dados.balancoEsqDir = 0;
+
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
             dados.LF_threshold[x] = 512;

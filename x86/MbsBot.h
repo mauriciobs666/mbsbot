@@ -111,9 +111,7 @@ class MbsBot
         int stop()
             { return envia("%s%c", CMD_MV_STOP, CMD_EOL); }
 
-		int wheels(int lw, int rw, int duration=0);
-
-		int vectorialDrive(int x, int y, int x2, int y2, int duration=0);
+		int enviaJoystick(unsigned short bt, unsigned short x, unsigned short  y, unsigned short z, unsigned short r);
 
         int getPrograma() { return programa; }
 		int getErro() { return erro; }
@@ -159,62 +157,6 @@ class MbsBot
 		int pidKP;
 		int pidKI;
 		int pidKD;
-};
-
-class EixoGamePad
-{
-public:
-    int valor, minimo, maximo, centro;
-    EixoGamePad() :
-        valor (32767),
-        minimo(0),
-        maximo(65535),
-        centro(32767)
-    { }
-    int setValor(int novo)
-    {
-        if( novo < minimo ) minimo = novo;
-        if( novo > maximo ) maximo = novo;
-        return valor = novo;
-    }
-    int centrar()
-        { return centro = valor; }
-    int getPorcentoAprox(int grude=5)
-    {
-        int x = ((valor - centro) * 100) / ((maximo - minimo) / 2);
-        if(abs(x) < grude)
-            x = 0;
-        return x;
-    }
-};
-
-class MbsGamePad
-{
-public:
-    EixoGamePad x, y, z, r, u, v;
-    int botoesAntes, botoesAgora, botoesEdge;
-    MbsGamePad() :
-        botoesAntes(0),
-        botoesAgora(0),
-        botoesEdge(0)
-    {}
-    int refreshBotoes(int novo)
-    {
-        botoesAntes = botoesAgora;
-        botoesEdge = (novo ^ botoesAntes) & novo;
-        return botoesAgora = novo;
-    }
-    void centrar()
-    {
-        x.centrar();
-        y.centrar();
-        z.centrar();
-        r.centrar();
-        u.centrar();
-        v.centrar();
-    }
-private:
-
 };
 
 #endif // MBSBOT_H

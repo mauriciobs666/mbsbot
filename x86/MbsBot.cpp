@@ -261,56 +261,27 @@ char * MbsBot::receive()
 	return NULL;
 }
 
-int MbsBot::wheels(int lw, int rw, int duration)
+int MbsBot::enviaJoystick(unsigned short bt, unsigned short x, unsigned short  y, unsigned short z, unsigned short r)
 {
-	char cmd[MAX_CMD];
 	int rc=0;
 
 	// otimizacao pra naum mandar repetido
-	static int lastL = 0;
-	static int lastR = 0;
 
-	if ((lw != lastL) || (rw != lastR) || (duration>0))
+	static unsigned short btAntigo = 0;
+	static unsigned short xAntigo = 0;
+	static unsigned short yAntigo = 0;
+	static unsigned short zAntigo = 0;
+	static unsigned short rAntigo = 0;
+
+	if ((bt != btAntigo) || (x != xAntigo) || (y != yAntigo) || (z != zAntigo) || (r != rAntigo))
 	{
-		lastL = lw;
-		lastR = rw;
+        btAntigo = bt;
+        xAntigo = x;
+        yAntigo = y;
+        zAntigo = z;
+        rAntigo = r;
 
-        if(duration > 0)
-            snprintf(cmd, MAX_CMD, "%s %d %d %d\n", CMD_MV_WHEELS, lw, rw, duration);
-		else
-            snprintf(cmd, MAX_CMD, "%s %d %d\n", CMD_MV_WHEELS, lw, rw);
-
-		rc = send(cmd);
-	}
-	return rc;
-}
-
-int MbsBot::vectorialDrive(int x, int y, int x2, int y2, int duration)
-{
-    // x e y sao % potencia, duracao em ms
-
-	char cmd[MAX_CMD];
-	int rc=0;
-
-	// otimizacao pra naum mandar repetido
-	static int lastX = 0;
-	static int lastY = 0;
-	static int lastX2 = 0;
-	static int lastY2 = 0;
-
-	if ((x != lastX) || (y != lastY) || (x2 != lastX2) || (y2 != lastY2) || (duration>0))
-	{
-		lastX = x;
-		lastY = y;
-		lastX2 = x2;
-		lastY2 = y2;
-
-        if(duration > 0)
-            snprintf(cmd, MAX_CMD, "%s %d %d %d %d %d\n", CMD_MV_VECT, x, y, x2, y2, duration);
-		else
-            snprintf(cmd, MAX_CMD, "%s %d %d %d %d\n", CMD_MV_VECT, x, y, x2, y2);
-
-		rc = send(cmd);
+		rc = envia("%s %d %d %d %d %d%c", CMD_JOYPAD, bt, x, y, z, r, CMD_EOL);
 	}
 	return rc;
 }
