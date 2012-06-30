@@ -452,6 +452,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Layout();
 
     Connect(ID_BUTTON10,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton10Click);
+    Connect(ID_TEXTCTRL6,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
     Connect(ID_BUTTON14,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton14Click);
     Connect(ID_BUTTON11,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton11Click);
     Connect(ID_CHECKBOX3,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnCheckBoxJoystick);
@@ -816,73 +817,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
     if( joystick )
     {
-        mbsJoystick.refreshBotoes(joystick->GetButtonState());
-
-        StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), mbsJoystick.botoesAgora));
-
-        // vira 90 graus pra esquerda
-        if(mbsJoystick.botoesEdge & BT_LB)
-            MbsBot::getInstance()->sqrLeft();
-
-        // vira 90 graus pra direita
-        if(mbsJoystick.botoesEdge & BT_RB)
-            MbsBot::getInstance()->sqrRight();
-
-        if(mbsJoystick.botoesEdge & BT_SEL)
-        {
-            MbsBot::getInstance()->enviaVar(VAR_FREIO, 1);
-            CheckBoxDrvByJoy->SetValue(false);
-            CheckBoxJoyServos->SetValue(true);
-        }
-
-        if(mbsJoystick.botoesEdge & BT_STR)
-        {
-            MbsBot::getInstance()->stop();
-
-            // auto calibra centro joystick
-            mbsJoystick.centrar();
-
-            // solta freio de mao
-            MbsBot::getInstance()->enviaVar(VAR_FREIO, 0);
-
-            CheckBoxDrvByJoy->SetValue(true);
-            CheckBoxJoyServos->SetValue(false);
-        }
-
-        if(mbsJoystick.botoesEdge & BT_Y)
-        {
-            MbsBot::getInstance()->setPrograma(PRG_TEST);
-        }
-
-        if(mbsJoystick.botoesEdge & BT_A)
-        {
-            MbsBot::getInstance()->stop();
-        }
-
-        if(mbsJoystick.botoesEdge & BT_X)
-        {
-        }
-
-        if(mbsJoystick.botoesEdge & BT_B)
-        {
-        }
-
-        if(mbsJoystick.botoesEdge & BT_LT)
-        {
-        }
-
-        if(mbsJoystick.botoesEdge & BT_RT)
-        {
-        }
-
-        if(mbsJoystick.botoesEdge & BT_L3)
-        {
-        }
-
-        if(mbsJoystick.botoesEdge & BT_R3)
-        {
-        }
-
         // le valores atuais
         // onde:
         //      x < centro = esquerda
@@ -892,8 +826,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
         // X e Y
         wxPoint wxpt = joystick->GetPosition();
-        mbsJoystick.x.setValor(wxpt.x);
-        mbsJoystick.y.setValor(wxpt.y);
 
         // X2 (Z) e Y2 (Rudder)
         if(joystick->HasZ())
@@ -907,35 +839,37 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(joystick->HasV())
             mbsJoystick.v.setValor(joystick->GetVPosition());
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.valor),  0, 0);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.minimo), 0, 1);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.centro), 0, 2);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.maximo), 0, 3);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), wxpt.x),  0, 0);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.minimo), 0, 1);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.centro), 0, 2);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.maximo), 0, 3);
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.valor),  1, 0);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.minimo), 1, 1);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.centro), 1, 2);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.maximo), 1, 3);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), wxpt.y),  1, 0);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.minimo), 1, 1);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.centro), 1, 2);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.maximo), 1, 3);
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.valor),  2, 0);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.minimo), 2, 1);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.centro), 2, 2);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.maximo), 2, 3);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetZPosition()),  2, 0);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.minimo), 2, 1);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.centro), 2, 2);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.maximo), 2, 3);
 
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.valor),  3, 0);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.minimo), 3, 1);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.centro), 3, 2);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.maximo), 3, 3);
+        GridJoy->SetCellValue (wxString::Format(wxT("%i"), joystick->GetRudderPosition()),  3, 0);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.minimo), 3, 1);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.centro), 3, 2);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.maximo), 3, 3);
 
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.valor),  4, 0);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.minimo), 4, 1);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.centro), 4, 2);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.maximo), 4, 3);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.minimo), 4, 1);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.centro), 4, 2);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.maximo), 4, 3);
 
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.valor),  5, 0);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.minimo), 5, 1);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.centro), 5, 2);
-        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.maximo), 5, 3);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.minimo), 5, 1);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.centro), 5, 2);
+//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.maximo), 5, 3);
+
+        StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), joystick->GetButtonState()));
 
         // Direcao vetorial
 
@@ -962,11 +896,11 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
             MbsBot::getInstance()->envia("%s %d %d %d %d %d%c",
                                          CMD_JOYPAD,
-                                         mbsJoystick.botoesAgora,
-                                         mbsJoystick.x.valor,
-                                         mbsJoystick.y.valor,
-                                         mbsJoystick.z.valor,
-                                         mbsJoystick.r.valor,
+                                         joystick->GetButtonState(),
+                                         (unsigned short) wxpt.x,
+                                         (unsigned short) wxpt.y,
+                                         (unsigned short) joystick->GetZPosition(),
+                                         (unsigned short) joystick->GetRudderPosition(),
                                          CMD_EOL);
         }
 
@@ -1065,24 +999,6 @@ void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
         {
             Log->AppendText(_("POVCTSPosition:") + wxString::Format(wxT("%i"), joystick->GetPOVCTSPosition())+_("\n"));
         }
-
-        // le valores atuais
-
-        wxPoint wxpt = joystick->GetPosition();
-        mbsJoystick.x.setValor(wxpt.x);
-        mbsJoystick.y.setValor(wxpt.y);
-
-        if(joystick->HasRudder())
-            mbsJoystick.r.setValor(joystick->GetRudderPosition());
-
-        if(joystick->HasZ())
-            mbsJoystick.z.setValor(joystick->GetZPosition());
-
-        if(joystick->HasU())
-            mbsJoystick.u.setValor(joystick->GetUPosition());
-
-        if(joystick->HasV())
-            mbsJoystick.v.setValor(joystick->GetVPosition());
     }
 }
 
@@ -1106,5 +1022,9 @@ void serialcomFrame::OnGridJoyCellLeftClick(wxGridEvent& event)
 }
 
 void serialcomFrame::OnNotebook1PageChanged(wxNotebookEvent& event)
+{
+}
+
+void serialcomFrame::OnTextCtrl4TextEnter(wxCommandEvent& event)
 {
 }

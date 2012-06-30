@@ -113,6 +113,7 @@ private:
     void OnButton12Click(wxCommandEvent& event);
     void OnGridJoyCellLeftClick(wxGridEvent& event);
     void OnNotebook1PageChanged(wxNotebookEvent& event);
+    void OnTextCtrl4TextEnter(wxCommandEvent& event);
     //*)
 
     //(*Identifiers(serialcomFrame)

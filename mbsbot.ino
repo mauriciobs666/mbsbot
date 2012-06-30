@@ -67,7 +67,7 @@ unsigned long agora = 0;
 class Eeprom
 {
 public:
-    struct sConfigurationData
+    struct sConfiguracao
     {
         short programa;
 
@@ -84,8 +84,6 @@ public:
 
         short acelMotorEsqT;
         short acelMotorDirT;
-
-//        short balancoEsqDir;  // ajuste balanco rodas esquerda/direita
 
         struct sMoveDelays  // duracao (ms) de movimentos pra animacao
         {
@@ -112,53 +110,53 @@ public:
             int x;
             int y;
         } joyCenter;
-    } data;
+    } dados;
     void load()
     {
-        char * dest = (char*) &data;
-        for(unsigned int addr = 0; addr < sizeof(data); addr++, dest++ )
+        char * dest = (char*) &dados;
+        for(unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
             *dest = eeprom_read_byte((unsigned char *) addr);
     }
     void save()
     {
-        char * dest = (char*) &data;
-        for(unsigned int addr = 0; addr < sizeof(data); addr++, dest++ )
+        char * dest = (char*) &dados;
+        for(unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
             eeprom_write_byte((unsigned char *) addr, *dest);
     }
     void loadDefault()
     {
-        data.programa = PRG_RC;
-        data.handBrake = 1;
+        dados.programa = PRG_RC;
+        dados.handBrake = 1;
 
         #ifdef RODAS_PWM
-        data.centroMotorEsq = 70;
-        data.centroMotorDir = 70;
-        data.centroMotorEsqT = 70;
-        data.centroMotorDirT = 70;
+        dados.centroMotorEsq = 70;
+        dados.centroMotorDir = 70;
+        dados.centroMotorEsqT = 70;
+        dados.centroMotorDirT = 70;
         #else
-        data.centroMotorEsq = 1410;
-        data.centroMotorDir = 1384;
+        dados.centroMotorEsq = 1410;
+        dados.centroMotorDir = 1384;
         #endif
 
-        data.acelMotorEsq = 100;
-        data.acelMotorDir = 100;
-        data.acelMotorEsqT = 100;
-        data.acelMotorDirT = 100;
+        dados.acelMotorEsq = 10;
+        dados.acelMotorDir = 10;
+        dados.acelMotorEsqT = 10;
+        dados.acelMotorDirT = 10;
 
-        data.mvDelay.inch = 200;
-        data.mvDelay.right = 400;
-//        data.balancoEsqDir = 0;
+        dados.mvDelay.inch = 200;
+        dados.mvDelay.right = 400;
+//        dados.balancoEsqDir = 0;
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
-            data.LF_threshold[x] = 512;
-            data.LF_reverseColor = false;
+            dados.LF_threshold[x] = 512;
+            dados.LF_reverseColor = false;
         }
-        data.pid.Kp = 100;
-        data.pid.Ki = 0;
-        data.pid.Kd = 0;
-        data.RF_delay_reads = 100;
-        data.joyCenter.x = 174;
-        data.joyCenter.y = 174;
+        dados.pid.Kp = 100;
+        dados.pid.Ki = 0;
+        dados.pid.Kd = 0;
+        dados.RF_delay_reads = 100;
+        dados.joyCenter.x = 174;
+        dados.joyCenter.y = 174;
     }
 } eeprom;
 
@@ -170,7 +168,7 @@ class Sensor
 public:
     unsigned char pino;
     bool invertido;
-    unsigned short valor, minimo, maximo;
+    volatile unsigned short valor, minimo, maximo, centro;
     int a, b; // = a*x + b
     enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL } tipo;
 
@@ -188,13 +186,16 @@ public:
         }
     unsigned short getValor()
         { return valor; }
-    unsigned short setValor(unsigned short v)
+    void setValor(unsigned short v)
         {
             valor = v;
             if (valor < minimo) minimo = valor;
             if (valor > maximo) maximo = valor;
-            return valor;
         }
+    void calibrar()
+        { minimo = maximo = centro = valor; }
+    void centrar()
+        { centro = valor; }
     unsigned short refresh()
         {
             switch(tipo)
@@ -227,9 +228,55 @@ public:
         { a = aa; b = bb; }
     int getReta()
         { return ( a * valor + b ); }
+    int getPorcentoAprox(int grude=5)
+    {
+        long x = ((long)valor - (long)centro) * 100;
+        long r = (maximo - minimo) / 2;
+        if(r)
+            x /= r;
+        if(abs(x) < grude)
+            x = 0;
+        else if(ehMinimo(grude))
+            x = -100;
+        else if(ehMaximo(grude))
+            x = 100;
+        return constrain(x, -100, 100);
+    }
 };
 
 Sensor sensores[6], *sensorFrente, *sensorEsquerda, *sensorDireita;
+
+class MbsGamePad
+{
+public:
+    Sensor x, y, z, r;
+    volatile int botoesAntes, botoesAgora, botoesEdge;
+    MbsGamePad() :
+        botoesAntes(0),
+        botoesAgora(0),
+        botoesEdge(0)
+    {}
+    int refreshBotoes(int novo)
+    {
+        botoesAntes = botoesAgora;
+        botoesEdge = (novo ^ botoesAntes) & novo;
+        return botoesAgora = novo;
+    }
+    void calibrar()
+    {
+        x.calibrar();
+        y.calibrar();
+        z.calibrar();
+        r.calibrar();
+    }
+    void centrar()
+    {
+        x.centrar();
+        y.centrar();
+        z.centrar();
+        r.centrar();
+    }
+} gamepad;
 
 // ******************************************************************************
 //		Controlador de motoree
@@ -341,7 +388,7 @@ public:
         if( tipo == MOTOR_DC )
         {
             // uma ultima olhada no freio de mao
-            if(eeprom.data.handBrake) meta = atual = 0;
+            if(eeprom.dados.handBrake) meta = atual = 0;
 
             digitalWrite(dir, (atual < 0) ^ invertido ? HIGH : LOW); // direcao
 
@@ -350,7 +397,7 @@ public:
         }
         else
         {
-            if(eeprom.data.handBrake) meta = atual = centro;
+            if(eeprom.dados.handBrake) meta = atual = centro;
 
             atual = constrain(atual, 1000, 2000);
             servo.writeMicroseconds(atual);
@@ -444,16 +491,16 @@ public:
     }
     void inch(bool goForward=true)
     {
-        forward((goForward ? 100 : -100), eeprom.data.mvDelay.inch);
+        forward((goForward ? 100 : -100), eeprom.dados.mvDelay.inch);
     }
     void vetorial(int x, int y);
     void turnLeft()
     {
-        left(100, eeprom.data.mvDelay.right);
+        left(100, eeprom.dados.mvDelay.right);
     }
     void turnRight()
     {
-        right(100, eeprom.data.mvDelay.right);
+        right(100, eeprom.dados.mvDelay.right);
     }
 } drive, drive2;
 
@@ -536,7 +583,6 @@ public:
     {}
     void autoCalibrate();
     void loop();
-    void readSensors(bool * isIRSensorOverLine);
     char calcError(bool * isIRSensorOverLine);
 private:
     char lastError;
@@ -547,12 +593,17 @@ lineFollower;
 
 void LineFollower::loop()
 {
+    unsigned short IRSensor[NUM_IR_TRACK];
     bool IRSensorOverLine[NUM_IR_TRACK];		// true if sensor is over the line
 
-    readSensors(IRSensorOverLine);
+    // read IR sensor dados and map into IRSensor[]
+    for(int x = 0; x < NUM_IR_TRACK; x++)
+    {
+        IRSensor[x] = analogRead(PINO_FIRST_IR_SENSOR + x);
+        IRSensorOverLine[x] = (IRSensor[x] > eeprom.dados.LF_threshold[x]) ^ eeprom.dados.LF_reverseColor;
+    }
 
     // first handle special conditions
-
     if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, stop
         drive.stop();
     else
@@ -562,7 +613,7 @@ void LineFollower::loop()
         int error = calcError(IRSensorOverLine);
 
         // Proportional
-        int Pterm = eeprom.data.pid.Kp * error;
+        int Pterm = eeprom.dados.pid.Kp * error;
 
         // Integral
         accError += error;
@@ -575,10 +626,10 @@ void LineFollower::loop()
         	accErr = MIN_ERROR;
         */
 
-        int Iterm = eeprom.data.pid.Ki * accError;
+        int Iterm = eeprom.dados.pid.Ki * accError;
 
         // Deritavive
-        int Dterm = eeprom.data.pid.Kd * ( error - lastError );
+        int Dterm = eeprom.dados.pid.Kd * ( error - lastError );
 
         int MV = Pterm + Iterm + Dterm;
 
@@ -600,18 +651,6 @@ char LineFollower::calcError(bool * isIRSensorOverLine)
 
     // lost track, redo last correction in the hope the track is just a bit ahead
     return lastError;
-}
-
-void LineFollower::readSensors(bool * isIRSensorOverLine)
-{
-    unsigned short IRSensor[NUM_IR_TRACK];
-
-    // read IR sensor data and map into IRSensor[]
-    for(int x = 0; x < NUM_IR_TRACK; x++)
-    {
-        IRSensor[x] = analogRead(PINO_FIRST_IR_SENSOR + x);
-        isIRSensorOverLine[x] = (IRSensor[x] > eeprom.data.LF_threshold[x]) ^ eeprom.data.LF_reverseColor;
-    }
 }
 
 void LineFollower::autoCalibrate()
@@ -668,15 +707,15 @@ void LineFollower::autoCalibrate()
     for(int y=0; y < NUM_IR_TRACK; y++)
     {
         reverseSensor[y] = ( sensorOut[y] > sensorTrack[y] );
-        eeprom.data.LF_threshold[y] = ( sensorOut[y] + sensorTrack[y] ) / 2;
+        eeprom.dados.LF_threshold[y] = ( sensorOut[y] + sensorTrack[y] ) / 2;
 
-        Serial.print(eeprom.data.LF_threshold[y]);
+        Serial.print(eeprom.dados.LF_threshold[y]);
         Serial.print(" ");
     }
 
-    eeprom.data.LF_reverseColor = reverseSensor[0];
+    eeprom.dados.LF_reverseColor = reverseSensor[0];
 
-    if(eeprom.data.LF_reverseColor)
+    if(eeprom.dados.LF_reverseColor)
         Serial.println("\nReversed Track Color");
     else
         Serial.println("\nNormal Track Color");
@@ -684,14 +723,14 @@ void LineFollower::autoCalibrate()
     for(int x=0; x < NUM_IR_TRACK; x++)
     {
         // if one sensor is reversed then all others must also be!
-        if (reverseSensor[x] ^ eeprom.data.LF_reverseColor)
+        if (reverseSensor[x] ^ eeprom.dados.LF_reverseColor)
         {
             Serial.print("BAD Reverse ");
             Serial.println(x);
             return;
         }
 
-        if(eeprom.data.LF_reverseColor)
+        if(eeprom.dados.LF_reverseColor)
         {
             if(sensorOutMin[x] <= sensorTrackMax[x])
             {
@@ -768,7 +807,7 @@ bool RangeFinder::delayRead()
 {
     if ( millis() > nextRead )
     {
-        nextRead = millis() + eeprom.data.RF_delay_reads;
+        nextRead = millis() + eeprom.dados.RF_delay_reads;
         return true;
     }
     return false;
@@ -873,7 +912,7 @@ bool RangeFinder::collision()
             int ds = currValue - lastValue;
 
             // calc velocity in sensor units / second
-            int v = (ds * 1000) / eeprom.data.RF_delay_reads;
+            int v = (ds * 1000) / eeprom.dados.RF_delay_reads;
 
             // s = s0 + v * t;
             int timeToCollision = (s0 - currValue) / v;
@@ -901,66 +940,6 @@ bool RangeFinder::sentry()
     }
     return false;
 }
-
-class EixoGamePad
-{
-public:
-    volatile long valor, minimo, maximo, centro;
-    EixoGamePad() : valor (16383), minimo(0), maximo(32767), centro(16383)
-        { }
-    long setValor(long novo)
-    {
-        if( novo < minimo ) minimo = novo;
-        if( novo > maximo ) maximo = novo;
-        return valor = novo;
-    }
-    void calibrar()
-        { minimo = maximo = centrar(); }
-    long centrar()
-        { return centro = valor; }
-    int getPorcentoAprox(int grude=5)
-    {
-        long x = (valor - centro) * 100;
-        long r = (maximo - minimo) / 2;
-        if(r)
-            x /= r;
-        if(abs(x) < grude)
-            x = 0;
-        return x;
-    }
-};
-
-class MbsGamePad
-{
-public:
-    EixoGamePad x, y, z, r;
-    volatile int botoesAntes, botoesAgora, botoesEdge;
-    MbsGamePad() :
-        botoesAntes(0),
-        botoesAgora(0),
-        botoesEdge(0)
-    {}
-    int refreshBotoes(int novo)
-    {
-        botoesAntes = botoesAgora;
-        botoesEdge = (novo ^ botoesAntes) & novo;
-        return botoesAgora = novo;
-    }
-    void calibrar()
-    {
-        x.calibrar();
-        y.calibrar();
-        z.calibrar();
-        r.calibrar();
-    }
-    void centrar()
-    {
-        x.centrar();
-        y.centrar();
-        z.centrar();
-        r.centrar();
-    }
-} gamepad;
 
 // ******************************************************************************
 //		DEBUG / SENSORS INFORMATION
@@ -990,11 +969,11 @@ void enviaStatus(bool enviaComando = true)
         Serial.print(CMD_STATUS);
         Serial.print(" ");
     }
-    Serial.print(eeprom.data.programa);
+    Serial.print(eeprom.dados.programa);
     Serial.print(" ");
     Serial.print(lastError);
     Serial.print(" ");
-    Serial.print((int)eeprom.data.handBrake);
+    Serial.print((int)eeprom.dados.handBrake);
     Serial.print(" ");
     Serial.print(drive.motorEsq.read());
     Serial.print(" ");
@@ -1083,20 +1062,20 @@ void Server::loop()
                         else if(strcmp(dest, VAR_RODA_DIR) == 0)
                             drive.motorDir.write(valor);
                         else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
-                            drive.motorEsq.setCenter(eeprom.data.centroMotorEsq = valor);
+                            drive.motorEsq.setCenter(eeprom.dados.centroMotorEsq = valor);
                         else if(strcmp(dest, VAR_ZERO_DIR) == 0)
-                            drive.motorDir.setCenter(eeprom.data.centroMotorDir = valor);
+                            drive.motorDir.setCenter(eeprom.dados.centroMotorDir = valor);
                         else if(strcmp(dest, VAR_PROGRAMA) == 0)
                         {
                             drive.stop();
-                            eeprom.data.programa = valor;
+                            eeprom.dados.programa = valor;
                         }
                         else if(strcmp(dest, VAR_T_POL) == 0)
-                            eeprom.data.mvDelay.inch = valor;
+                            eeprom.dados.mvDelay.inch = valor;
                         else if(strcmp(dest, VAR_T_90) == 0)
-                            eeprom.data.mvDelay.right = valor;
+                            eeprom.dados.mvDelay.right = valor;
                         else if(strcmp(dest, VAR_T_RF) == 0)
-                            eeprom.data.RF_delay_reads = valor;
+                            eeprom.dados.RF_delay_reads = valor;
                         else if(strcmp(dest, VAR_SERVO_X) == 0)
                             pan.write(valor);
                         else if(strcmp(dest, VAR_SERVO_Y) == 0)
@@ -1105,18 +1084,18 @@ void Server::loop()
                             roll.write(valor);
                         else if(strcmp(dest, VAR_PID) == 0)
                         {
-                            eeprom.data.pid.Kp = valor;		// P
+                            eeprom.dados.pid.Kp = valor;		// P
                             if((tok = STRTOK(NULL, " ")))	// I
-                                eeprom.data.pid.Ki = atoi(tok);
+                                eeprom.dados.pid.Ki = atoi(tok);
                             if((tok = STRTOK(NULL, " ")))	// D
-                                eeprom.data.pid.Kd = atoi(tok);
+                                eeprom.dados.pid.Kd = atoi(tok);
                         }
                         else if(strcmp(dest, VAR_FREIO) == 0)
-                            eeprom.data.handBrake = valor;
+                            eeprom.dados.handBrake = valor;
                         else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
-                            drive.motorEsq.setAceleracao(eeprom.data.acelMotorEsq = valor);
+                            drive.motorEsq.setAceleracao(eeprom.dados.acelMotorEsq = valor);
                         else if(strcmp(dest, VAR_ACEL_DIR) == 0)
-                            drive.motorDir.setAceleracao(eeprom.data.acelMotorDir = valor);
+                            drive.motorDir.setAceleracao(eeprom.dados.acelMotorDir = valor);
                     }
                 }
             }
@@ -1130,19 +1109,19 @@ void Server::loop()
                     if(strcmp(tok, VAR_RODA_ESQ) == 0)
                         Serial.println(drive.motorEsq.read());
                     else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
-                        Serial.println(eeprom.data.centroMotorEsq);
+                        Serial.println(eeprom.dados.centroMotorEsq);
                     else if(strcmp(tok, VAR_RODA_DIR) == 0)
                         Serial.println(drive.motorDir.read());
                     else if(strcmp(tok, VAR_ZERO_DIR) == 0)
-                        Serial.println(eeprom.data.centroMotorDir);
+                        Serial.println(eeprom.dados.centroMotorDir);
                     else if(strcmp(tok, VAR_PROGRAMA) == 0)
-                        Serial.println(eeprom.data.programa);
+                        Serial.println(eeprom.dados.programa);
                     else if(strcmp(tok, VAR_T_POL) == 0)
-                        Serial.println(eeprom.data.mvDelay.inch);
+                        Serial.println(eeprom.dados.mvDelay.inch);
                     else if(strcmp(tok, VAR_T_90) == 0)
-                        Serial.println(eeprom.data.mvDelay.right);
+                        Serial.println(eeprom.dados.mvDelay.right);
                     else if(strcmp(tok, VAR_T_RF) == 0)
-                        Serial.println(eeprom.data.RF_delay_reads);
+                        Serial.println(eeprom.dados.RF_delay_reads);
                     else if(strcmp(tok, VAR_SERVO_X) == 0)
                         Serial.println(pan.read());
                     else if(strcmp(tok, VAR_SERVO_Y) == 0)
@@ -1150,21 +1129,21 @@ void Server::loop()
                     else if(strcmp(tok, VAR_SERVO_Z) == 0)
                         Serial.println(roll.read());
                     else if(strcmp(tok, VAR_FREIO) == 0)
-                        Serial.println((int)eeprom.data.handBrake);
+                        Serial.println((int)eeprom.dados.handBrake);
                     else if(strcmp(tok, VAR_AS) == 0)
                         enviaSensores(false);
                     else if(strcmp(tok, VAR_PID) == 0)
                     {
-                        Serial.print(eeprom.data.pid.Kp);
+                        Serial.print(eeprom.dados.pid.Kp);
                         Serial.print(" ");
-                        Serial.print(eeprom.data.pid.Ki);
+                        Serial.print(eeprom.dados.pid.Ki);
                         Serial.print(" ");
-                        Serial.println(eeprom.data.pid.Kd);
+                        Serial.println(eeprom.dados.pid.Kd);
                     }
                     else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
-                        Serial.println((int)eeprom.data.acelMotorEsq);
+                        Serial.println((int)eeprom.dados.acelMotorEsq);
                     else if(strcmp(tok, VAR_ACEL_DIR) == 0)
-                        Serial.println((int)eeprom.data.acelMotorDir);
+                        Serial.println((int)eeprom.dados.acelMotorDir);
                 }
             }
             else if(strcmp(tok, CMD_SAVE) == 0)	// salva temporarios na EEPROM
@@ -1187,7 +1166,7 @@ void Server::loop()
             {
                 drive.stop();
                 drive2.stop();
-                eeprom.data.programa = PRG_RC;
+                eeprom.dados.programa = PRG_RC;
             }
             else if(strcmp(tok, CMD_MV_WHEELS) == 0)
             {
@@ -1205,7 +1184,7 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_MV_VECT) == 0)
             {
-                eeprom.data.programa = PRG_RC;
+                eeprom.dados.programa = PRG_RC;
                 if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
                 {
                     int x = atoi(tok);
@@ -1266,7 +1245,6 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_JOYPAD) == 0)
             {
-                eeprom.data.programa = PRG_RC;
                 if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
                 {
                     gamepad.refreshBotoes(atoi(tok));
@@ -1287,10 +1265,23 @@ void Server::loop()
                         }
                     }
                 }
+
+                Serial.print(CMD_JOYPAD);
+                Serial.print(" ");
+                Serial.print(gamepad.x.getPorcentoAprox());
+                Serial.print(" ");
+                Serial.print(gamepad.y.getPorcentoAprox());
+                Serial.print(" ");
+                Serial.print(gamepad.z.getPorcentoAprox());
+                Serial.print(" ");
+                Serial.println(gamepad.r.getPorcentoAprox());
+
+
                 if(gamepad.botoesEdge & BT_SEL)
                 {
-                    eeprom.data.handBrake = 1;
                     gamepad.calibrar();
+                    eeprom.dados.handBrake = 1;
+                    eeprom.dados.programa = PRG_SHOW_SENSORS;
                 }
 
                 if(gamepad.botoesEdge & BT_STR)
@@ -1301,62 +1292,47 @@ void Server::loop()
                     // auto centra joystick
                     gamepad.centrar();
 
-                    // solta freio de mao
-                    eeprom.data.handBrake = 0;
+                    // solta freio de mao e poe no modo RC
+                    eeprom.dados.handBrake = 0;
+                    eeprom.dados.programa = PRG_RC;
                 }
-/*
-        // vira 90 graus pra esquerda
-        if(gamepad.botoesEdge & BT_LB)
-            drive.turnLeft();
 
-        // vira 90 graus pra direita
-        if(gamepad.botoesEdge & BT_RB)
-            drive.turnRight();
+                if(gamepad.botoesEdge & BT_Y)
+                    eeprom.dados.programa = PRG_TEST;
 
-        if(gamepad.botoesEdge & BT_Y)
-        {
-            MbsBot::getInstance()->setPrograma(PRG_TEST);
-        }
+                if(gamepad.botoesEdge & BT_A)
+                {
+                    eeprom.dados.handBrake = 1;
+                    eeprom.dados.programa = PRG_SHOW_SENSORS;
+                }
 
-        if(gamepad.botoesEdge & BT_A)
-        {
-            MbsBot::getInstance()->stop();
-        }
+                if(gamepad.botoesEdge & BT_X)
+                    drive.turnLeft();   // vira 90 graus pra esquerda
 
-        if(gamepad.botoesEdge & BT_X)
-        {
-        }
+                if(gamepad.botoesEdge & BT_B)
+                    drive.turnRight();  // vira 90 graus pra direita
 
-        if(gamepad.botoesEdge & BT_B)
-        {
-        }
+                if(gamepad.botoesEdge & BT_LT)
+                {
+                    // 4 rodas: controla servos com eixos Z e R
+                }
 
-        if(gamepad.botoesEdge & BT_LT)
-        {
-        }
+                if(gamepad.botoesAgora & BT_RT)
+                    digitalWrite(PINO_ARMA, HIGH);
+                else
+                    digitalWrite(PINO_ARMA, LOW);
 
-        if(gamepad.botoesEdge & BT_RT)
-        {
-        }
+//                if(gamepad.botoesEdge & BT_LB)
+//                if(gamepad.botoesEdge & BT_RB)
+//                if(gamepad.botoesEdge & BT_L3)
+//                if(gamepad.botoesEdge & BT_R3)
 
-        if(gamepad.botoesEdge & BT_L3)
-        {
-        }
+                gamepad.botoesEdge = 0;
 
-        if(gamepad.botoesEdge & BT_R3)
-        {
-        }
-*/
                 if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
                     drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 else
                     drive.stop();
-
-                Serial.print(CMD_JOYPAD);
-                Serial.print(" ");
-                Serial.print(gamepad.x.getPorcentoAprox());
-                Serial.print(" ");
-                Serial.println(gamepad.y.getPorcentoAprox());
             }
         }
     }
@@ -1381,14 +1357,14 @@ void setup()
     }
 
 #ifndef RODAS_PWM
-    drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq);
-    drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.data.centroMotorDir, true);
+    drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.dados.centroMotorEsq);
+    drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.dados.centroMotorDir, true);
 #else
-    drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.data.centroMotorEsq, eeprom.data.acelMotorEsq, MOTOR_ESQ_INV);
-    drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.data.centroMotorDir, eeprom.data.acelMotorDir, MOTOR_DIR_INV);
+    drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.dados.centroMotorEsq, eeprom.dados.acelMotorEsq, MOTOR_ESQ_INV);
+    drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.dados.centroMotorDir, eeprom.dados.acelMotorDir, MOTOR_DIR_INV);
     #ifdef RODAS_PWM_x4
-        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.data.centroMotorEsqT, eeprom.data.acelMotorEsqT, MOTOR_E_T_INV);
-        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.data.centroMotorDirT, eeprom.data.acelMotorDirT, MOTOR_D_T_INV);
+        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.dados.centroMotorEsqT, eeprom.dados.acelMotorEsqT, MOTOR_E_T_INV);
+        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.dados.centroMotorDirT, eeprom.dados.acelMotorDirT, MOTOR_D_T_INV);
     #endif
 #endif
 
@@ -1407,7 +1383,7 @@ void setup()
     roll.write(90);
 #endif
 
-    if (eeprom.data.programa == PRG_LINEFOLLOWER)
+    if (eeprom.dados.programa == PRG_LINEFOLLOWER)
         lineFollower.autoCalibrate();
 
     pinMode(PINO_LED, OUTPUT);
@@ -1461,7 +1437,7 @@ void loop()
 
     server.loop();
 
-    switch(eeprom.data.programa)
+    switch(eeprom.dados.programa)
     {
     case PRG_SHOW_SENSORS:
         enviaSensores();
@@ -1498,7 +1474,7 @@ void loop()
 
     case PRG_SENTINELA:
         if(rangeFinder.sentry())
-            eeprom.data.programa = PRG_ALARME;
+            eeprom.dados.programa = PRG_ALARME;
     break;
 
     #ifdef WIICHUCK
@@ -1512,8 +1488,8 @@ void loop()
         {
             //drive.vetorial(map(nunchuck_accelx(),200,700,-100,100),
             //                map(nunchuck_accely(),200,700,-100,100));
-            int x = nunchuck_joyx() - eeprom.data.joyCenter.x;
-            int y = nunchuck_joyy() - eeprom.data.joyCenter.y;
+            int x = nunchuck_joyx() - eeprom.dados.joyCenter.x;
+            int y = nunchuck_joyy() - eeprom.dados.joyCenter.y;
 
             // TODO: mapear 0-100 direito
             x *= 10; // joga x lah pra pqp
@@ -1534,13 +1510,13 @@ void loop()
             const int VELOCIDADE_SERVO = 2;
 
             #ifdef PINO_SERVO_PAN
-            if( nunchuck_joyx() < eeprom.data.joyCenter.x )
+            if( nunchuck_joyx() < eeprom.dados.joyCenter.x )
             {
                 int angle = pan.read() + VELOCIDADE_SERVO;
                 if(angle > 170) angle = 170;
                 pan.write(angle);
             }
-            else if( nunchuck_joyx() > eeprom.data.joyCenter.x )
+            else if( nunchuck_joyx() > eeprom.dados.joyCenter.x )
             {
                 int angle = pan.read() - VELOCIDADE_SERVO;
                 if(angle < 10) angle = 10;
@@ -1549,13 +1525,13 @@ void loop()
             #endif
 
             #ifdef PINO_SERVO_TILT
-            if( nunchuck_joyy() > eeprom.data.joyCenter.y )
+            if( nunchuck_joyy() > eeprom.dados.joyCenter.y )
             {
                 int angle = tilt.read() + VELOCIDADE_SERVO;
                 if(angle > 170) angle = 170;
                 tilt.write(angle);
             }
-            else if( nunchuck_joyy() < eeprom.data.joyCenter.y )
+            else if( nunchuck_joyy() < eeprom.dados.joyCenter.y )
             {
                 int angle = tilt.read() - VELOCIDADE_SERVO;
                 if(angle < 10) angle = 10;
@@ -1566,7 +1542,7 @@ void loop()
 
         if(nunchuck_cbutton())
         {
-            eeprom.data.handBrake = 0;
+            eeprom.dados.handBrake = 0;
             digitalWrite(PINO_ARMA,HIGH);
         }
         else
@@ -1580,7 +1556,7 @@ void loop()
         // pra conseguir performance melhor descartamos os 2 bits menos significativos
         // e envia somente um byte
 		Serial.write((analogRead(0) >> 2) & 0xFF);
-        dorme_ms = eeprom.data.RF_delay_reads;
+        dorme_ms = eeprom.dados.RF_delay_reads;
         mandarStatus = false;
     break;
 
@@ -1635,7 +1611,7 @@ void loop()
                 drive.left(50);
         }
 
-        dorme_ms = eeprom.data.RF_delay_reads;
+        dorme_ms = eeprom.dados.RF_delay_reads;
     }
     break;
 
@@ -1664,7 +1640,7 @@ void loop()
         //delay(1000);
         digitalWrite(PINO_LED, LOW);
         //delay(1000);
-        eeprom.data.programa = PRG_SHOW_SENSORS;
+        eeprom.dados.programa = PRG_SHOW_SENSORS;
     break;
 
     default:
