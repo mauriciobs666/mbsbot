@@ -18,7 +18,7 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 2
+#define VERSAO_PLACA 22
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
@@ -33,18 +33,18 @@
 #define PINO_MOTOR_ESQ		4
 #define PINO_MOTOR_ESQ_PWM	5
 // canal 2
-#define PINO_MOTOR_DIR		2
-#define PINO_MOTOR_DIR_PWM	3
+#define PINO_MOTOR_DIR		7
+#define PINO_MOTOR_DIR_PWM	11
 
 // economia de energia
-#define PINO_UNUSED_CNT 2
-#define PINO_UNUSED_ARRAY { 7,11 }
+#define PINO_UNUSED_CNT 0
+#define PINO_UNUSED_ARRAY { }
 
 // SHARP RANGE FINDER (pino analogico)
 #define PINO_SHARP_RF		3
 
 // SONAR
-#define PINO_SONAR           1
+#define PINO_SONAR          1
 
 #define PINO_SERVO_PAN		9
 #define PINO_SERVO_TILT		10
@@ -57,9 +57,9 @@
 
 #define PINO_BIP 			12
 
-#define PINO_ARMA           6
+#define PINO_ARMA           13
 
-#define PINO_LED             13
+#define PINO_LED            13
 
 // habilita wiichuck
 //#define WIICHUCK
@@ -74,5 +74,8 @@
 #else
     #define PINO_ANALOG_CNT 6
 #endif
+
+#define PINO_JOY_X      2
+#define PINO_JOY_Y      3
 
 #endif // BOARD_H_INCLUDED

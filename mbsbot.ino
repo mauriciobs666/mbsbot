@@ -507,7 +507,7 @@ void Drive::vetorial(int x, int y)
 // ******************************************************************************
 //		FOTOVORO
 // ******************************************************************************
-void photovore()
+void fotovoro()
 {
     const int threshold = 25;
 
@@ -905,20 +905,25 @@ bool RangeFinder::sentry()
 class EixoGamePad
 {
 public:
-    unsigned int valor, minimo, maximo, centro;
-    EixoGamePad() : valor (32767), minimo(0), maximo(65535), centro(32767)
+    volatile long valor, minimo, maximo, centro;
+    EixoGamePad() : valor (16383), minimo(0), maximo(32767), centro(16383)
         { }
-    unsigned int setValor(unsigned int novo)
+    long setValor(long novo)
     {
         if( novo < minimo ) minimo = novo;
         if( novo > maximo ) maximo = novo;
         return valor = novo;
     }
-    unsigned int centrar()
+    void calibrar()
+        { minimo = maximo = centrar(); }
+    long centrar()
         { return centro = valor; }
     int getPorcentoAprox(int grude=5)
     {
-        int x = ((valor - centro) * 100) / ((maximo - minimo) / 2);
+        long x = (valor - centro) * 100;
+        long r = (maximo - minimo) / 2;
+        if(r)
+            x /= r;
         if(abs(x) < grude)
             x = 0;
         return x;
@@ -929,7 +934,7 @@ class MbsGamePad
 {
 public:
     EixoGamePad x, y, z, r;
-    int botoesAntes, botoesAgora, botoesEdge;
+    volatile int botoesAntes, botoesAgora, botoesEdge;
     MbsGamePad() :
         botoesAntes(0),
         botoesAgora(0),
@@ -940,6 +945,13 @@ public:
         botoesAntes = botoesAgora;
         botoesEdge = (novo ^ botoesAntes) & novo;
         return botoesAgora = novo;
+    }
+    void calibrar()
+    {
+        x.calibrar();
+        y.calibrar();
+        z.calibrar();
+        r.calibrar();
     }
     void centrar()
     {
@@ -1254,30 +1266,97 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_JOYPAD) == 0)
             {
+                eeprom.data.programa = PRG_RC;
                 if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
                 {
                     gamepad.refreshBotoes(atoi(tok));
                     if ((tok = STRTOK(NULL, " ")))		        // terceiro token eh o eixo X
                     {
-                        gamepad.x.setValor(atoi(tok));
+                        gamepad.x.setValor(atol(tok));
                         if ((tok = STRTOK(NULL, " ")))	        // quarto token eh o eixo Y
                         {
-                            gamepad.y.setValor(atoi(tok));
+                            gamepad.y.setValor(atol(tok));
                             if ((tok = STRTOK(NULL, " ")))		// quinto token eh o eixo Z
                             {
-                                gamepad.z.setValor(atoi(tok));
+                                gamepad.z.setValor(atol(tok));
                                 if ((tok = STRTOK(NULL, " ")))	// sexto token eh o eixo Rudder
                                 {
-                                    gamepad.r.setValor(atoi(tok));
+                                    gamepad.r.setValor(atol(tok));
                                 }
                             }
                         }
                     }
                 }
+                if(gamepad.botoesEdge & BT_SEL)
+                {
+                    eeprom.data.handBrake = 1;
+                    gamepad.calibrar();
+                }
+
+                if(gamepad.botoesEdge & BT_STR)
+                {
+                    drive.stop();
+                    drive2.stop();
+
+                    // auto centra joystick
+                    gamepad.centrar();
+
+                    // solta freio de mao
+                    eeprom.data.handBrake = 0;
+                }
+/*
+        // vira 90 graus pra esquerda
+        if(gamepad.botoesEdge & BT_LB)
+            drive.turnLeft();
+
+        // vira 90 graus pra direita
+        if(gamepad.botoesEdge & BT_RB)
+            drive.turnRight();
+
+        if(gamepad.botoesEdge & BT_Y)
+        {
+            MbsBot::getInstance()->setPrograma(PRG_TEST);
+        }
+
+        if(gamepad.botoesEdge & BT_A)
+        {
+            MbsBot::getInstance()->stop();
+        }
+
+        if(gamepad.botoesEdge & BT_X)
+        {
+        }
+
+        if(gamepad.botoesEdge & BT_B)
+        {
+        }
+
+        if(gamepad.botoesEdge & BT_LT)
+        {
+        }
+
+        if(gamepad.botoesEdge & BT_RT)
+        {
+        }
+
+        if(gamepad.botoesEdge & BT_L3)
+        {
+        }
+
+        if(gamepad.botoesEdge & BT_R3)
+        {
+        }
+*/
                 if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
-                    drive.vetorial(gamepad.x.getPorcentoAprox(), gamepad.y.getPorcentoAprox());
+                    drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 else
                     drive.stop();
+
+                Serial.print(CMD_JOYPAD);
+                Serial.print(" ");
+                Serial.print(gamepad.x.getPorcentoAprox());
+                Serial.print(" ");
+                Serial.println(gamepad.y.getPorcentoAprox());
             }
         }
     }
@@ -1347,6 +1426,14 @@ void setup()
     nunchuck_init();
 #endif
 
+#ifdef PINO_JOY_X
+    //attachInterrupt(0, calcInput, CHANGE);
+#endif
+
+#ifdef PINO_JOY_Y
+    //attachInterrupt(1, calcInput, CHANGE);
+#endif
+
     sensores[0].init(); // potenciometro
     sensores[1].init(15, Sensor::SENSOR_PING);
     sensores[2].init(2, Sensor::SENSOR_ANALOGICO, true);
@@ -1390,7 +1477,7 @@ void loop()
         break;
 
     case PRG_PHOTOVORE:
-        photovore();
+        fotovoro();
         break;
 
     case PRG_LINEFOLLOWER:

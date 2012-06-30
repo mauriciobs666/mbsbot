@@ -953,11 +953,21 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
                     / ((mbsJoystick.r.maximo - mbsJoystick.r.minimo) / 2); // y eh invertido
 
             MbsBot::getInstance()->vectorialDrive(x,y,x2,y2);
-            */
+
             MbsBot::getInstance()->vectorialDrive( mbsJoystick.x.getPorcentoAprox(),
                                                   -mbsJoystick.y.getPorcentoAprox(),
                                                   -mbsJoystick.x.getPorcentoAprox(),
                                                   -mbsJoystick.y.getPorcentoAprox());
+            */
+
+            MbsBot::getInstance()->envia("%s %d %d %d %d %d%c",
+                                         CMD_JOYPAD,
+                                         mbsJoystick.botoesAgora,
+                                         mbsJoystick.x.valor,
+                                         mbsJoystick.y.valor,
+                                         mbsJoystick.z.valor,
+                                         mbsJoystick.r.valor,
+                                         CMD_EOL);
         }
 
         // Servos Pan Tilt Roll

@@ -74,6 +74,8 @@ class MbsBot
             pedeVar(VAR_SERVO_Z);
 
             pedeVar(VAR_AS);
+
+            status();
         }
 
         int salva()
