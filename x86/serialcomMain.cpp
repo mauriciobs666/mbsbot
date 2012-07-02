@@ -494,8 +494,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
                   2);
 // "MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani"
 
-    // Default serial port
-
     if( MbsBot::getInstance()->init() == 0)
     {
         SetStatusText(_("Conectado"));
@@ -817,8 +815,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
     if( joystick )
     {
-        unsigned short bt = joystick->GetButtonState();
-
         // le valores atuais
         // onde:
         //      x < centro = esquerda
@@ -838,55 +834,27 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(joystick->HasZ())        z = joystick->GetZPosition();
         if(joystick->HasRudder())   r = joystick->GetRudderPosition();
 
-        // nao usado
+        // nao usados ainda
         if(joystick->HasU())    u = joystick->GetUPosition();
         if(joystick->HasV())    v = joystick->GetVPosition();
 
+        unsigned short bt = joystick->GetButtonState();
+
+        if(( bt & BT_STR ) || ( bt & BT_SEL ))
+            CheckBoxDrvByJoy->SetValue(true);
+
+        // Log
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), wxpt.x),  0, 0);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.minimo), 0, 1);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.centro), 0, 2);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.x.maximo), 0, 3);
-
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), wxpt.y),  1, 0);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.minimo), 1, 1);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.centro), 1, 2);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.y.maximo), 1, 3);
-
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), z),  2, 0);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.minimo), 2, 1);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.centro), 2, 2);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.z.maximo), 2, 3);
-
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), r),  3, 0);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.minimo), 3, 1);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.centro), 3, 2);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.r.maximo), 3, 3);
-
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), u),  4, 0);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.minimo), 4, 1);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.centro), 4, 2);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.u.maximo), 4, 3);
-
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), v),  5, 0);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.minimo), 5, 1);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.centro), 5, 2);
-//        GridJoy->SetCellValue (wxString::Format(wxT("%i"), mbsJoystick.v.maximo), 5, 3);
-
         StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), bt));
 
         // Envia posicoes joystick
-
         if(CheckBoxDrvByJoy->IsChecked())
-        {
-            MbsBot::getInstance()->envia("%s %d %d %d %d %d%c",
-                                         CMD_JOYPAD,
-                                         (unsigned short) bt,
-                                         (unsigned short) wxpt.x,
-                                         (unsigned short) wxpt.y,
-                                         (unsigned short) z,
-                                         (unsigned short) r,
-                                         CMD_EOL);
-        }
+            MbsBot::getInstance()->enviaJoystick( bt, wxpt.x, wxpt.y, z, r );
 
         if(CheckBoxJoyServos->IsChecked())
         {

@@ -18,32 +18,23 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 3
+#define VERSAO_PLACA 22
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
 
-// 4 rodas mechanum
-#define RODAS_PWM_x4 1
-
 // inverte direcao de giro dos motores
-#define MOTOR_ESQ_INV 1
-#define MOTOR_DIR_INV 1
+#define MOTOR_ESQ_INV 0
+#define MOTOR_DIR_INV 0
 #define MOTOR_E_T_INV 0
 #define MOTOR_D_T_INV 0
 
-// canal 1 - roda esquerda traseira
-#define PINO_MOTOR_ESQ_T        23
-#define PINO_MOTOR_ESQ_T_PWM    5
-// canal 2 - roda direita traseira
-#define PINO_MOTOR_DIR_T        24
-#define PINO_MOTOR_DIR_T_PWM    4
-// canal 3 - roda esquerda dianteira
-#define PINO_MOTOR_ESQ          25
-#define PINO_MOTOR_ESQ_PWM      3
-// canal 4 - roda direita dianteira
-#define PINO_MOTOR_DIR          26
-#define PINO_MOTOR_DIR_PWM      2
+// canal 1
+#define PINO_MOTOR_ESQ		4
+#define PINO_MOTOR_ESQ_PWM	5
+// canal 2
+#define PINO_MOTOR_DIR		7
+#define PINO_MOTOR_DIR_PWM	11
 
 // economia de energia
 #define PINO_UNUSED_CNT 0

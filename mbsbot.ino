@@ -1333,6 +1333,11 @@ void Server::loop()
                     drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 else
                     drive.stop();
+
+                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
+                    drive2.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                else
+                    drive2.stop();
             }
         }
     }
@@ -1486,20 +1491,12 @@ void loop()
 
         if( ! nunchuck_zbutton())
         {
-            //drive.vetorial(map(nunchuck_accelx(),200,700,-100,100),
-            //                map(nunchuck_accely(),200,700,-100,100));
             int x = nunchuck_joyx() - eeprom.dados.joyCenter.x;
             int y = nunchuck_joyy() - eeprom.dados.joyCenter.y;
 
             // TODO: mapear 0-100 direito
             x *= 10; // joga x lah pra pqp
             y *= 10;
-
-            //Serial.print("vetorial(");
-            //Serial.print(x);
-            //Serial.print(",");
-            //Serial.print(y);
-            //Serial.println(")");
 
             drive.vetorial(x, y);
         }
@@ -1597,9 +1594,8 @@ void loop()
             if( sensorFrente->ehMinimo(MARGEM_PING) )
             {
                 if( ! palpite )
-                {
                     palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
-                }
+
                 if(palpite < 0)
                     drive.left(50);
                 else
@@ -1610,7 +1606,6 @@ void loop()
             else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
                 drive.left(50);
         }
-
         dorme_ms = eeprom.dados.RF_delay_reads;
     }
     break;
