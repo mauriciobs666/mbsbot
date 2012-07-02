@@ -1266,22 +1266,11 @@ void Server::loop()
                     }
                 }
 
-                Serial.print(CMD_JOYPAD);
-                Serial.print(" ");
-                Serial.print(gamepad.x.getPorcentoAprox());
-                Serial.print(" ");
-                Serial.print(gamepad.y.getPorcentoAprox());
-                Serial.print(" ");
-                Serial.print(gamepad.z.getPorcentoAprox());
-                Serial.print(" ");
-                Serial.println(gamepad.r.getPorcentoAprox());
-
-
                 if(gamepad.botoesEdge & BT_SEL)
                 {
                     gamepad.calibrar();
                     eeprom.dados.handBrake = 1;
-                    eeprom.dados.programa = PRG_SHOW_SENSORS;
+                    eeprom.dados.programa = PRG_RC;
                 }
 
                 if(gamepad.botoesEdge & BT_STR)
@@ -1329,13 +1318,13 @@ void Server::loop()
 
                 gamepad.botoesEdge = 0;
 
-                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
-                    drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
+                    drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 else
                     drive.stop();
 
-                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
-                    drive2.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
+                    drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 else
                     drive2.stop();
             }
@@ -1435,222 +1424,16 @@ void setup()
 
 void loop()
 {
-    bool mandarStatus = true;
-    unsigned short dorme_ms = 10;
-
     agora = millis();
 
     server.loop();
 
-    switch(eeprom.dados.programa)
+    // manda status a cada 10 segundos
+    static bool mandarStatus = true;
+    static unsigned long proximoStatus = 0;
+    if(agora >= proximoStatus)
     {
-    case PRG_SHOW_SENSORS:
-        enviaSensores();
-        enviaStatus();
-        dorme_ms = 50;
-        //#ifdef WIICHUCK
-        //nunchuck_print_data();
-        //#endif
-
-    case PRG_RC:
-        drive.refresh();
-        drive2.refresh();
-        break;
-
-    case PRG_PHOTOVORE:
-        fotovoro();
-        break;
-
-    case PRG_LINEFOLLOWER:
-        lineFollower.loop();
-        break;
-
-    case PRG_SHARP:
-        rangeFinder.fillArray();
-        break;
-
-    case PRG_SHARP_CHASE:
-        rangeFinder.chase();
-        break;
-
-    case PRG_COLLISION:
-        rangeFinder.collision();
-        break;
-
-    case PRG_SENTINELA:
-        if(rangeFinder.sentry())
-            eeprom.dados.programa = PRG_ALARME;
-    break;
-
-    #ifdef WIICHUCK
-    case PRG_WIICHUCK:
-        if(nunchuck_get_data() == 0)
-            break;
-
-        // nunchuck_print_data();
-
-        if( ! nunchuck_zbutton())
-        {
-            int x = nunchuck_joyx() - eeprom.dados.joyCenter.x;
-            int y = nunchuck_joyy() - eeprom.dados.joyCenter.y;
-
-            // TODO: mapear 0-100 direito
-            x *= 10; // joga x lah pra pqp
-            y *= 10;
-
-            drive.vetorial(x, y);
-        }
-        else
-        {
-            drive.stop();
-
-            const int VELOCIDADE_SERVO = 2;
-
-            #ifdef PINO_SERVO_PAN
-            if( nunchuck_joyx() < eeprom.dados.joyCenter.x )
-            {
-                int angle = pan.read() + VELOCIDADE_SERVO;
-                if(angle > 170) angle = 170;
-                pan.write(angle);
-            }
-            else if( nunchuck_joyx() > eeprom.dados.joyCenter.x )
-            {
-                int angle = pan.read() - VELOCIDADE_SERVO;
-                if(angle < 10) angle = 10;
-                pan.write(angle);
-            }
-            #endif
-
-            #ifdef PINO_SERVO_TILT
-            if( nunchuck_joyy() > eeprom.dados.joyCenter.y )
-            {
-                int angle = tilt.read() + VELOCIDADE_SERVO;
-                if(angle > 170) angle = 170;
-                tilt.write(angle);
-            }
-            else if( nunchuck_joyy() < eeprom.dados.joyCenter.y )
-            {
-                int angle = tilt.read() - VELOCIDADE_SERVO;
-                if(angle < 10) angle = 10;
-                tilt.write(angle);
-            }
-            #endif
-        }
-
-        if(nunchuck_cbutton())
-        {
-            eeprom.dados.handBrake = 0;
-            digitalWrite(PINO_ARMA,HIGH);
-        }
-        else
-            digitalWrite(PINO_ARMA,LOW);
-
-        dorme_ms = 100;
-    break;
-    #endif
-
-    case PRG_SCOPE:
-        // pra conseguir performance melhor descartamos os 2 bits menos significativos
-        // e envia somente um byte
-		Serial.write((analogRead(0) >> 2) & 0xFF);
-        dorme_ms = eeprom.dados.RF_delay_reads;
-        mandarStatus = false;
-    break;
-
-    case PRG_KNOB:
-        pan.write(map(analogRead(0), 0, 1023, 5, 174));
-        dorme_ms = 50;
-    break;
-
-    case PRG_TEST:
-    {
-        sensorFrente->refresh();
-        sensorEsquerda->refresh();
-        sensorDireita->refresh();
-
-        static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
-
-        #define MARGEM_SHARP 200
-        #define MARGEM_PING 400
-        if( !sensorEsquerda->ehMinimo(MARGEM_SHARP) &&
-            !sensorDireita->ehMinimo(MARGEM_SHARP) &&
-            !sensorFrente->ehMinimo(MARGEM_PING) ) // ambos livres
-        {
-            digitalWrite(PINO_LED, LOW);
-
-//            if( sensorEsquerda->ehMinimo(MARGEM_SHARP*3) ||
-//                sensorDireita->ehMinimo(MARGEM_SHARP*3) ||
-//                sensorFrente->ehMinimo(MARGEM_PING+50) )
-//                drive.forward(50);
-//            else
-                drive.forward(100);
-
-            palpite = 0;
-        }
-        else
-        {
-            digitalWrite(PINO_LED, HIGH);
-
-            if( sensorFrente->ehMinimo(MARGEM_PING) )
-            {
-                if( ! palpite )
-                    palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
-
-                if(palpite < 0)
-                    drive.left(50);
-                else
-                    drive.right(50);
-            }
-            else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
-                drive.right(50);
-            else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
-                drive.left(50);
-        }
-        dorme_ms = eeprom.dados.RF_delay_reads;
-    }
-    break;
-
-    case PRG_ALARME:
-        digitalWrite(PINO_LED, HIGH);
-        Serial.println("ALARM");
-
-        #define SIRENE_TOM_MIN  1000
-        #define SIRENE_TOM_MAX  3000
-        #define SIRENE_PASSO    2
-        #define SIRENE_COMPASSO 150
-
-        for(int x=0; x<1; x++)
-        {
-            for(int tom=SIRENE_TOM_MIN;tom<SIRENE_TOM_MAX;tom+=SIRENE_PASSO)
-            {
-                BEEP(tom,SIRENE_COMPASSO);
-            }
-
-            for(int tom=SIRENE_TOM_MAX;tom>SIRENE_TOM_MIN;tom-=SIRENE_PASSO)
-            {
-                BEEP(tom,SIRENE_COMPASSO/2);
-            }
-        }
-
-        //delay(1000);
-        digitalWrite(PINO_LED, LOW);
-        //delay(1000);
-        eeprom.dados.programa = PRG_SHOW_SENSORS;
-    break;
-
-    default:
-        if( lastError != ERR_INVALID_PRG )
-        {
-            lastError = ERR_INVALID_PRG;
-            Serial.println("ERR_INVALID_PRG");
-        }
-    break;
-    }
-
-    static unsigned long ultimoStatus = 0;
-    if(agora >= ultimoStatus)
-    {
-        ultimoStatus += 10000;
+        proximoStatus += 10000;
         if(mandarStatus)
         {
             //enviaSensores();
@@ -1658,6 +1441,223 @@ void loop()
         }
     }
 
-    if(dorme_ms)
-        delay(dorme_ms);
+    static unsigned short msExec = 10;
+    static unsigned long ultimaExec = 0;
+    if( agora >= (ultimaExec + msExec) )
+    {
+        ultimaExec = agora;
+        switch(eeprom.dados.programa)
+        {
+        case PRG_SHOW_SENSORS:
+            enviaSensores();
+            enviaStatus();
+            msExec = 50;
+            //#ifdef WIICHUCK
+            //nunchuck_print_data();
+            //#endif
+            Serial.print(CMD_JOYPAD);
+            Serial.print(" ");
+            Serial.print(gamepad.x.getPorcentoAprox());
+            Serial.print(" ");
+            Serial.print(gamepad.y.getPorcentoAprox());
+            Serial.print(" ");
+            Serial.print(gamepad.z.getPorcentoAprox());
+            Serial.print(" ");
+            Serial.println(gamepad.r.getPorcentoAprox());
+
+        case PRG_RC:
+            drive.refresh();
+            drive2.refresh();
+            break;
+
+        case PRG_PHOTOVORE:
+            fotovoro();
+            break;
+
+        case PRG_LINEFOLLOWER:
+            lineFollower.loop();
+            break;
+
+        case PRG_SHARP:
+            rangeFinder.fillArray();
+            break;
+
+        case PRG_SHARP_CHASE:
+            rangeFinder.chase();
+            break;
+
+        case PRG_COLLISION:
+            rangeFinder.collision();
+            break;
+
+        case PRG_SENTINELA:
+            if(rangeFinder.sentry())
+                eeprom.dados.programa = PRG_ALARME;
+        break;
+
+        #ifdef WIICHUCK
+        case PRG_WIICHUCK:
+            if(nunchuck_get_data() == 0)
+                break;
+
+            // nunchuck_print_data();
+
+            if( ! nunchuck_zbutton())
+            {
+                int x = nunchuck_joyx() - eeprom.dados.joyCenter.x;
+                int y = nunchuck_joyy() - eeprom.dados.joyCenter.y;
+
+                // TODO: mapear 0-100 direito
+                x *= 10; // joga x lah pra pqp
+                y *= 10;
+
+                drive.vetorial(x, y);
+            }
+            else
+            {
+                drive.stop();
+
+                const int VELOCIDADE_SERVO = 2;
+
+                #ifdef PINO_SERVO_PAN
+                if( nunchuck_joyx() < eeprom.dados.joyCenter.x )
+                {
+                    int angle = pan.read() + VELOCIDADE_SERVO;
+                    if(angle > 170) angle = 170;
+                    pan.write(angle);
+                }
+                else if( nunchuck_joyx() > eeprom.dados.joyCenter.x )
+                {
+                    int angle = pan.read() - VELOCIDADE_SERVO;
+                    if(angle < 10) angle = 10;
+                    pan.write(angle);
+                }
+                #endif
+
+                #ifdef PINO_SERVO_TILT
+                if( nunchuck_joyy() > eeprom.dados.joyCenter.y )
+                {
+                    int angle = tilt.read() + VELOCIDADE_SERVO;
+                    if(angle > 170) angle = 170;
+                    tilt.write(angle);
+                }
+                else if( nunchuck_joyy() < eeprom.dados.joyCenter.y )
+                {
+                    int angle = tilt.read() - VELOCIDADE_SERVO;
+                    if(angle < 10) angle = 10;
+                    tilt.write(angle);
+                }
+                #endif
+            }
+
+            if(nunchuck_cbutton())
+            {
+                eeprom.dados.handBrake = 0;
+                digitalWrite(PINO_ARMA,HIGH);
+            }
+            else
+                digitalWrite(PINO_ARMA,LOW);
+
+            msExec = 100;
+        break;
+        #endif
+
+        case PRG_SCOPE:
+            // pra conseguir performance melhor descartamos os 2 bits menos significativos
+            // e envia somente um byte
+            Serial.write((analogRead(0) >> 2) & 0xFF);
+            msExec = eeprom.dados.RF_delay_reads;
+            mandarStatus = false;
+        break;
+
+        case PRG_KNOB:
+            pan.write(map(analogRead(0), 0, 1023, 5, 174));
+            msExec = 50;
+        break;
+
+        case PRG_TEST:
+        {
+            sensorFrente->refresh();
+            sensorEsquerda->refresh();
+            sensorDireita->refresh();
+
+            static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
+
+            #define MARGEM_SHARP 200
+            #define MARGEM_PING 400
+            if( !sensorEsquerda->ehMinimo(MARGEM_SHARP) &&
+                !sensorDireita->ehMinimo(MARGEM_SHARP) &&
+                !sensorFrente->ehMinimo(MARGEM_PING) ) // ambos livres
+            {
+                digitalWrite(PINO_LED, LOW);
+
+    //            if( sensorEsquerda->ehMinimo(MARGEM_SHARP*3) ||
+    //                sensorDireita->ehMinimo(MARGEM_SHARP*3) ||
+    //                sensorFrente->ehMinimo(MARGEM_PING+50) )
+    //                drive.forward(50);
+    //            else
+                    drive.forward(100);
+
+                palpite = 0;
+            }
+            else
+            {
+                digitalWrite(PINO_LED, HIGH);
+
+                if( sensorFrente->ehMinimo(MARGEM_PING) )
+                {
+                    if( ! palpite )
+                        palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+
+                    if(palpite < 0)
+                        drive.left(50);
+                    else
+                        drive.right(50);
+                }
+                else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
+                    drive.right(50);
+                else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
+                    drive.left(50);
+            }
+            msExec = eeprom.dados.RF_delay_reads;
+        }
+        break;
+
+        case PRG_ALARME:
+            digitalWrite(PINO_LED, HIGH);
+            Serial.println("ALARM");
+
+            #define SIRENE_TOM_MIN  1000
+            #define SIRENE_TOM_MAX  3000
+            #define SIRENE_PASSO    2
+            #define SIRENE_COMPASSO 150
+
+            for(int x=0; x<1; x++)
+            {
+                for(int tom=SIRENE_TOM_MIN;tom<SIRENE_TOM_MAX;tom+=SIRENE_PASSO)
+                {
+                    BEEP(tom,SIRENE_COMPASSO);
+                }
+
+                for(int tom=SIRENE_TOM_MAX;tom>SIRENE_TOM_MIN;tom-=SIRENE_PASSO)
+                {
+                    BEEP(tom,SIRENE_COMPASSO/2);
+                }
+            }
+
+            //delay(1000);
+            digitalWrite(PINO_LED, LOW);
+            //delay(1000);
+            eeprom.dados.programa = PRG_SHOW_SENSORS;
+        break;
+
+        default:
+            if( lastError != ERR_INVALID_PRG )
+            {
+                lastError = ERR_INVALID_PRG;
+                Serial.println("ERR_INVALID_PRG");
+            }
+        break;
+        }
+    }
 }
