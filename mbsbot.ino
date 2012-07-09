@@ -161,6 +161,19 @@ public:
 } eeprom;
 
 // ******************************************************************************
+//		Delay sem block
+// ******************************************************************************
+bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
+{
+    if(agora > *ultimaVez + ms)
+    {
+        *ultimaVez += ms;
+        return true;
+    }
+    return false;
+}
+
+// ******************************************************************************
 //		Sensor universal
 // ******************************************************************************
 class Sensor
@@ -168,7 +181,7 @@ class Sensor
 public:
     unsigned char pino;
     bool invertido;
-    volatile unsigned short valor, minimo, maximo, centro;
+    volatile unsigned short valor, anterior, minimo, maximo, centro;
     int a, b; // = a*x + b
     enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL } tipo;
 
@@ -180,7 +193,7 @@ public:
             tipo = t;
             invertido = inverso;
             minimo = 65535;
-            valor = maximo = 0;
+            valor = anterior = maximo = 0;
             if(invertido) a = -1; else a = 1;
             b = 0;
         }
@@ -188,6 +201,7 @@ public:
         { return valor; }
     void setValor(unsigned short v)
         {
+            anterior = valor;
             valor = v;
             if (valor < minimo) minimo = valor;
             if (valor > maximo) maximo = valor;
@@ -242,6 +256,8 @@ public:
             x = 100;
         return constrain(x, -100, 100);
     }
+    int delta()
+        { return valor - anterior; }
 };
 
 Sensor sensores[6], *sensorFrente, *sensorEsquerda, *sensorDireita;
@@ -757,63 +773,36 @@ void LineFollower::autoCalibrate()
 #define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
 #define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
 
-class RangeFinder
+class Scanner
 {
 public:
-    RangeFinder() : nextRead(0), currentStep(0), stepDir(1), currValue(0), lastValue(0)
-    {}
-    short readSensor()
-    {
-        lastValue = currValue;
-        return currValue = analogRead(PINO_SHARP_RF);
-    }
+    Scanner() : ultimaLeitura(0), currentStep(0), stepDir(1)
+        {}
     bool stepUp();
     bool stepDown();
     void refreshServo()
-    {
-        pan.write( RF_SERVO_SAFE_ANGLE + currentStep * RF_STEP_ANGLE );
-    }
+        { pan.write( RF_SERVO_SAFE_ANGLE + currentStep * RF_STEP_ANGLE ); }
     void chase();
     void fillArray();
     bool step()
-    {
-        return (stepDir < 0) ? stepDown() : stepUp();
-    }
+        { return (stepDir < 0) ? stepDown() : stepUp(); }
     void reverseDir()
-    {
-        stepDir = -stepDir;
-    }
+        { stepDir = -stepDir; }
     bool lowerBound()
-    {
-        return currentStep <= 0;
-    }
+        { return currentStep <= 0; }
     bool upperBound()
-    {
-        return currentStep >= (RF_NUMBER_STEPS-1);
-    }
-    bool delayRead();
-    bool collision();
-    bool sentry();
+        { return currentStep >= (RF_NUMBER_STEPS-1); }
+    void setSensor(Sensor *ss)
+        { s = ss; }
 private:
-    unsigned long nextRead;
+    unsigned long ultimaLeitura;
     short currentStep;
     char stepDir;
     short dataArray[RF_NUMBER_STEPS];
-    short currValue;
-    short lastValue;
-} rangeFinder;
+    Sensor *s;
+} scanner;
 
-bool RangeFinder::delayRead()
-{
-    if ( millis() > nextRead )
-    {
-        nextRead = millis() + eeprom.dados.RF_delay_reads;
-        return true;
-    }
-    return false;
-}
-
-bool RangeFinder::stepUp()
+bool Scanner::stepUp()
 {
     if(upperBound())
         currentStep = (RF_NUMBER_STEPS-1);
@@ -822,7 +811,7 @@ bool RangeFinder::stepUp()
     return upperBound();
 }
 
-bool RangeFinder::stepDown()
+bool Scanner::stepDown()
 {
     if(lowerBound())
         currentStep = 0;
@@ -831,23 +820,23 @@ bool RangeFinder::stepDown()
     return lowerBound();
 }
 
-void RangeFinder::chase()
+void Scanner::chase()
 {
-    if( delayRead() )
+    if( delaySemBlock(&ultimaLeitura, eeprom.dados.RF_delay_reads) )
     {
-        if( rangeFinder.readSensor() > SHARP_TRESHOLD )
+        if( s->refresh() > SHARP_TRESHOLD )
         {
             if(stepDir < 0)
-                rangeFinder.stepDown();
+                stepDown();
             else
-                rangeFinder.stepUp();
+                stepUp();
         }
         else //no object detected
         {
             if(stepDir < 0)
-                rangeFinder.stepUp();
+                stepUp();
             else
-                rangeFinder.stepDown();
+                stepDown();
         }
 
         if(upperBound() || lowerBound())
@@ -855,23 +844,14 @@ void RangeFinder::chase()
 
         refreshServo();
     }
-
-    /*
-    if scanner is pointing far left
-    	turns left
-    else if scanner is pointing far right
-    	turns right
-    else //scanner pointing forward
-    	drives straight
-    */
 }
 
-void RangeFinder::fillArray()
+void Scanner::fillArray()
 {
-    if( delayRead() )
+    if( delaySemBlock(&ultimaLeitura, eeprom.dados.RF_delay_reads) )
     {
         // read sensor into array
-        dataArray[currentStep] = readSensor();
+        dataArray[currentStep] = s->refresh();
 
         // calc next move and check boundaries
         if( step() )
@@ -893,52 +873,6 @@ void RangeFinder::fillArray()
         // move
         refreshServo();
     }
-}
-
-bool RangeFinder::collision()
-{
-    const int minDist = 200;	// in sensor units
-    const int timeAlarm = 3;	// seconds to collision
-    const int s0 = 700;			// collision position
-
-    if(delayRead())
-    {
-        readSensor();
-
-        // ignore far objects
-        if(currValue > minDist)
-        {
-            // calc delta-S
-            int ds = currValue - lastValue;
-
-            // calc velocity in sensor units / second
-            int v = (ds * 1000) / eeprom.dados.RF_delay_reads;
-
-            // s = s0 + v * t;
-            int timeToCollision = (s0 - currValue) / v;
-
-            if(timeToCollision < timeAlarm)
-            {
-                BEEP(1000, 50);
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool RangeFinder::sentry()
-{
-    if(delayRead())
-    {
-        readSensor();
-
-        int threshold = 30;
-
-        if( abs((lastValue - currValue)) > threshold )
-            return true;
-    }
-    return false;
 }
 
 // ******************************************************************************
@@ -1443,9 +1377,8 @@ void loop()
 
     static unsigned short msExec = 10;
     static unsigned long ultimaExec = 0;
-    if( agora >= (ultimaExec + msExec) )
+    if( delaySemBlock(&ultimaExec, msExec) )
     {
-        ultimaExec = agora;
         switch(eeprom.dados.programa)
         {
         case PRG_SHOW_SENSORS:
@@ -1479,20 +1412,41 @@ void loop()
             break;
 
         case PRG_SHARP:
-            rangeFinder.fillArray();
+            scanner.fillArray();
             break;
 
-        case PRG_SHARP_CHASE:
-            rangeFinder.chase();
+        case PRG_CHASE:
+            scanner.chase();
             break;
 
         case PRG_COLLISION:
-            rangeFinder.collision();
-            break;
+        {
+            const int minDist = 200;
+            const int timeAlarm = 3;	// segundos pra colisao
+            const int s0 = 700;			// posicao da colisao
+
+            // ignora objetos muito longe
+            if(sensorFrente->refresh() > minDist)
+            {
+                // calc velocidade em unidades sensor / segundo
+                int v = ((long)sensorFrente->delta() * 1000) / eeprom.dados.RF_delay_reads;
+
+                // s = s0 + v * t;
+                int timeToCollision = (s0 - sensorFrente->getValor()) / v;
+
+                if(timeToCollision < timeAlarm)
+                    eeprom.dados.programa = PRG_ALARME;
+            }
+
+            msExec = eeprom.dados.RF_delay_reads;
+        }
+        break;
 
         case PRG_SENTINELA:
-            if(rangeFinder.sentry())
+            sensorFrente->refresh();
+            if( abs(sensorFrente->delta() ) > 30 )
                 eeprom.dados.programa = PRG_ALARME;
+            msExec = eeprom.dados.RF_delay_reads;
         break;
 
         #ifdef WIICHUCK
@@ -1590,14 +1544,7 @@ void loop()
                 !sensorFrente->ehMinimo(MARGEM_PING) ) // ambos livres
             {
                 digitalWrite(PINO_LED, LOW);
-
-    //            if( sensorEsquerda->ehMinimo(MARGEM_SHARP*3) ||
-    //                sensorDireita->ehMinimo(MARGEM_SHARP*3) ||
-    //                sensorFrente->ehMinimo(MARGEM_PING+50) )
-    //                drive.forward(50);
-    //            else
-                    drive.forward(100);
-
+                drive.forward(100);
                 palpite = 0;
             }
             else

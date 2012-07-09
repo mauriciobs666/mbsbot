@@ -128,7 +128,7 @@ enum ProgramID
     PRG_PHOTOVORE = 2,      //
     PRG_LINEFOLLOWER = 3,   //
     PRG_SHARP = 4,          // Sharp IR range finder
-    PRG_SHARP_CHASE = 5,    //
+    PRG_CHASE = 5,          //
     PRG_COLLISION = 6,      //
     PRG_SENTINELA = 7,      //
     PRG_WIICHUCK = 8,       //
