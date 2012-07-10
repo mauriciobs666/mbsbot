@@ -96,6 +96,7 @@
 		<Unit filename="..\placa.h" />
 		<Unit filename="..\placa_v1.h" />
 		<Unit filename="..\placa_v2.h" />
+		<Unit filename="..\placa_v22.h" />
 		<Unit filename="..\placa_v3.h" />
 		<Unit filename="..\protocolo.h" />
 		<Unit filename="..\reflash.sh" />

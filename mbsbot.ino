@@ -43,11 +43,6 @@
 #define BEEP(freq, dur)
 #endif
 
-// range finder
-#define RF_NUMBER_STEPS 30
-#define SHARP_TRESHOLD 300
-
-
 // ******************************************************************************
 //		Plin-plin
 // ******************************************************************************
@@ -56,7 +51,7 @@ Servo pan;
 Servo tilt;
 Servo roll;
 
-enum Errors lastError = SUCCESS;
+enum Errors lastError = SUCCESSO;
 unsigned long agora = 0;
 
 // ******************************************************************************
@@ -768,20 +763,20 @@ void LineFollower::autoCalibrate()
 }
 
 // ******************************************************************************
-//		SHARP IR RANGE FINDER
+//		Scanner 1D pra uso com IR Sharp
 // ******************************************************************************
-#define RF_STEP_ANGLE ( 180 / RF_NUMBER_STEPS )
-#define RF_SERVO_SAFE_ANGLE ( RF_STEP_ANGLE / 2 )
+#define SCANNER_STEPS 30
+#define SCANNER_ANG ( 180 / SCANNER_STEPS )
 
 class Scanner
 {
 public:
-    Scanner() : ultimaLeitura(0), currentStep(0), stepDir(1)
+    Scanner() : stepAtual(0), stepDir(1)
         {}
     bool stepUp();
     bool stepDown();
     void refreshServo()
-        { pan.write( RF_SERVO_SAFE_ANGLE + currentStep * RF_STEP_ANGLE ); }
+        { pan.write( (SCANNER_ANG/2) + stepAtual * SCANNER_ANG ); }
     void chase();
     void fillArray();
     bool step()
@@ -789,94 +784,76 @@ public:
     void reverseDir()
         { stepDir = -stepDir; }
     bool lowerBound()
-        { return currentStep <= 0; }
+        { return stepAtual <= 0; }
     bool upperBound()
-        { return currentStep >= (RF_NUMBER_STEPS-1); }
+        { return stepAtual >= (SCANNER_STEPS-1); }
     void setSensor(Sensor *ss)
         { s = ss; }
 private:
-    unsigned long ultimaLeitura;
-    short currentStep;
-    char stepDir;
-    short dataArray[RF_NUMBER_STEPS];
     Sensor *s;
+    short stepAtual;
+    char stepDir;
+    unsigned short dataArray[SCANNER_STEPS];
 } scanner;
 
 bool Scanner::stepUp()
 {
     if(upperBound())
-        currentStep = (RF_NUMBER_STEPS-1);
+        stepAtual = (SCANNER_STEPS-1);
     else
-        currentStep++;
+        stepAtual++;
     return upperBound();
 }
 
 bool Scanner::stepDown()
 {
     if(lowerBound())
-        currentStep = 0;
+        stepAtual = 0;
     else
-        currentStep--;
+        stepAtual--;
     return lowerBound();
 }
 
 void Scanner::chase()
 {
-    if( delaySemBlock(&ultimaLeitura, eeprom.dados.RF_delay_reads) )
+    if( s->refresh() > 300 ) // threshold
     {
-        if( s->refresh() > SHARP_TRESHOLD )
-        {
-            if(stepDir < 0)
-                stepDown();
-            else
-                stepUp();
-        }
-        else //no object detected
-        {
-            if(stepDir < 0)
-                stepUp();
-            else
-                stepDown();
-        }
-
-        if(upperBound() || lowerBound())
-            reverseDir();
-
-        refreshServo();
+        if(stepDir < 0)
+            stepDown();
+        else
+            stepUp();
     }
+    else // nada a vista, apenas continua na mesma direcao
+        step();
+
+    if(upperBound() || lowerBound())
+        reverseDir();
+
+    refreshServo();
 }
 
 void Scanner::fillArray()
 {
-    if( delaySemBlock(&ultimaLeitura, eeprom.dados.RF_delay_reads) )
+    dataArray[stepAtual] = s->refresh(); // le sensor
+
+    if( step() ) // calcula proxima posicao, retorna true se encheu array
     {
-        // read sensor into array
-        dataArray[currentStep] = s->refresh();
-
-        // calc next move and check boundaries
-        if( step() )
+        reverseDir();
+/*
+        Serial.print("RFA ");
+        for(int x = 0; x < SCANNER_STEPS; x++)
         {
-            // step() returns true if reached left or right most
-            // reverse next move
-            reverseDir();
-
-            // array is complete, send debug values
-            Serial.print("RFA ");
-            for(int x = 0; x < RF_NUMBER_STEPS; x++)
-            {
-                Serial.print(dataArray[x]);
-                Serial.print(" ");
-            }
-            Serial.println("");
+            Serial.print(dataArray[x]);
+            Serial.print(" ");
         }
-
-        // move
-        refreshServo();
+        Serial.println("");
+*/
     }
+    refreshServo();
 }
 
 // ******************************************************************************
-//		DEBUG / SENSORS INFORMATION
+//		DEBUG / SENSORES
 // ******************************************************************************
 void enviaSensores(bool enviaComando = true)
 {
@@ -929,6 +906,27 @@ void enviaStatus(bool enviaComando = true)
     Serial.println("");
 }
 
+void enviaJoystick()
+{
+    Serial.print(CMD_JOYPAD);
+    Serial.print(" ");
+    Serial.print(gamepad.x.getPorcentoAprox());
+    Serial.print(" ");
+    Serial.print(gamepad.y.getPorcentoAprox());
+    Serial.print(" ");
+    Serial.print(gamepad.z.getPorcentoAprox());
+    Serial.print(" ");
+    Serial.println(gamepad.r.getPorcentoAprox());
+}
+
+void uname()
+{
+    Serial.print("MBSBOT hw ");
+    Serial.print(VERSAO_PLACA);
+    Serial.print(" sw ");
+    Serial.println(VERSAO_PROTOCOLO);
+}
+
 // ******************************************************************************
 //		TELNET SERVER
 // ******************************************************************************
@@ -952,8 +950,8 @@ bool Server::receive()
         if (pos == MAX_CMD)
         {
             pos = 0;
-            Serial.println("ERR_MAX_CMD_SIZ");
-            lastError = ERR_MAX_CMD_SIZ;
+            Serial.println("ERRO_TAM_MAX_CMD");
+            lastError = ERRO_TAM_MAX_CMD;
         }
         else if(c == CMD_EOL)
         {
@@ -1154,12 +1152,7 @@ void Server::loop()
             else if(strcmp(tok, CMD_STATUS) == 0)
                 enviaStatus();
             else if(strcmp(tok, CMD_UNAME) == 0)
-            {
-                Serial.print("Mbsbot hw ");
-                Serial.print(VERSAO_PLACA);
-                Serial.print(" sw ");
-                Serial.println(PROTOCOL_VERSION);
-            }
+                uname();
             else if(strcmp(tok, CMD_BIP) == 0)
             {
                 tok = STRTOK(NULL, " ");
@@ -1175,7 +1168,7 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_CLEAR_ERR) == 0)
             {
-                lastError = SUCCESS;
+                lastError = SUCCESSO;
             }
             else if(strcmp(tok, CMD_JOYPAD) == 0)
             {
@@ -1272,7 +1265,7 @@ void Server::loop()
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("MBSBOT");
+    uname();
 
     eeprom.load();
 
@@ -1384,40 +1377,40 @@ void loop()
         case PRG_SHOW_SENSORS:
             enviaSensores();
             enviaStatus();
-            msExec = 50;
+            enviaJoystick();
             //#ifdef WIICHUCK
             //nunchuck_print_data();
             //#endif
-            Serial.print(CMD_JOYPAD);
-            Serial.print(" ");
-            Serial.print(gamepad.x.getPorcentoAprox());
-            Serial.print(" ");
-            Serial.print(gamepad.y.getPorcentoAprox());
-            Serial.print(" ");
-            Serial.print(gamepad.z.getPorcentoAprox());
-            Serial.print(" ");
-            Serial.println(gamepad.r.getPorcentoAprox());
+            drive.refresh();
+            drive2.refresh();
+            msExec = 100;
+        break;
 
         case PRG_RC:
             drive.refresh();
             drive2.refresh();
-            break;
+            msExec = 10;
+        break;
 
         case PRG_PHOTOVORE:
             fotovoro();
-            break;
+            msExec = eeprom.dados.RF_delay_reads;
+        break;
 
         case PRG_LINEFOLLOWER:
             lineFollower.loop();
-            break;
+            msExec = eeprom.dados.RF_delay_reads;
+        break;
 
         case PRG_SHARP:
             scanner.fillArray();
-            break;
+            msExec = eeprom.dados.RF_delay_reads;
+        break;
 
         case PRG_CHASE:
             scanner.chase();
-            break;
+            msExec = eeprom.dados.RF_delay_reads;
+        break;
 
         case PRG_COLLISION:
         {
@@ -1539,33 +1532,28 @@ void loop()
 
             #define MARGEM_SHARP 200
             #define MARGEM_PING 400
-            if( !sensorEsquerda->ehMinimo(MARGEM_SHARP) &&
-                !sensorDireita->ehMinimo(MARGEM_SHARP) &&
-                !sensorFrente->ehMinimo(MARGEM_PING) ) // ambos livres
+
+            if( sensorFrente->ehMinimo(MARGEM_PING) )
             {
-                digitalWrite(PINO_LED, LOW);
+                if( ! palpite )
+                    palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+
+                if(palpite < 0)
+                    drive.left(50);
+                else
+                    drive.right(50);
+            }
+            else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
+                drive.right(50);
+            else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
+                drive.left(50);
+            else
+            {
+                // ceu de brigadeiro
                 drive.forward(100);
                 palpite = 0;
             }
-            else
-            {
-                digitalWrite(PINO_LED, HIGH);
 
-                if( sensorFrente->ehMinimo(MARGEM_PING) )
-                {
-                    if( ! palpite )
-                        palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
-
-                    if(palpite < 0)
-                        drive.left(50);
-                    else
-                        drive.right(50);
-                }
-                else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
-                    drive.right(50);
-                else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
-                    drive.left(50);
-            }
             msExec = eeprom.dados.RF_delay_reads;
         }
         break;
@@ -1595,14 +1583,16 @@ void loop()
             //delay(1000);
             digitalWrite(PINO_LED, LOW);
             //delay(1000);
-            eeprom.dados.programa = PRG_SHOW_SENSORS;
+            eeprom.dados.programa = PRG_RC;
         break;
 
         default:
-            if( lastError != ERR_INVALID_PRG )
+            if( lastError != ERRO_PRG_INVALIDO )
             {
-                lastError = ERR_INVALID_PRG;
-                Serial.println("ERR_INVALID_PRG");
+                lastError = ERRO_PRG_INVALIDO;
+                Serial.print("ERRO_PRG_INVALIDO ");
+                Serial.println(eeprom.dados.programa);
+                eeprom.dados.programa = PRG_RC;
             }
         break;
         }

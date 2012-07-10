@@ -18,7 +18,7 @@
 #ifndef PROTOCOL_H_INCLUDED
 #define PROTOCOL_H_INCLUDED
 
-#define PROTOCOL_VERSION 1
+#define VERSAO_PROTOCOLO 1
 
 /*
 O protocolo do MBS-BOT imita uma sessao de console e consiste em mnemonicos numa string
@@ -140,9 +140,9 @@ enum ProgramID
 
 enum Errors
 {
-    SUCCESS = 0,
-    ERR_MAX_CMD_SIZ,
-    ERR_INVALID_PRG
+    SUCCESSO = 0,
+    ERRO_TAM_MAX_CMD,
+    ERRO_PRG_INVALIDO
 };
 
 // Mapeamento dos botoes de Joypad (API antiga)

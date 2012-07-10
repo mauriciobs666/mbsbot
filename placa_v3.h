@@ -46,8 +46,8 @@
 #define PINO_MOTOR_DIR_PWM      2
 
 // economia de energia
-#define PINO_UNUSED_CNT 2
-#define PINO_UNUSED_ARRAY { 7,11 }
+#define PINO_UNUSED_CNT 0
+#define PINO_UNUSED_ARRAY { }
 
 // SHARP RANGE FINDER (pino analogico)
 #define PINO_SHARP_RF		3
@@ -83,5 +83,8 @@
 #else
     #define PINO_ANALOG_CNT 6
 #endif
+
+#define PINO_JOY_X      2
+#define PINO_JOY_Y      3
 
 #endif // BOARD_H_INCLUDED
