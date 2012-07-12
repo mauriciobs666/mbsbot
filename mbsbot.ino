@@ -15,6 +15,13 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// ******************************************************************************
+//		INCLUDEs e CONFIGURACAO
+// ******************************************************************************
+
+#include "protocolo.h"
+#include "placa.h"
+
 // ANSI
 #include <stdio.h>
 #include <ctype.h>
@@ -22,13 +29,6 @@
 
 // Arduino
 #include <Servo.h>
-
-// ******************************************************************************
-//		DEFINEs e SETUP
-// ******************************************************************************
-
-#include "protocolo.h"
-#include "placa.h"
 
 // I2C / wiichuck
 #ifdef WIICHUCK
@@ -261,16 +261,14 @@ class MbsGamePad
 {
 public:
     Sensor x, y, z, r;
-    volatile int botoesAntes, botoesAgora, botoesEdge;
-    MbsGamePad() :
-        botoesAntes(0),
-        botoesAgora(0),
-        botoesEdge(0)
-    {}
-    int refreshBotoes(int novo)
+    volatile unsigned int botoesAntes, botoesAgora, botoesEdgeF, botoesEdgeR;
+    MbsGamePad() : botoesAntes(0), botoesAgora(0), botoesEdgeF(0), botoesEdgeR(0)
+        {}
+    unsigned int refreshBotoes(unsigned int novo)
     {
         botoesAntes = botoesAgora;
-        botoesEdge = (novo ^ botoesAntes) & novo;
+        botoesEdgeR = (novo ^ botoesAntes) & novo;
+        botoesEdgeF = (novo ^ botoesAntes) & ~novo;
         return botoesAgora = novo;
     }
     void calibrar()
@@ -566,14 +564,14 @@ void Drive::vetorial(int x, int y)
 
 void trataJoystick()
 {
-    if(gamepad.botoesEdge & BT_SEL)
+    if(gamepad.botoesEdgeF & BT_SEL)
     {
         gamepad.calibrar();
         eeprom.dados.handBrake = 1;
         eeprom.dados.programa = PRG_RC;
     }
 
-    if(gamepad.botoesEdge & BT_STR)
+    if(gamepad.botoesEdgeF & BT_STR)
     {
         drive.stop();
         drive2.stop();
@@ -586,22 +584,22 @@ void trataJoystick()
         eeprom.dados.programa = PRG_RC;
     }
 
-    if(gamepad.botoesEdge & BT_Y)
+    if(gamepad.botoesEdgeF & BT_Y)
         eeprom.dados.programa = PRG_TEST;
 
-    if(gamepad.botoesEdge & BT_A)
+    if(gamepad.botoesEdgeF & BT_A)
     {
         eeprom.dados.handBrake = 1;
         eeprom.dados.programa = PRG_SHOW_SENSORS;
     }
 
-    if(gamepad.botoesEdge & BT_X)
+    if(gamepad.botoesEdgeF & BT_X)
         drive.turnLeft();   // vira 90 graus pra esquerda
 
-    if(gamepad.botoesEdge & BT_B)
+    if(gamepad.botoesEdgeF & BT_B)
         drive.turnRight();  // vira 90 graus pra direita
 
-    if(gamepad.botoesEdge & BT_LT)
+    if(gamepad.botoesAgora & BT_LT)
     {
         // 4 rodas: controla servos com eixos Z e R
     }
@@ -616,7 +614,8 @@ void trataJoystick()
 //                if(gamepad.botoesEdge & BT_L3)
 //                if(gamepad.botoesEdge & BT_R3)
 
-    gamepad.botoesEdge = 0;
+    gamepad.botoesEdgeR = 0;
+    gamepad.botoesEdgeF = 0;
 
     if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
         drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
@@ -830,11 +829,10 @@ void LineFollower::autoCalibrate()
 // ******************************************************************************
 //		Scanner 1D pra uso com IR Sharp
 // ******************************************************************************
-#define SCANNER_STEPS 30
-#define SCANNER_ANG ( 180 / SCANNER_STEPS )
-
 class Scanner
 {
+    #define SCANNER_STEPS 30
+    #define SCANNER_ANG ( 180 / SCANNER_STEPS )
 public:
     Scanner() : stepAtual(0), stepDir(1)
         {}
@@ -1352,9 +1350,8 @@ void setup()
 }
 
 // ******************************************************************************
-//		while(true) ...
+//		for(;;) ...
 // ******************************************************************************
-
 void loop()
 {
     agora = millis();
@@ -1381,6 +1378,7 @@ void loop()
         switch(eeprom.dados.programa)
         {
         case PRG_SHOW_SENSORS:
+        {
             enviaSensores();
             enviaStatus();
             enviaJoystick();
@@ -1389,34 +1387,37 @@ void loop()
             //#endif
             drive.refresh();
             drive2.refresh();
-            msExec = 100;
+        }
+        msExec = 100;
         break;
 
         case PRG_RC:
+        {
             trataJoystick();
             drive.refresh();
             drive2.refresh();
-            msExec = 10;
+        }
+        msExec = 10;
         break;
 
         case PRG_PHOTOVORE:
             fotovoro();
-            msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.RF_delay_reads;
         break;
 
         case PRG_LINEFOLLOWER:
             lineFollower.loop();
-            msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.RF_delay_reads;
         break;
 
         case PRG_SHARP:
             scanner.fillArray();
-            msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.RF_delay_reads;
         break;
 
         case PRG_CHASE:
             scanner.chase();
-            msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.RF_delay_reads;
         break;
 
         case PRG_COLLISION:
@@ -1438,19 +1439,22 @@ void loop()
                     eeprom.dados.programa = PRG_ALARME;
             }
 
-            msExec = eeprom.dados.RF_delay_reads;
         }
+        msExec = eeprom.dados.RF_delay_reads;
         break;
 
         case PRG_SENTINELA:
+        {
             sensorFrente->refresh();
             if( abs(sensorFrente->delta() ) > 30 )
                 eeprom.dados.programa = PRG_ALARME;
-            msExec = eeprom.dados.RF_delay_reads;
+        }
+        msExec = eeprom.dados.RF_delay_reads;
         break;
 
         #ifdef WIICHUCK
         case PRG_WIICHUCK:
+        {
             if(nunchuck_get_data() == 0)
                 break;
 
@@ -1511,22 +1515,24 @@ void loop()
             }
             else
                 digitalWrite(PINO_ARMA,LOW);
-
-            msExec = 100;
+        }
+        msExec = 100;
         break;
         #endif
 
         case PRG_SCOPE:
+        {
             // pra conseguir performance melhor descartamos os 2 bits menos significativos
             // e envia somente um byte
             Serial.write((analogRead(0) >> 2) & 0xFF);
-            msExec = eeprom.dados.RF_delay_reads;
-            mandarStatus = false;
+        }
+        msExec = eeprom.dados.RF_delay_reads;
+        mandarStatus = false;
         break;
 
         case PRG_KNOB:
             pan.write(map(analogRead(0), 0, 1023, 5, 174));
-            msExec = 50;
+        msExec = 50;
         break;
 
         case PRG_TEST:
@@ -1561,11 +1567,12 @@ void loop()
                 palpite = 0;
             }
 
-            msExec = eeprom.dados.RF_delay_reads;
         }
+        msExec = eeprom.dados.RF_delay_reads;
         break;
 
         case PRG_ALARME:
+        {
             digitalWrite(PINO_LED, HIGH);
             Serial.println("ALARM");
 
@@ -1590,7 +1597,8 @@ void loop()
             //delay(1000);
             digitalWrite(PINO_LED, LOW);
             //delay(1000);
-            eeprom.dados.programa = PRG_RC;
+        }
+        eeprom.dados.programa = PRG_RC;
         break;
 
         default:

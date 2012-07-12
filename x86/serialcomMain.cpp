@@ -698,7 +698,7 @@ void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 }
 
 // ============================================================================
-//      SENSOR DATA
+//      SENSORES
 // ============================================================================
 
 void serialcomFrame::OnButton4Click(wxCommandEvent& event)

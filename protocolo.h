@@ -20,8 +20,8 @@
 
 #define VERSAO_PROTOCOLO 1
 
-/*
-O protocolo do MBS-BOT imita uma sessao de console e consiste em mnemonicos numa string
+/* O protocolo
+ do MBS-BOT imita uma sessao de console e consiste em mnemonicos numa string
 ascii com quebra de linha como terminador.
 
 Este arquivo eh compilado na IHM e no robo e define os mnemonicos usados pelo protocolo.
@@ -34,8 +34,7 @@ Formato geral do pacote:
 #define CMD_EOL '\n'
 #define MAX_CMD 50 /* bytes, tamanho maximo de um comando */
 
-/*
-   Lista de <comando>
+/* Lista de <comandos>
 */
 
 #define CMD_READ	"get"
@@ -95,8 +94,7 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define CMD_JOYPAD "j"
 /* CMD_JOYPAD BOTOES X Y Z R */
 
-/*
-   Lista de <variavel>
+/* Lista de <variaveis>
 */
 #define VAR_PROGRAMA "p"    // enum ProgramID sendo executado
 
