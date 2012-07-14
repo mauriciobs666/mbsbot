@@ -30,21 +30,18 @@
 #define MOTOR_D_T_INV 0
 
 // canal 1
-#define PINO_MOTOR_ESQ		4
-#define PINO_MOTOR_ESQ_PWM	5
+#define PINO_MOTOR_ESQ  	7
+#define PINO_MOTOR_ESQ_N	8
+#define PINO_MOTOR_ESQ_PWM	6
+
 // canal 2
-#define PINO_MOTOR_DIR		7
-#define PINO_MOTOR_DIR_PWM	11
+#define PINO_MOTOR_DIR      9
+#define PINO_MOTOR_DIR_N    12
+#define PINO_MOTOR_DIR_PWM	5
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
 #define PINO_UNUSED_ARRAY { }
-
-// SHARP RANGE FINDER (pino analogico)
-#define PINO_SHARP_RF		3
-
-// SONAR
-#define PINO_SONAR          1
 
 #define PINO_SERVO_PAN		9
 #define PINO_SERVO_TILT		10

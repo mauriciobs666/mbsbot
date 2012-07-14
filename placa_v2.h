@@ -40,12 +40,6 @@
 #define PINO_UNUSED_CNT 2
 #define PINO_UNUSED_ARRAY { 7,11 }
 
-// SHARP RANGE FINDER (pino analogico)
-#define PINO_SHARP_RF		3
-
-// SONAR
-#define PINO_SONAR           1
-
 #define PINO_SERVO_PAN		9
 #define PINO_SERVO_TILT		10
 #define PINO_SERVO_ROLL		8

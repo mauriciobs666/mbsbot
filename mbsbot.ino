@@ -297,7 +297,7 @@ public:
     enum eTipoMotor { MOTOR_SERVO, MOTOR_DC } tipo;
 
     Motor() : tipo(MOTOR_DC), atual(0), centro(0), aceleracao(0), ultimoAcel(0), meta(0),
-        invertido(false), pwm(-1), dir(-1) { }
+        invertido(false), pwm(-1), dir(-1), dirN(-1) { }
 
     void initServo(int pin, short centerAng=1500, bool inverso=false)
     {
@@ -367,6 +367,8 @@ public:
 
     void refresh()
     {
+        // acelerador: v = v0 + at
+
         while(agora >= ultimoAcel + 10)
         {
             ultimoAcel += 10;
@@ -395,17 +397,31 @@ public:
                 atual = 0;
         }
 
+        // I/O
+
         if( tipo == MOTOR_DC )
         {
+            atual = constrain(atual, -255, 255); // protecao de range
+
             // uma ultima olhada no freio de mao
             if(eeprom.dados.handBrake) meta = atual = 0;
 
-            digitalWrite(dir, (atual < 0) ^ invertido ? HIGH : LOW); // direcao
+            digitalWrite(dir, (atual < 0) ^ invertido ? HIGH : LOW); // 1/2 ponte H
 
-            atual = constrain(atual, -255, 255); // protecao de range
-            analogWrite(pwm, abs(atual)); // potencia
+            if(dirN > 0) // pino de direcao invertido
+            {
+                if( atual ) // movendo, dirN = !dir
+                    digitalWrite(dirN, (atual < 0) ^ invertido ? LOW : HIGH); // outra 1/2 ponte H
+                else        // freio, dirN = dir
+                    digitalWrite(dirN, (atual < 0) ^ invertido ? HIGH : LOW);
+            }
+
+            if( ( !atual ) && ( dirN > 0 ) )    // freio
+                analogWrite(pwm, 255);          // conduz 100% pra freiar
+            else                                // operacao normal
+                analogWrite(pwm, abs(atual));
         }
-        else
+        else // tipo == MOTOR_SERVO
         {
             if(eeprom.dados.handBrake) meta = atual = centro;
 
@@ -417,6 +433,8 @@ public:
     short read() { return atual; }
     void setCenter(short valor) { centro = valor; }
     void setAceleracao(short acel) { aceleracao = acel; }
+    void setN(int pinoN)
+        { dirN = pinoN; }
 protected:
     short atual;
     short centro;
@@ -426,8 +444,9 @@ protected:
     bool invertido;
 
     Servo servo;
-    int pwm; // pino PWM
-    int dir; // pino digital comum
+    int pwm;
+    int dir;
+    int dirN;
 };
 
 class Drive
@@ -1287,6 +1306,12 @@ void setup()
 #else
     drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.dados.centroMotorEsq, eeprom.dados.acelMotorEsq, MOTOR_ESQ_INV);
     drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.dados.centroMotorDir, eeprom.dados.acelMotorDir, MOTOR_DIR_INV);
+    #ifdef PINO_MOTOR_ESQ_N
+        drive.motorEsq.setN(PINO_MOTOR_ESQ_N);
+    #endif
+    #ifdef PINO_MOTOR_DIR_N
+        drive.motorDir.setN(PINO_MOTOR_ESQ_N);
+    #endif
     #ifdef RODAS_PWM_x4
         drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.dados.centroMotorEsqT, eeprom.dados.acelMotorEsqT, MOTOR_E_T_INV);
         drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.dados.centroMotorDirT, eeprom.dados.acelMotorDirT, MOTOR_D_T_INV);
