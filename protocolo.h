@@ -108,6 +108,9 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define VAR_ZERO_ESQ "lc"	// offset da posicao parada ("centro") da roda esquerda (pot do servo mal calibrado)
 #define VAR_ZERO_DIR "rc"	// offset da posicao parada da roda direita (pot do servo mal calibrado)
 
+#define VAR_ZERO_ESQ_T "ltc"	// offset da posicao parada ("centro") da roda esquerda (pot do servo mal calibrado)
+#define VAR_ZERO_DIR_T "rtc"	// offset da posicao parada da roda direita (pot do servo mal calibrado)
+
 #define VAR_ACEL_ESQ "la"   // aceleracao do motor da roda esquerda
 #define VAR_ACEL_DIR "ra"   // aceleracao do motor da roda direita
 

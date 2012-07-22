@@ -179,7 +179,7 @@ public:
     bool invertido;
     volatile unsigned short valor, anterior, minimo, maximo, centro;
     int a, b; // = a*x + b
-    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL } tipo;
+    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL, SENSOR_RC } tipo;
 
     Sensor(unsigned char  pin=0, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
         { init(pin, t, inverso); }
@@ -188,10 +188,21 @@ public:
             pino = pin;
             tipo = t;
             invertido = inverso;
-            minimo = 65535;
-            valor = anterior = maximo = 0;
+            valor = anterior = 0;
             if(invertido) a = -1; else a = 1;
             b = 0;
+            if(tipo == SENSOR_RC)
+            {
+                minimo = 1300;
+                centro = 1500;
+                maximo = 1700;
+            }
+            else
+            {
+                minimo = 65535;
+                centro = 32767;
+                maximo = 0;
+            }
         }
     unsigned short getValor()
         { return valor; }
@@ -285,8 +296,8 @@ public:
         z.centrar();
         r.centrar();
     }
-}
-gamepad;
+};
+MbsGamePad gamepad;
 
 // ******************************************************************************
 //		CONTROLADOR DE MOTORES
@@ -1081,6 +1092,10 @@ void Server::loop()
                             drive.motorEsq.setCenter(eeprom.dados.centroMotorEsq = valor);
                         else if(strcmp(dest, VAR_ZERO_DIR) == 0)
                             drive.motorDir.setCenter(eeprom.dados.centroMotorDir = valor);
+                        else if(strcmp(dest, VAR_ZERO_ESQ_T) == 0)
+                            drive2.motorEsq.setCenter(eeprom.dados.centroMotorEsqT = valor);
+                        else if(strcmp(dest, VAR_ZERO_DIR_T) == 0)
+                            drive2.motorDir.setCenter(eeprom.dados.centroMotorDirT = valor);
                         else if(strcmp(dest, VAR_PROGRAMA) == 0)
                         {
                             drive.stop();
@@ -1175,7 +1190,9 @@ void Server::loop()
                 drive.stop();
             }
             else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibrate line following IR sensors
-                lineFollower.autoCalibrate();
+// TODO (mbs#1#): criar comando novo pra calibrar joystick
+                gamepad.calibrar();
+                //lineFollower.autoCalibrate();
             else if(strcmp(tok, CMD_MV_INCH) == 0)
                 drive.inch();
             else if(strcmp(tok, CMD_MV_STOP) == 0)
@@ -1282,6 +1299,75 @@ void Server::loop()
     }
 }
 
+
+void intJoyX()
+{
+    static unsigned long inicioPulso = 0;
+
+    if(digitalRead(PINO_JOY_X) == HIGH)
+        inicioPulso = micros();
+    else
+    {
+        if(inicioPulso)
+        {
+            unsigned long duracao = micros() - inicioPulso;
+            gamepad.x.setValor((unsigned short)duracao);
+            inicioPulso = 0;
+        }
+    }
+}
+
+void intJoyY()
+{
+    static unsigned long inicioPulso = 0;
+
+    if(digitalRead(PINO_JOY_Y) == HIGH)
+        inicioPulso = micros();
+    else
+    {
+        if(inicioPulso)
+        {
+            unsigned long duracao = micros() - inicioPulso;
+            gamepad.y.setValor((unsigned short)duracao);
+            inicioPulso = 0;
+        }
+    }
+}
+
+void intJoyZ()
+{
+    static unsigned long inicioPulso = 0;
+
+    if(digitalRead(PINO_JOY_Z) == HIGH)
+        inicioPulso = micros();
+    else
+    {
+        if(inicioPulso)
+        {
+            unsigned long duracao = micros() - inicioPulso;
+            gamepad.z.setValor((unsigned short)duracao);
+            inicioPulso = 0;
+        }
+    }
+}
+
+void intJoySW1()
+{
+    static unsigned long inicioPulso = 0;
+
+    if(digitalRead(PINO_JOY_SW1) == HIGH)
+        inicioPulso = micros();
+    else
+    {
+        if(inicioPulso)
+        {
+            unsigned long duracao = micros() - inicioPulso;
+            gamepad.refreshBotoes((duracao < 1500) ? BT_RT : 0);
+            inicioPulso = 0;
+        }
+    }
+}
+
 // ******************************************************************************
 //		SETUP
 // ******************************************************************************
@@ -1353,11 +1439,22 @@ void setup()
 #endif
 
 #ifdef PINO_JOY_X
-    //attachInterrupt(0, calcInput, CHANGE);
+    attachInterrupt(INT_JOY_X, intJoyX, CHANGE);
+    gamepad.x.init(PINO_JOY_X, Sensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_Y
-    //attachInterrupt(1, calcInput, CHANGE);
+    attachInterrupt(INT_JOY_Y, intJoyY, CHANGE);
+    gamepad.y.init(PINO_JOY_Y, Sensor::SENSOR_RC);
+#endif
+
+#ifdef PINO_JOY_Z
+    attachInterrupt(INT_JOY_Z, intJoyZ, CHANGE);
+    gamepad.z.init(PINO_JOY_Z, Sensor::SENSOR_RC);
+#endif
+
+#ifdef PINO_JOY_SW1
+    attachInterrupt(INT_JOY_SW1, intJoySW1, CHANGE);
 #endif
 
     sensores[0].init(); // potenciometro

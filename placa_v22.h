@@ -30,11 +30,14 @@
 #define MOTOR_D_T_INV 0
 
 // canal 1
-#define PINO_MOTOR_ESQ		4
-#define PINO_MOTOR_ESQ_PWM	5
+#define PINO_MOTOR_ESQ  	7
+#define PINO_MOTOR_ESQ_N	8
+#define PINO_MOTOR_ESQ_PWM	6
+
 // canal 2
-#define PINO_MOTOR_DIR		7
-#define PINO_MOTOR_DIR_PWM	11
+#define PINO_MOTOR_DIR      9
+#define PINO_MOTOR_DIR_N    12
+#define PINO_MOTOR_DIR_PWM	5
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
@@ -69,7 +72,14 @@
     #define PINO_ANALOG_CNT 6
 #endif
 
+// RADIO CONTROLE
 #define PINO_JOY_X      2
 #define PINO_JOY_Y      3
+//#define PINO_JOY_SW1    4
+
+// int de hardware externa (so 0 e 1 no 328 e 2, 3, 4 e 5 no 1280)
+#define INT_JOY_X      0
+#define INT_JOY_Y      1
+//#define INT_JOY_SW1
 
 #endif // BOARD_H_INCLUDED

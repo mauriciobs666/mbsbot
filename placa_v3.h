@@ -78,7 +78,18 @@
     #define PINO_ANALOG_CNT 6
 #endif
 
-#define PINO_JOY_X      2
-#define PINO_JOY_Y      3
+// RADIO CONTROLE
+#define PINO_JOY_X      18
+#define PINO_JOY_Y      19
+#define PINO_JOY_Z      20
+//#define PINO_JOY_R
+#define PINO_JOY_SW1    21
+
+// int de hardware externa (so 0 e 1 no 328 e 2, 3, 4 e 5 no 1280)
+#define INT_JOY_X      2
+#define INT_JOY_Y      3
+#define INT_JOY_Z      4
+//#define INT_JOY_R
+#define INT_JOY_SW1    5
 
 #endif // BOARD_H_INCLUDED
