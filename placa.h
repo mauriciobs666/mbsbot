@@ -18,40 +18,31 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 3
+#define VERSAO_PLACA 2
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
 
-// 4 rodas mechanum
-#define RODAS_PWM_x4 1
-
 // inverte direcao de giro dos motores
-#define MOTOR_ESQ_INV 1
-#define MOTOR_DIR_INV 1
+#define MOTOR_ESQ_INV 0
+#define MOTOR_DIR_INV 0
 #define MOTOR_E_T_INV 0
 #define MOTOR_D_T_INV 0
 
-// canal 1 - roda esquerda traseira
-#define PINO_MOTOR_ESQ_T        23
-#define PINO_MOTOR_ESQ_T_PWM    5
-// canal 2 - roda direita traseira
-#define PINO_MOTOR_DIR_T        24
-#define PINO_MOTOR_DIR_T_PWM    4
-// canal 3 - roda esquerda dianteira
-#define PINO_MOTOR_ESQ          25
-#define PINO_MOTOR_ESQ_PWM      3
-// canal 4 - roda direita dianteira
-#define PINO_MOTOR_DIR          26
-#define PINO_MOTOR_DIR_PWM      2
+// canal 1
+#define PINO_MOTOR_ESQ		4
+#define PINO_MOTOR_ESQ_PWM	5
+// canal 2
+#define PINO_MOTOR_DIR		2
+#define PINO_MOTOR_DIR_PWM	3
 
 // economia de energia
-#define PINO_UNUSED_CNT 0
-#define PINO_UNUSED_ARRAY { }
+#define PINO_UNUSED_CNT 2
+#define PINO_UNUSED_ARRAY { 7,11 }
 
-//#define PINO_SERVO_PAN		9
-//#define PINO_SERVO_TILT		10
-//#define PINO_SERVO_ROLL		8
+#define PINO_SERVO_PAN		9
+#define PINO_SERVO_TILT		10
+#define PINO_SERVO_ROLL		8
 
 // LINE FOLLOWER (pinos analogicos!)
 #define NUM_IR_TRACK		5
@@ -60,7 +51,7 @@
 
 #define PINO_BIP 			12
 
-#define PINO_ARMA           13
+#define PINO_ARMA           6
 
 #define PINO_LED            13
 
@@ -77,19 +68,5 @@
 #else
     #define PINO_ANALOG_CNT 6
 #endif
-
-// RADIO CONTROLE
-#define PINO_JOY_X      18
-#define PINO_JOY_Y      19
-#define PINO_JOY_Z      20
-//#define PINO_JOY_R
-#define PINO_JOY_SW1    21
-
-// int de hardware externa (so 0 e 1 no 328 e 2, 3, 4 e 5 no 1280)
-#define INT_JOY_X      5
-#define INT_JOY_Y      4
-#define INT_JOY_Z      3
-//#define INT_JOY_R
-#define INT_JOY_SW1    2
 
 #endif // BOARD_H_INCLUDED

@@ -214,7 +214,11 @@ public:
             if (valor > maximo) maximo = valor;
         }
     void calibrar()
-        { minimo = maximo = centro = valor; }
+        {
+            minimo = 65537;
+            maximo = 0;
+            centro = valor;
+        }
     void centrar()
         { centro = valor; }
     unsigned short refresh()
@@ -1299,7 +1303,7 @@ void Server::loop()
     }
 }
 
-
+#ifdef PINO_JOY_X
 void intJoyX()
 {
     static unsigned long inicioPulso = 0;
@@ -1316,7 +1320,9 @@ void intJoyX()
         }
     }
 }
+#endif
 
+#ifdef PINO_JOY_Y
 void intJoyY()
 {
     static unsigned long inicioPulso = 0;
@@ -1333,7 +1339,9 @@ void intJoyY()
         }
     }
 }
+#endif
 
+#ifdef PINO_JOY_Z
 void intJoyZ()
 {
     static unsigned long inicioPulso = 0;
@@ -1350,7 +1358,9 @@ void intJoyZ()
         }
     }
 }
+#endif
 
+#ifdef PINO_JOY_SW1
 void intJoySW1()
 {
     static unsigned long inicioPulso = 0;
@@ -1367,6 +1377,7 @@ void intJoySW1()
         }
     }
 }
+#endif
 
 // ******************************************************************************
 //		SETUP
@@ -1515,6 +1526,7 @@ void loop()
 
         case PRG_RC:
         {
+            enviaJoystick();
             trataJoystick();
             drive.refresh();
             drive2.refresh();
