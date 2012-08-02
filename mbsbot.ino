@@ -431,9 +431,9 @@ public:
                     digitalWrite(dirN, (atual < 0) ^ invertido ? HIGH : LOW);
             }
 
-            if( ( !atual ) && ( dirN > 0 ) )    // freio
-                analogWrite(pwm, 255);          // conduz 100% pra freiar
-            else                                // operacao normal
+//            if( ( !atual ) && ( dirN > 0 ) )    // freio
+//                analogWrite(pwm, 255);          // conduz 100% pra freiar
+//            else                                // operacao normal
                 analogWrite(pwm, abs(atual));
         }
         else // tipo == MOTOR_SERVO
@@ -449,7 +449,11 @@ public:
     void setCenter(short valor) { centro = valor; }
     void setAceleracao(short acel) { aceleracao = acel; }
     void setN(int pinoN)
-        { dirN = pinoN; }
+    {
+        dirN = pinoN;
+        pinMode(dirN, OUTPUT);
+        digitalWrite(dirN, 0);
+    }
 protected:
     short atual;
     short centro;
@@ -651,6 +655,7 @@ void trataJoystick()
     gamepad.botoesEdgeR = 0;
     gamepad.botoesEdgeF = 0;
 
+#ifdef RODAS_PWM_x4
     if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
         drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
     else
@@ -660,6 +665,12 @@ void trataJoystick()
         drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
     else
         drive2.stop();
+#else
+    if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
+        drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+    else
+        drive.stop();
+#endif
 }
 
 // ******************************************************************************
@@ -1353,7 +1364,7 @@ void intJoyZ()
         if(inicioPulso)
         {
             unsigned long duracao = micros() - inicioPulso;
-            gamepad.z.setValor((unsigned short)duracao);
+            gamepad.z.setValor(duracao);
             inicioPulso = 0;
         }
     }
@@ -1407,7 +1418,7 @@ void setup()
         drive.motorEsq.setN(PINO_MOTOR_ESQ_N);
     #endif
     #ifdef PINO_MOTOR_DIR_N
-        drive.motorDir.setN(PINO_MOTOR_ESQ_N);
+        drive.motorDir.setN(PINO_MOTOR_DIR_N);
     #endif
     #ifdef RODAS_PWM_x4
         drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.dados.centroMotorEsqT, eeprom.dados.acelMotorEsqT, MOTOR_E_T_INV);
@@ -1526,10 +1537,12 @@ void loop()
 
         case PRG_RC:
         {
-            enviaJoystick();
+            //enviaJoystick();
             trataJoystick();
             drive.refresh();
-            drive2.refresh();
+            #ifdef RODAS_PWM_x4
+                drive2.refresh();
+            #endif
         }
         msExec = 10;
         break;
