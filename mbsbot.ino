@@ -1364,7 +1364,7 @@ void intJoyZ()
         if(inicioPulso)
         {
             unsigned long duracao = micros() - inicioPulso;
-            gamepad.z.setValor(duracao);
+            gamepad.z.setValor((unsigned short)duracao);
             inicioPulso = 0;
         }
     }
@@ -1523,21 +1523,23 @@ void loop()
         {
         case PRG_SHOW_SENSORS:
         {
+            trataJoystick();
+            enviaJoystick();
+            drive.refresh();
+            #ifdef RODAS_PWM_x4
+                drive2.refresh();
+            #endif
             enviaSensores();
             enviaStatus();
-            enviaJoystick();
-            //#ifdef WIICHUCK
-            //nunchuck_print_data();
-            //#endif
-            drive.refresh();
-            drive2.refresh();
+            #ifdef WIICHUCK
+                nunchuck_print_data();
+            #endif
         }
         msExec = 100;
         break;
 
         case PRG_RC:
         {
-            //enviaJoystick();
             trataJoystick();
             drive.refresh();
             #ifdef RODAS_PWM_x4
