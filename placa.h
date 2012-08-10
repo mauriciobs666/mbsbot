@@ -58,7 +58,7 @@
 
 #define PINO_LED            13
 
-// habilita wiichuck
+// habilita wiichuck / energia em A5/A6
 //#define WIICHUCK
 //#define WIICHUCK_POWER
 
@@ -76,10 +76,5 @@
 #define PINO_JOY_X      2
 #define PINO_JOY_Y      3
 //#define PINO_JOY_SW1    4
-
-// int de hardware externa (so 0 e 1 no 328 e 2, 3, 4 e 5 no 1280)
-#define INT_JOY_X      0
-#define INT_JOY_Y      1
-//#define INT_JOY_SW1
 
 #endif // BOARD_H_INCLUDED

@@ -36,6 +36,9 @@
     #include "nunchuck_funcs.h"
 #endif
 
+// Pin Change interrupt ( http://code.google.com/p/arduino-pinchangeint/ )
+#include "PinChangeInt.h"
+
 // speaker
 #ifdef PINO_BIP
 #define BEEP(freq, dur) tone(PINO_BIP,freq,dur)
@@ -1314,81 +1317,83 @@ void Server::loop()
     }
 }
 
-#ifdef PINO_JOY_X
-void intJoyX()
-{
-    static unsigned long inicioPulso = 0;
+// ******************************************************************************
+//		INTS DE R/C - http://code.google.com/p/arduino-pinchangeint/wiki/Usage
+// ******************************************************************************
 
-    if(digitalRead(PINO_JOY_X) == HIGH)
-        inicioPulso = micros();
+void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
+{
+    if(PCintPort::pinState == HIGH)
+        *inicioPulso = micros();
     else
     {
-        if(inicioPulso)
+        if(*inicioPulso)
         {
-            unsigned long duracao = micros() - inicioPulso;
-            gamepad.x.setValor((unsigned short)duracao);
-            inicioPulso = 0;
+            unsigned long duracao = micros() - *inicioPulso;
+            s->setValor((unsigned short)duracao);
+            *inicioPulso = 0;
         }
     }
 }
-#endif
 
-#ifdef PINO_JOY_Y
-void intJoyY()
+void isrRadio()
 {
-    static unsigned long inicioPulso = 0;
-
-    if(digitalRead(PINO_JOY_Y) == HIGH)
-        inicioPulso = micros();
-    else
+    switch(PCintPort::arduinoPin)
     {
-        if(inicioPulso)
+        #ifdef PINO_JOY_X
+        case PINO_JOY_X:
         {
-            unsigned long duracao = micros() - inicioPulso;
-            gamepad.y.setValor((unsigned short)duracao);
-            inicioPulso = 0;
+            static unsigned long inicioPulsoX = 0;
+            isrRadioEixo(&gamepad.x, &inicioPulsoX);
         }
+        break;
+        #endif
+        #ifdef PINO_JOY_Y
+        case PINO_JOY_Y:
+        {
+            static unsigned long inicioPulsoY = 0;
+            isrRadioEixo(&gamepad.y, &inicioPulsoY);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_Z
+        case PINO_JOY_Z:
+        {
+            static unsigned long inicioPulsoZ = 0;
+            isrRadioEixo(&gamepad.z, &inicioPulsoZ);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_R
+        case PINO_JOY_R
+        {
+            static unsigned long inicioPulsoR = 0;
+            isrRadioEixo(&gamepad.r, &inicioPulsoR);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_SW1
+        case PINO_JOY_SW1:
+        {
+            static unsigned long inicioPulsoSW1 = 0;
+            if(PCintPort::pinState == HIGH)
+                inicioPulsoSW1 = micros();
+            else
+            {
+                if(inicioPulsoSW1)
+                {
+                    unsigned long duracao = micros() - inicioPulsoSW1;
+                    gamepad.refreshBotoes((duracao < 1500) ? BT_RT : 0);
+                    inicioPulsoSW1 = 0;
+                }
+            }
+        }
+        break;
+        #endif
+        default:
+        break;
     }
 }
-#endif
-
-#ifdef PINO_JOY_Z
-void intJoyZ()
-{
-    static unsigned long inicioPulso = 0;
-
-    if(digitalRead(PINO_JOY_Z) == HIGH)
-        inicioPulso = micros();
-    else
-    {
-        if(inicioPulso)
-        {
-            unsigned long duracao = micros() - inicioPulso;
-            gamepad.z.setValor((unsigned short)duracao);
-            inicioPulso = 0;
-        }
-    }
-}
-#endif
-
-#ifdef PINO_JOY_SW1
-void intJoySW1()
-{
-    static unsigned long inicioPulso = 0;
-
-    if(digitalRead(PINO_JOY_SW1) == HIGH)
-        inicioPulso = micros();
-    else
-    {
-        if(inicioPulso)
-        {
-            unsigned long duracao = micros() - inicioPulso;
-            gamepad.refreshBotoes((duracao < 1500) ? BT_RT : 0);
-            inicioPulso = 0;
-        }
-    }
-}
-#endif
 
 // ******************************************************************************
 //		SETUP
@@ -1461,22 +1466,27 @@ void setup()
 #endif
 
 #ifdef PINO_JOY_X
-    attachInterrupt(INT_JOY_X, intJoyX, CHANGE);
+    PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
     gamepad.x.init(PINO_JOY_X, Sensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_Y
-    attachInterrupt(INT_JOY_Y, intJoyY, CHANGE);
+    PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
     gamepad.y.init(PINO_JOY_Y, Sensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_Z
-    attachInterrupt(INT_JOY_Z, intJoyZ, CHANGE);
+    PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
     gamepad.z.init(PINO_JOY_Z, Sensor::SENSOR_RC);
 #endif
 
+#ifdef PINO_JOY_R
+    PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
+    gamepad.r.init(PINO_JOY_R, Sensor::SENSOR_RC);
+#endif
+
 #ifdef PINO_JOY_SW1
-    attachInterrupt(INT_JOY_SW1, intJoySW1, CHANGE);
+    PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
 #endif
 
     sensores[0].init(); // potenciometro
