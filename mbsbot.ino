@@ -256,25 +256,34 @@ public:
         { a = aa; b = bb; }
     int getReta()
         { return ( a * valor + b ); }
-    int getPorcentoAprox(int grude=5)
+    int getPorcentoAprox(int grude=10)
     {
-        long x = ((long)valor - (long)centro) * 100;
-        long r = (maximo - minimo) / 2;
+        long x = (long)valor - (long)centro;
+
+        // calcula o range de 0 a +/-extremo
+        long r = ( x > 0 ) ? (maximo - centro) : (centro - minimo);
+
+        // x%
         if(r)
-            x /= r;
-        if(abs(x) < grude)
+            x = constrain( ((x * 100) / r ) , -100, 100 );
+        else
             x = 0;
-        else if(ehMinimo(grude))
-            x = -100;
-        else if(ehMaximo(grude))
-            x = 100;
-        return constrain(x, -100, 100);
+
+        // arredonda no centro e pontas
+        if( 100 + x < grude) x = -100;
+        if(  abs(x) < grude) x = 0;
+        if( 100 - x < grude) x = 100;
+
+        return x;
     }
     int delta()
         { return valor - anterior; }
 }
 sensores[6], *sensorFrente, *sensorEsquerda, *sensorDireita;
 
+// ******************************************************************************
+//		GAMEPAD E R/C
+// ******************************************************************************
 class MbsGamePad
 {
 public:
@@ -644,12 +653,12 @@ void trataJoystick()
     {
         // 4 rodas: controla servos com eixos Z e R
     }
-
+#ifdef PINO_ARMA
     if(gamepad.botoesAgora & BT_RT)
         digitalWrite(PINO_ARMA, HIGH);
     else
         digitalWrite(PINO_ARMA, LOW);
-
+#endif
 //                if(gamepad.botoesEdge & BT_LB)
 //                if(gamepad.botoesEdge & BT_RB)
 //                if(gamepad.botoesEdge & BT_L3)
@@ -1021,14 +1030,39 @@ void enviaStatus(bool enviaComando = true)
 void enviaJoystick()
 {
     Serial.print(CMD_JOYPAD);
-    Serial.print(" ");
+    Serial.print(" X ");
+    Serial.print(gamepad.x.getPorcentoAprox(0));
+    Serial.print(" ~ ");
     Serial.print(gamepad.x.getPorcentoAprox());
-    Serial.print(" ");
+
+    Serial.print(" (");
+    Serial.print(gamepad.x.minimo);
+    Serial.print(",");
+    Serial.print(gamepad.x.centro);
+    Serial.print(",");
+    Serial.print(gamepad.x.maximo);
+    Serial.print(") ");
+    Serial.println(gamepad.x.valor);
+
+    Serial.print(" Y ");
+    Serial.print(gamepad.y.getPorcentoAprox(0));
+    Serial.print(" ~ ");
     Serial.print(gamepad.y.getPorcentoAprox());
-    Serial.print(" ");
-    Serial.print(gamepad.z.getPorcentoAprox());
-    Serial.print(" ");
-    Serial.println(gamepad.r.getPorcentoAprox());
+
+    Serial.print(" (");
+    Serial.print(gamepad.y.minimo);
+    Serial.print(",");
+    Serial.print(gamepad.y.centro);
+    Serial.print(",");
+    Serial.print(gamepad.y.maximo);
+    Serial.print(") ");
+    Serial.println(gamepad.y.valor);
+/*
+    Serial.print(" Z ");
+    Serial.print(gamepad.z.getPorcentoAprox(0));
+    Serial.print(" R ");
+    Serial.println(gamepad.r.getPorcentoAprox(0));
+*/
 }
 
 void uname()
