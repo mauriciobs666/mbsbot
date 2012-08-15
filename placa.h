@@ -54,7 +54,7 @@
 
 //#define PINO_BIP 			12
 
-#define PINO_ARMA           13
+#define PINO_ARMA           10
 
 #define PINO_LED            13
 

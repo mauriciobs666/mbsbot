@@ -52,13 +52,13 @@
 #define PINO_FIRST_IR_SENSOR 1
 // onde NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
 
-#define PINO_BIP 			12
+//#define PINO_BIP 			12
 
-#define PINO_ARMA           13
+#define PINO_ARMA           10
 
 #define PINO_LED            13
 
-// habilita wiichuck
+// habilita wiichuck / energia em A5/A6
 //#define WIICHUCK
 //#define WIICHUCK_POWER
 
@@ -75,11 +75,6 @@
 // RADIO CONTROLE
 #define PINO_JOY_X      2
 #define PINO_JOY_Y      3
-//#define PINO_JOY_SW1    4
-
-// int de hardware externa (so 0 e 1 no 328 e 2, 3, 4 e 5 no 1280)
-#define INT_JOY_X      0
-#define INT_JOY_Y      1
-//#define INT_JOY_SW1
+#define PINO_JOY_SW1    4
 
 #endif // BOARD_H_INCLUDED
