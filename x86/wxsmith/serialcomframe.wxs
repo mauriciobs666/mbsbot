@@ -108,7 +108,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxButton" name="ID_BUTTON14" variable="Button14" member="yes">
-														<label>Cancelar</label>
+														<label>Desconectar</label>
 														<size>-1,-1</size>
 														<handler function="OnButton14Click" entry="EVT_BUTTON" />
 													</object>
@@ -278,11 +278,11 @@
 													<object class="wxChoice" name="ID_CHOICE3" variable="ChoicePrg" member="yes">
 														<content>
 															<item>PRG_RC</item>
-															<item>PRG_SHOW_SENSORS</item>
-															<item>PRG_PHOTOVORE</item>
-															<item>PRG_LINEFOLLOWER</item>
-															<item>PRG_SHARP</item>
-															<item>PRG_SHARP_CHASE</item>
+															<item>PRG_RC_SERIAL</item>
+															<item>PRG_FOTOVORO</item>
+															<item>PRG_LINE_FOLLOWER</item>
+															<item>PRG_SCANNER</item>
+															<item>PRG_CHASE</item>
 															<item>PRG_COLLISION</item>
 															<item>PRG_SENTRY</item>
 															<item>PRG_WIICHUCK</item>

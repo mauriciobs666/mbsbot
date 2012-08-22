@@ -44,6 +44,7 @@ class MbsBot
 		virtual ~MbsBot() {}
 
 		int init(const char *port=NULL, int baud=-1);
+		void desconecta() { serialPort.closePort(); }
 		int salvaConfig(const char *filename="./mbsbot.cfg");
 		int carregaConfig(const char *filename="./mbsbot.cfg");
 

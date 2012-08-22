@@ -121,14 +121,16 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define VAR_T_POL    "di"   // delay do drive.inch(), anda 1 polegada pra frente
 #define VAR_T_90     "d90"	// delay do drive.left() e drive.right(), vira 90 graus
 #define VAR_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
+#define VAR_T_SE     "dse"  // tempo minimo entre envio de SEnsores
+#define VAR_T_ST     "dst"  // tempo minimo entre envio de STatus
 
 enum ProgramID
 {
     PRG_RC = 0,	            // Controle remoto
-    PRG_SHOW_SENSORS = 1,   // Controle remoto com monitoramento das analogicas
-    PRG_PHOTOVORE = 2,      //
-    PRG_LINEFOLLOWER = 3,   //
-    PRG_SHARP = 4,          // Sharp IR range finder
+    PRG_RC_SERIAL = 1,      // Controle remoto via porta serial
+    PRG_FOTOVORO = 2,       //
+    PRG_LINE_FOLLOW = 3,    //
+    PRG_SCANNER = 4,        // Scanner com rangefinder
     PRG_CHASE = 5,          //
     PRG_COLLISION = 6,      //
     PRG_SENTINELA = 7,      //

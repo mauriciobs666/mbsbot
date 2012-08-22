@@ -89,6 +89,9 @@ public:
             short right;	// tempo pra girar 90 graus (angulo reto)
         } mvDelay;
 
+        unsigned short delaySensores;
+        unsigned short delayStatus;
+
         // line follower sensor array parameters(from auto-cal)
         unsigned short LF_threshold[NUM_IR_TRACK];
         bool LF_reverseColor;
@@ -144,6 +147,9 @@ public:
         dados.mvDelay.inch = 200;
         dados.mvDelay.right = 400;
 
+        dados.delaySensores = 0;
+        dados.delayStatus = 0;
+
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
             dados.LF_threshold[x] = 512;
@@ -164,9 +170,9 @@ eeprom;
 // ******************************************************************************
 bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
 {
-    if(agora > *ultimaVez + ms)
+    if( ms && (agora > *ultimaVez + ms) )
     {
-        *ultimaVez += ms;
+        *ultimaVez = agora; // += ms;
         return true;
     }
     return false;
@@ -618,7 +624,7 @@ void trataJoystick()
     {
         gamepad.calibrar();
         eeprom.dados.handBrake = 1;
-        eeprom.dados.programa = PRG_RC;
+        eeprom.dados.programa = PRG_RC_SERIAL;
     }
 
     if(gamepad.botoesEdgeF & BT_STR)
@@ -631,7 +637,7 @@ void trataJoystick()
 
         // solta freio de mao e poe no modo RC
         eeprom.dados.handBrake = 0;
-        eeprom.dados.programa = PRG_RC;
+        eeprom.dados.programa = PRG_RC_SERIAL;
     }
 
     if(gamepad.botoesEdgeF & BT_Y)
@@ -640,7 +646,7 @@ void trataJoystick()
     if(gamepad.botoesEdgeF & BT_A)
     {
         eeprom.dados.handBrake = 1;
-        eeprom.dados.programa = PRG_SHOW_SENSORS;
+        eeprom.dados.programa = PRG_RC_SERIAL;
     }
 
     if(gamepad.botoesEdgeF & BT_X)
@@ -1044,6 +1050,7 @@ void enviaJoystick()
     Serial.print(") ");
     Serial.println(gamepad.x.valor);
 
+    Serial.print(CMD_JOYPAD);
     Serial.print(" Y ");
     Serial.print(gamepad.y.getPorcentoAprox(0));
     Serial.print(" ~ ");
@@ -1179,6 +1186,10 @@ void Server::loop()
                             drive.motorEsq.setAceleracao(eeprom.dados.acelMotorEsq = valor);
                         else if(strcmp(dest, VAR_ACEL_DIR) == 0)
                             drive.motorDir.setAceleracao(eeprom.dados.acelMotorDir = valor);
+                        else if(strcmp(dest, VAR_T_ST) == 0)
+                            eeprom.dados.delayStatus = (unsigned short)valor;
+                        else if(strcmp(dest, VAR_T_SE) == 0)
+                            eeprom.dados.delaySensores = (unsigned short)valor;
                     }
                 }
             }
@@ -1227,6 +1238,10 @@ void Server::loop()
                         Serial.println((int)eeprom.dados.acelMotorEsq);
                     else if(strcmp(tok, VAR_ACEL_DIR) == 0)
                         Serial.println((int)eeprom.dados.acelMotorDir);
+                    else if(strcmp(tok, VAR_T_ST) == 0)
+                        Serial.println((int)eeprom.dados.delayStatus);
+                    else if(strcmp(tok, VAR_T_SE) == 0)
+                        Serial.println((int)eeprom.dados.delaySensores);
                 }
             }
             else if(strcmp(tok, CMD_SAVE) == 0)	// salva temporarios na EEPROM
@@ -1241,9 +1256,8 @@ void Server::loop()
                 eeprom.loadDefault();
                 drive.stop();
             }
-            else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibrate line following IR sensors
-// TODO (mbs#1#): criar comando novo pra calibrar joystick
-                gamepad.calibrar();
+            else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibra sensores do line follower
+                gamepad.calibrar();                 // TODO (mbs#1#): criar comando novo pra calibrar joystick
                 //lineFollower.autoCalibrate();
             else if(strcmp(tok, CMD_MV_INCH) == 0)
                 drive.inch();
@@ -1251,7 +1265,7 @@ void Server::loop()
             {
                 drive.stop();
                 drive2.stop();
-                eeprom.dados.programa = PRG_RC;
+                eeprom.dados.programa = PRG_RC_SERIAL;
             }
             else if(strcmp(tok, CMD_MV_WHEELS) == 0)
             {
@@ -1269,7 +1283,7 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_MV_VECT) == 0)
             {
-                eeprom.dados.programa = PRG_RC;
+                eeprom.dados.programa = PRG_RC_SERIAL;
                 if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
                 {
                     int x = atoi(tok);
@@ -1325,7 +1339,7 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_JOYPAD) == 0)
             {
-                eeprom.dados.programa = PRG_RC;
+                eeprom.dados.programa = PRG_RC_SERIAL;
                 if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
                 {
                     gamepad.refreshBotoes(atoi(tok));
@@ -1364,7 +1378,8 @@ void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
         if(*inicioPulso)
         {
             unsigned long duracao = micros() - *inicioPulso;
-            s->setValor((unsigned short)duracao);
+            if( duracao > 1000 && duracao < 2000 )
+                s->setValor((unsigned short)duracao);
             *inicioPulso = 0;
         }
     }
@@ -1372,6 +1387,7 @@ void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
 
 void isrRadio()
 {
+    if( eeprom.dados.programa == PRG_RC )
     switch(PCintPort::arduinoPin)
     {
         #ifdef PINO_JOY_X
@@ -1480,7 +1496,7 @@ void setup()
     roll.write(90);
 #endif
 
-    if (eeprom.dados.programa == PRG_LINEFOLLOWER)
+    if (eeprom.dados.programa == PRG_LINE_FOLLOW)
         lineFollower.autoCalibrate();
 
     pinMode(PINO_LED, OUTPUT);
@@ -1546,17 +1562,20 @@ void loop()
 
     server.loop();
 
-    // manda status a cada 10 segundos
-    static bool mandarStatus = true;
-    static unsigned long proximoStatus = 0;
-    if(agora >= proximoStatus)
+    static unsigned long ultimoStatus = 0;
+    if( delaySemBlock(&ultimoStatus, eeprom.dados.delayStatus) )
     {
-        proximoStatus += 10000;
-        if(mandarStatus)
-        {
-            //enviaSensores();
-            enviaStatus();
-        }
+        enviaStatus();
+    }
+
+    static unsigned long ultimoSensores = 0;
+    if( delaySemBlock(&ultimoSensores, eeprom.dados.delaySensores) )
+    {
+        enviaJoystick();
+        enviaSensores();
+        #ifdef WIICHUCK
+            nunchuck_print_data();
+        #endif
     }
 
     static unsigned short msExec = 10;
@@ -1565,24 +1584,8 @@ void loop()
     {
         switch(eeprom.dados.programa)
         {
-        case PRG_SHOW_SENSORS:
-        {
-            trataJoystick();
-            enviaJoystick();
-            drive.refresh();
-            #ifdef RODAS_PWM_x4
-                drive2.refresh();
-            #endif
-            enviaSensores();
-            enviaStatus();
-            #ifdef WIICHUCK
-                nunchuck_print_data();
-            #endif
-        }
-        msExec = 100;
-        break;
-
         case PRG_RC:
+        case PRG_RC_SERIAL:
         {
             trataJoystick();
             drive.refresh();
@@ -1593,17 +1596,17 @@ void loop()
         msExec = 10;
         break;
 
-        case PRG_PHOTOVORE:
+        case PRG_FOTOVORO:
             fotovoro();
         msExec = eeprom.dados.RF_delay_reads;
         break;
 
-        case PRG_LINEFOLLOWER:
+        case PRG_LINE_FOLLOW:
             lineFollower.loop();
         msExec = eeprom.dados.RF_delay_reads;
         break;
 
-        case PRG_SHARP:
+        case PRG_SCANNER:
             scanner.fillArray();
         msExec = eeprom.dados.RF_delay_reads;
         break;
@@ -1720,7 +1723,8 @@ void loop()
             Serial.write((analogRead(0) >> 2) & 0xFF);
         }
         msExec = eeprom.dados.RF_delay_reads;
-        mandarStatus = false;
+        eeprom.dados.delaySensores = 0;
+        eeprom.dados.delayStatus = 0;
         break;
 
         case PRG_KNOB:

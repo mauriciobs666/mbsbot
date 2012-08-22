@@ -178,7 +178,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Choice1->Append(_("57600"));
     Choice1->SetSelection( Choice1->Append(_("115200")) );
     FlexGridSizer6->Add(Choice1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button14 = new wxButton(Panel6, ID_BUTTON14, _("Cancelar"), wxDefaultPosition, wxSize(-1,-1), 0, wxDefaultValidator, _T("ID_BUTTON14"));
+    Button14 = new wxButton(Panel6, ID_BUTTON14, _("Desconectar"), wxDefaultPosition, wxSize(-1,-1), 0, wxDefaultValidator, _T("ID_BUTTON14"));
     FlexGridSizer6->Add(Button14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button11 = new wxButton(Panel6, ID_BUTTON11, _("Conectar"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON11"));
     FlexGridSizer6->Add(Button11, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -236,11 +236,11 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer12->Add(StaticText5, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     ChoicePrg = new wxChoice(Panel3, ID_CHOICE3, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("ID_CHOICE3"));
     ChoicePrg->Append(_("PRG_RC"));
-    ChoicePrg->Append(_("PRG_SHOW_SENSORS"));
-    ChoicePrg->Append(_("PRG_PHOTOVORE"));
-    ChoicePrg->Append(_("PRG_LINEFOLLOWER"));
-    ChoicePrg->Append(_("PRG_SHARP"));
-    ChoicePrg->Append(_("PRG_SHARP_CHASE"));
+    ChoicePrg->Append(_("PRG_RC_SERIAL"));
+    ChoicePrg->Append(_("PRG_FOTOVORO"));
+    ChoicePrg->Append(_("PRG_LINE_FOLLOWER"));
+    ChoicePrg->Append(_("PRG_SCANNER"));
+    ChoicePrg->Append(_("PRG_CHASE"));
     ChoicePrg->Append(_("PRG_COLLISION"));
     ChoicePrg->Append(_("PRG_SENTRY"));
     ChoicePrg->Append(_("PRG_WIICHUCK"));
@@ -556,13 +556,7 @@ void serialcomFrame::OnButton11Click(wxCommandEvent& event)
 }
 void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 {
-    int currSpd = MbsBot::getInstance()->getBaud();
-
-    for(int x=0; x < n_spd; x++)
-        if( currSpd == spd[x])
-            Choice1->SetSelection(x);
-
-    TextCtrl4->SetValue(wxString(MbsBot::getInstance()->getPorta(), wxConvUTF8));
+    MbsBot::getInstance()->desconecta();
 }
 
 // ============================================================================
