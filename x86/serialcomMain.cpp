@@ -557,6 +557,7 @@ void serialcomFrame::OnButton11Click(wxCommandEvent& event)
 void serialcomFrame::OnButton14Click(wxCommandEvent& event)
 {
     MbsBot::getInstance()->desconecta();
+    SetStatusText(_("Desconectado"));
 }
 
 // ============================================================================

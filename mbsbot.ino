@@ -62,6 +62,61 @@ unsigned long agora = 0;
 // ******************************************************************************
 #include <avr/eeprom.h>
 
+typedef struct sConfigSensor
+{
+    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL, SENSOR_RC } tipo;
+    unsigned char pino;
+    bool invertido;
+    volatile unsigned short anterior, minimo, maximo, centro;
+    int a, b; // = a*x + b
+
+    void init(unsigned char pino_ = 0,
+              eTipoSensor tipo_ = SENSOR_ANALOGICO,
+              bool invertido_ = false)
+    {
+        pino = pino_;
+        tipo = tipo_;
+        invertido = invertido_;
+        anterior = 0;
+        a = invertido ? -1 : 1;
+        b = 0;
+        if(SENSOR_RC == tipo)
+        {
+            minimo = 1300;
+            centro = 1500;
+            maximo = 1700;
+        }
+        else
+        {
+            minimo = 65535;
+            centro = 32767;
+            maximo = 0;
+        }
+    }
+
+    void print()
+    {
+        Serial.print((int)pino);
+        Serial.print(" ");
+        Serial.print((int)tipo);
+        Serial.print(" ");
+        Serial.print((int)invertido);
+        Serial.print(" ");
+        Serial.print(anterior);
+        Serial.print(" ");
+        Serial.print(minimo);
+        Serial.print(" ");
+        Serial.print(maximo);
+        Serial.print(" ");
+        Serial.print(centro);
+        Serial.print(" ");
+        Serial.print(a);
+        Serial.print(" ");
+        Serial.print(b);
+        Serial.println("");
+    }
+} ConfigSensor;
+
 class Eeprom
 {
 public:
@@ -89,22 +144,28 @@ public:
             short right;	// tempo pra girar 90 graus (angulo reto)
         } mvDelay;
 
+        // intervalo entre envios pela serial de status e sensores
         unsigned short delaySensores;
         unsigned short delayStatus;
 
-        // line follower sensor array parameters(from auto-cal)
+        // parametros do seguidor de linha
         unsigned short LF_threshold[NUM_IR_TRACK];
         bool LF_reverseColor;
 
+        // controlador PID
         struct sPID
         {
-            int Kp;		// proportional
+            int Kp;		// proporcional
             int Ki;		// integral
-            int Kd;		// derivative
+            int Kd;		// derivativo
         } pid;
 
-        // delay to allow the servo to position between reads
+        // intervalo generico de leitura de sensores
         short RF_delay_reads;
+
+        ConfigSensor gameX, gameY, gameZ, gameR;
+
+        ConfigSensor sensores[NUM_SENSORES];
 
         struct sJoyCenter
         {
@@ -170,6 +231,9 @@ eeprom;
 // ******************************************************************************
 bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
 {
+    if( !ms )
+        return true;
+
     if( ms && (agora > *ultimaVez + ms) )
     {
         *ultimaVez = agora; // += ms;
@@ -184,90 +248,80 @@ bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
 class Sensor
 {
 public:
-    unsigned char pino;
-    bool invertido;
-    volatile unsigned short valor, anterior, minimo, maximo, centro;
-    int a, b; // = a*x + b
-    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL, SENSOR_RC } tipo;
+    volatile unsigned short valor;
+    ConfigSensor *cfg;
 
-    Sensor(unsigned char  pin=0, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
-        { init(pin, t, inverso); }
-    void init(unsigned char  pin=0, eTipoSensor t=SENSOR_ANALOGICO, bool inverso = false)
-        {
-            pino = pin;
-            tipo = t;
-            invertido = inverso;
-            valor = anterior = 0;
-            if(invertido) a = -1; else a = 1;
-            b = 0;
-            if(tipo == SENSOR_RC)
-            {
-                minimo = 1300;
-                centro = 1500;
-                maximo = 1700;
-            }
-            else
-            {
-                minimo = 65535;
-                centro = 32767;
-                maximo = 0;
-            }
-        }
+    Sensor()
+    {
+        valor = 0;
+        cfg = NULL;
+    }
+    void setConfig(ConfigSensor *c)
+        { cfg=c; }
     unsigned short getValor()
         { return valor; }
     void setValor(unsigned short v)
         {
-            anterior = valor;
+            if( cfg )
+            {
+                cfg->anterior = valor;
+                if (v < cfg->minimo) cfg->minimo = v;
+                if (v > cfg->maximo) cfg->maximo = v;
+            }
             valor = v;
-            if (valor < minimo) minimo = valor;
-            if (valor > maximo) maximo = valor;
         }
     void calibrar()
         {
-            minimo = 65537;
-            maximo = 0;
-            centro = valor;
+            if( cfg )
+            {
+                cfg->minimo = 65537;
+                cfg->maximo = 0;
+                cfg->centro = valor;
+            }
         }
     void centrar()
-        { centro = valor; }
+        { if( cfg ) cfg->centro = valor; }
     unsigned short refresh()
         {
-            switch(tipo)
+            if(cfg)
             {
-                case SENSOR_ANALOGICO:
-                    setValor(analogRead(pino));
-                break;
-                case SENSOR_PING:
-                    // manda pulso de 2ms pro ping))) pra acionar leitura
-                    pinMode(pino, OUTPUT);
-                    digitalWrite(pino, LOW);
-                    delayMicroseconds(2);
-                    digitalWrite(pino, HIGH);
-                    delayMicroseconds(5);
-                    digitalWrite(pino, LOW);
+                switch(cfg->tipo)
+                {
+                    case ConfigSensor::SENSOR_ANALOGICO:
+                        setValor(analogRead(cfg->pino));
+                    break;
+                    case ConfigSensor::SENSOR_PING:
+                        // manda pulso de 2ms pro ping))) pra acionar leitura
+                        pinMode(cfg->pino, OUTPUT);
+                        digitalWrite(cfg->pino, LOW);
+                        delayMicroseconds(2);
+                        digitalWrite(cfg->pino, HIGH);
+                        delayMicroseconds(5);
+                        digitalWrite(cfg->pino, LOW);
 
-                    // duracao do pulso = distancia
-                    pinMode(pino, INPUT);
-                    setValor(pulseIn(pino, HIGH));
-                default:
-                break;
+                        // duracao do pulso = distancia
+                        pinMode(cfg->pino, INPUT);
+                        setValor(pulseIn(cfg->pino, HIGH));
+                    default:
+                    break;
+                }
             }
             return valor;
         }
     bool ehMinimo(unsigned short margem = 0)
-        { return ( invertido ? (maximo - valor) <= margem : (valor - minimo) <= margem ); }
+        { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
     bool ehMaximo(unsigned short margem = 0)
-        { return ( invertido ? (valor - minimo) <= margem : (maximo - valor) <= margem ); }
+        { return ( cfg->invertido ? (valor - cfg->minimo) <= margem : (cfg->maximo - valor) <= margem ); }
     void setReta(int aa, int bb)
-        { a = aa; b = bb; }
+        { cfg->a = aa; cfg->b = bb; }
     int getReta()
-        { return ( a * valor + b ); }
+        { return ( cfg->a * valor + cfg->b ); }
     int getPorcentoAprox(int grude=10)
     {
-        long x = (long)valor - (long)centro;
+        long x = (long)valor - (long)cfg->centro;
 
         // calcula o range de 0 a +/-extremo
-        long r = ( x > 0 ) ? (maximo - centro) : (centro - minimo);
+        long r = ( x > 0 ) ? (cfg->maximo - cfg->centro) : (cfg->centro - cfg->minimo);
 
         // x%
         if(r)
@@ -283,9 +337,9 @@ public:
         return x;
     }
     int delta()
-        { return valor - anterior; }
+        { return valor - cfg->anterior; }
 }
-sensores[6], *sensorFrente, *sensorEsquerda, *sensorDireita;
+sensores[NUM_SENSORES], *sensorFrente, *sensorEsquerda, *sensorDireita;
 
 // ******************************************************************************
 //		GAMEPAD E R/C
@@ -560,6 +614,7 @@ public:
         forward((goForward ? 100 : -100), eeprom.dados.mvDelay.inch);
     }
     void vetorial(int x, int y);
+    void vetorialSensor(int x, int y);
     void turnLeft()
     {
         left(100, eeprom.dados.mvDelay.right);
@@ -616,6 +671,48 @@ void Drive::vetorial(int x, int y)
             motorEsq.move( x+y );
         }
     }
+}
+
+void Drive::vetorialSensor(int x, int y)
+{
+    sensorEsquerda->refresh();
+    sensorDireita->refresh();
+
+/*
+    static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
+
+    #define MARGEM_SHARP 400
+    #define MARGEM_PING 400
+    if( sensorFrente->ehMinimo(MARGEM_PING) )
+    {
+        if( ! palpite )
+            palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+
+        if(palpite < 0)
+            drive.left(50);
+        else
+            drive.right(50);
+    }
+    else
+    {
+        if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
+            drive.right(50);
+        else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
+            drive.left(50);
+        else
+        {
+            // ceu de brigadeiro
+            drive.forward(100);
+            palpite = 0;
+        }
+    }
+*/
+    if( sensorEsquerda->getValor() > 200 )
+        drive.right(y);
+    else if( sensorDireita->getValor() > 200 )
+        drive.left(y);
+    else
+        drive.forward(y);
 }
 
 void trataJoystick()
@@ -685,7 +782,12 @@ void trataJoystick()
         drive2.stop();
 #else
     if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
-        drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+    {
+        if( !gamepad.x.getPorcentoAprox() && gamepad.y.getPorcentoAprox() < 0 )
+            drive.vetorialSensor(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+        else
+            drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+    }
     else
         drive.stop();
 #endif
@@ -989,12 +1091,9 @@ void enviaSensores(bool enviaComando = true)
         Serial.print(VAR_AS);
         Serial.print(" ");
     }
-    for (int x = 0; x < 6; x++)
+    for (int x = 0; x < NUM_SENSORES; x++)
     {
-        if(x < PINO_ANALOG_CNT)
-            Serial.print(sensores[x].refresh());
-        else
-            Serial.print("?");
+        Serial.print(sensores[x].refresh());
         Serial.print(" ");
     }
     Serial.println("");
@@ -1042,11 +1141,11 @@ void enviaJoystick()
     Serial.print(gamepad.x.getPorcentoAprox());
 
     Serial.print(" (");
-    Serial.print(gamepad.x.minimo);
+    Serial.print(gamepad.x.cfg->minimo);
     Serial.print(",");
-    Serial.print(gamepad.x.centro);
+    Serial.print(gamepad.x.cfg->centro);
     Serial.print(",");
-    Serial.print(gamepad.x.maximo);
+    Serial.print(gamepad.x.cfg->maximo);
     Serial.print(") ");
     Serial.println(gamepad.x.valor);
 
@@ -1057,11 +1156,11 @@ void enviaJoystick()
     Serial.print(gamepad.y.getPorcentoAprox());
 
     Serial.print(" (");
-    Serial.print(gamepad.y.minimo);
+    Serial.print(gamepad.y.cfg->minimo);
     Serial.print(",");
-    Serial.print(gamepad.y.centro);
+    Serial.print(gamepad.y.cfg->centro);
     Serial.print(",");
-    Serial.print(gamepad.y.maximo);
+    Serial.print(gamepad.y.cfg->maximo);
     Serial.print(") ");
     Serial.println(gamepad.y.valor);
 /*
@@ -1515,42 +1614,66 @@ void setup()
     nunchuck_init();
 #endif
 
+    gamepad.x.setConfig(&eeprom.dados.gameX);
+    gamepad.y.setConfig(&eeprom.dados.gameY);
+    gamepad.z.setConfig(&eeprom.dados.gameZ);
+    gamepad.r.setConfig(&eeprom.dados.gameR);
+
 #ifdef PINO_JOY_X
     PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
-    gamepad.x.init(PINO_JOY_X, Sensor::SENSOR_RC);
+    eeprom.dados.gameX.init(PINO_JOY_X, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_Y
     PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
-    gamepad.y.init(PINO_JOY_Y, Sensor::SENSOR_RC);
+    eeprom.dados.gameY.init(PINO_JOY_Y, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_Z
     PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
-    gamepad.z.init(PINO_JOY_Z, Sensor::SENSOR_RC);
+    eeprom.dados.gameZ.init(PINO_JOY_Z, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_R
     PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
-    gamepad.r.init(PINO_JOY_R, Sensor::SENSOR_RC);
+    eeprom.dados.gameR.init(PINO_JOY_R, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_SW1
     PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
 #endif
 
-    sensores[0].init(); // potenciometro
-    sensores[1].init(15, Sensor::SENSOR_PING);
-    sensores[2].init(2, Sensor::SENSOR_ANALOGICO, true);
-    sensores[3].init(3, Sensor::SENSOR_ANALOGICO, true);
+#if VERSAO_PLACA == 22
+    eeprom.dados.sensores[0].init(); // bateria
+    eeprom.dados.sensores[1].init(1, ConfigSensor::SENSOR_ANALOGICO, true);
+    eeprom.dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
 
-    sensores[1].minimo = 150;
-    sensores[2].maximo = 630;
-    sensores[3].maximo = 630;
+    eeprom.dados.sensores[1].maximo = 630;
+    eeprom.dados.sensores[2].maximo = 630;
+
+    eeprom.dados.sensores[1].minimo = 100;
+    eeprom.dados.sensores[2].minimo = 100;
+
+    sensorFrente = NULL;
+    sensorDireita = &sensores[1];
+    sensorEsquerda = &sensores[2];
+#else
+    eeprom.dados.sensores[0].init(); // potenciometro
+    eeprom.dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
+    eeprom.dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
+    eeprom.dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
+
+    eeprom.dados.sensores[1].minimo = 150;
+    eeprom.dados.sensores[2].maximo = 630;
+    eeprom.dados.sensores[3].maximo = 630;
 
     sensorFrente = &sensores[1];
     sensorDireita = &sensores[2];
     sensorEsquerda = &sensores[3];
+#endif
+
+    for(int s=0; s<NUM_SENSORES; s++)
+        sensores[s].setConfig(&eeprom.dados.sensores[s]);
 }
 
 // ******************************************************************************
@@ -1593,7 +1716,7 @@ void loop()
                 drive2.refresh();
             #endif
         }
-        msExec = 10;
+        msExec = 0;
         break;
 
         case PRG_FOTOVORO:
