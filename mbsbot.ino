@@ -126,6 +126,10 @@ public:
 
         char handBrake;
 
+        // TODO (mbs#1#): configuracao via serial
+        char velMax;    // %
+        char velEscala; // %
+
         short centroMotorEsq;
         short centroMotorDir;
 
@@ -189,6 +193,8 @@ public:
     {
         dados.programa = PRG_RC;
         dados.handBrake = 1;
+        dados.velMax = 100;
+        dados.velEscala = 100;
 
         #ifdef RODAS_PWM
         dados.centroMotorEsq = 70;
@@ -421,7 +427,7 @@ public:
     {
         if ( tipo == MOTOR_SERVO )
         {
-            // TODO (mbs#1#): usar aceleracao pro servo tb
+            // TODO (mbs#1#): usar aceleracao e escala pro servo tb
             // servos tipicos aceitam pulsos entre 1000us e 2000us, ou seja, centro(1500us) +/- 500us
             write( invertido ? (centro - potencia100*5) : (centro + potencia100*5) );
             return;
@@ -432,13 +438,12 @@ public:
         */
         if ( potencia100 )
         {
-            potencia100 = constrain(potencia100, -100, 100);    // protecao de range
-            short c = potencia100 > 0 ? centro : -centro;       // c = "centro" com sinal
-            short fator = 255 - centro;                         // faixa de controle (linear?)
-            meta = c + ( potencia100 * fator ) / 100;           // converte % de potencia em pwm 8 bits
-            meta = constrain(meta, -255, 255);
-
-            // range de saida: +/- centro ... 255
+            potencia100 = map(potencia100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
+            potencia100 = constrain(potencia100, -eeprom.dados.velMax, eeprom.dados.velMax);  // velocidade maxima
+            short c = potencia100 > 0 ? centro : -centro;           // c = "centro" com sinal
+            short fator = 255 - centro;                             // faixa de controle (linear?)
+            meta = c + ( potencia100 * fator ) / 100;               // converte % de potencia pra PWM 8 b
+            meta = constrain(meta, -255, 255);                      // range de saida: +/- centro ... 255
         }
         else
             meta = 0;
@@ -461,7 +466,7 @@ public:
             ultimoAcel += 10;
             if ( meta > atual)
             {
-                if( ! atual ) // estava parado
+                if( atual == 0 ) // estava parado
                     atual = centro;
                 else
                     atual += aceleracao;
@@ -471,7 +476,7 @@ public:
             }
             else if ( meta < atual)
             {
-                if( ! atual ) // estava parado
+                if( atual == 0 ) // estava parado
                     atual = -centro;
                 else
                     atual -= aceleracao;
@@ -1774,6 +1779,8 @@ void loop()
         #ifdef WIICHUCK
         case PRG_WIICHUCK:
         {
+            // TODO (mbs#1#): limpar essa merda e usar nova classe joystick p wiichuck tb
+
             if(nunchuck_get_data() == 0)
                 break;
 
