@@ -142,15 +142,17 @@ public:
         short acelMotorEsqT;
         short acelMotorDirT;
 
-        struct sMoveDelays  // duracao (ms) de movimentos pra animacao
+        struct sDelays  // duracao (ms) de movimentos pra animacao
         {
-            short inch;		// tempo pra mover 1 polegada
-            short right;	// tempo pra girar 90 graus (angulo reto)
-        } mvDelay;
+            unsigned short mvPol;	// tempo pra mover 1 polegada
+            unsigned short mv90;	// tempo pra girar 90 graus (angulo reto)
 
-        // intervalo entre envios pela serial de status e sensores
-        unsigned short delaySensores;
-        unsigned short delayStatus;
+            // intervalo entre envios pela serial de status e sensores
+            unsigned short sensores;
+            unsigned short status;
+
+            short reads; // intervalo generico de leitura de sensores
+        } delays;
 
         // parametros do seguidor de linha
         unsigned short LF_threshold[NUM_IR_TRACK];
@@ -163,9 +165,6 @@ public:
             int Ki;		// integral
             int Kd;		// derivativo
         } pid;
-
-        // intervalo generico de leitura de sensores
-        short RF_delay_reads;
 
         ConfigSensor gameX, gameY, gameZ, gameR;
 
@@ -211,11 +210,11 @@ public:
         dados.acelMotorEsqT = 10;
         dados.acelMotorDirT = 10;
 
-        dados.mvDelay.inch = 200;
-        dados.mvDelay.right = 400;
-
-        dados.delaySensores = 0;
-        dados.delayStatus = 0;
+        dados.delays.mvPol = 200;
+        dados.delays.mv90 = 400;
+        dados.delays.sensores = 0;
+        dados.delays.status = 0;
+        dados.delays.reads = 100;
 
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
@@ -225,7 +224,7 @@ public:
         dados.pid.Kp = 100;
         dados.pid.Ki = 0;
         dados.pid.Kd = 0;
-        dados.RF_delay_reads = 100;
+
         dados.joyCenter.x = 174;
         dados.joyCenter.y = 174;
     }
@@ -233,13 +232,11 @@ public:
 eeprom;
 
 // ******************************************************************************
-//		DELAY SEM BLOCK
+//		DELAY SEM BLOCK (nao cumulativo)
 // ******************************************************************************
 bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
 {
-    if( !ms )
-        return true;
-
+    // 0 desativa
     if( ms && (agora > *ultimaVez + ms) )
     {
         *ultimaVez = agora; // += ms;
@@ -616,17 +613,17 @@ public:
     }
     void inch(bool goForward=true)
     {
-        forward((goForward ? 100 : -100), eeprom.dados.mvDelay.inch);
+        forward((goForward ? 100 : -100), eeprom.dados.delays.mvPol);
     }
     void vetorial(int x, int y);
     void vetorialSensor(int x, int y);
     void turnLeft()
     {
-        left(100, eeprom.dados.mvDelay.right);
+        left(100, eeprom.dados.delays.mv90);
     }
     void turnRight()
     {
-        right(100, eeprom.dados.mvDelay.right);
+        right(100, eeprom.dados.delays.mv90);
     }
 }
 drive, drive2;
@@ -680,13 +677,13 @@ void Drive::vetorial(int x, int y)
 
 void Drive::vetorialSensor(int x, int y)
 {
+    sensorFrente->refresh();
     sensorEsquerda->refresh();
     sensorDireita->refresh();
 
-/*
     static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
-    #define MARGEM_SHARP 400
+    #define MARGEM_SHARP 200
     #define MARGEM_PING 400
     if( sensorFrente->ehMinimo(MARGEM_PING) )
     {
@@ -694,30 +691,23 @@ void Drive::vetorialSensor(int x, int y)
             palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
 
         if(palpite < 0)
-            drive.left(50);
+            drive.left(y/2);
         else
-            drive.right(50);
+            drive.right(y/2);
     }
     else
     {
         if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
-            drive.right(50);
+            drive.right(y/2);
         else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
-            drive.left(50);
+            drive.left(y/2);
         else
         {
             // ceu de brigadeiro
-            drive.forward(100);
+            drive.forward(y);
             palpite = 0;
         }
     }
-*/
-    if( sensorEsquerda->getValor() > 200 )
-        drive.right(y);
-    else if( sensorDireita->getValor() > 200 )
-        drive.left(y);
-    else
-        drive.forward(y);
 }
 
 void trataJoystick()
@@ -1265,11 +1255,11 @@ void Server::loop()
                             eeprom.dados.programa = valor;
                         }
                         else if(strcmp(dest, VAR_T_POL) == 0)
-                            eeprom.dados.mvDelay.inch = valor;
+                            eeprom.dados.delays.mvPol = valor;
                         else if(strcmp(dest, VAR_T_90) == 0)
-                            eeprom.dados.mvDelay.right = valor;
+                            eeprom.dados.delays.mv90 = valor;
                         else if(strcmp(dest, VAR_T_RF) == 0)
-                            eeprom.dados.RF_delay_reads = valor;
+                            eeprom.dados.delays.reads = valor;
                         else if(strcmp(dest, VAR_SERVO_X) == 0)
                             pan.write(valor);
                         else if(strcmp(dest, VAR_SERVO_Y) == 0)
@@ -1291,9 +1281,9 @@ void Server::loop()
                         else if(strcmp(dest, VAR_ACEL_DIR) == 0)
                             drive.motorDir.setAceleracao(eeprom.dados.acelMotorDir = valor);
                         else if(strcmp(dest, VAR_T_ST) == 0)
-                            eeprom.dados.delayStatus = (unsigned short)valor;
+                            eeprom.dados.delays.status = (unsigned short)valor;
                         else if(strcmp(dest, VAR_T_SE) == 0)
-                            eeprom.dados.delaySensores = (unsigned short)valor;
+                            eeprom.dados.delays.sensores = (unsigned short)valor;
                     }
                 }
             }
@@ -1315,11 +1305,11 @@ void Server::loop()
                     else if(strcmp(tok, VAR_PROGRAMA) == 0)
                         Serial.println(eeprom.dados.programa);
                     else if(strcmp(tok, VAR_T_POL) == 0)
-                        Serial.println(eeprom.dados.mvDelay.inch);
+                        Serial.println(eeprom.dados.delays.mvPol);
                     else if(strcmp(tok, VAR_T_90) == 0)
-                        Serial.println(eeprom.dados.mvDelay.right);
+                        Serial.println(eeprom.dados.delays.mv90);
                     else if(strcmp(tok, VAR_T_RF) == 0)
-                        Serial.println(eeprom.dados.RF_delay_reads);
+                        Serial.println(eeprom.dados.delays.reads);
                     else if(strcmp(tok, VAR_SERVO_X) == 0)
                         Serial.println(pan.read());
                     else if(strcmp(tok, VAR_SERVO_Y) == 0)
@@ -1343,9 +1333,9 @@ void Server::loop()
                     else if(strcmp(tok, VAR_ACEL_DIR) == 0)
                         Serial.println((int)eeprom.dados.acelMotorDir);
                     else if(strcmp(tok, VAR_T_ST) == 0)
-                        Serial.println((int)eeprom.dados.delayStatus);
+                        Serial.println((int)eeprom.dados.delays.status);
                     else if(strcmp(tok, VAR_T_SE) == 0)
-                        Serial.println((int)eeprom.dados.delaySensores);
+                        Serial.println((int)eeprom.dados.delays.sensores);
                 }
             }
             else if(strcmp(tok, CMD_SAVE) == 0)	// salva temporarios na EEPROM
@@ -1519,7 +1509,7 @@ void isrRadio()
         break;
         #endif
         #ifdef PINO_JOY_R
-        case PINO_JOY_R
+        case PINO_JOY_R:
         {
             static unsigned long inicioPulsoR = 0;
             isrRadioEixo(&gamepad.r, &inicioPulsoR);
@@ -1648,34 +1638,24 @@ void setup()
     PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
 #endif
 
-#if VERSAO_PLACA == 22
-    eeprom.dados.sensores[0].init(); // bateria
-    eeprom.dados.sensores[1].init(1, ConfigSensor::SENSOR_ANALOGICO, true);
-    eeprom.dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
+// TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
-    eeprom.dados.sensores[1].maximo = 630;
-    eeprom.dados.sensores[2].maximo = 630;
+    eeprom.dados.sensores[0].init(0, ConfigSensor::SENSOR_ANALOGICO); // bateria
 
-    eeprom.dados.sensores[1].minimo = 100;
-    eeprom.dados.sensores[2].minimo = 100;
-
-    sensorFrente = NULL;
-    sensorDireita = &sensores[1];
-    sensorEsquerda = &sensores[2];
-#else
-    eeprom.dados.sensores[0].init(); // potenciometro
     eeprom.dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
-    eeprom.dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
-    eeprom.dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
-
     eeprom.dados.sensores[1].minimo = 150;
+
+    eeprom.dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
+    eeprom.dados.sensores[2].minimo = 100;
     eeprom.dados.sensores[2].maximo = 630;
+
+    eeprom.dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
+    eeprom.dados.sensores[3].minimo = 100;
     eeprom.dados.sensores[3].maximo = 630;
 
     sensorFrente = &sensores[1];
     sensorDireita = &sensores[2];
     sensorEsquerda = &sensores[3];
-#endif
 
     for(int s=0; s<NUM_SENSORES; s++)
         sensores[s].setConfig(&eeprom.dados.sensores[s]);
@@ -1691,13 +1671,14 @@ void loop()
     server.loop();
 
     static unsigned long ultimoStatus = 0;
-    if( delaySemBlock(&ultimoStatus, eeprom.dados.delayStatus) )
+    if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
     {
         enviaStatus();
+        digitalWrite(PINO_LED, !digitalRead(PINO_LED));
     }
 
     static unsigned long ultimoSensores = 0;
-    if( delaySemBlock(&ultimoSensores, eeprom.dados.delaySensores) )
+    if( delaySemBlock(&ultimoSensores, eeprom.dados.delays.sensores) )
     {
         enviaJoystick();
         enviaSensores();
@@ -1726,22 +1707,22 @@ void loop()
 
         case PRG_FOTOVORO:
             fotovoro();
-        msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         case PRG_LINE_FOLLOW:
             lineFollower.loop();
-        msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         case PRG_SCANNER:
             scanner.fillArray();
-        msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         case PRG_CHASE:
             scanner.chase();
-        msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         case PRG_COLLISION:
@@ -1754,7 +1735,7 @@ void loop()
             if(sensorFrente->refresh() > minDist)
             {
                 // calc velocidade em unidades sensor / segundo
-                int v = ((long)sensorFrente->delta() * 1000) / eeprom.dados.RF_delay_reads;
+                int v = ((long)sensorFrente->delta() * 1000) / eeprom.dados.delays.reads;
 
                 // s = s0 + v * t;
                 int timeToCollision = (s0 - sensorFrente->getValor()) / v;
@@ -1764,7 +1745,7 @@ void loop()
             }
 
         }
-        msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         case PRG_SENTINELA:
@@ -1773,7 +1754,7 @@ void loop()
             if( abs(sensorFrente->delta() ) > 30 )
                 eeprom.dados.programa = PRG_ALARME;
         }
-        msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         #ifdef WIICHUCK
@@ -1852,9 +1833,9 @@ void loop()
             // e envia somente um byte
             Serial.write((analogRead(0) >> 2) & 0xFF);
         }
-        msExec = eeprom.dados.RF_delay_reads;
-        eeprom.dados.delaySensores = 0;
-        eeprom.dados.delayStatus = 0;
+        msExec = eeprom.dados.delays.reads;
+        eeprom.dados.delays.sensores = 0;
+        eeprom.dados.delays.status = 0;
         break;
 
         case PRG_KNOB:
@@ -1895,7 +1876,7 @@ void loop()
             }
 
         }
-        msExec = eeprom.dados.RF_delay_reads;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         case PRG_ALARME:

@@ -71,10 +71,10 @@ Formato geral do pacote:
     eixo_X, eixo_Y: +/- 0-100 %
 */
 
-#define CMD_TURN_LEFT "left"
+#define CMD_TURN_LEFT "esq"
 /* CMD_TURN_LEFT : 90 graus pra esquerda */
 
-#define CMD_TURN_RIGHT "right"
+#define CMD_TURN_RIGHT "dir"
 /* CMD_TURN_RIGHT : 90 graus pra direita */
 
 #define CMD_STATUS "s"

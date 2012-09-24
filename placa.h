@@ -77,6 +77,8 @@
 // RADIO CONTROLE
 #define PINO_JOY_X      2
 #define PINO_JOY_Y      3
+#define PINO_JOY_Z      17
+#define PINO_JOY_R      18
 #define PINO_JOY_SW1    4
 
 #endif // BOARD_H_INCLUDED
