@@ -227,6 +227,11 @@ public:
 
         dados.joyCenter.x = 174;
         dados.joyCenter.y = 174;
+
+        dados.gameX.init(PINO_JOY_X, ConfigSensor::SENSOR_RC);
+        dados.gameY.init(PINO_JOY_Y, ConfigSensor::SENSOR_RC);
+        dados.gameZ.init(PINO_JOY_Z, ConfigSensor::SENSOR_RC);
+        dados.gameR.init(PINO_JOY_R, ConfigSensor::SENSOR_RC);
     }
 }
 eeprom;
@@ -683,31 +688,62 @@ void Drive::vetorialSensor(int x, int y)
 
     static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
-    #define MARGEM_SHARP 200
+    if( sensorFrente->ehMinimo(2000) )
+        y/=2;
+
+    #define MARGEM_SHARP 300
     #define MARGEM_PING 400
+
     if( sensorFrente->ehMinimo(MARGEM_PING) )
     {
         if( ! palpite )
             palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
 
         if(palpite < 0)
-            drive.left(y/2);
+            drive.left(y);
         else
-            drive.right(y/2);
+            drive.right(y);
     }
+    else if( sensorFrente->ehMinimo(1500) )
+    {
+        if( ! palpite )
+            palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+
+        if(palpite < 0)
+            drive.leftSmooth(y);
+        else
+            drive.rightSmooth(y);
+    }
+    else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
+            drive.right(y);
+    else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
+            drive.left(y);
     else
     {
-        if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
-            drive.right(y/2);
-        else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
-            drive.left(y/2);
-        else
-        {
             // ceu de brigadeiro
             drive.forward(y);
             palpite = 0;
-        }
     }
+
+    // TRACE
+    Serial.print("v ");
+    Serial.print(y);
+    Serial.print(" ");
+    Serial.print(sensorEsquerda->getValor());
+    Serial.print(" ");
+    Serial.print(sensorFrente->getValor());
+    Serial.print(" ");
+    Serial.print(sensorDireita->getValor());
+    Serial.print(" ");
+    Serial.print((int)palpite);
+    Serial.print(" ");
+    Serial.print(drive.motorEsq.read());
+    Serial.print(" ");
+    Serial.print(drive.motorDir.read());
+//    Serial.print("");
+//    Serial.print();
+
+    Serial.println("\n");
 }
 
 void trataJoystick()
@@ -751,6 +787,8 @@ void trataJoystick()
     {
         // 4 rodas: controla servos com eixos Z e R
     }
+    if(gamepad.botoesAgora & BT_RT)
+        eeprom.dados.handBrake = 0;
 #ifdef PINO_ARMA
     if(gamepad.botoesAgora & BT_RT)
         digitalWrite(PINO_ARMA, HIGH);
@@ -778,7 +816,10 @@ void trataJoystick()
 #else
     if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
     {
-        if( !gamepad.x.getPorcentoAprox() && gamepad.y.getPorcentoAprox() < 0 )
+        if( ! gamepad.x.getPorcentoAprox()
+           && gamepad.y.getPorcentoAprox() < 0
+           && ! (gamepad.botoesAgora & BT_RT)
+        )
             drive.vetorialSensor(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
         else
             drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
@@ -1433,7 +1474,6 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_JOYPAD) == 0)
             {
-                eeprom.dados.programa = PRG_RC_SERIAL;
                 if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
                 {
                     gamepad.refreshBotoes(atoi(tok));
@@ -1454,6 +1494,8 @@ void Server::loop()
                         }
                     }
                 }
+                else
+                    enviaJoystick();
             }
         }
     }
@@ -1616,22 +1658,18 @@ void setup()
 
 #ifdef PINO_JOY_X
     PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
-    eeprom.dados.gameX.init(PINO_JOY_X, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_Y
     PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
-    eeprom.dados.gameY.init(PINO_JOY_Y, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_Z
     PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
-    eeprom.dados.gameZ.init(PINO_JOY_Z, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_R
     PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
-    eeprom.dados.gameR.init(PINO_JOY_R, ConfigSensor::SENSOR_RC);
 #endif
 
 #ifdef PINO_JOY_SW1
@@ -1702,7 +1740,7 @@ void loop()
                 drive2.refresh();
             #endif
         }
-        msExec = 0;
+        msExec = 1;
         break;
 
         case PRG_FOTOVORO:
