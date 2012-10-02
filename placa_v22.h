@@ -47,6 +47,8 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
+#define NUM_SENSORES    6
+
 // LINE FOLLOWER (pinos analogicos!)
 #define NUM_IR_TRACK		5
 #define PINO_FIRST_IR_SENSOR 1
@@ -75,6 +77,8 @@
 // RADIO CONTROLE
 #define PINO_JOY_X      2
 #define PINO_JOY_Y      3
+#define PINO_JOY_Z      17
+#define PINO_JOY_R      18
 #define PINO_JOY_SW1    4
 
 #endif // BOARD_H_INCLUDED

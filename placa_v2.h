@@ -44,6 +44,8 @@
 #define PINO_SERVO_TILT		10
 #define PINO_SERVO_ROLL		8
 
+#define NUM_SENSORES    6
+
 // LINE FOLLOWER (pinos analogicos!)
 #define NUM_IR_TRACK		5
 #define PINO_FIRST_IR_SENSOR 1

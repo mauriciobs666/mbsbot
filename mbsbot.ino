@@ -155,8 +155,10 @@ public:
         } delays;
 
         // parametros do seguidor de linha
-        unsigned short LF_threshold[NUM_IR_TRACK];
-        bool LF_reverseColor;
+        #ifdef LINE_FOLLOWER
+            unsigned short LF_threshold[NUM_IR_TRACK];
+            bool LF_reverseColor;
+        #endif
 
         // controlador PID
         struct sPID
@@ -216,6 +218,7 @@ public:
         dados.delays.status = 0;
         dados.delays.reads = 100;
 
+        #ifdef LINE_FOLLOWER
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
             dados.LF_threshold[x] = 512;
@@ -224,14 +227,38 @@ public:
         dados.pid.Kp = 100;
         dados.pid.Ki = 0;
         dados.pid.Kd = 0;
+        #endif
 
         dados.joyCenter.x = 174;
         dados.joyCenter.y = 174;
 
-        dados.gameX.init(PINO_JOY_X, ConfigSensor::SENSOR_RC);
-        dados.gameY.init(PINO_JOY_Y, ConfigSensor::SENSOR_RC);
-        dados.gameZ.init(PINO_JOY_Z, ConfigSensor::SENSOR_RC);
-        dados.gameR.init(PINO_JOY_R, ConfigSensor::SENSOR_RC);
+        // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
+
+        dados.sensores[0].init(0, ConfigSensor::SENSOR_ANALOGICO); // bateria
+
+        dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
+        dados.sensores[1].minimo = 150;
+
+        dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
+        dados.sensores[2].minimo = 100;
+        dados.sensores[2].maximo = 630;
+
+        dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
+        dados.sensores[3].minimo = 100;
+        dados.sensores[3].maximo = 630;
+
+        #ifdef PINO_JOY_X
+            dados.gameX.init(PINO_JOY_X, ConfigSensor::SENSOR_RC);
+        #endif
+        #ifdef PINO_JOY_Y
+            dados.gameY.init(PINO_JOY_Y, ConfigSensor::SENSOR_RC);
+        #endif
+        #ifdef PINO_JOY_Z
+            dados.gameZ.init(PINO_JOY_Z, ConfigSensor::SENSOR_RC);
+        #endif
+        #ifdef PINO_JOY_R
+            dados.gameR.init(PINO_JOY_R, ConfigSensor::SENSOR_RC);
+        #endif
     }
 }
 eeprom;
@@ -852,6 +879,8 @@ void fotovoro()
 // ******************************************************************************
 //		LINE FOLLOWER
 // ******************************************************************************
+
+#ifdef LINE_FOLLOWER
 class LineFollower
 {
 public:
@@ -1026,6 +1055,7 @@ void LineFollower::autoCalibrate()
         }
     }
 }
+#endif
 
 // ******************************************************************************
 //		Scanner 1D pra uso com IR Sharp
@@ -1591,14 +1621,6 @@ void setup()
 
     eeprom.load();
 
-    // liga pull-up de pinos livres pra economizar energia
-    int unused[] = PINO_UNUSED_ARRAY;
-    for(int p=0; p < PINO_UNUSED_CNT; p++)
-    {
-        pinMode(unused[p], INPUT);
-        digitalWrite(unused[p], HIGH);
-    }
-
 #ifndef RODAS_PWM
     drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.dados.centroMotorEsq);
     drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.dados.centroMotorDir, true);
@@ -1632,9 +1654,6 @@ void setup()
     roll.write(90);
 #endif
 
-    if (eeprom.dados.programa == PRG_LINE_FOLLOW)
-        lineFollower.autoCalibrate();
-
     pinMode(PINO_LED, OUTPUT);
     digitalWrite(PINO_LED, LOW);
 
@@ -1650,6 +1669,13 @@ void setup()
 #ifdef WIICHUCK
     nunchuck_init();
 #endif
+
+    for(int s=0; s<NUM_SENSORES; s++)
+        sensores[s].setConfig(&eeprom.dados.sensores[s]);
+
+    sensorFrente = &sensores[1];
+    sensorDireita = &sensores[2];
+    sensorEsquerda = &sensores[3];
 
     gamepad.x.setConfig(&eeprom.dados.gameX);
     gamepad.y.setConfig(&eeprom.dados.gameY);
@@ -1676,27 +1702,13 @@ void setup()
     PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
 #endif
 
-// TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
-
-    eeprom.dados.sensores[0].init(0, ConfigSensor::SENSOR_ANALOGICO); // bateria
-
-    eeprom.dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
-    eeprom.dados.sensores[1].minimo = 150;
-
-    eeprom.dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
-    eeprom.dados.sensores[2].minimo = 100;
-    eeprom.dados.sensores[2].maximo = 630;
-
-    eeprom.dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
-    eeprom.dados.sensores[3].minimo = 100;
-    eeprom.dados.sensores[3].maximo = 630;
-
-    sensorFrente = &sensores[1];
-    sensorDireita = &sensores[2];
-    sensorEsquerda = &sensores[3];
-
-    for(int s=0; s<NUM_SENSORES; s++)
-        sensores[s].setConfig(&eeprom.dados.sensores[s]);
+    // liga pull-up de pinos livres pra economizar energia
+    int unused[] = PINO_UNUSED_ARRAY;
+    for(int p=0; p < PINO_UNUSED_CNT; p++)
+    {
+        pinMode(unused[p], INPUT);
+        digitalWrite(unused[p], HIGH);
+    }
 }
 
 // ******************************************************************************
@@ -1748,10 +1760,12 @@ void loop()
         msExec = eeprom.dados.delays.reads;
         break;
 
+        #ifdef LINE_FOLLOWER
         case PRG_LINE_FOLLOW:
             lineFollower.loop();
         msExec = eeprom.dados.delays.reads;
         break;
+        #endif
 
         case PRG_SCANNER:
             scanner.fillArray();
