@@ -56,7 +56,9 @@
     // ex: NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
 #endif
 
-#define PINO_BIP 			18
+// http://arduino.cc/en/Reference/Tone
+// Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
+//#define PINO_BIP 			18
 
 #define PINO_ARMA           6
 

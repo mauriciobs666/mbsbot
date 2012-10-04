@@ -39,6 +39,8 @@
 // Pin Change interrupt ( http://code.google.com/p/arduino-pinchangeint/ )
 #include "PinChangeInt.h"
 
+#include "Geometria.h"
+
 // speaker
 #ifdef PINO_BIP
 #define BEEP(freq, dur) tone(PINO_BIP,freq,dur)
@@ -117,6 +119,13 @@ typedef struct sConfigSensor
     }
 } ConfigSensor;
 
+
+typedef struct
+{
+    short centro;
+    short aceleracao;
+} ConfigMotor;
+
 class Eeprom
 {
 public:
@@ -130,17 +139,10 @@ public:
         char velMax;    // %
         char velEscala; // %
 
-        short centroMotorEsq;
-        short centroMotorDir;
-
-        short centroMotorEsqT;
-        short centroMotorDirT;
-
-        short acelMotorEsq;
-        short acelMotorDir;
-
-        short acelMotorEsqT;
-        short acelMotorDirT;
+        ConfigMotor motorEsq;
+        ConfigMotor motorEsqT;
+        ConfigMotor motorDir;
+        ConfigMotor motorDirT;
 
         struct sDelays  // duracao (ms) de movimentos pra animacao
         {
@@ -171,12 +173,6 @@ public:
         ConfigSensor gameX, gameY, gameZ, gameR;
 
         ConfigSensor sensores[NUM_SENSORES];
-
-        struct sJoyCenter
-        {
-            int x;
-            int y;
-        } joyCenter;
     } dados;
     void load()
     {
@@ -190,7 +186,7 @@ public:
         for(unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
             eeprom_write_byte((unsigned char *) addr, *dest);
     }
-    void loadDefault()
+    void defaults()
     {
         dados.programa = PRG_RC;
         dados.handBrake = 1;
@@ -198,19 +194,19 @@ public:
         dados.velEscala = 100;
 
         #ifdef RODAS_PWM
-        dados.centroMotorEsq = 70;
-        dados.centroMotorDir = 70;
-        dados.centroMotorEsqT = 70;
-        dados.centroMotorDirT = 70;
+        dados.motorEsq.centro = 70;
+        dados.motorDir.centro = 70;
+        dados.motorEsqT.centro = 70;
+        dados.motorDirT.centro = 70;
         #else
-        dados.centroMotorEsq = 1410;
-        dados.centroMotorDir = 1384;
+        dados.motorEsq.centro = 1410;
+        dados.motorDir.centro = 1384;
         #endif
 
-        dados.acelMotorEsq = 10;
-        dados.acelMotorDir = 10;
-        dados.acelMotorEsqT = 10;
-        dados.acelMotorDirT = 10;
+        dados.motorEsq.aceleracao = 10;
+        dados.motorDir.aceleracao = 10;
+        dados.motorEsqT.aceleracao = 10;
+        dados.motorDirT.aceleracao = 10;
 
         dados.delays.mvPol = 200;
         dados.delays.mv90 = 400;
@@ -224,13 +220,11 @@ public:
             dados.LF_threshold[x] = 512;
             dados.LF_reverseColor = false;
         }
+        #endif
+
         dados.pid.Kp = 100;
         dados.pid.Ki = 0;
         dados.pid.Kd = 0;
-        #endif
-
-        dados.joyCenter.x = 174;
-        dados.joyCenter.y = 174;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
@@ -1313,13 +1307,13 @@ void Server::loop()
                         else if(strcmp(dest, VAR_RODA_DIR) == 0)
                             drive.motorDir.write(valor);
                         else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
-                            drive.motorEsq.setCenter(eeprom.dados.centroMotorEsq = valor);
+                            drive.motorEsq.setCenter(eeprom.dados.motorEsq.centro = valor);
                         else if(strcmp(dest, VAR_ZERO_DIR) == 0)
-                            drive.motorDir.setCenter(eeprom.dados.centroMotorDir = valor);
+                            drive.motorDir.setCenter(eeprom.dados.motorDir.centro = valor);
                         else if(strcmp(dest, VAR_ZERO_ESQ_T) == 0)
-                            drive2.motorEsq.setCenter(eeprom.dados.centroMotorEsqT = valor);
+                            drive2.motorEsq.setCenter(eeprom.dados.motorEsqT.centro = valor);
                         else if(strcmp(dest, VAR_ZERO_DIR_T) == 0)
-                            drive2.motorDir.setCenter(eeprom.dados.centroMotorDirT = valor);
+                            drive2.motorDir.setCenter(eeprom.dados.motorDirT.centro = valor);
                         else if(strcmp(dest, VAR_PROGRAMA) == 0)
                         {
                             drive.stop();
@@ -1348,9 +1342,9 @@ void Server::loop()
                         else if(strcmp(dest, VAR_FREIO) == 0)
                             eeprom.dados.handBrake = valor;
                         else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
-                            drive.motorEsq.setAceleracao(eeprom.dados.acelMotorEsq = valor);
+                            drive.motorEsq.setAceleracao(eeprom.dados.motorEsq.aceleracao = valor);
                         else if(strcmp(dest, VAR_ACEL_DIR) == 0)
-                            drive.motorDir.setAceleracao(eeprom.dados.acelMotorDir = valor);
+                            drive.motorDir.setAceleracao(eeprom.dados.motorDir.aceleracao = valor);
                         else if(strcmp(dest, VAR_T_ST) == 0)
                             eeprom.dados.delays.status = (unsigned short)valor;
                         else if(strcmp(dest, VAR_T_SE) == 0)
@@ -1368,11 +1362,11 @@ void Server::loop()
                     if(strcmp(tok, VAR_RODA_ESQ) == 0)
                         Serial.println(drive.motorEsq.read());
                     else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
-                        Serial.println(eeprom.dados.centroMotorEsq);
+                        Serial.println(eeprom.dados.motorEsq.centro);
                     else if(strcmp(tok, VAR_RODA_DIR) == 0)
                         Serial.println(drive.motorDir.read());
                     else if(strcmp(tok, VAR_ZERO_DIR) == 0)
-                        Serial.println(eeprom.dados.centroMotorDir);
+                        Serial.println(eeprom.dados.motorDir.centro);
                     else if(strcmp(tok, VAR_PROGRAMA) == 0)
                         Serial.println(eeprom.dados.programa);
                     else if(strcmp(tok, VAR_T_POL) == 0)
@@ -1400,9 +1394,9 @@ void Server::loop()
                         Serial.println(eeprom.dados.pid.Kd);
                     }
                     else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
-                        Serial.println((int)eeprom.dados.acelMotorEsq);
+                        Serial.println((int)eeprom.dados.motorEsq.aceleracao);
                     else if(strcmp(tok, VAR_ACEL_DIR) == 0)
-                        Serial.println((int)eeprom.dados.acelMotorDir);
+                        Serial.println((int)eeprom.dados.motorDir.aceleracao);
                     else if(strcmp(tok, VAR_T_ST) == 0)
                         Serial.println((int)eeprom.dados.delays.status);
                     else if(strcmp(tok, VAR_T_SE) == 0)
@@ -1418,12 +1412,15 @@ void Server::loop()
             }
             else if(strcmp(tok, CMD_DEFAULT) == 0)  // hard-coded
             {
-                eeprom.loadDefault();
+                eeprom.defaults();
                 drive.stop();
             }
+            else if(strcmp(tok, CMD_CAL) == 0)	// re-calibra sensores do line follower
+                gamepad.calibrar();
+            #ifdef LINE_FOLLOWER
             else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibra sensores do line follower
-                gamepad.calibrar();                 // TODO (mbs#1#): criar comando novo pra calibrar joystick
-                //lineFollower.autoCalibrate();
+                lineFollower.autoCalibrate();
+            #endif
             else if(strcmp(tok, CMD_MV_INCH) == 0)
                 drive.inch();
             else if(strcmp(tok, CMD_MV_STOP) == 0)
@@ -1622,11 +1619,11 @@ void setup()
     eeprom.load();
 
 #ifndef RODAS_PWM
-    drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.dados.centroMotorEsq);
-    drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.dados.centroMotorDir, true);
+    drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.dados.motorEsq.centro);
+    drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.dados.motorDir.centro, true);
 #else
-    drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.dados.centroMotorEsq, eeprom.dados.acelMotorEsq, MOTOR_ESQ_INV);
-    drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.dados.centroMotorDir, eeprom.dados.acelMotorDir, MOTOR_DIR_INV);
+    drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.dados.motorEsq.centro, eeprom.dados.motorEsq.aceleracao, MOTOR_ESQ_INV);
+    drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.dados.motorDir.centro, eeprom.dados.motorDir.aceleracao, MOTOR_DIR_INV);
     #ifdef PINO_MOTOR_ESQ_N
         drive.motorEsq.setN(PINO_MOTOR_ESQ_N);
     #endif
@@ -1634,8 +1631,8 @@ void setup()
         drive.motorDir.setN(PINO_MOTOR_DIR_N);
     #endif
     #ifdef RODAS_PWM_x4
-        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.dados.centroMotorEsqT, eeprom.dados.acelMotorEsqT, MOTOR_E_T_INV);
-        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.dados.centroMotorDirT, eeprom.dados.acelMotorDirT, MOTOR_D_T_INV);
+        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.dados.centroMotorEsqT, eeprom.dados.motorEsqT.aceleracao, MOTOR_E_T_INV);
+        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.dados.motorDirT.centro, eeprom.dados.motorDirT.aceleracao, MOTOR_D_T_INV);
     #endif
 #endif
 
@@ -1814,6 +1811,8 @@ void loop()
         {
             // TODO (mbs#1#): limpar essa merda e usar nova classe joystick p wiichuck tb
 
+            Vetor2i joyCenter(174,174);
+
             if(nunchuck_get_data() == 0)
                 break;
 
@@ -1821,8 +1820,8 @@ void loop()
 
             if( ! nunchuck_zbutton())
             {
-                int x = nunchuck_joyx() - eeprom.dados.joyCenter.x;
-                int y = nunchuck_joyy() - eeprom.dados.joyCenter.y;
+                int x = nunchuck_joyx() - joyCenter.x;
+                int y = nunchuck_joyy() - joyCenter.y;
 
                 // TODO: mapear 0-100 direito
                 x *= 10; // joga x lah pra pqp
@@ -1837,13 +1836,13 @@ void loop()
                 const int VELOCIDADE_SERVO = 2;
 
                 #ifdef PINO_SERVO_PAN
-                if( nunchuck_joyx() < eeprom.dados.joyCenter.x )
+                if( nunchuck_joyx() < joyCenter.x )
                 {
                     int angle = pan.read() + VELOCIDADE_SERVO;
                     if(angle > 170) angle = 170;
                     pan.write(angle);
                 }
-                else if( nunchuck_joyx() > eeprom.dados.joyCenter.x )
+                else if( nunchuck_joyx() > joyCenter.x )
                 {
                     int angle = pan.read() - VELOCIDADE_SERVO;
                     if(angle < 10) angle = 10;
@@ -1852,13 +1851,13 @@ void loop()
                 #endif
 
                 #ifdef PINO_SERVO_TILT
-                if( nunchuck_joyy() > eeprom.dados.joyCenter.y )
+                if( nunchuck_joyy() > joyCenter.y )
                 {
                     int angle = tilt.read() + VELOCIDADE_SERVO;
                     if(angle > 170) angle = 170;
                     tilt.write(angle);
                 }
-                else if( nunchuck_joyy() < eeprom.dados.joyCenter.y )
+                else if( nunchuck_joyy() < joyCenter.y )
                 {
                     int angle = tilt.read() - VELOCIDADE_SERVO;
                     if(angle < 10) angle = 10;
@@ -1941,7 +1940,7 @@ void loop()
             #define SIRENE_PASSO    2
             #define SIRENE_COMPASSO 150
 
-            for(int x=0; x<1; x++)
+            for(int x=0; x<2; x++)
             {
                 for(int tom=SIRENE_TOM_MIN;tom<SIRENE_TOM_MAX;tom+=SIRENE_PASSO)
                 {
@@ -1953,8 +1952,12 @@ void loop()
                     BEEP(tom,SIRENE_COMPASSO/2);
                 }
             }
-
-            //delay(1000);
+            delay(1000);
+            #ifdef PINO_BIP
+                // TODO (mbs#1#): noTone() naum funfa na v2
+                noTone(PINO_BIP);
+                digitalWrite(PINO_BIP, LOW);
+            #endif
             digitalWrite(PINO_LED, LOW);
             //delay(1000);
         }

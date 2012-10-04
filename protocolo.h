@@ -52,7 +52,10 @@ Formato geral do pacote:
 #define CMD_DEFAULT	"dft"
 /* CMD_DEFAULT : carrega sConfigurationData com valores default */
 
-#define CMD_LF_CAL	"cal"
+#define CMD_CAL	"cal"
+/* CMD_CAL : auto calibra sensores joystick */
+
+#define CMD_LF_CAL	"lfcal"
 /* CMD_LF_CAL : auto calibra sensores do line-follower */
 
 #define CMD_MV_INCH	"pol"
