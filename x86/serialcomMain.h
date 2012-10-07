@@ -112,12 +112,8 @@ private:
     static const long ID_BUTTON14;
     static const long ID_BUTTON11;
     static const long ID_CHECKBOX3;
-    static const long ID_CHECKBOX1;
-    static const long ID_CHECKBOX6;
-    static const long ID_GRID2;
     static const long ID_BUTTON9;
-    static const long ID_STATICTEXT5;
-    static const long ID_STATICTEXT4;
+    static const long ID_GRID2;
     static const long ID_PANEL6;
     static const long ID_STATICTEXT6;
     static const long ID_CHOICE3;
@@ -206,7 +202,6 @@ private:
     wxStaticText* StaticText8;
     wxStaticText* StaticText11;
     wxTextCtrl* TextCtrlKp;
-    wxCheckBox* CheckBoxJoyServos;
     wxPanel* Panel1;
     wxStaticText* StaticText1;
     wxStaticText* StaticText3;
@@ -217,7 +212,6 @@ private:
     wxPanel* Panel3;
     wxTextCtrl* TextCtrlKd;
     wxButton* Button6;
-    wxCheckBox* CheckBoxDrvByJoy;
     wxButton* Button10;
     wxToolBarToolBase* ToolBarItem1;
     wxTextCtrl* TextCtrlDelayRead;
@@ -238,14 +232,12 @@ private:
     wxSlider* SliderPan;
     wxTextCtrl* TextCtrlRodaDireita;
     wxTextCtrl* TextCtrlKi;
-    wxStaticText* StaticText4;
     wxTextCtrl* TextCtrl3;
     wxChoice* Choice1;
     wxToolBarToolBase* ToolBarItem2;
     wxSlider* SliderRodaDireita;
     wxChoice* Choice2;
     wxButton* Button8;
-    wxStaticText* StaticTextJoyButtons;
     wxTimer Timer1;
     wxButton* Button12;
     wxTextCtrl* SendCommandText;

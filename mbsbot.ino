@@ -703,8 +703,8 @@ void Drive::vetorial(int x, int y)
 
 void Drive::vetorialSensor(int x, int y)
 {
-    sensorFrente->refresh();
     sensorEsquerda->refresh();
+    sensorFrente->refresh();
     sensorDireita->refresh();
 
     static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
@@ -745,7 +745,7 @@ void Drive::vetorialSensor(int x, int y)
             drive.forward(y);
             palpite = 0;
     }
-
+/*
     // TRACE
     Serial.print("v ");
     Serial.print(y);
@@ -763,8 +763,8 @@ void Drive::vetorialSensor(int x, int y)
     Serial.print(drive.motorDir.read());
 //    Serial.print("");
 //    Serial.print();
-
     Serial.println("\n");
+*/
 }
 
 void trataJoystick()
@@ -809,13 +809,16 @@ void trataJoystick()
         // 4 rodas: controla servos com eixos Z e R
     }
     if(gamepad.botoesAgora & BT_RT)
+    {
         eeprom.dados.handBrake = 0;
 #ifdef PINO_ARMA
-    if(gamepad.botoesAgora & BT_RT)
         digitalWrite(PINO_ARMA, HIGH);
+    }
     else
+    {
         digitalWrite(PINO_ARMA, LOW);
 #endif
+    }
 //                if(gamepad.botoesEdge & BT_LB)
 //                if(gamepad.botoesEdge & BT_RB)
 //                if(gamepad.botoesEdge & BT_L3)
@@ -824,30 +827,35 @@ void trataJoystick()
     gamepad.botoesEdgeR = 0;
     gamepad.botoesEdgeF = 0;
 
-#ifdef RODAS_PWM_x4
-    if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
-        drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-    else
-        drive.stop();
-
-    if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
-        drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-    else
-        drive2.stop();
-#else
-    if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
+    if( eeprom.dados.programa == PRG_RC_SERIAL
+        || eeprom.dados.programa == PRG_RC )
     {
-        if( ! gamepad.x.getPorcentoAprox()
-           && gamepad.y.getPorcentoAprox() < 0
-           && ! (gamepad.botoesAgora & BT_RT)
-        )
-            drive.vetorialSensor(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+    #ifdef RODAS_PWM_x4
+        if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
+            drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
         else
-            drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+            drive.stop();
+
+        if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
+            drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+        else
+            drive2.stop();
+    #else
+ //       if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
+ //       {
+ //           if( ! gamepad.x.getPorcentoAprox()
+ //              && gamepad.y.getPorcentoAprox() < 0
+ //              && ! (gamepad.botoesAgora & BT_RT)
+ //           )
+            if( gamepad.botoesAgora & BT_RT ) // arma ligada desliga sensores
+                drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+            else
+                drive.vetorialSensor(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+//        }
+//        else
+//            drive.stop();
+    #endif
     }
-    else
-        drive.stop();
-#endif
 }
 
 // ******************************************************************************
@@ -1052,8 +1060,9 @@ void LineFollower::autoCalibrate()
 #endif
 
 // ******************************************************************************
-//		Scanner 1D pra uso com IR Sharp
+//		Scanner IR 1D
 // ******************************************************************************
+#ifdef SCANNER
 class Scanner
 {
     #define SCANNER_STEPS 30
@@ -1140,7 +1149,7 @@ void Scanner::fillArray()
     }
     refreshServo();
 }
-
+#endif
 // ******************************************************************************
 //		DEBUG / SENSORES
 // ******************************************************************************
@@ -1717,6 +1726,8 @@ void loop()
 
     server.loop();
 
+    trataJoystick();
+
     static unsigned long ultimoStatus = 0;
     if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
     {
@@ -1743,7 +1754,6 @@ void loop()
         case PRG_RC:
         case PRG_RC_SERIAL:
         {
-            trataJoystick();
             drive.refresh();
             #ifdef RODAS_PWM_x4
                 drive2.refresh();
@@ -1764,15 +1774,16 @@ void loop()
         break;
         #endif
 
+        #ifdef SCANNER
         case PRG_SCANNER:
             scanner.fillArray();
         msExec = eeprom.dados.delays.reads;
         break;
-
         case PRG_CHASE:
             scanner.chase();
         msExec = eeprom.dados.delays.reads;
         break;
+        #endif
 
         case PRG_COLLISION:
         {
@@ -1880,7 +1891,7 @@ void loop()
 
         case PRG_SCOPE:
         {
-            // pra conseguir performance melhor descartamos os 2 bits menos significativos
+            // pra conseguir performance melhor descarta os 2 bits menos significativos
             // e envia somente um byte
             Serial.write((analogRead(0) >> 2) & 0xFF);
         }
