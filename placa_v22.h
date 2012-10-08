@@ -49,10 +49,15 @@
 
 #define NUM_SENSORES    6
 
-// LINE FOLLOWER (pinos analogicos!)
-#define NUM_IR_TRACK		5
-#define PINO_FIRST_IR_SENSOR 1
-// onde NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
+
+
+//#define LINE_FOLLOWER
+
+#ifdef LINE_FOLLOWER
+    #define NUM_IR_TRACK		5
+    #define PINO_FIRST_IR_SENSOR 1
+    // ex: NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
+#endif
 
 // http://arduino.cc/en/Reference/Tone
 // Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
@@ -62,19 +67,9 @@
 
 #define PINO_LED            13
 
-// habilita wiichuck / energia em A5/A6
+// habilita wiichuck / energia nas I2C/analogicas
 //#define WIICHUCK
 //#define WIICHUCK_POWER
-
-#ifdef WIICHUCK
-    #ifdef WIICHUCK_POWER
-        #define PINO_ANALOG_CNT 2
-    #else
-        #define PINO_ANALOG_CNT 4
-    #endif
-#else
-    #define PINO_ANALOG_CNT 6
-#endif
 
 // RADIO CONTROLE
 #define PINO_JOY_X      2

@@ -824,7 +824,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         {
             mbsbot->setPrograma(PRG_RC_SERIAL);
             mbsbot->stop();
-            mbsbot->
+            //mbsbot->
         }
 
         //if( bt & BT_STR ) || ( bt & BT_SEL ))

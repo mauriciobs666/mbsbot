@@ -18,7 +18,7 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 2
+#define VERSAO_PLACA 22
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
@@ -30,19 +30,22 @@
 #define MOTOR_D_T_INV 0
 
 // canal 1
-#define PINO_MOTOR_ESQ		4
-#define PINO_MOTOR_ESQ_PWM	5
+#define PINO_MOTOR_ESQ  	7
+#define PINO_MOTOR_ESQ_N	8
+#define PINO_MOTOR_ESQ_PWM	6
+
 // canal 2
-#define PINO_MOTOR_DIR		2
-#define PINO_MOTOR_DIR_PWM	3
+#define PINO_MOTOR_DIR      9
+#define PINO_MOTOR_DIR_N    12
+#define PINO_MOTOR_DIR_PWM	5
 
 // economia de energia
-#define PINO_UNUSED_CNT 2
-#define PINO_UNUSED_ARRAY { 7,11 }
+#define PINO_UNUSED_CNT 0
+#define PINO_UNUSED_ARRAY { }
 
-#define PINO_SERVO_PAN		9
-#define PINO_SERVO_TILT		10
-#define PINO_SERVO_ROLL		8
+//#define PINO_SERVO_PAN		9
+//#define PINO_SERVO_TILT		10
+//#define PINO_SERVO_ROLL		8
 
 #define NUM_SENSORES    6
 
@@ -58,9 +61,9 @@
 
 // http://arduino.cc/en/Reference/Tone
 // Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
-//#define PINO_BIP 			18
+//#define PINO_BIP 			11
 
-#define PINO_ARMA           6
+#define PINO_ARMA           10
 
 #define PINO_LED            13
 
@@ -69,8 +72,10 @@
 //#define WIICHUCK_POWER
 
 // RADIO CONTROLE
-//#define PINO_JOY_X      2
-//#define PINO_JOY_Y      3
-//#define PINO_JOY_SW1    4
+#define PINO_JOY_X      2
+#define PINO_JOY_Y      3
+//#define PINO_JOY_Z      17
+//#define PINO_JOY_R      18
+#define PINO_JOY_SW1    4
 
 #endif // BOARD_H_INCLUDED

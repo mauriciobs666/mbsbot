@@ -233,9 +233,14 @@ public:
         dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
         dados.sensores[1].minimo = 150;
 
+#ifdef VERSAO_PLACA == 22
+        dados.sensores[2].init(16, ConfigSensor::SENSOR_PING);
+        dados.sensores[2].minimo = 150;
+#else
         dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
         dados.sensores[2].minimo = 100;
         dados.sensores[2].maximo = 630;
+#endif
 
         dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
         dados.sensores[3].minimo = 100;
@@ -642,7 +647,7 @@ public:
         forward((goForward ? 100 : -100), eeprom.dados.delays.mvPol);
     }
     void vetorial(int x, int y);
-    void vetorialSensor(int x, int y);
+    void vetorialSensor(Vetor2i intencao);
     void turnLeft()
     {
         left(100, eeprom.dados.delays.mv90);
@@ -701,54 +706,65 @@ void Drive::vetorial(int x, int y)
     }
 }
 
-void Drive::vetorialSensor(int x, int y)
+void Drive::vetorialSensor(Vetor2i intencao)
 {
-    sensorEsquerda->refresh();
-    sensorFrente->refresh();
-    sensorDireita->refresh();
+    Vetor2i resultante = intencao;
 
     static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
-    if( sensorFrente->ehMinimo(2000) )
-        y/=2;
-
-    #define MARGEM_SHARP 300
-    #define MARGEM_PING 400
-
-    if( sensorFrente->ehMinimo(MARGEM_PING) )
+    if( intencao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
     {
-        if( ! palpite )
-            palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+        Vetor2i obstaculos;
 
-        if(palpite < 0)
-            drive.left(y);
+        sensorEsquerda->refresh();
+        //sensorFrente->refresh();
+        sensorDireita->refresh();
+
+        //if( sensorFrente->ehMinimo(2000) )
+        //    intencao.y /= 2;
+
+        //#define MARGEM_SHARP 300
+        #define MARGEM_PING 1000
+
+        if( sensorEsquerda->ehMinimo(MARGEM_PING) || sensorDireita->ehMinimo(MARGEM_PING) )
+        {
+            if( ! palpite )
+                palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+
+            if(palpite < 0)
+                drive.left(intencao.y);
+            else
+                drive.right(intencao.y);
+        }
+        else if( sensorEsquerda->ehMinimo(MARGEM_PING*2) || sensorDireita->ehMinimo(MARGEM_PING*2) )
+        {
+            if( ! palpite )
+                palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+
+            if(palpite < 0)
+                drive.leftSmooth(intencao.y);
+            else
+                drive.rightSmooth(intencao.y);
+        }
+/*
+        else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
+                drive.right(intencao.y);
+        else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
+                drive.left(intencao.y);
+*/
         else
-            drive.right(y);
+        {
+                // ceu de brigadeiro
+                drive.forward(intencao.y);
+                palpite = 0;
+        }
     }
-    else if( sensorFrente->ehMinimo(1500) )
-    {
-        if( ! palpite )
-            palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
 
-        if(palpite < 0)
-            drive.leftSmooth(y);
-        else
-            drive.rightSmooth(y);
-    }
-    else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
-            drive.right(y);
-    else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
-            drive.left(y);
-    else
-    {
-            // ceu de brigadeiro
-            drive.forward(y);
-            palpite = 0;
-    }
+    drive.vetorial(resultante.x, resultante.y);
 /*
     // TRACE
     Serial.print("v ");
-    Serial.print(y);
+    Serial.print(intencao.y);
     Serial.print(" ");
     Serial.print(sensorEsquerda->getValor());
     Serial.print(" ");
@@ -850,7 +866,7 @@ void trataJoystick()
             if( gamepad.botoesAgora & BT_RT ) // arma ligada desliga sensores
                 drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
             else
-                drive.vetorialSensor(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                drive.vetorialSensor( Vetor2i(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox()) );
 //        }
 //        else
 //            drive.stop();
@@ -1679,10 +1695,17 @@ void setup()
     for(int s=0; s<NUM_SENSORES; s++)
         sensores[s].setConfig(&eeprom.dados.sensores[s]);
 
+//#ifdef VERSAO_PLACA == 22
+    sensorEsquerda = &sensores[1];
+    sensorDireita = &sensores[2];
+    sensorFrente= &sensores[3];
+/*
+#else
     sensorFrente = &sensores[1];
     sensorDireita = &sensores[2];
     sensorEsquerda = &sensores[3];
-
+#endif
+*/
     gamepad.x.setConfig(&eeprom.dados.gameX);
     gamepad.y.setConfig(&eeprom.dados.gameY);
     gamepad.z.setConfig(&eeprom.dados.gameZ);
