@@ -708,20 +708,43 @@ void Drive::vetorial(int x, int y)
 
 void Drive::vetorialSensor(Vetor2i intencao)
 {
-    Vetor2i resultante = intencao;
+    intencao.x = constrain(intencao.x, -100, 100);
+    intencao.y = constrain(intencao.y, -100, 100);
 
-    static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
+    Vetor2i resultante = intencao;
 
     if( intencao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
     {
         Vetor2i obstaculos;
 
-        sensorEsquerda->refresh();
+        const int angulo = 45; // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
+        int seno = 70;      // /=100
+        int cosseno = 70;   // /=100
+
         //sensorFrente->refresh();
+        sensorEsquerda->refresh();
         sensorDireita->refresh();
+
+        /*
+                  y
+                  |
+                \ | /
+           ______\|/_____ x
+                 /|\
+            Dir / | \ Esq
+               V  |  V
+        */
+
+        obstaculos.x  = ( seno * sensorEsquerda->getReta() ) / 100 ;
+        obstaculos.x -= ( seno * sensorDireita->getReta() ) / 100 ;
+
+        obstaculos.y = -( cosseno * sensorEsquerda->getReta() ) / 100 ;
+        obstaculos.y -= ( cosseno * sensorDireita->getReta() ) / 100 ;
 
         //if( sensorFrente->ehMinimo(2000) )
         //    intencao.y /= 2;
+
+        static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
         //#define MARGEM_SHARP 300
         #define MARGEM_PING 1000
