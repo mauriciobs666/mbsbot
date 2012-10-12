@@ -140,7 +140,7 @@ enum ProgramID
     PRG_WIICHUCK = 8,       //
     PRG_SCOPE = 9,          //
     PRG_KNOB = 10,          // Movimenta o servo X de acordo com A0
-    PRG_TEST = 11,          // Dummy
+    PRG_NAV_3S = 11,        // Auto navegacao usando 1 sonar + 2 IR (M2D2)
     PRG_ALARME = 12
 };
 

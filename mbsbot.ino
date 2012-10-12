@@ -76,23 +76,27 @@ typedef struct sConfigSensor
               eTipoSensor tipo_ = SENSOR_ANALOGICO,
               bool invertido_ = false)
     {
-        pino = pino_;
-        tipo = tipo_;
-        invertido = invertido_;
-        anterior = 0;
-        a = invertido ? -1 : 1;
-        b = 0;
-        if(SENSOR_RC == tipo)
+        if( pino_ )
         {
-            minimo = 1300;
-            centro = 1500;
-            maximo = 1700;
-        }
-        else
-        {
-            minimo = 65535;
-            centro = 32767;
-            maximo = 0;
+            pino = pino_;
+            tipo = tipo_;
+            invertido = invertido_;
+            anterior = 0;
+            a = invertido ? -1 : 1;
+            b = 0;
+
+            if(SENSOR_RC == tipo)
+            {
+                minimo = 1300;
+                centro = 1500;
+                maximo = 1700;
+            }
+            else
+            {
+                minimo = 65535;
+                centro = 32767;
+                maximo = 0;
+            }
         }
     }
 
@@ -274,6 +278,71 @@ bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
         return true;
     }
     return false;
+}
+
+
+/*
+	Vetor2i
+*/
+
+Vetor2i Vetor2i::operator+(const Vetor2i& v) const
+{
+	Vetor2i n=*this;
+	n.x+=v.x;
+	n.y+=v.y;
+	return n;
+}
+
+Vetor2i Vetor2i::operator-(const Vetor2i& v) const
+{
+	Vetor2i n=*this;
+	n.x-=v.x;
+	n.y-=v.y;
+	return n;
+}
+
+Vetor2i Vetor2i::operator*(int i) const
+{
+	Vetor2i n=*this;
+	n.x*=i;
+	n.y*=i;
+	return n;
+}
+
+Vetor2i Vetor2i::operator/(int i) const
+{
+	Vetor2i n=*this;
+	n.x/=i;
+	n.y/=i;
+	return n;
+}
+
+Vetor2i& Vetor2i::operator+=(const Vetor2i& v)
+{
+	x+=v.x;
+	y+=v.y;
+	return *this;
+}
+
+Vetor2i& Vetor2i::operator-=(const Vetor2i& v)
+{
+	x-=v.x;
+	y-=v.y;
+	return *this;
+}
+
+Vetor2i& Vetor2i::operator*=(int i)
+{
+	x*=i;
+	y*=i;
+	return *this;
+}
+
+Vetor2i& Vetor2i::operator/=(int i)
+{
+	x/=i;
+	y/=i;
+	return *this;
 }
 
 // ******************************************************************************
@@ -711,99 +780,73 @@ void Drive::vetorialSensor(Vetor2i intencao)
     intencao.x = constrain(intencao.x, -100, 100);
     intencao.y = constrain(intencao.y, -100, 100);
 
+    Serial.print("v ");
+    Serial.print(intencao.x);
+    Serial.print(" ");
+    Serial.print(intencao.y);
+
     Vetor2i resultante = intencao;
 
     if( intencao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
     {
-        Vetor2i obstaculos;
-
-        const int angulo = 45; // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
+        int angulo = 45;    // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
         int seno = 70;      // /=100
         int cosseno = 70;   // /=100
+        int infinito = 3000;// limite de distancia infinita
+        int escala = 30; // escala pra chegar no 0-100%
 
-        //sensorFrente->refresh();
-        sensorEsquerda->refresh();
-        sensorDireita->refresh();
+        // primeiro inverte e aplica limite
+        int esq = constrain( ( infinito - sensorEsquerda->refresh() ) / escala , 0, 100 );
+        int dir = constrain( ( infinito - sensorDireita->refresh() ) / escala , 0, 100 );
 
-        /*
-                  y
+        Serial.print(" ");
+        Serial.print(esq);
+        Serial.print(" ");
+        Serial.print(dir);
+
+        /*        y
                   |
+           Esq \  |  / Dir
                 \ | /
-           ______\|/_____ x
-                 /|\
-            Dir / | \ Esq
-               V  |  V
+           ______V|V_____ x
+                  |
+                  |
+                  |
+                  V obstaculos
         */
 
-        obstaculos.x  = ( seno * sensorEsquerda->getReta() ) / 100 ;
-        obstaculos.x -= ( seno * sensorDireita->getReta() ) / 100 ;
+        Vetor2i obstaculos;
 
-        obstaculos.y = -( cosseno * sensorEsquerda->getReta() ) / 100 ;
-        obstaculos.y -= ( cosseno * sensorDireita->getReta() ) / 100 ;
+        obstaculos.x = constrain( ( ( seno * esq ) / 100 ) - ( ( seno * dir ) / 100 ), -100, 100);
+        obstaculos.y = constrain( -( ( cosseno * esq ) / 100 ) - ( ( cosseno * dir ) / 100 ), -100, 0 );
 
-        //if( sensorFrente->ehMinimo(2000) )
-        //    intencao.y /= 2;
+        resultante += obstaculos ;
 
-        static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
+        resultante.x = constrain( resultante.x, 0, 100 );
+        resultante.y = constrain( resultante.y, 0, 100 );
 
-        //#define MARGEM_SHARP 300
-        #define MARGEM_PING 1000
+        // TRACE
 
-        if( sensorEsquerda->ehMinimo(MARGEM_PING) || sensorDireita->ehMinimo(MARGEM_PING) )
-        {
-            if( ! palpite )
-                palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+        Serial.print(" ");
+        Serial.print(obstaculos.x);
+        Serial.print(" ");
+        Serial.print(obstaculos.y);
+        //    Serial.print("");
+        //    Serial.print();
 
-            if(palpite < 0)
-                drive.left(intencao.y);
-            else
-                drive.right(intencao.y);
-        }
-        else if( sensorEsquerda->ehMinimo(MARGEM_PING*2) || sensorDireita->ehMinimo(MARGEM_PING*2) )
-        {
-            if( ! palpite )
-                palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
 
-            if(palpite < 0)
-                drive.leftSmooth(intencao.y);
-            else
-                drive.rightSmooth(intencao.y);
-        }
-/*
-        else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
-                drive.right(intencao.y);
-        else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
-                drive.left(intencao.y);
-*/
-        else
-        {
-                // ceu de brigadeiro
-                drive.forward(intencao.y);
-                palpite = 0;
-        }
+
     }
 
     drive.vetorial(resultante.x, resultante.y);
-/*
-    // TRACE
-    Serial.print("v ");
-    Serial.print(intencao.y);
-    Serial.print(" ");
-    Serial.print(sensorEsquerda->getValor());
-    Serial.print(" ");
-    Serial.print(sensorFrente->getValor());
-    Serial.print(" ");
-    Serial.print(sensorDireita->getValor());
-    Serial.print(" ");
-    Serial.print((int)palpite);
+
     Serial.print(" ");
     Serial.print(drive.motorEsq.read());
     Serial.print(" ");
     Serial.print(drive.motorDir.read());
-//    Serial.print("");
-//    Serial.print();
     Serial.println("\n");
-*/
+
+    delay(200);
 }
 
 void trataJoystick()
@@ -829,7 +872,7 @@ void trataJoystick()
     }
 
     if(gamepad.botoesEdgeF & BT_Y)
-        eeprom.dados.programa = PRG_TEST;
+        eeprom.dados.programa = PRG_NAV_3S;
 
     if(gamepad.botoesEdgeF & BT_A)
     {
@@ -880,19 +923,15 @@ void trataJoystick()
         else
             drive2.stop();
     #else
- //       if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
- //       {
- //           if( ! gamepad.x.getPorcentoAprox()
- //              && gamepad.y.getPorcentoAprox() < 0
- //              && ! (gamepad.botoesAgora & BT_RT)
- //           )
-            if( gamepad.botoesAgora & BT_RT ) // arma ligada desliga sensores
+        if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
+        {
+            if( gamepad.botoesAgora & BT_RT ) // por seguranca arma ligada desabilita sensores
                 drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
             else
                 drive.vetorialSensor( Vetor2i(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox()) );
-//        }
-//        else
-//            drive.stop();
+        }
+        else
+            drive.stop();
     #endif
     }
 }
@@ -1951,7 +1990,7 @@ void loop()
         msExec = 50;
         break;
 
-        case PRG_TEST:
+        case PRG_NAV_3S:
         {
             sensorFrente->refresh();
             sensorEsquerda->refresh();

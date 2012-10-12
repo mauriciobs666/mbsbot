@@ -242,7 +242,7 @@
 															<item>PRG_WIICHUCK</item>
 															<item>PRG_SCOPE</item>
 															<item>PRG_KNOB</item>
-															<item>PRG_TEST</item>
+															<item>PRG_NAV_3S</item>
 														</content>
 														<handler function="OnChoiceProgram" entry="EVT_CHOICE" />
 													</object>
