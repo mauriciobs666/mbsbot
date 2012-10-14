@@ -39,8 +39,6 @@
 // Pin Change interrupt ( http://code.google.com/p/arduino-pinchangeint/ )
 #include "PinChangeInt.h"
 
-#include "Geometria.h"
-
 // speaker
 #ifdef PINO_BIP
 #define BEEP(freq, dur) tone(PINO_BIP,freq,dur)
@@ -64,12 +62,12 @@ unsigned long agora = 0;
 // ******************************************************************************
 #include <avr/eeprom.h>
 
-typedef struct sConfigSensor
+typedef struct
 {
     enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL, SENSOR_RC } tipo;
     unsigned char pino;
     bool invertido;
-    volatile unsigned short anterior, minimo, maximo, centro;
+    volatile unsigned short minimo, maximo, centro;
     int a, b; // = a*x + b
 
     void init(unsigned char pino_ = 0,
@@ -79,25 +77,25 @@ typedef struct sConfigSensor
         if( pino_ )
         {
             pino = pino_;
-            tipo = tipo_;
-            invertido = invertido_;
-            anterior = 0;
-            a = invertido ? -1 : 1;
-            b = 0;
-
-            if(SENSOR_RC == tipo)
-            {
-                minimo = 1300;
-                centro = 1500;
-                maximo = 1700;
-            }
-            else
-            {
-                minimo = 65535;
-                centro = 32767;
-                maximo = 0;
-            }
         }
+
+        tipo = tipo_;
+        if(SENSOR_RC == tipo)
+        {
+            minimo = 1200;
+            centro = 1500;
+            maximo = 1800;
+        }
+        else
+        {
+            minimo = 65535;
+            centro = 32767;
+            maximo = 0;
+        }
+
+        invertido = invertido_;
+        a = invertido ? -1 : 1;
+        b = 0;
     }
 
     void print()
@@ -107,8 +105,6 @@ typedef struct sConfigSensor
         Serial.print((int)tipo);
         Serial.print(" ");
         Serial.print((int)invertido);
-        Serial.print(" ");
-        Serial.print(anterior);
         Serial.print(" ");
         Serial.print(minimo);
         Serial.print(" ");
@@ -128,6 +124,7 @@ typedef struct
 {
     short centro;
     short aceleracao;
+    // TODO (mbs#1#): aceleracao nao faz sentido sem o dt
 } ConfigMotor;
 
 class Eeprom
@@ -193,7 +190,7 @@ public:
     void defaults()
     {
         dados.programa = PRG_RC;
-        dados.handBrake = 1;
+        dados.handBrake = 0;
         dados.velMax = 100;
         dados.velEscala = 100;
 
@@ -281,9 +278,28 @@ bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
 }
 
 
-/*
-	Vetor2i
-*/
+// ******************************************************************************
+//      Vetor 2D int
+// ******************************************************************************
+class Vetor2i
+{
+public:
+	int x,y;
+	Vetor2i(int xx=0, int yy=0) : x(xx), y(yy) {}
+
+	Vetor2i operator+(const Vetor2i& v) const;
+	Vetor2i operator-(const Vetor2i& v) const;
+	Vetor2i operator*(int i) const;
+	Vetor2i operator/(int i) const;
+
+	Vetor2i& operator+=(const Vetor2i& v);
+	Vetor2i& operator-=(const Vetor2i& v);
+	Vetor2i& operator*=(int i);
+	Vetor2i& operator/=(int i);
+
+	bool operator==(const Vetor2i& v) const { return (( x == v.x ) && ( y == v.y )); }
+	bool operator!=(const Vetor2i& v) const { return (( x != v.x ) || ( y != v.y )); }
+};
 
 Vetor2i Vetor2i::operator+(const Vetor2i& v) const
 {
@@ -351,14 +367,11 @@ Vetor2i& Vetor2i::operator/=(int i)
 class Sensor
 {
 public:
-    volatile unsigned short valor;
+    volatile unsigned short valor, anterior;
     ConfigSensor *cfg;
 
-    Sensor()
-    {
-        valor = 0;
-        cfg = NULL;
-    }
+    Sensor() : valor(0), anterior(0), cfg(NULL)
+        {}
     void setConfig(ConfigSensor *c)
         { cfg=c; }
     unsigned short getValor()
@@ -367,7 +380,7 @@ public:
         {
             if( cfg )
             {
-                cfg->anterior = valor;
+                anterior = valor;
                 if (v < cfg->minimo) cfg->minimo = v;
                 if (v > cfg->maximo) cfg->maximo = v;
             }
@@ -420,27 +433,27 @@ public:
     int getReta()
         { return ( cfg->a * valor + cfg->b ); }
     int getPorcentoAprox(int grude=10)
-    {
-        long x = (long)valor - (long)cfg->centro;
+        {
+            long x = (long)valor - (long)cfg->centro;
 
-        // calcula o range de 0 a +/-extremo
-        long r = ( x > 0 ) ? (cfg->maximo - cfg->centro) : (cfg->centro - cfg->minimo);
+            // calcula o range de 0 a +/-extremo
+            long r = ( x > 0 ) ? (cfg->maximo - cfg->centro) : (cfg->centro - cfg->minimo);
 
-        // x%
-        if(r)
-            x = constrain( ((x * 100) / r ) , -100, 100 );
-        else
-            x = 0;
+            // x%
+            if(r)
+                x = constrain( ((x * 100) / r ) , -100, 100 );
+            else
+                x = 0;
 
-        // arredonda no centro e pontas
-        if( 100 + x < grude) x = -100;
-        if(  abs(x) < grude) x = 0;
-        if( 100 - x < grude) x = 100;
+            // arredonda no centro e pontas
+            if( 100 + x < grude) x = -100;
+            if(  abs(x) < grude) x = 0;
+            if( 100 - x < grude) x = 100;
 
-        return x;
-    }
+            return x;
+        }
     int delta()
-        { return valor - cfg->anterior; }
+        { return valor - anterior; }
 }
 sensores[NUM_SENSORES], *sensorFrente, *sensorEsquerda, *sensorDireita;
 
@@ -460,6 +473,13 @@ public:
         botoesEdgeR = (novo ^ botoesAntes) & novo;
         botoesEdgeF = (novo ^ botoesAntes) & ~novo;
         return botoesAgora = novo;
+    }
+    void init(ConfigSensor::eTipoSensor tipo)
+    {
+        x.cfg->init(0, tipo);
+        y.cfg->init(0, tipo);
+        z.cfg->init(0, tipo);
+        r.cfg->init(0, tipo);
     }
     void calibrar()
     {
@@ -833,9 +853,6 @@ void Drive::vetorialSensor(Vetor2i intencao)
         Serial.print(obstaculos.y);
         //    Serial.print("");
         //    Serial.print();
-
-
-
     }
 
     drive.vetorial(resultante.x, resultante.y);
@@ -908,32 +925,6 @@ void trataJoystick()
 
     gamepad.botoesEdgeR = 0;
     gamepad.botoesEdgeF = 0;
-
-    if( eeprom.dados.programa == PRG_RC_SERIAL
-        || eeprom.dados.programa == PRG_RC )
-    {
-    #ifdef RODAS_PWM_x4
-        if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
-            drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-        else
-            drive.stop();
-
-        if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
-            drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-        else
-            drive2.stop();
-    #else
-        if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
-        {
-            if( gamepad.botoesAgora & BT_RT ) // por seguranca arma ligada desabilita sensores
-                drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-            else
-                drive.vetorialSensor( Vetor2i(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox()) );
-        }
-        else
-            drive.stop();
-    #endif
-    }
 }
 
 // ******************************************************************************
@@ -1839,12 +1830,31 @@ void loop()
         case PRG_RC:
         case PRG_RC_SERIAL:
         {
-            drive.refresh();
             #ifdef RODAS_PWM_x4
+                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
+                    drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                else
+                    drive.stop();
+
+                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
+                    drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                else
+                    drive2.stop();
                 drive2.refresh();
+            #else
+                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
+                {
+                    if( gamepad.botoesAgora & BT_RT ) // por seguranca arma ligada desabilita sensores
+                        drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                    else
+                        drive.vetorialSensor( Vetor2i(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox()) );
+                }
+                else
+                    drive.stop();
             #endif
+            drive.refresh();
         }
-        msExec = 1;
+        msExec = eeprom.dados.delays.reads;
         break;
 
         case PRG_FOTOVORO:
