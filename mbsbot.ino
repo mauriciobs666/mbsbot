@@ -284,7 +284,7 @@ bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
 class Vetor2i
 {
 public:
-	int x,y;
+	int x, y;
 	Vetor2i(int xx=0, int yy=0) : x(xx), y(yy) {}
 
 	Vetor2i operator+(const Vetor2i& v) const;
@@ -299,6 +299,12 @@ public:
 
 	bool operator==(const Vetor2i& v) const { return (( x == v.x ) && ( y == v.y )); }
 	bool operator!=(const Vetor2i& v) const { return (( x != v.x ) || ( y != v.y )); }
+
+	void Constrain(int min_xy, int max_xy)
+	{
+	    x = constrain( x, min_xy, max_xy );
+	    y = constrain( y, min_xy, max_xy );
+	}
 };
 
 Vetor2i Vetor2i::operator+(const Vetor2i& v) const
@@ -735,8 +741,8 @@ public:
     {
         forward((goForward ? 100 : -100), eeprom.dados.delays.mvPol);
     }
-    void vetorial(int x, int y);
-    void vetorialSensor(Vetor2i intencao);
+    void vetorial(Vetor2i direcao);
+    void vetorialSensor(Vetor2i direcao);
     void turnLeft()
     {
         left(100, eeprom.dados.delays.mv90);
@@ -748,11 +754,13 @@ public:
 }
 drive, drive2;
 
-void Drive::vetorial(int x, int y)
+void Drive::vetorial( Vetor2i direcao )
 {
     // protecao range
-    x = constrain(x, -100, 100);
-    y = constrain(y, -100, 100);
+    direcao.Constrain( -100, 100 );
+
+    int x = direcao.x;
+    int y = direcao.y;
 
     /* as equacoes de interpolacao dos movimentos de giro a esquerda
        e a direita estao divididas em 4 quadrantes:
@@ -770,12 +778,12 @@ void Drive::vetorial(int x, int y)
     {
         if(x >= 0)   // Q1 (+,+)
         {
-            motorEsq.move( max(x,y) );
+            motorEsq.move( max( x, y ) );
             motorDir.move( y - x );
         }
         else        // Q2 (-,+)
         {
-            motorDir.move( max(-x,y) );
+            motorDir.move( max( -x, y ) );
             motorEsq.move( x + y );
         }
     }
@@ -784,86 +792,97 @@ void Drive::vetorial(int x, int y)
         if(x < 0)   // Q3(-,-)
         {
 
-            motorEsq.move( min(x,y) );
-            motorDir.move( y-x );
+            motorEsq.move( min( x, y ) );
+            motorDir.move( y - x );
         }
         else        // Q4 (+,-)
         {
-            motorDir.move( min(-x,y) );
-            motorEsq.move( x+y );
+            motorDir.move( min( -x, y ) );
+            motorEsq.move( x + y );
         }
     }
 }
 
-void Drive::vetorialSensor(Vetor2i intencao)
+void Drive::vetorialSensor(Vetor2i direcao)
 {
-    intencao.x = constrain(intencao.x, -100, 100);
-    intencao.y = constrain(intencao.y, -100, 100);
+    direcao.Constrain( -100, 100 );
 
-    Serial.print("v ");
-    Serial.print(intencao.x);
-    Serial.print(" ");
-    Serial.print(intencao.y);
+    #ifdef TRACE
+        Serial.print("v i(");
+        Serial.print(direcao.x);
+        Serial.print(",");
+        Serial.print(direcao.y);
+        Serial.print(")");
+    #endif
 
-    Vetor2i resultante = intencao;
+    Vetor2i resultante = direcao;
 
-    if( intencao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
+    if( direcao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
     {
         int angulo = 45;    // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
-        int seno = 70;      // /=100
-        int cosseno = 70;   // /=100
+        int seno = 70;      // %
+        int cosseno = 70;   // %
         int infinito = 3000;// limite de distancia infinita
-        int escala = 30; // escala pra chegar no 0-100%
+        int escala = 30;    // escala pra chegar normalizar o sensor de 0 a 100%
 
-        // primeiro inverte e aplica limite
-        int esq = constrain( ( infinito - sensorEsquerda->refresh() ) / escala , 0, 100 );
-        int dir = constrain( ( infinito - sensorDireita->refresh() ) / escala , 0, 100 );
+        // inverte, escala e aplica constrain
+        int s_esq = ( infinito - (int)sensorEsquerda->refresh() ) / escala ;
+        int s_dir = ( infinito - (int)sensorDireita->refresh() ) / escala ;
 
-        Serial.print(" ");
-        Serial.print(esq);
-        Serial.print(" ");
-        Serial.print(dir);
+        s_esq = constrain( s_esq, 0, 100 );
+        s_dir = constrain( s_dir, 0, 100 );
+
+        #ifdef TRACE
+            Serial.print(" se=");
+            Serial.print(s_esq);
+            Serial.print(" sd=");
+            Serial.print(s_dir);
+        #endif
 
         /*        y
-                  |
-           Esq \  |  / Dir
-                \ | /
-           ______V|V_____ x
-                  |
-                  |
-                  |
-                  V obstaculos
+            ______|______ x
+             dir /|\ esq
+                / | \
+               V  |  V
+                  V
+              obstaculos
         */
 
-        Vetor2i obstaculos;
+        Vetor2i esq(  ( ( seno * s_esq ) / 100 ) , -( ( cosseno * s_esq ) / 100 ) );
+        Vetor2i dir( -( ( seno * s_dir ) / 100 ) , -( ( cosseno * s_dir ) / 100 ) );
 
-        obstaculos.x = constrain( ( ( seno * esq ) / 100 ) - ( ( seno * dir ) / 100 ), -100, 100);
-        obstaculos.y = constrain( -( ( cosseno * esq ) / 100 ) - ( ( cosseno * dir ) / 100 ), -100, 0 );
+        Vetor2i obstaculos = esq + dir;
+
+        #ifdef TRACE
+            Serial.print(" obs(");
+            Serial.print(obstaculos.x);
+            Serial.print(",");
+            Serial.print(obstaculos.y);
+            Serial.print(")");
+        #endif
 
         resultante += obstaculos ;
 
-        resultante.x = constrain( resultante.x, 0, 100 );
+        // sempre avante !
         resultante.y = constrain( resultante.y, 0, 100 );
-
-        // TRACE
-
-        Serial.print(" ");
-        Serial.print(obstaculos.x);
-        Serial.print(" ");
-        Serial.print(obstaculos.y);
-        //    Serial.print("");
-        //    Serial.print();
     }
 
-    drive.vetorial(resultante.x, resultante.y);
+    drive.vetorial( resultante );
 
-    Serial.print(" ");
-    Serial.print(drive.motorEsq.read());
-    Serial.print(" ");
-    Serial.print(drive.motorDir.read());
-    Serial.println("\n");
+    #ifdef TRACE
+        Serial.println("\n");
+    #endif
 
-    delay(200);
+    //#define TRACE
+    #ifdef TRACE
+        Serial.print( VAR_RODA_ESQ );
+        Serial.print(" ");
+        Serial.println(drive.motorEsq.read());
+        Serial.print( VAR_RODA_DIR );
+        Serial.print(" ");
+        Serial.println(drive.motorDir.read());
+    #endif
+    #undef TRACE
 }
 
 void trataJoystick()
@@ -1524,27 +1543,29 @@ void Server::loop()
             else if(strcmp(tok, CMD_MV_VECT) == 0)
             {
                 eeprom.dados.programa = PRG_RC_SERIAL;
+                Vetor2i direcao;
+
                 if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
                 {
-                    int x = atoi(tok);
+                    direcao.x = atoi(tok);
                     if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
                     {
-                        int y = atoi(tok);
+                        direcao.y = atoi(tok);
 
-                        if( x || y )
-                            drive.vetorial(x, y);
+                        if( direcao.x || direcao.y )
+                            drive.vetorial( direcao );
                         else
                             drive.stop();
 
                         if ((tok = STRTOK(NULL, " ")))  // segundo token eh o percentual de potencia p/ eixo X
                         {
-                            int xt = atoi(tok);
+                            direcao.x = atoi(tok);
                             if ((tok = STRTOK(NULL, " ")))// terceiro token eh o percentual de potencia p/ eixo Y
                             {
-                                int yt = atoi(tok);
+                                direcao.y = atoi(tok);
 
-                                if( xt || yt )
-                                    drive2.vetorial(xt, yt);
+                                if( direcao.x || direcao.y )
+                                    drive2.vetorial( direcao );
                                 else
                                     drive2.stop();
                             }
@@ -1830,6 +1851,8 @@ void loop()
         case PRG_RC:
         case PRG_RC_SERIAL:
         {
+            Vetor2i direcao( gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox() );
+
             #ifdef RODAS_PWM_x4
                 if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
                     drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
@@ -1845,9 +1868,9 @@ void loop()
                 if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
                 {
                     if( gamepad.botoesAgora & BT_RT ) // por seguranca arma ligada desabilita sensores
-                        drive.vetorial(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                        drive.vetorial( direcao );
                     else
-                        drive.vetorialSensor( Vetor2i(gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox()) );
+                        drive.vetorialSensor( direcao );
                 }
                 else
                     drive.stop();
