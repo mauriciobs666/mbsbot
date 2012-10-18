@@ -68,6 +68,7 @@ typedef struct
     unsigned char pino;
     bool invertido;
     volatile unsigned short minimo, maximo, centro;
+    volatile bool autoMinMax;
     int a, b; // = a*x + b
 
     void init(unsigned char pino_ = 0,
@@ -77,6 +78,7 @@ typedef struct
         if( pino_ )
         {
             pino = pino_;
+            invertido = invertido_;
         }
 
         tipo = tipo_;
@@ -88,14 +90,14 @@ typedef struct
         }
         else
         {
-            minimo = 65535;
+            minimo = 0;
             centro = 32767;
-            maximo = 0;
+            maximo = 65535;
         }
 
-        invertido = invertido_;
         a = invertido ? -1 : 1;
         b = 0;
+        autoMinMax = false;
     }
 
     void print()
@@ -195,19 +197,19 @@ public:
         dados.velEscala = 100;
 
         #ifdef RODAS_PWM
-        dados.motorEsq.centro = 70;
-        dados.motorDir.centro = 70;
-        dados.motorEsqT.centro = 70;
-        dados.motorDirT.centro = 70;
+        dados.motorEsq.centro = MOTOR_CENTRO;
+        dados.motorDir.centro = MOTOR_CENTRO;
+        dados.motorEsqT.centro = MOTOR_CENTRO;
+        dados.motorDirT.centro = MOTOR_CENTRO;
         #else
         dados.motorEsq.centro = 1410;
         dados.motorDir.centro = 1384;
         #endif
 
-        dados.motorEsq.aceleracao = 10;
-        dados.motorDir.aceleracao = 10;
-        dados.motorEsqT.aceleracao = 10;
-        dados.motorDirT.aceleracao = 10;
+        dados.motorEsq.aceleracao = MOTOR_ACEL;
+        dados.motorDir.aceleracao = MOTOR_ACEL;
+        dados.motorEsqT.aceleracao = MOTOR_ACEL;
+        dados.motorDirT.aceleracao = MOTOR_ACEL;
 
         dados.delays.mvPol = 200;
         dados.delays.mv90 = 400;
@@ -232,11 +234,15 @@ public:
         dados.sensores[0].init(0, ConfigSensor::SENSOR_ANALOGICO); // bateria
 
         dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
-        dados.sensores[1].minimo = 150;
+        dados.sensores[1].minimo = 100;
+        dados.sensores[1].centro = 3000;
+        dados.sensores[1].maximo = 3000;
 
 #ifdef VERSAO_PLACA == 22
         dados.sensores[2].init(16, ConfigSensor::SENSOR_PING);
-        dados.sensores[2].minimo = 150;
+        dados.sensores[2].minimo = 100;
+        dados.sensores[2].centro = 3000;
+        dados.sensores[2].maximo = 3000;
 #else
         dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
         dados.sensores[2].minimo = 100;
@@ -387,8 +393,11 @@ public:
             if( cfg )
             {
                 anterior = valor;
-                if (v < cfg->minimo) cfg->minimo = v;
-                if (v > cfg->maximo) cfg->maximo = v;
+                if( cfg->autoMinMax )
+                {
+                    if (v < cfg->minimo) cfg->minimo = v;
+                    if (v > cfg->maximo) cfg->maximo = v;
+                }
             }
             valor = v;
         }
@@ -399,6 +408,7 @@ public:
                 cfg->minimo = 65537;
                 cfg->maximo = 0;
                 cfg->centro = valor;
+                cfg->autoMinMax = true;
             }
         }
     void centrar()
@@ -461,7 +471,7 @@ public:
     int delta()
         { return valor - anterior; }
 }
-sensores[NUM_SENSORES], *sensorFrente, *sensorEsquerda, *sensorDireita;
+sensores[NUM_SENSORES];
 
 // ******************************************************************************
 //		GAMEPAD E R/C
@@ -671,55 +681,56 @@ protected:
 class Drive
 {
 public:
-    Motor motorEsq;
-    Motor motorDir;
-    void forward(char percent=100, int period=0)
+    Sensor *sensorEsq, *sensorFre, *sensorDir;
+    Motor motorEsq, motorDir;
+
+    void forward(char porc=100, int period=0)
     {
-        motorEsq.move(percent);
-        motorDir.move(percent);
+        motorEsq.move(porc);
+        motorDir.move(porc);
         if(period > 0)
         {
             delay(period);
             stop();
         }
     }
-    void backward(char percent=100, int period=0)
+    void backward(char porc=100, int period=0)
     {
-        forward(-percent, period);
+        forward(-porc, period);
     }
-    void left(char percent=100, int period=0)
+    void left(char porc=100, int period=0)
     {
-        motorEsq.move(-percent);
-        motorDir.move(percent);
+        motorEsq.move(-porc);
+        motorDir.move(porc);
         if(period > 0)
         {
             delay(period);
             stop();
         }
     }
-    void leftSmooth(char percent=100, int period=0)
+    void leftSmooth(char porc=100, int period=0)
     {
         motorEsq.stop();
-        motorDir.move(percent);
+        motorDir.move(porc);
         if(period > 0)
         {
             delay(period);
             stop();
         }
     }
-    void right(char percent=100, int period=0)
+    void right(char porc=100, int period=0)
     {
-        motorEsq.move(percent);
-        motorDir.move(-percent);
+        motorEsq.move(porc);
+        motorDir.move(-porc);
         if(period > 0)
         {
             delay(period);
             stop();
         }
     }
-    void rightSmooth(char percent=100, int period=0)
+    void rightSmooth(char porc=100, int period=0)
     {
-        motorEsq.move(percent);
+        motorEsq.move(porc);
         motorDir.stop();
         if(period > 0)
         {
@@ -756,23 +767,34 @@ drive, drive2;
 
 void Drive::vetorial( Vetor2i direcao )
 {
-    // protecao range
-    direcao.Constrain( -100, 100 );
+    direcao.Constrain( -100, 100 ); // entrada em %
+
+    /*
+        as equacoes de interpolacao dos movimentos de giro a esquerda
+           e a direita estao divididas em 4 quadrantes:
+
+                  y
+                  |
+         Q2 (-,+) | Q1 (+,+)
+        __________|__________ x
+                  |
+         Q3 (-,-) | Q4 (+,-)
+                  |
+
+        a ideia eh controlar os motores como se uma reta a 45o dividisse cada quadrante em 2:
+
+        y
+        | *1
+        |  /
+        | / *2
+        |/____x
+
+        * 1 - curva suave, ex: roda direita > 0
+        * 2 - rotacao, ex: roda direita < 0
+    */
 
     int x = direcao.x;
     int y = direcao.y;
-
-    /* as equacoes de interpolacao dos movimentos de giro a esquerda
-       e a direita estao divididas em 4 quadrantes:
-
-              y
-              |
-     Q2 (-,+) | Q1 (+,+)
-    __________|__________ x
-              |
-     Q3 (-,-) | Q4 (+,-)
-              |
-    */
 
     if(y >= 0)
     {
@@ -783,8 +805,8 @@ void Drive::vetorial( Vetor2i direcao )
         }
         else        // Q2 (-,+)
         {
-            motorDir.move( max( -x, y ) );
             motorEsq.move( x + y );
+            motorDir.move( max( -x, y ) );
         }
     }
     else // (y < 0)
@@ -797,8 +819,8 @@ void Drive::vetorial( Vetor2i direcao )
         }
         else        // Q4 (+,-)
         {
-            motorDir.move( min( -x, y ) );
             motorEsq.move( x + y );
+            motorDir.move( min( -x, y ) );
         }
     }
 }
@@ -807,6 +829,7 @@ void Drive::vetorialSensor(Vetor2i direcao)
 {
     direcao.Constrain( -100, 100 );
 
+    #define TRACE
     #ifdef TRACE
         Serial.print("v i(");
         Serial.print(direcao.x);
@@ -822,15 +845,12 @@ void Drive::vetorialSensor(Vetor2i direcao)
         int angulo = 45;    // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
         int seno = 70;      // %
         int cosseno = 70;   // %
-        int infinito = 3000;// limite de distancia infinita
-        int escala = 30;    // escala pra chegar normalizar o sensor de 0 a 100%
 
-        // inverte, escala e aplica constrain
-        int s_esq = ( infinito - (int)sensorEsquerda->refresh() ) / escala ;
-        int s_dir = ( infinito - (int)sensorDireita->refresh() ) / escala ;
+        sensorEsq->refresh();
+        sensorDir->refresh();
 
-        s_esq = constrain( s_esq, 0, 100 );
-        s_dir = constrain( s_dir, 0, 100 );
+        int s_esq = sensorEsq->getPorcentoAprox();
+        int s_dir = sensorDir->getPorcentoAprox();;
 
         #ifdef TRACE
             Serial.print(" se=");
@@ -848,8 +868,8 @@ void Drive::vetorialSensor(Vetor2i direcao)
               obstaculos
         */
 
-        Vetor2i esq(  ( ( seno * s_esq ) / 100 ) , -( ( cosseno * s_esq ) / 100 ) );
-        Vetor2i dir( -( ( seno * s_dir ) / 100 ) , -( ( cosseno * s_dir ) / 100 ) );
+        Vetor2i esq( -( ( seno * s_esq ) / 100 ) , ( ( cosseno * s_esq ) / 100 ) );
+        Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
 
         Vetor2i obstaculos = esq + dir;
 
@@ -873,7 +893,6 @@ void Drive::vetorialSensor(Vetor2i direcao)
         Serial.println("\n");
     #endif
 
-    //#define TRACE
     #ifdef TRACE
         Serial.print( VAR_RODA_ESQ );
         Serial.print(" ");
@@ -1770,14 +1789,14 @@ void setup()
         sensores[s].setConfig(&eeprom.dados.sensores[s]);
 
 //#ifdef VERSAO_PLACA == 22
-    sensorEsquerda = &sensores[1];
-    sensorDireita = &sensores[2];
-    sensorFrente= &sensores[3];
+    drive.sensorEsq = &sensores[1];
+    drive.sensorDir = &sensores[2];
+    drive.sensorFre = &sensores[3];
 /*
 #else
-    sensorFrente = &sensores[1];
-    sensorDireita = &sensores[2];
-    sensorEsquerda = &sensores[3];
+    sensorFre = &sensores[1];
+    sensorDir = &sensores[2];
+    sensorEsq = &sensores[3];
 #endif
 */
     gamepad.x.setConfig(&eeprom.dados.gameX);
@@ -1910,13 +1929,13 @@ void loop()
             const int s0 = 700;			// posicao da colisao
 
             // ignora objetos muito longe
-            if(sensorFrente->refresh() > minDist)
+            if(drive.sensorFre->refresh() > minDist)
             {
                 // calc velocidade em unidades sensor / segundo
-                int v = ((long)sensorFrente->delta() * 1000) / eeprom.dados.delays.reads;
+                int v = ((long)drive.sensorFre->delta() * 1000) / eeprom.dados.delays.reads;
 
                 // s = s0 + v * t;
-                int timeToCollision = (s0 - sensorFrente->getValor()) / v;
+                int timeToCollision = (s0 - drive.sensorFre->getValor()) / v;
 
                 if(timeToCollision < timeAlarm)
                     eeprom.dados.programa = PRG_ALARME;
@@ -1928,8 +1947,8 @@ void loop()
 
         case PRG_SENTINELA:
         {
-            sensorFrente->refresh();
-            if( abs(sensorFrente->delta() ) > 30 )
+            drive.sensorFre->refresh();
+            if( abs(drive.sensorFre->delta() ) > 30 )
                 eeprom.dados.programa = PRG_ALARME;
         }
         msExec = eeprom.dados.delays.reads;
@@ -2025,28 +2044,28 @@ void loop()
 
         case PRG_NAV_3S:
         {
-            sensorFrente->refresh();
-            sensorEsquerda->refresh();
-            sensorDireita->refresh();
+            drive.sensorFre->refresh();
+            drive.sensorEsq->refresh();
+            drive.sensorDir->refresh();
 
             static char palpite = 0; // pra seguir girando pra um lado ateh encontrar um caminho livre
 
             #define MARGEM_SHARP 200
             #define MARGEM_PING 400
 
-            if( sensorFrente->ehMinimo(MARGEM_PING) )
+            if( drive.sensorFre->ehMinimo(MARGEM_PING) )
             {
                 if( ! palpite )
-                    palpite = constrain((sensorDireita->getReta()-sensorEsquerda->getReta()), -1, 1);
+                    palpite = constrain((drive.sensorDir->getReta()-drive.sensorEsq->getReta()), -1, 1);
 
                 if(palpite < 0)
                     drive.left(50);
                 else
                     drive.right(50);
             }
-            else if( sensorEsquerda->ehMinimo(MARGEM_SHARP) )
+            else if( drive.sensorEsq->ehMinimo(MARGEM_SHARP) )
                 drive.right(50);
-            else if( sensorDireita->ehMinimo(MARGEM_SHARP) )
+            else if( drive.sensorDir->ehMinimo(MARGEM_SHARP) )
                 drive.left(50);
             else
             {

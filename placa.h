@@ -39,6 +39,9 @@
 #define PINO_MOTOR_DIR_N    12
 #define PINO_MOTOR_DIR_PWM	5
 
+#define MOTOR_ACEL      10
+#define MOTOR_CENTRO    70
+
 // economia de energia
 #define PINO_UNUSED_CNT 0
 #define PINO_UNUSED_ARRAY { }
@@ -48,8 +51,6 @@
 //#define PINO_SERVO_ROLL		8
 
 #define NUM_SENSORES    6
-
-
 
 //#define LINE_FOLLOWER
 
