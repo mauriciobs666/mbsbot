@@ -234,13 +234,13 @@ public:
         dados.sensores[0].init(0, ConfigSensor::SENSOR_ANALOGICO); // bateria
 
         dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
-        dados.sensores[1].minimo = 100;
+        dados.sensores[1].minimo = 1000;
         dados.sensores[1].centro = 3000;
         dados.sensores[1].maximo = 3000;
 
 #ifdef VERSAO_PLACA == 22
         dados.sensores[2].init(16, ConfigSensor::SENSOR_PING);
-        dados.sensores[2].minimo = 100;
+        dados.sensores[2].minimo = 1000;
         dados.sensores[2].centro = 3000;
         dados.sensores[2].maximo = 3000;
 #else
@@ -291,26 +291,38 @@ class Vetor2i
 {
 public:
 	int x, y;
-	Vetor2i(int xx=0, int yy=0) : x(xx), y(yy) {}
+	Vetor2i( int xx=0, int yy=0 ) : x(xx), y(yy)
+        {}
 
-	Vetor2i operator+(const Vetor2i& v) const;
-	Vetor2i operator-(const Vetor2i& v) const;
-	Vetor2i operator*(int i) const;
-	Vetor2i operator/(int i) const;
+	Vetor2i operator+( const Vetor2i& v ) const;
+	Vetor2i operator-( const Vetor2i& v ) const;
+	Vetor2i operator*( int i ) const;
+	Vetor2i operator/( int i ) const;
 
-	Vetor2i& operator+=(const Vetor2i& v);
-	Vetor2i& operator-=(const Vetor2i& v);
-	Vetor2i& operator*=(int i);
-	Vetor2i& operator/=(int i);
+	Vetor2i& operator+=( const Vetor2i& v );
+	Vetor2i& operator-=( const Vetor2i& v );
+	Vetor2i& operator*=( int i );
+	Vetor2i& operator/=( int i );
 
-	bool operator==(const Vetor2i& v) const { return (( x == v.x ) && ( y == v.y )); }
-	bool operator!=(const Vetor2i& v) const { return (( x != v.x ) || ( y != v.y )); }
+	bool operator==(const Vetor2i& v) const
+        { return ( ( x == v.x ) && ( y == v.y ) ); }
+	bool operator!=(const Vetor2i& v) const
+        { return ( ( x != v.x ) || ( y != v.y ) ); }
 
-	void Constrain(int min_xy, int max_xy)
+	void Constrain(int min_xy = -100, int max_xy = 100)
 	{
 	    x = constrain( x, min_xy, max_xy );
 	    y = constrain( y, min_xy, max_xy );
 	}
+	int norma()
+    {
+        return (int) sqrt( x*x + y*y );
+    }
+    void normalizar()
+    {
+        *this *= 100;
+        *this /= norma();
+    }
 };
 
 Vetor2i Vetor2i::operator+(const Vetor2i& v) const
@@ -754,6 +766,7 @@ public:
     }
     void vetorial(Vetor2i direcao);
     void vetorialSensor(Vetor2i direcao);
+    void printRodas();
     void turnLeft()
     {
         left(100, eeprom.dados.delays.mv90);
@@ -827,9 +840,9 @@ void Drive::vetorial( Vetor2i direcao )
 
 void Drive::vetorialSensor(Vetor2i direcao)
 {
-    direcao.Constrain( -100, 100 );
+    direcao.Constrain();
 
-    #define TRACE
+    //#define TRACE
     #ifdef TRACE
         Serial.print("v i(");
         Serial.print(direcao.x);
@@ -870,8 +883,10 @@ void Drive::vetorialSensor(Vetor2i direcao)
 
         Vetor2i esq( -( ( seno * s_esq ) / 100 ) , ( ( cosseno * s_esq ) / 100 ) );
         Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
-
         Vetor2i obstaculos = esq + dir;
+
+        //obstaculos.Constrain();
+        obstaculos.normalizar();
 
         #ifdef TRACE
             Serial.print(" obs(");
@@ -883,8 +898,10 @@ void Drive::vetorialSensor(Vetor2i direcao)
 
         resultante += obstaculos ;
 
+        resultante.normalizar();
+
         // sempre avante !
-        resultante.y = constrain( resultante.y, 0, 100 );
+        //resultante.y = constrain( resultante.y, 0, 100 );
     }
 
     drive.vetorial( resultante );
@@ -894,14 +911,20 @@ void Drive::vetorialSensor(Vetor2i direcao)
     #endif
 
     #ifdef TRACE
-        Serial.print( VAR_RODA_ESQ );
-        Serial.print(" ");
-        Serial.println(drive.motorEsq.read());
-        Serial.print( VAR_RODA_DIR );
-        Serial.print(" ");
-        Serial.println(drive.motorDir.read());
+        printfRodas();
     #endif
-    #undef TRACE
+    //#undef TRACE
+}
+
+void Drive::printRodas()
+{
+    Serial.print( VAR_RODA_ESQ );
+    Serial.print(" ");
+    Serial.println( motorEsq.read() );
+
+    Serial.print( VAR_RODA_DIR );
+    Serial.print(" ");
+    Serial.println( motorDir.read() );
 }
 
 void trataJoystick()
