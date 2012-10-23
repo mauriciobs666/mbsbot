@@ -294,6 +294,13 @@ public:
 	Vetor2i( int xx=0, int yy=0 ) : x(xx), y(yy)
         {}
 
+    void print()
+    {
+        Serial.print(x);
+        Serial.print(" ");
+        Serial.print(y);
+    }
+
 	Vetor2i operator+( const Vetor2i& v ) const;
 	Vetor2i operator-( const Vetor2i& v ) const;
 	Vetor2i operator*( int i ) const;
@@ -320,8 +327,9 @@ public:
     }
     void normalizar()
     {
+        int n = norma();
         *this *= 100;
-        *this /= norma();
+        *this /= n;
     }
 };
 
@@ -859,8 +867,15 @@ void Drive::vetorialSensor(Vetor2i direcao)
         int seno = 70;      // %
         int cosseno = 70;   // %
 
-        sensorEsq->refresh();
-        sensorDir->refresh();
+        static int turno = 0;
+
+        if( turno == 0 )
+            sensorEsq->refresh();
+        else
+            sensorDir->refresh();
+
+        if( ++turno > 1 )
+            turno = 0;
 
         int s_esq = sensorEsq->getPorcentoAprox();
         int s_dir = sensorDir->getPorcentoAprox();;
@@ -885,7 +900,11 @@ void Drive::vetorialSensor(Vetor2i direcao)
         Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
         Vetor2i obstaculos = esq + dir;
 
-        //obstaculos.Constrain();
+        #ifdef TRACE
+            Serial.print(" |obs| ");
+            Serial.print(obstaculos.norma());
+        #endif
+
         obstaculos.normalizar();
 
         #ifdef TRACE
@@ -897,6 +916,11 @@ void Drive::vetorialSensor(Vetor2i direcao)
         #endif
 
         resultante += obstaculos ;
+
+        #ifdef TRACE
+            Serial.print(" |res| ");
+            Serial.print(resultante.norma());
+        #endif
 
         resultante.normalizar();
 
@@ -911,7 +935,7 @@ void Drive::vetorialSensor(Vetor2i direcao)
     #endif
 
     #ifdef TRACE
-        printfRodas();
+        printRodas();
     #endif
     //#undef TRACE
 }
