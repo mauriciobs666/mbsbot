@@ -119,15 +119,47 @@ typedef struct
         Serial.print(b);
         Serial.println("");
     }
-} ConfigSensor;
+}
+ConfigSensor;
 
+typedef struct
+{
+    enum eTipoGamepad { TIPO_RC, TIPO_PC, TIPO_WII } tipo;
+    ConfigSensor X, Y, Z, R;
+
+    void init(  eTipoGamepad t,
+                char pinoX = 0,
+                char pinoY = 0,
+                char pinoZ = 0,
+                char pinoR = 0
+            )
+    {
+        ConfigSensor::eTipoSensor ts;
+        switch( tipo = t )
+        {
+        case TIPO_PC:
+        case TIPO_WII:
+            ts = ConfigSensor::SENSOR_VIRTUAL;
+            break;
+        case TIPO_RC:
+            ts = ConfigSensor::SENSOR_RC;
+            break;
+        }
+        X.init( pinoX, ts );
+        Y.init( pinoY, ts );
+        Z.init( pinoZ, ts );
+        R.init( pinoR, ts );
+    }
+}
+ConfigGamepad;
 
 typedef struct
 {
     short centro;
-    short aceleracao;
-    // TODO (mbs#1#): aceleracao nao faz sentido sem o dt
-} ConfigMotor;
+    short aceleracao;   // % de potencia => dv / dt
+    short dt;           // ms
+}
+ConfigMotor;
 
 class Eeprom
 {
@@ -156,7 +188,7 @@ public:
             unsigned short sensores;
             unsigned short status;
 
-            short reads; // intervalo generico de leitura de sensores
+            short ES; // intervalo de entrada/saida, leitura de sensores etc
         } delays;
 
         // parametros do seguidor de linha
@@ -174,6 +206,8 @@ public:
         } pid;
 
         ConfigSensor gameX, gameY, gameZ, gameR;
+
+        ConfigGamepad joyRC, joyPC;
 
         ConfigSensor sensores[NUM_SENSORES];
     } dados;
@@ -215,7 +249,7 @@ public:
         dados.delays.mv90 = 400;
         dados.delays.sensores = 0;
         dados.delays.status = 0;
-        dados.delays.reads = 100;
+        dados.delays.ES = 50;
 
         #ifdef LINE_FOLLOWER
         for(int x = 0; x < NUM_IR_TRACK; x++)
@@ -252,6 +286,9 @@ public:
         dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
         dados.sensores[3].minimo = 100;
         dados.sensores[3].maximo = 630;
+
+        dados.joyPC.init( ConfigGamepad::TIPO_PC );
+        dados.joyRC.init( ConfigGamepad::TIPO_RC, PINO_JOY_X, PINO_JOY_Y );
 
         #ifdef PINO_JOY_X
             dados.gameX.init(PINO_JOY_X, ConfigSensor::SENSOR_RC);
@@ -1487,7 +1524,7 @@ void Server::loop()
                         else if(strcmp(dest, VAR_T_90) == 0)
                             eeprom.dados.delays.mv90 = valor;
                         else if(strcmp(dest, VAR_T_RF) == 0)
-                            eeprom.dados.delays.reads = valor;
+                            eeprom.dados.delays.ES = valor;
                         else if(strcmp(dest, VAR_SERVO_X) == 0)
                             pan.write(valor);
                         else if(strcmp(dest, VAR_SERVO_Y) == 0)
@@ -1537,7 +1574,7 @@ void Server::loop()
                     else if(strcmp(tok, VAR_T_90) == 0)
                         Serial.println(eeprom.dados.delays.mv90);
                     else if(strcmp(tok, VAR_T_RF) == 0)
-                        Serial.println(eeprom.dados.delays.reads);
+                        Serial.println(eeprom.dados.delays.ES);
                     else if(strcmp(tok, VAR_SERVO_X) == 0)
                         Serial.println(pan.read());
                     else if(strcmp(tok, VAR_SERVO_Y) == 0)
@@ -1943,29 +1980,29 @@ void loop()
             #endif
             drive.refresh();
         }
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
 
         case PRG_FOTOVORO:
             fotovoro();
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
 
         #ifdef LINE_FOLLOWER
         case PRG_LINE_FOLLOW:
             lineFollower.loop();
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
         #endif
 
         #ifdef SCANNER
         case PRG_SCANNER:
             scanner.fillArray();
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
         case PRG_CHASE:
             scanner.chase();
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
         #endif
 
@@ -1979,7 +2016,7 @@ void loop()
             if(drive.sensorFre->refresh() > minDist)
             {
                 // calc velocidade em unidades sensor / segundo
-                int v = ((long)drive.sensorFre->delta() * 1000) / eeprom.dados.delays.reads;
+                int v = ((long)drive.sensorFre->delta() * 1000) / eeprom.dados.delays.ES;
 
                 // s = s0 + v * t;
                 int timeToCollision = (s0 - drive.sensorFre->getValor()) / v;
@@ -1989,7 +2026,7 @@ void loop()
             }
 
         }
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
 
         case PRG_SENTINELA:
@@ -1998,7 +2035,7 @@ void loop()
             if( abs(drive.sensorFre->delta() ) > 30 )
                 eeprom.dados.programa = PRG_ALARME;
         }
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
 
         #ifdef WIICHUCK
@@ -2079,7 +2116,7 @@ void loop()
             // e envia somente um byte
             Serial.write((analogRead(0) >> 2) & 0xFF);
         }
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         eeprom.dados.delays.sensores = 0;
         eeprom.dados.delays.status = 0;
         break;
@@ -2122,7 +2159,7 @@ void loop()
             }
 
         }
-        msExec = eeprom.dados.delays.reads;
+        msExec = eeprom.dados.delays.ES;
         break;
 
         case PRG_ALARME:
