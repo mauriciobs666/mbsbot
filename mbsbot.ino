@@ -64,15 +64,15 @@ unsigned long agora = 0;
 
 typedef struct
 {
-    enum eTipoSensor { SENSOR_ANALOGICO, SENSOR_PING, SENSOR_VIRTUAL, SENSOR_RC } tipo;
+    enum eTipoSensor { SENSOR_VIRTUAL, SENSOR_ANALOGICO, SENSOR_PING, SENSOR_RC } tipo;
     unsigned char pino;
     bool invertido;
     volatile unsigned short minimo, maximo, centro;
     volatile bool autoMinMax;
     int a, b; // = a*x + b
 
-    void init(unsigned char pino_ = 0,
-              eTipoSensor tipo_ = SENSOR_ANALOGICO,
+    void init(eTipoSensor tipo_ = SENSOR_VIRTUAL,
+              unsigned char pino_ = 0,
               bool invertido_ = false)
     {
         if( pino_ )
@@ -134,21 +134,22 @@ typedef struct
                 char pinoR = 0
             )
     {
-        ConfigSensor::eTipoSensor ts;
-        switch( tipo = t )
+        tipo = t;
+
+        if( tipo == TIPO_RC )
         {
-        case TIPO_PC:
-        case TIPO_WII:
-            ts = ConfigSensor::SENSOR_VIRTUAL;
-            break;
-        case TIPO_RC:
-            ts = ConfigSensor::SENSOR_RC;
-            break;
+            X.init( ConfigSensor::SENSOR_RC, pinoX );
+            Y.init( ConfigSensor::SENSOR_RC, pinoY );
+            Z.init( ConfigSensor::SENSOR_RC, pinoZ );
+            R.init( ConfigSensor::SENSOR_RC, pinoR );
         }
-        X.init( pinoX, ts );
-        Y.init( pinoY, ts );
-        Z.init( pinoZ, ts );
-        R.init( pinoR, ts );
+        else
+        {
+            X.init( ConfigSensor::SENSOR_VIRTUAL );
+            Y.init( ConfigSensor::SENSOR_VIRTUAL );
+            Z.init( ConfigSensor::SENSOR_VIRTUAL );
+            R.init( ConfigSensor::SENSOR_VIRTUAL );
+        }
     }
 }
 ConfigGamepad;
@@ -265,25 +266,25 @@ public:
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
-        dados.sensores[0].init(0, ConfigSensor::SENSOR_ANALOGICO); // bateria
+        dados.sensores[0].init( ConfigSensor::SENSOR_ANALOGICO, 0 ); // bateria
 
-        dados.sensores[1].init(15, ConfigSensor::SENSOR_PING);
+        dados.sensores[1].init( ConfigSensor::SENSOR_PING, 15 );
         dados.sensores[1].minimo = 1000;
         dados.sensores[1].centro = 3000;
         dados.sensores[1].maximo = 3000;
 
-#ifdef VERSAO_PLACA == 22
-        dados.sensores[2].init(16, ConfigSensor::SENSOR_PING);
+#if VERSAO_PLACA == 22
+        dados.sensores[2].init( ConfigSensor::SENSOR_PING, 16 );
         dados.sensores[2].minimo = 1000;
         dados.sensores[2].centro = 3000;
         dados.sensores[2].maximo = 3000;
 #else
-        dados.sensores[2].init(2, ConfigSensor::SENSOR_ANALOGICO, true);
+        dados.sensores[2].init( ConfigSensor::SENSOR_ANALOGICO, 2, true );
         dados.sensores[2].minimo = 100;
         dados.sensores[2].maximo = 630;
 #endif
 
-        dados.sensores[3].init(3, ConfigSensor::SENSOR_ANALOGICO, true);
+        dados.sensores[3].init( ConfigSensor::SENSOR_ANALOGICO, 3, true );
         dados.sensores[3].minimo = 100;
         dados.sensores[3].maximo = 630;
 
@@ -311,8 +312,7 @@ eeprom;
 // ******************************************************************************
 bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
 {
-    // 0 desativa
-    if( ms && (agora > *ultimaVez + ms) )
+    if( agora >= *ultimaVez + ms )
     {
         *ultimaVez = agora; // += ms;
         return true;
@@ -462,9 +462,7 @@ public:
         {
             if( cfg )
             {
-                cfg->minimo = 65537;
-                cfg->maximo = 0;
-                cfg->centro = valor;
+                cfg->minimo = cfg->maximo = cfg->centro = valor;
                 cfg->autoMinMax = true;
             }
         }
@@ -1872,7 +1870,7 @@ void setup()
     for(int s=0; s<NUM_SENSORES; s++)
         sensores[s].setConfig(&eeprom.dados.sensores[s]);
 
-//#ifdef VERSAO_PLACA == 22
+//#if VERSAO_PLACA == 22
     drive.sensorEsq = &sensores[1];
     drive.sensorDir = &sensores[2];
     drive.sensorFre = &sensores[3];

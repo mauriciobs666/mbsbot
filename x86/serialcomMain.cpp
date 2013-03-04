@@ -16,7 +16,7 @@
  */
 
 #include "serialcomMain.h"
-#include "../version.h"
+//#include "../version.h"
 
 #include <wx/msgdlg.h>
 
@@ -471,10 +471,10 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     // Mostra numero de versao
 
 
-    SetStatusText( _("v") +
+ /*   SetStatusText( _("v") +
                   wxString(AutoVersion::UBUNTU_VERSION_STYLE, wxConvUTF8) + _(".") +
                   wxString(AutoVersion::SVN_REVISION, wxConvUTF8),
-                  2);
+                  2);*/
 // "MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani"
 
     if( MbsBot::getInstance()->init() == 0)
