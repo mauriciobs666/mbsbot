@@ -157,8 +157,7 @@ ConfigGamepad;
 typedef struct
 {
     short centro;
-    short aceleracao;   // % de potencia => dv / dt
-    short dt;           // ms
+    short aceleracao;   // % de potencia => dv / eeprom.velRefresh
 }
 ConfigMotor;
 
@@ -174,6 +173,7 @@ public:
         // TODO (mbs#1#): configuracao via serial
         char velMax;    // %
         char velEscala; // %
+        unsigned short velRefresh; // intervalo de execucao entre os refresh de motores
 
         ConfigMotor motorEsq;
         ConfigMotor motorEsqT;
@@ -189,7 +189,7 @@ public:
             unsigned short sensores;
             unsigned short status;
 
-            short ES; // intervalo de entrada/saida, leitura de sensores etc
+            unsigned short ES; // intervalo de entrada/saida, leitura de sensores etc
         } delays;
 
         // parametros do seguidor de linha
@@ -230,6 +230,7 @@ public:
         dados.handBrake = 0;
         dados.velMax = 100;
         dados.velEscala = 100;
+        dados.velRefresh = 10;
 
         #ifdef RODAS_PWM
         dados.motorEsq.centro = MOTOR_CENTRO;
@@ -248,8 +249,8 @@ public:
 
         dados.delays.mvPol = 200;
         dados.delays.mv90 = 400;
-        dados.delays.sensores = 0;
-        dados.delays.status = 0;
+        dados.delays.sensores = 30000;
+        dados.delays.status = 30000;
         dados.delays.ES = 50;
 
         #ifdef LINE_FOLLOWER
@@ -292,16 +293,16 @@ public:
         dados.joyRC.init( ConfigGamepad::TIPO_RC, PINO_JOY_X, PINO_JOY_Y );
 
         #ifdef PINO_JOY_X
-            dados.gameX.init(PINO_JOY_X, ConfigSensor::SENSOR_RC);
+            dados.gameX.init( ConfigSensor::SENSOR_RC, PINO_JOY_X );
         #endif
         #ifdef PINO_JOY_Y
-            dados.gameY.init(PINO_JOY_Y, ConfigSensor::SENSOR_RC);
+            dados.gameY.init( ConfigSensor::SENSOR_RC, PINO_JOY_Y );
         #endif
         #ifdef PINO_JOY_Z
-            dados.gameZ.init(PINO_JOY_Z, ConfigSensor::SENSOR_RC);
+            dados.gameZ.init( ConfigSensor::SENSOR_RC, PINO_JOY_Z );
         #endif
         #ifdef PINO_JOY_R
-            dados.gameR.init(PINO_JOY_R, ConfigSensor::SENSOR_RC);
+            dados.gameR.init( ConfigSensor::SENSOR_RC, PINO_JOY_R );
         #endif
     }
 }
@@ -430,6 +431,15 @@ Vetor2i& Vetor2i::operator/=(int i)
 	return *this;
 }
 
+void printVetor2i( class Vetor2i& v )
+{
+    Serial.print( "(" );
+    Serial.print( v.x );
+    Serial.print( "," );
+    Serial.print( v.y );
+    Serial.print( ")" );
+}
+
 // ******************************************************************************
 //		SENSOR UNIVERSAL
 // ******************************************************************************
@@ -545,12 +555,12 @@ public:
         botoesEdgeF = (novo ^ botoesAntes) & ~novo;
         return botoesAgora = novo;
     }
-    void init(ConfigSensor::eTipoSensor tipo)
+    void init()
     {
-        x.cfg->init(0, tipo);
-        y.cfg->init(0, tipo);
-        z.cfg->init(0, tipo);
-        r.cfg->init(0, tipo);
+        x.cfg->init();
+        y.cfg->init();
+        z.cfg->init();
+        r.cfg->init();
     }
     void calibrar()
     {
@@ -823,7 +833,7 @@ drive, drive2;
 
 void Drive::vetorial( Vetor2i direcao )
 {
-    direcao.Constrain( -100, 100 ); // entrada em %
+    direcao.Constrain( /* -100, 100 */ ); // entrada em %
 
     /*
         as equacoes de interpolacao dos movimentos de giro a esquerda
@@ -849,34 +859,31 @@ void Drive::vetorial( Vetor2i direcao )
         * 2 - rotacao, ex: roda direita < 0
     */
 
-    int x = direcao.x;
-    int y = direcao.y;
-
-    if(y >= 0)
+    if( direcao.y >= 0)
     {
-        if(x >= 0)   // Q1 (+,+)
+        if( direcao.x >= 0)   // Q1 (+,+)
         {
-            motorEsq.move( max( x, y ) );
-            motorDir.move( y - x );
+            motorEsq.move( max( direcao.x, direcao.y ) );
+            motorDir.move( direcao.y - direcao.x );
         }
         else        // Q2 (-,+)
         {
-            motorEsq.move( x + y );
-            motorDir.move( max( -x, y ) );
+            motorEsq.move( direcao.x + direcao.y );
+            motorDir.move( max( -direcao.x, direcao.y ) );
         }
     }
     else // (y < 0)
     {
-        if(x < 0)   // Q3(-,-)
+        if( direcao.x < 0)    // Q3(-,-)
         {
 
-            motorEsq.move( min( x, y ) );
-            motorDir.move( y - x );
+            motorEsq.move( min( direcao.x, direcao.y ) );
+            motorDir.move( direcao.y - direcao.x );
         }
         else        // Q4 (+,-)
         {
-            motorEsq.move( x + y );
-            motorDir.move( min( -x, y ) );
+            motorEsq.move( direcao.x + direcao.y );
+            motorDir.move( min( -direcao.x, direcao.y ) );
         }
     }
 }
@@ -885,32 +892,23 @@ void Drive::vetorialSensor(Vetor2i direcao)
 {
     direcao.Constrain();
 
-    //#define TRACE
+    #define TRACE
     #ifdef TRACE
-        Serial.print("v i(");
-        Serial.print(direcao.x);
-        Serial.print(",");
-        Serial.print(direcao.y);
-        Serial.print(")");
+        Serial.print(" dir");
+        printVetor2i( direcao );
     #endif
 
     Vetor2i resultante = direcao;
 
     if( direcao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
     {
-        int angulo = 45;    // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
+        // int angulo = 45;    // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
         int seno = 70;      // %
         int cosseno = 70;   // %
 
-        static int turno = 0;
-
-        if( turno == 0 )
-            sensorEsq->refresh();
-        else
-            sensorDir->refresh();
-
-        if( ++turno > 1 )
-            turno = 0;
+        // pra evitar interferencias, atualiza um sensor de cada vez
+        static char turno = 0;
+        ( turno ^= 1 ) ? sensorEsq->refresh() : sensorDir->refresh() ;
 
         int s_esq = sensorEsq->getPorcentoAprox();
         int s_dir = sensorDir->getPorcentoAprox();;
@@ -932,22 +930,34 @@ void Drive::vetorialSensor(Vetor2i direcao)
         */
 
         Vetor2i esq( -( ( seno * s_esq ) / 100 ) , ( ( cosseno * s_esq ) / 100 ) );
+
+        #ifdef TRACE
+            Serial.print(" esq");
+            printVetor2i( esq );
+        #endif
+
         Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
+
+        #ifdef TRACE
+            Serial.print(" dir");
+            printVetor2i( dir );
+        #endif
+
         Vetor2i obstaculos = esq + dir;
 
         #ifdef TRACE
+            Serial.print(" obs" );
+            printVetor2i( obstaculos );
             Serial.print(" |obs| ");
             Serial.print(obstaculos.norma());
         #endif
 
-        obstaculos.normalizar();
+        //obstaculos.normalizar();
+        obstaculos.Constrain();
 
         #ifdef TRACE
-            Serial.print(" obs(");
-            Serial.print(obstaculos.x);
-            Serial.print(",");
-            Serial.print(obstaculos.y);
-            Serial.print(")");
+            Serial.print(" obs");
+            printVetor2i( obstaculos );
         #endif
 
         resultante += obstaculos ;
@@ -957,11 +967,16 @@ void Drive::vetorialSensor(Vetor2i direcao)
             Serial.print(resultante.norma());
         #endif
 
-        resultante.normalizar();
+        //resultante.normalizar();
 
         // sempre avante !
         //resultante.y = constrain( resultante.y, 0, 100 );
     }
+
+    #ifdef TRACE
+        Serial.print(" res");
+        printVetor2i( resultante );
+    #endif
 
     drive.vetorial( resultante );
 
@@ -972,7 +987,7 @@ void Drive::vetorialSensor(Vetor2i direcao)
     #ifdef TRACE
         printRodas();
     #endif
-    //#undef TRACE
+    #undef TRACE
 }
 
 void Drive::printRodas()
@@ -2006,7 +2021,7 @@ void loop()
 
         case PRG_COLLISION:
         {
-            const int minDist = 200;
+            const unsigned int minDist = 200;
             const int timeAlarm = 3;	// segundos pra colisao
             const int s0 = 700;			// posicao da colisao
 
