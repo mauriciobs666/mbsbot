@@ -156,8 +156,32 @@ ConfigGamepad;
 
 typedef struct
 {
+    enum eTipoMotor { MOTOR_SERVO, MOTOR_DC } tipo;
+    int pino;
+    bool invertido;
+    int pinoDir;
+    int pinoDirN;
     short centro;
     short aceleracao;   // % de potencia => dv / eeprom.velRefresh
+
+    void initServo(int pino_, short centro_=1500, bool inverso=false)
+    {
+        tipo = MOTOR_SERVO;
+        pino = pino_;
+        centro = centro_;
+        invertido = inverso;
+    }
+
+    void initDC(int pinoPWM, int pinoDIR, int pinoDIRN=0, short offsetZero=0, short acel=255, bool inverso=false)
+    {
+        tipo = MOTOR_DC;
+        pino = pinoPWM;
+        pinoDir = pinoDIR;
+        pinoDirN = pinoDIRN;
+        centro = offsetZero;
+        invertido = inverso;
+        aceleracao = acel;
+    }
 }
 ConfigMotor;
 
@@ -206,8 +230,6 @@ public:
             int Kd;		// derivativo
         } pid;
 
-        ConfigSensor gameX, gameY, gameZ, gameR;
-
         ConfigGamepad joyRC, joyPC;
 
         ConfigSensor sensores[NUM_SENSORES];
@@ -226,26 +248,33 @@ public:
     }
     void defaults()
     {
-        dados.programa = PRG_RC;
-        dados.handBrake = 0;
+        dados.programa = PRG_RC_SERIAL;
+        dados.handBrake = 1;
         dados.velMax = 100;
         dados.velEscala = 100;
         dados.velRefresh = 10;
 
-        #ifdef RODAS_PWM
-        dados.motorEsq.centro = MOTOR_CENTRO;
-        dados.motorDir.centro = MOTOR_CENTRO;
-        dados.motorEsqT.centro = MOTOR_CENTRO;
-        dados.motorDirT.centro = MOTOR_CENTRO;
+        #ifndef RODAS_PWM
+            dados.motorEsq.initServo( PINO_MOTOR_ESQ, MOTOR_CENTRO);
+            dados.motorDir.initServo( PINO_MOTOR_DIR, MOTOR_CENTRO, true);
         #else
-        dados.motorEsq.centro = 1410;
-        dados.motorDir.centro = 1384;
-        #endif
+            #ifdef PINO_MOTOR_ESQ_N
+                dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, PINO_MOTOR_ESQ_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
+            #else
+                dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
+            #endif
 
-        dados.motorEsq.aceleracao = MOTOR_ACEL;
-        dados.motorDir.aceleracao = MOTOR_ACEL;
-        dados.motorEsqT.aceleracao = MOTOR_ACEL;
-        dados.motorDirT.aceleracao = MOTOR_ACEL;
+            #ifdef PINO_MOTOR_DIR_N
+                dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, PINO_MOTOR_DIR_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
+            #else
+                dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
+            #endif
+
+            #ifdef RODAS_PWM_x4
+                dados.motorEsqT.initDC( PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_E_T_INV );
+                dados.motorDirT.initDC( PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_D_T_INV );
+            #endif
+        #endif
 
         dados.delays.mvPol = 200;
         dados.delays.mv90 = 400;
@@ -290,19 +319,17 @@ public:
         dados.sensores[3].maximo = 630;
 
         dados.joyPC.init( ConfigGamepad::TIPO_PC );
-        dados.joyRC.init( ConfigGamepad::TIPO_RC, PINO_JOY_X, PINO_JOY_Y );
 
         #ifdef PINO_JOY_X
-            dados.gameX.init( ConfigSensor::SENSOR_RC, PINO_JOY_X );
-        #endif
-        #ifdef PINO_JOY_Y
-            dados.gameY.init( ConfigSensor::SENSOR_RC, PINO_JOY_Y );
-        #endif
-        #ifdef PINO_JOY_Z
-            dados.gameZ.init( ConfigSensor::SENSOR_RC, PINO_JOY_Z );
-        #endif
-        #ifdef PINO_JOY_R
-            dados.gameR.init( ConfigSensor::SENSOR_RC, PINO_JOY_R );
+            #ifdef PINO_JOY_Y
+                dados.joyRC.init( ConfigGamepad::TIPO_RC, PINO_JOY_X, PINO_JOY_Y );
+                #ifdef PINO_JOY_Z
+                    dados.joyRC.Z.init( ConfigSensor::SENSOR_RC, PINO_JOY_Z );
+                #endif
+                #ifdef PINO_JOY_R
+                    dados.joyRC.R.init( ConfigSensor::SENSOR_RC, PINO_JOY_R );
+                #endif
+            #endif
         #endif
     }
 }
@@ -332,23 +359,6 @@ public:
 	Vetor2i( int xx=0, int yy=0 ) : x(xx), y(yy)
         {}
 
-    void print()
-    {
-        Serial.print(x);
-        Serial.print(" ");
-        Serial.print(y);
-    }
-
-	Vetor2i operator+( const Vetor2i& v ) const;
-	Vetor2i operator-( const Vetor2i& v ) const;
-	Vetor2i operator*( int i ) const;
-	Vetor2i operator/( int i ) const;
-
-	Vetor2i& operator+=( const Vetor2i& v );
-	Vetor2i& operator-=( const Vetor2i& v );
-	Vetor2i& operator*=( int i );
-	Vetor2i& operator/=( int i );
-
 	bool operator==(const Vetor2i& v) const
         { return ( ( x == v.x ) && ( y == v.y ) ); }
 	bool operator!=(const Vetor2i& v) const
@@ -369,76 +379,70 @@ public:
         *this *= 100;
         *this /= n;
     }
+
+    Vetor2i operator+(const Vetor2i& v) const
+    {
+        Vetor2i n=*this;
+        n.x+=v.x;
+        n.y+=v.y;
+        return n;
+    }
+    Vetor2i operator-(const Vetor2i& v) const
+    {
+        Vetor2i n=*this;
+        n.x-=v.x;
+        n.y-=v.y;
+        return n;
+    }
+    Vetor2i operator*(int i) const
+    {
+        Vetor2i n=*this;
+        n.x*=i;
+        n.y*=i;
+        return n;
+    }
+    Vetor2i operator/(int i) const
+    {
+        Vetor2i n=*this;
+        n.x/=i;
+        n.y/=i;
+        return n;
+    }
+
+    Vetor2i& operator+=(const Vetor2i& v)
+    {
+        x+=v.x;
+        y+=v.y;
+        return *this;
+    }
+    Vetor2i& operator-=(const Vetor2i& v)
+    {
+        x-=v.x;
+        y-=v.y;
+        return *this;
+    }
+    Vetor2i& operator*=(int i)
+    {
+        x*=i;
+        y*=i;
+        return *this;
+    }
+    Vetor2i& operator/=(int i)
+    {
+        x/=i;
+        y/=i;
+        return *this;
+    }
+
+    void print( )
+    {
+        Serial.print( "(" );
+        Serial.print( x );
+        Serial.print( "," );
+        Serial.print( y );
+        Serial.print( ")" );
+    }
 };
-
-Vetor2i Vetor2i::operator+(const Vetor2i& v) const
-{
-	Vetor2i n=*this;
-	n.x+=v.x;
-	n.y+=v.y;
-	return n;
-}
-
-Vetor2i Vetor2i::operator-(const Vetor2i& v) const
-{
-	Vetor2i n=*this;
-	n.x-=v.x;
-	n.y-=v.y;
-	return n;
-}
-
-Vetor2i Vetor2i::operator*(int i) const
-{
-	Vetor2i n=*this;
-	n.x*=i;
-	n.y*=i;
-	return n;
-}
-
-Vetor2i Vetor2i::operator/(int i) const
-{
-	Vetor2i n=*this;
-	n.x/=i;
-	n.y/=i;
-	return n;
-}
-
-Vetor2i& Vetor2i::operator+=(const Vetor2i& v)
-{
-	x+=v.x;
-	y+=v.y;
-	return *this;
-}
-
-Vetor2i& Vetor2i::operator-=(const Vetor2i& v)
-{
-	x-=v.x;
-	y-=v.y;
-	return *this;
-}
-
-Vetor2i& Vetor2i::operator*=(int i)
-{
-	x*=i;
-	y*=i;
-	return *this;
-}
-
-Vetor2i& Vetor2i::operator/=(int i)
-{
-	x/=i;
-	y/=i;
-	return *this;
-}
-
-void printVetor2i( class Vetor2i& v )
-{
-    Serial.print( "(" );
-    Serial.print( v.x );
-    Serial.print( "," );
-    Serial.print( v.y );
-    Serial.print( ")" );
-}
 
 // ******************************************************************************
 //		SENSOR UNIVERSAL
@@ -555,12 +559,12 @@ public:
         botoesEdgeF = (novo ^ botoesAntes) & ~novo;
         return botoesAgora = novo;
     }
-    void init()
+    void setConfig( ConfigGamepad *cfg )
     {
-        x.cfg->init();
-        y.cfg->init();
-        z.cfg->init();
-        r.cfg->init();
+        x.setConfig( &cfg->X );
+        y.setConfig( &cfg->Y );
+        z.setConfig( &cfg->Z );
+        r.setConfig( &cfg->R );
     }
     void calibrar()
     {
@@ -585,49 +589,47 @@ MbsGamePad gamepad;
 class Motor
 {
 public:
-    enum eTipoMotor { MOTOR_SERVO, MOTOR_DC } tipo;
+    ConfigMotor *cfg;
 
-    Motor() : tipo(MOTOR_DC), atual(0), centro(0), aceleracao(0), ultimoAcel(0), meta(0),
-        invertido(false), pwm(-1), dir(-1), dirN(-1) { }
+    Motor() : cfg(NULL), atual(0), ultimoAcel(0), meta(0) { }
 
-    void initServo(int pin, short centerAng=1500, bool inverso=false)
+    void init( ConfigMotor *cfgm )
     {
-        tipo = MOTOR_SERVO;
-        servo.attach(pin);
-        setCenter(centerAng);
-        invertido = inverso;
-        stop();
-    }
+        cfg = cfgm;
 
-    void initDC(int pinoPWM, int pinoDIR, short offsetZero=0, short acel=255, bool inverso=false)
-    {
-        tipo = MOTOR_DC;
-        pwm = pinoPWM;
-        pinMode(pwm, OUTPUT);
-        analogWrite(pwm, 0);
+        if( cfg->tipo == ConfigMotor::MOTOR_DC )
+        {
+            pinMode( cfg->pino, OUTPUT );
+            analogWrite( cfg->pino, 0 );
 
-        dir = pinoDIR;
-        pinMode(dir, OUTPUT);
-        digitalWrite(dir, 0);
+            pinMode( cfg->pinoDir, OUTPUT );
+            digitalWrite( cfg->pinoDir, 0 );
 
-        setCenter(offsetZero);
-        invertido = inverso;
-        aceleracao = acel;
+            if ( cfg->pinoDirN )
+            {
+                pinMode( cfg->pinoDirN, OUTPUT);
+                digitalWrite( cfg->pinoDirN, 0);
+            }
+        }
+        else if( cfg->tipo == ConfigMotor::MOTOR_SERVO )
+        {
+            servo.attach( cfg->pino );
+        }
         stop();
     }
 
     void stop()
     {
-        write( ( tipo == MOTOR_SERVO ) ? centro : 0 );
+        write( ( cfg->tipo == ConfigMotor::MOTOR_SERVO ) ? cfg->centro : 0 );
     }
 
-    void move(char potencia100)
+    void move( char potencia100 )
     {
-        if ( tipo == MOTOR_SERVO )
+        if ( cfg->tipo == ConfigMotor::MOTOR_SERVO )
         {
             // TODO (mbs#1#): usar aceleracao e escala pro servo tb
             // servos tipicos aceitam pulsos entre 1000us e 2000us, ou seja, centro(1500us) +/- 500us
-            write( invertido ? (centro - potencia100*5) : (centro + potencia100*5) );
+            write( cfg->invertido ? ( cfg->centro - potencia100*5 ) : ( cfg->centro + potencia100*5 ) );
             return;
         }
         /* onde:
@@ -636,18 +638,20 @@ public:
         */
         if ( potencia100 )
         {
-            potencia100 = map(potencia100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
-            potencia100 = constrain(potencia100, -eeprom.dados.velMax, eeprom.dados.velMax);  // velocidade maxima
-            short c = potencia100 > 0 ? centro : -centro;           // c = "centro" com sinal
-            short fator = 255 - centro;                             // faixa de controle (linear?)
+            potencia100 = map( potencia100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
+            potencia100 = constrain( potencia100, -eeprom.dados.velMax, eeprom.dados.velMax );  // velocidade maxima
+            short c = potencia100 > 0 ? cfg->centro : -cfg->centro;           // c = "centro" com sinal
+            short fator = 255 - cfg->centro;                             // faixa de controle (linear?)
             meta = c + ( potencia100 * fator ) / 100;               // converte % de potencia pra PWM 8 b
-            meta = constrain(meta, -255, 255);                      // range de saida: +/- centro ... 255
+            meta = constrain( meta, -255, 255 );                      // range de saida: +/- centro ... 255
         }
         else
             meta = 0;
 
         refresh();
     }
+
+    short read() { return atual; }
 
     void write(int valor)
     {
@@ -659,15 +663,15 @@ public:
     {
         // acelerador: v = v0 + at
 
-        while(agora >= ultimoAcel + 10)
+        while( agora >= ultimoAcel + eeprom.dados.velRefresh )
         {
-            ultimoAcel += 10;
+            ultimoAcel += eeprom.dados.velRefresh;
             if ( meta > atual)
             {
                 if( atual == 0 ) // estava parado
-                    atual = centro;
+                    atual = cfg->centro;
                 else
-                    atual += aceleracao;
+                    atual += cfg->aceleracao;
 
                 if( meta < atual) // passou do ponto
                     atual = meta;
@@ -675,72 +679,56 @@ public:
             else if ( meta < atual)
             {
                 if( atual == 0 ) // estava parado
-                    atual = -centro;
+                    atual = -cfg->centro;
                 else
-                    atual -= aceleracao;
+                    atual -= cfg->aceleracao;
 
                 if ( meta > atual)
                     atual = meta;
             }
 
-            if ( abs(atual) < centro )
+            if ( abs(atual) < cfg->centro )
                 atual = 0;
         }
 
         // I/O
 
-        if( tipo == MOTOR_DC )
+        if( cfg->tipo == ConfigMotor::MOTOR_DC )
         {
-            atual = constrain(atual, -255, 255); // protecao de range
+            atual = constrain( atual, -255, 255); // protecao de range
 
             // uma ultima olhada no freio de mao
-            if(eeprom.dados.handBrake) meta = atual = 0;
+            if( eeprom.dados.handBrake ) meta = atual = 0;
 
-            digitalWrite(dir, (atual < 0) ^ invertido ? HIGH : LOW); // 1/2 ponte H
+            digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
 
-            if(dirN > 0) // pino de direcao invertido
+            if( cfg->pinoDirN > 0) // pino de direcao invertido
             {
                 if( atual ) // movendo, dirN = !dir
-                    digitalWrite(dirN, (atual < 0) ^ invertido ? LOW : HIGH); // outra 1/2 ponte H
+                    digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
                 else        // freio, dirN = dir
-                    digitalWrite(dirN, (atual < 0) ^ invertido ? HIGH : LOW);
+                    digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
             }
 
 //            if( ( !atual ) && ( dirN > 0 ) )    // freio
 //                analogWrite(pwm, 255);          // conduz 100% pra freiar
 //            else                                // operacao normal
-                analogWrite(pwm, abs(atual));
+                analogWrite( cfg->pino, abs( atual ));
         }
         else // tipo == MOTOR_SERVO
         {
-            if(eeprom.dados.handBrake) meta = atual = centro;
+            if( eeprom.dados.handBrake ) meta = atual = cfg->centro;
 
-            atual = constrain(atual, 1000, 2000);
-            servo.writeMicroseconds(atual);
+            atual = constrain( atual, 1000, 2000 );
+            servo.writeMicroseconds( atual );
         }
     }
-
-    short read() { return atual; }
-    void setCenter(short valor) { centro = valor; }
-    void setAceleracao(short acel) { aceleracao = acel; }
-    void setN(int pinoN)
-    {
-        dirN = pinoN;
-        pinMode(dirN, OUTPUT);
-        digitalWrite(dirN, 0);
-    }
 protected:
+    Servo servo;
     short atual;
-    short centro;
-    short aceleracao;
     unsigned long ultimoAcel;
     short meta;
-    bool invertido;
-
-    Servo servo;
-    int pwm;
-    int dir;
-    int dirN;
+    char prioMeta; // TODO (Mauricio#1#): prioridade de quem setou a meta
 };
 
 class Drive
@@ -892,10 +880,10 @@ void Drive::vetorialSensor(Vetor2i direcao)
 {
     direcao.Constrain();
 
-    #define TRACE
+    //#define TRACE
     #ifdef TRACE
         Serial.print(" dir");
-        printVetor2i( direcao );
+        direcao.print();
     #endif
 
     Vetor2i resultante = direcao;
@@ -933,21 +921,21 @@ void Drive::vetorialSensor(Vetor2i direcao)
 
         #ifdef TRACE
             Serial.print(" esq");
-            printVetor2i( esq );
+            esq.print();
         #endif
 
         Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
 
         #ifdef TRACE
             Serial.print(" dir");
-            printVetor2i( dir );
+            dir.print();
         #endif
 
         Vetor2i obstaculos = esq + dir;
 
         #ifdef TRACE
             Serial.print(" obs" );
-            printVetor2i( obstaculos );
+            obstaculos.print();
             Serial.print(" |obs| ");
             Serial.print(obstaculos.norma());
         #endif
@@ -957,7 +945,7 @@ void Drive::vetorialSensor(Vetor2i direcao)
 
         #ifdef TRACE
             Serial.print(" obs");
-            printVetor2i( obstaculos );
+            obstaculos.print();
         #endif
 
         resultante += obstaculos ;
@@ -969,13 +957,12 @@ void Drive::vetorialSensor(Vetor2i direcao)
 
         //resultante.normalizar();
 
-        // sempre avante !
-        //resultante.y = constrain( resultante.y, 0, 100 );
+        //resultante.y = constrain( resultante.y, 0, 100 ); // never come back !
     }
 
     #ifdef TRACE
         Serial.print(" res");
-        printVetor2i( resultante );
+        resultante.print();
     #endif
 
     drive.vetorial( resultante );
@@ -987,7 +974,7 @@ void Drive::vetorialSensor(Vetor2i direcao)
     #ifdef TRACE
         printRodas();
     #endif
-    #undef TRACE
+    //#undef TRACE
 }
 
 void Drive::printRodas()
@@ -1520,13 +1507,13 @@ void Server::loop()
                         else if(strcmp(dest, VAR_RODA_DIR) == 0)
                             drive.motorDir.write(valor);
                         else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
-                            drive.motorEsq.setCenter(eeprom.dados.motorEsq.centro = valor);
+                            eeprom.dados.motorEsq.centro = valor;
                         else if(strcmp(dest, VAR_ZERO_DIR) == 0)
-                            drive.motorDir.setCenter(eeprom.dados.motorDir.centro = valor);
+                            eeprom.dados.motorDir.centro = valor;
                         else if(strcmp(dest, VAR_ZERO_ESQ_T) == 0)
-                            drive2.motorEsq.setCenter(eeprom.dados.motorEsqT.centro = valor);
+                            eeprom.dados.motorEsqT.centro = valor;
                         else if(strcmp(dest, VAR_ZERO_DIR_T) == 0)
-                            drive2.motorDir.setCenter(eeprom.dados.motorDirT.centro = valor);
+                            eeprom.dados.motorDirT.centro = valor;
                         else if(strcmp(dest, VAR_PROGRAMA) == 0)
                         {
                             drive.stop();
@@ -1546,7 +1533,7 @@ void Server::loop()
                             roll.write(valor);
                         else if(strcmp(dest, VAR_PID) == 0)
                         {
-                            eeprom.dados.pid.Kp = valor;		// P
+                            eeprom.dados.pid.Kp = valor;	// P
                             if((tok = STRTOK(NULL, " ")))	// I
                                 eeprom.dados.pid.Ki = atoi(tok);
                             if((tok = STRTOK(NULL, " ")))	// D
@@ -1555,9 +1542,9 @@ void Server::loop()
                         else if(strcmp(dest, VAR_FREIO) == 0)
                             eeprom.dados.handBrake = valor;
                         else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
-                            drive.motorEsq.setAceleracao(eeprom.dados.motorEsq.aceleracao = valor);
+                            eeprom.dados.motorEsq.aceleracao = valor;
                         else if(strcmp(dest, VAR_ACEL_DIR) == 0)
-                            drive.motorDir.setAceleracao(eeprom.dados.motorDir.aceleracao = valor);
+                            eeprom.dados.motorDir.aceleracao = valor;
                         else if(strcmp(dest, VAR_T_ST) == 0)
                             eeprom.dados.delays.status = (unsigned short)valor;
                         else if(strcmp(dest, VAR_T_SE) == 0)
@@ -1721,6 +1708,7 @@ void Server::loop()
                     gamepad.refreshBotoes(atoi(tok));
                     if ((tok = STRTOK(NULL, " ")))		        // terceiro token eh o eixo X
                     {
+
                         gamepad.x.setValor(atol(tok));
                         if ((tok = STRTOK(NULL, " ")))	        // quarto token eh o eixo Y
                         {
@@ -1833,22 +1821,12 @@ void setup()
 
     eeprom.load();
 
-#ifndef RODAS_PWM
-    drive.motorEsq.initServo(PINO_MOTOR_ESQ, eeprom.dados.motorEsq.centro);
-    drive.motorDir.initServo(PINO_MOTOR_DIR, eeprom.dados.motorDir.centro, true);
-#else
-    drive.motorEsq.initDC(PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, eeprom.dados.motorEsq.centro, eeprom.dados.motorEsq.aceleracao, MOTOR_ESQ_INV);
-    drive.motorDir.initDC(PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, eeprom.dados.motorDir.centro, eeprom.dados.motorDir.aceleracao, MOTOR_DIR_INV);
-    #ifdef PINO_MOTOR_ESQ_N
-        drive.motorEsq.setN(PINO_MOTOR_ESQ_N);
-    #endif
-    #ifdef PINO_MOTOR_DIR_N
-        drive.motorDir.setN(PINO_MOTOR_DIR_N);
-    #endif
-    #ifdef RODAS_PWM_x4
-        drive2.motorEsq.initDC(PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, eeprom.dados.centroMotorEsqT, eeprom.dados.motorEsqT.aceleracao, MOTOR_E_T_INV);
-        drive2.motorDir.initDC(PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, eeprom.dados.motorDirT.centro, eeprom.dados.motorDirT.aceleracao, MOTOR_D_T_INV);
-    #endif
+    drive.motorEsq.init( &eeprom.dados.motorEsq );
+    drive.motorDir.init( &eeprom.dados.motorDir );
+
+#ifdef RODAS_PWM_x4
+    drive2.motorEsq.init( &eeprom.dados.motorEsqT );
+    drive2.motorDir.init( &eeprom.dados.motorDirT );
 #endif
 
 #ifdef PINO_SERVO_PAN
@@ -1896,10 +1874,7 @@ void setup()
     sensorEsq = &sensores[3];
 #endif
 */
-    gamepad.x.setConfig(&eeprom.dados.gameX);
-    gamepad.y.setConfig(&eeprom.dados.gameY);
-    gamepad.z.setConfig(&eeprom.dados.gameZ);
-    gamepad.r.setConfig(&eeprom.dados.gameR);
+    gamepad.setConfig( &eeprom.dados.joyRC );
 
 #ifdef PINO_JOY_X
     PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
