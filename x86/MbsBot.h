@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2012 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -55,16 +55,14 @@ class MbsBot
 		char* recebe();
 
 		int enviaVar(const char *var, int valor)
-            { return envia("%s %s %d%c", CMD_WRITE, var, valor, CMD_EOL); }
+            { return envia("%s %s %d%c", CMD_SET, var, valor, CMD_EOL); }
 		int pedeVar(const char *var)
-            { return envia("%s %s%c", CMD_READ, var, CMD_EOL); }
+            { return envia("%s %s%c", CMD_GET, var, CMD_EOL); }
         void pedeVars()
         {
             // TODO (mbs#1#): pede todas vars
 
             pedeVar(VAR_PROGRAMA);
-            pedeVar(VAR_T_POL);
-            pedeVar(VAR_T_90);
             pedeVar(VAR_T_RF);
             pedeVar(VAR_PID);
 
@@ -80,9 +78,9 @@ class MbsBot
         }
 
         int salva()
-            { return envia("%s%c", CMD_SAVE, CMD_EOL); }
+            { return envia("%s%c", CMD_GRAVA, CMD_EOL); }
         int carrega()
-            { return envia("%s%c", CMD_LOAD, CMD_EOL); }
+            { return envia("%s%c", CMD_CARREGA, CMD_EOL); }
         int carregaDefaults()
             { return envia("%s%c", CMD_DEFAULT, CMD_EOL); }
         int status()
@@ -104,13 +102,8 @@ class MbsBot
             { return enviaVar(VAR_ZERO_ESQ, val); }
 		int setCentroRodaDireita(int val)
             { return enviaVar(VAR_ZERO_DIR, val); }
-
-        int sqrLeft()
-            { return envia("%s%c", CMD_TURN_LEFT, CMD_EOL); }
-        int sqrRight()
-            { return envia("%s%c", CMD_TURN_RIGHT, CMD_EOL); }
         int stop()
-            { return envia("%s%c", CMD_MV_STOP, CMD_EOL); }
+            { return envia("%s%c", CMD_MV_PARAR, CMD_EOL); }
 
 		int enviaJoystick(unsigned short bt, unsigned short x, unsigned short  y, unsigned short z, unsigned short r);
 
@@ -125,8 +118,6 @@ class MbsBot
 		int getServoTilt() { return servoTilt; }
 		int getServoRoll() { return servoRoll; }
 		int getSensor(int i) { return sensores[i]; }
-		int getTempoPol() { return tempoPol; }
-		int getTempo90() { return tempo90; }
 		int getTempoRF() { return tempoRF; }
 		int getPidKP() { return pidKP; }
 		int getPidKI() { return pidKI; }
@@ -152,8 +143,6 @@ class MbsBot
 		int servoTilt;
 		int servoRoll;
 		std::vector<int> sensores;
-		int tempoPol;
-		int tempo90;
 		int tempoRF;
 		int pidKP;
 		int pidKI;

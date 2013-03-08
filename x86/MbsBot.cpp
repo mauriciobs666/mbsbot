@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -199,16 +199,6 @@ char * MbsBot::recebe()
                         }
                     }
                 }
-            }
-            else if(strcmp(tok, VAR_T_POL) == 0)
-            {
-                if ( (tok = strtok(NULL, " ")) )
-                    tempoPol = atoi(tok);
-            }
-            else if(strcmp(tok, VAR_T_90) == 0)
-            {
-                if ( (tok = strtok(NULL, " ")) )
-                    tempo90 = atoi(tok);
             }
             else if(strcmp(tok, VAR_T_RF) == 0)
             {

@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -37,17 +37,17 @@ Formato geral do pacote:
 /* Lista de <comandos>
 */
 
-#define CMD_READ	"get"
-/* CMD_READ <variavel> */
+#define CMD_GET	"get"
+/* CMD_GET <variavel> */
 
-#define CMD_WRITE	"set"
-/* CMD_WRITE <variavel> = [int] */
+#define CMD_SET	"set"
+/* CMD_SET <variavel> = [int] */
 
-#define CMD_SAVE	"sv"
-/* CMD_SAVE : grava sConfigurationData na eeprom */
+#define CMD_GRAVA	"sv"
+/* CMD_GRAVA : grava sConfigurationData na eeprom */
 
-#define CMD_LOAD	"ld"
-/* CMD_LOAD : descarta alteracoes e recarrega sConfigurationData da eeprom */
+#define CMD_CARREGA	"ld"
+/* CMD_CARREGA : descarta alteracoes e recarrega sConfigurationData da eeprom */
 
 #define CMD_DEFAULT	"dft"
 /* CMD_DEFAULT : carrega sConfigurationData com valores default */
@@ -55,30 +55,24 @@ Formato geral do pacote:
 #define CMD_CAL	"cal"
 /* CMD_CAL : auto calibra sensores joystick */
 
+#define CMD_CENTRO "cen"
+/* CMD_CENTRO : encerra auto calibracao e centra joystick */
+
 #define CMD_LF_CAL	"lfcal"
 /* CMD_LF_CAL : auto calibra sensores do line-follower */
 
-#define CMD_MV_INCH	"pol"
-/* CMD_MV_INCH : anda uma polegada pra frente (ajuste via VAR_T_INCH) */
+#define CMD_MV_PARAR "p"
+/* CMD_MV_PARAR : para imediatamente */
 
-#define CMD_MV_STOP "stop"
-/* CMD_MV_STOP : para imediatamente */
-
-#define CMD_MV_WHEELS "drv"
-/* CMD_MV_WHEELS esquerda direita [duracao em ms]
+#define CMD_MV_RODAS "drv"
+/* CMD_MV_RODAS esquerda direita
         esquerda, direita: +/- 0-100%
 */
 
-#define CMD_MV_VECT "vect"
-/* CMD_MV_VECT eixo_X eixo_Y [duracao em ms]
+#define CMD_MV_VET "vet"
+/* CMD_MV_VET eixo_X eixo_Y [duracao em ms]
     eixo_X, eixo_Y: +/- 0-100 %
 */
-
-#define CMD_TURN_LEFT "esq"
-/* CMD_TURN_LEFT : 90 graus pra esquerda */
-
-#define CMD_TURN_RIGHT "dir"
-/* CMD_TURN_RIGHT : 90 graus pra direita */
 
 #define CMD_STATUS "s"
 /* CMD_STATUS : pede status
@@ -92,7 +86,7 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define CMD_BIP "bip"
 /* CMD_BIP [Hz] [ms] */
 
-#define CMD_CLEAR_ERR "clerr"
+#define CMD_LIMPA_ERRO "clerr"
 
 #define CMD_JOYPAD "j"
 /* CMD_JOYPAD BOTOES X Y Z R */
@@ -103,29 +97,31 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 
 #define VAR_AS       "as"	// todas entradas analogicas
 #define VAR_PID      "pid"  // coeficientes do algoritmo de PID
-#define VAR_FREIO    "hb"   // handbrake, freio de mao
+#define VAR_FREIO    "fm"   // handbrake, freio de mao
 
-#define VAR_RODA_ESQ "l"    // motor da roda esquerda
-#define VAR_RODA_DIR "r"    // motor da roda direita
+#define VAR_RODA_ESQ "e"    // motor da roda esquerda
+#define VAR_RODA_DIR "d"    // motor da roda direita
 
-#define VAR_ZERO_ESQ "lc"	// offset da posicao parada ("centro") da roda esquerda (pot do servo mal calibrado)
-#define VAR_ZERO_DIR "rc"	// offset da posicao parada da roda direita (pot do servo mal calibrado)
+#define VAR_ZERO_ESQ "ce"
+#define VAR_ZERO_DIR "cd"
 
-#define VAR_ZERO_ESQ_T "ltc"	// offset da posicao parada ("centro") da roda esquerda (pot do servo mal calibrado)
-#define VAR_ZERO_DIR_T "rtc"	// offset da posicao parada da roda direita (pot do servo mal calibrado)
+#define VAR_ZERO_ESQ_T "cet"
+#define VAR_ZERO_DIR_T "cdt"
 
-#define VAR_ACEL_ESQ "la"   // aceleracao do motor da roda esquerda
-#define VAR_ACEL_DIR "ra"   // aceleracao do motor da roda direita
+#define VAR_ACEL_ESQ "ae"   // aceleracao do motor da roda esquerda
+#define VAR_ACEL_DIR "ad"   // aceleracao do motor da roda direita
 
 #define VAR_SERVO_X  "sx"   // servo "X" (pan)
 #define VAR_SERVO_Y  "sy"   // servo "Y" (tilt)
 #define VAR_SERVO_Z  "sz"   // servo "Z" (roll)
 
-#define VAR_T_POL    "di"   // delay do drive.inch(), anda 1 polegada pra frente
-#define VAR_T_90     "d90"	// delay do drive.left() e drive.right(), vira 90 graus
 #define VAR_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
 #define VAR_T_SE     "dse"  // tempo minimo entre envio de SEnsores
 #define VAR_T_ST     "dst"  // tempo minimo entre envio de STatus
+
+#define VAR_VEL_MAX     "vm" // limite de velocidade em %
+#define VAR_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
+#define VAR_VEL_REFRESH "vr" // intervalo de refresh dos motores
 
 enum ProgramID
 {
@@ -135,7 +131,7 @@ enum ProgramID
     PRG_LINE_FOLLOW = 3,    //
     PRG_SCANNER = 4,        // Scanner com rangefinder
     PRG_CHASE = 5,          //
-    PRG_COLLISION = 6,      //
+    PRG_COLISAO = 6,      //
     PRG_SENTINELA = 7,      //
     PRG_WIICHUCK = 8,       //
     PRG_SCOPE = 9,          //

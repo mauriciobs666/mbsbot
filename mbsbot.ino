@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2012 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -194,9 +194,8 @@ public:
 
         char handBrake;
 
-        // TODO (mbs#1#): configuracao via serial
-        char velMax;    // %
-        char velEscala; // %
+        unsigned char velMax;    // %
+        unsigned char velEscala; // %
         unsigned short velRefresh; // intervalo de execucao entre os refresh de motores
 
         ConfigMotor motorEsq;
@@ -206,10 +205,7 @@ public:
 
         struct sDelays  // duracao (ms) de movimentos pra animacao
         {
-            unsigned short mvPol;	// tempo pra mover 1 polegada
-            unsigned short mv90;	// tempo pra girar 90 graus (angulo reto)
-
-            // intervalo entre envios pela serial de status e sensores
+            // timeout de envios pela serial de status e sensores
             unsigned short sensores;
             unsigned short status;
 
@@ -276,8 +272,6 @@ public:
             #endif
         #endif
 
-        dados.delays.mvPol = 200;
-        dados.delays.mv90 = 400;
         dados.delays.sensores = 30000;
         dados.delays.status = 30000;
         dados.delays.ES = 50;
@@ -456,7 +450,10 @@ public:
     Sensor() : valor(0), anterior(0), cfg(NULL)
         {}
     void setConfig(ConfigSensor *c)
-        { cfg=c; }
+        {
+            cfg=c;
+            valor = anterior = cfg->centro;
+        }
     unsigned short getValor()
         { return valor; }
     void setValor(unsigned short v)
@@ -548,6 +545,7 @@ sensores[NUM_SENSORES];
 class MbsGamePad
 {
 public:
+    ConfigGamepad::eTipoGamepad tipo;
     Sensor x, y, z, r;
     volatile unsigned int botoesAntes, botoesAgora, botoesEdgeF, botoesEdgeR;
     MbsGamePad() : botoesAntes(0), botoesAgora(0), botoesEdgeF(0), botoesEdgeR(0)
@@ -561,6 +559,7 @@ public:
     }
     void setConfig( ConfigGamepad *cfg )
     {
+        tipo = cfg->tipo;
         x.setConfig( &cfg->X );
         y.setConfig( &cfg->Y );
         z.setConfig( &cfg->Z );
@@ -615,10 +614,10 @@ public:
         {
             servo.attach( cfg->pino );
         }
-        stop();
+        parar();
     }
 
-    void stop()
+    void parar()
     {
         write( ( cfg->tipo == ConfigMotor::MOTOR_SERVO ) ? cfg->centro : 0 );
     }
@@ -647,8 +646,6 @@ public:
         }
         else
             meta = 0;
-
-        refresh();
     }
 
     short read() { return atual; }
@@ -656,7 +653,6 @@ public:
     void write(int valor)
     {
         meta = atual = valor;
-        refresh();
     }
 
     void refresh()
@@ -737,85 +733,68 @@ public:
     Sensor *sensorEsq, *sensorFre, *sensorDir;
     Motor motorEsq, motorDir;
 
-    void forward(char porc=100, int period=0)
+    void parar()
     {
-        motorEsq.move(porc);
-        motorDir.move(porc);
-        if(period > 0)
-        {
-            delay(period);
-            stop();
-        }
+        motorEsq.parar();
+        motorDir.parar();
     }
-    void backward(char porc=100, int period=0)
-    {
-        forward(-porc, period);
-    }
-    void left(char porc=100, int period=0)
-    {
-        motorEsq.move(-porc);
-        motorDir.move(porc);
-        if(period > 0)
-        {
-            delay(period);
-            stop();
-        }
-    }
-    void leftSmooth(char porc=100, int period=0)
-    {
-        motorEsq.stop();
-        motorDir.move(porc);
-        if(period > 0)
-        {
-            delay(period);
-            stop();
-        }
-    }
-    void right(char porc=100, int period=0)
-    {
-        motorEsq.move(porc);
-        motorDir.move(-porc);
-        if(period > 0)
-        {
-            delay(period);
-            stop();
-        }
-    }
-    void rightSmooth(char porc=100, int period=0)
-    {
-        motorEsq.move(porc);
-        motorDir.stop();
-        if(period > 0)
-        {
-            delay(period);
-            stop();
-        }
-    }
-    void stop()
-    {
-        motorEsq.stop();
-        motorDir.stop();
-    }
+
     void refresh()
     {
         motorEsq.refresh();
         motorDir.refresh();
     }
-    void inch(bool goForward=true)
-    {
-        forward((goForward ? 100 : -100), eeprom.dados.delays.mvPol);
-    }
+
     void vetorial(Vetor2i direcao);
+
     void vetorialSensor(Vetor2i direcao);
-    void printRodas();
-    void turnLeft()
+
+    void printRodas()
     {
-        left(100, eeprom.dados.delays.mv90);
+        Serial.print( VAR_RODA_ESQ );
+        Serial.print(" ");
+        Serial.println( motorEsq.read() );
+
+        Serial.print( VAR_RODA_DIR );
+        Serial.print(" ");
+        Serial.println( motorDir.read() );
     }
-    void turnRight()
+
+    void giraEsq( char porc = 100 )
     {
-        right(100, eeprom.dados.delays.mv90);
+        motorEsq.move( -porc );
+        motorDir.move( porc );
     }
+
+    void giraDir( char porc = 100 )
+    {
+        motorEsq.move( porc );
+        motorDir.move( -porc );
+    }
+
+    void praFrente( char porc = 100 )
+    {
+        motorEsq.move(porc);
+        motorDir.move(porc);
+    }
+
+/*
+    void backward(char porc=100)
+    {
+        forward(-porc);
+    }
+
+    void leftSmooth(char porc=100)
+    {
+        motorEsq.parar();
+        motorDir.move(porc);
+    }
+    void rightSmooth(char porc=100)
+    {
+        motorEsq.move(porc);
+        motorDir.parar();
+    }
+    */
 }
 drive, drive2;
 
@@ -876,7 +855,7 @@ void Drive::vetorial( Vetor2i direcao )
     }
 }
 
-void Drive::vetorialSensor(Vetor2i direcao)
+void Drive::vetorialSensor( Vetor2i direcao )
 {
     direcao.Constrain();
 
@@ -977,78 +956,6 @@ void Drive::vetorialSensor(Vetor2i direcao)
     //#undef TRACE
 }
 
-void Drive::printRodas()
-{
-    Serial.print( VAR_RODA_ESQ );
-    Serial.print(" ");
-    Serial.println( motorEsq.read() );
-
-    Serial.print( VAR_RODA_DIR );
-    Serial.print(" ");
-    Serial.println( motorDir.read() );
-}
-
-void trataJoystick()
-{
-    if(gamepad.botoesEdgeF & BT_SEL)
-    {
-        gamepad.calibrar();
-        eeprom.dados.handBrake = 1;
-        eeprom.dados.programa = PRG_RC_SERIAL;
-    }
-
-    if(gamepad.botoesEdgeF & BT_STR)
-    {
-        drive.stop();
-        drive2.stop();
-
-        // auto centra joystick
-        gamepad.centrar();
-
-        // solta freio de mao e poe no modo RC
-        eeprom.dados.handBrake = 0;
-        eeprom.dados.programa = PRG_RC_SERIAL;
-    }
-
-    if(gamepad.botoesEdgeF & BT_Y)
-        eeprom.dados.programa = PRG_NAV_3S;
-
-    if(gamepad.botoesEdgeF & BT_A)
-    {
-        eeprom.dados.handBrake = 1;
-        eeprom.dados.programa = PRG_RC_SERIAL;
-    }
-
-    if(gamepad.botoesEdgeF & BT_X)
-        drive.turnLeft();   // vira 90 graus pra esquerda
-
-    if(gamepad.botoesEdgeF & BT_B)
-        drive.turnRight();  // vira 90 graus pra direita
-
-    if(gamepad.botoesAgora & BT_LT)
-    {
-        // 4 rodas: controla servos com eixos Z e R
-    }
-    if(gamepad.botoesAgora & BT_RT)
-    {
-        eeprom.dados.handBrake = 0;
-#ifdef PINO_ARMA
-        digitalWrite(PINO_ARMA, HIGH);
-    }
-    else
-    {
-        digitalWrite(PINO_ARMA, LOW);
-#endif
-    }
-//                if(gamepad.botoesEdge & BT_LB)
-//                if(gamepad.botoesEdge & BT_RB)
-//                if(gamepad.botoesEdge & BT_L3)
-//                if(gamepad.botoesEdge & BT_R3)
-
-    gamepad.botoesEdgeR = 0;
-    gamepad.botoesEdgeF = 0;
-}
-
 // ******************************************************************************
 //		FOTOVORO
 // ******************************************************************************
@@ -1062,11 +969,11 @@ void fotovoro()
     // numeros menores significam mais luz
 
     if ( (ldrDir - ldrEsq) > threshold )		// vira pra esq
-        drive.left();
+        drive.giraEsq();
     else if ( (ldrEsq - ldrDir) > threshold )	// vira pra direita
-        drive.right();
+        drive.giraDir();
     else
-        drive.forward();
+        drive.praFrente();
 }
 
 // ******************************************************************************
@@ -1102,8 +1009,8 @@ void LineFollower::loop()
     }
 
     // first handle special conditions
-    if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, stop
-        drive.stop();
+    if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, parar
+        drive.parar();
     else
     {
         // regular PID control
@@ -1442,19 +1349,19 @@ void uname()
 // ******************************************************************************
 //		SERVIDOR TELNET
 // ******************************************************************************
-class Server
+class Telnet
 {
 public:
-    Server() : pos(0) {}
-    bool receive();
+    Telnet() : pos(0) {}
+    bool recebe();
     void loop();
 private:
     char command[MAX_CMD];
     short pos;
 }
-server;
+telnet;
 
-bool Server::receive()
+bool Telnet::recebe()
 {
     while(Serial.available() > 0)
     {
@@ -1478,9 +1385,9 @@ bool Server::receive()
     return false;
 }
 
-void Server::loop()
+void Telnet::loop()
 {
-    if( server.receive() )
+    if( telnet.recebe() )
     {
         char *tok;
 
@@ -1489,7 +1396,7 @@ void Server::loop()
 
         if((tok = STRTOK(command, " ")))					// primeiro token eh o comando/acao
         {
-            if(strcmp(tok, CMD_WRITE) == 0)					// atribui um valor a uma variavel
+            if(strcmp(tok, CMD_SET) == 0)					// atribui um valor a uma variavel
             {
                 if((tok = STRTOK(NULL, " =")))				// segundo token eh o nome da variavel
                 {
@@ -1516,13 +1423,9 @@ void Server::loop()
                             eeprom.dados.motorDirT.centro = valor;
                         else if(strcmp(dest, VAR_PROGRAMA) == 0)
                         {
-                            drive.stop();
+                            drive.parar();
                             eeprom.dados.programa = valor;
                         }
-                        else if(strcmp(dest, VAR_T_POL) == 0)
-                            eeprom.dados.delays.mvPol = valor;
-                        else if(strcmp(dest, VAR_T_90) == 0)
-                            eeprom.dados.delays.mv90 = valor;
                         else if(strcmp(dest, VAR_T_RF) == 0)
                             eeprom.dados.delays.ES = valor;
                         else if(strcmp(dest, VAR_SERVO_X) == 0)
@@ -1549,10 +1452,16 @@ void Server::loop()
                             eeprom.dados.delays.status = (unsigned short)valor;
                         else if(strcmp(dest, VAR_T_SE) == 0)
                             eeprom.dados.delays.sensores = (unsigned short)valor;
+                        else if(strcmp(dest, VAR_VEL_MAX) == 0)
+                            eeprom.dados.velMax = valor;
+                        else if(strcmp(dest, VAR_VEL_ESCALA) == 0)
+                            eeprom.dados.velEscala = valor;
+                        else if(strcmp(dest, VAR_VEL_REFRESH) == 0)
+                            eeprom.dados.velRefresh = valor;
                     }
                 }
             }
-            else if(strcmp(tok, CMD_READ) == 0)	// le uma variavel
+            else if(strcmp(tok, CMD_GET) == 0)	// le uma variavel
             {
                 if((tok = STRTOK(NULL, " ")))	// segundo token eh o nome da variavel a ser lida
                 {
@@ -1569,10 +1478,6 @@ void Server::loop()
                         Serial.println(eeprom.dados.motorDir.centro);
                     else if(strcmp(tok, VAR_PROGRAMA) == 0)
                         Serial.println(eeprom.dados.programa);
-                    else if(strcmp(tok, VAR_T_POL) == 0)
-                        Serial.println(eeprom.dados.delays.mvPol);
-                    else if(strcmp(tok, VAR_T_90) == 0)
-                        Serial.println(eeprom.dados.delays.mv90);
                     else if(strcmp(tok, VAR_T_RF) == 0)
                         Serial.println(eeprom.dados.delays.ES);
                     else if(strcmp(tok, VAR_SERVO_X) == 0)
@@ -1601,35 +1506,35 @@ void Server::loop()
                         Serial.println((int)eeprom.dados.delays.status);
                     else if(strcmp(tok, VAR_T_SE) == 0)
                         Serial.println((int)eeprom.dados.delays.sensores);
+                    else if(strcmp(tok, VAR_VEL_MAX) == 0)
+                        Serial.println((int)eeprom.dados.velMax);
+                    else if(strcmp(tok, VAR_VEL_ESCALA) == 0)
+                        Serial.println((int)eeprom.dados.velEscala);
+                    else if(strcmp(tok, VAR_VEL_REFRESH) == 0)
+                        Serial.println((int)eeprom.dados.velRefresh);
                 }
             }
-            else if(strcmp(tok, CMD_SAVE) == 0)	// salva temporarios na EEPROM
+            else if(strcmp(tok, CMD_GRAVA) == 0)	// salva temporarios na EEPROM
                 eeprom.save();
-            else if(strcmp(tok, CMD_LOAD) == 0)	// descarta mudancas e recarrega da EEPROM
-            {
+            else if(strcmp(tok, CMD_CARREGA) == 0)	// descarta mudancas e recarrega da EEPROM
                 eeprom.load();
-                drive.stop();
-            }
             else if(strcmp(tok, CMD_DEFAULT) == 0)  // hard-coded
-            {
                 eeprom.defaults();
-                drive.stop();
-            }
-            else if(strcmp(tok, CMD_CAL) == 0)	// re-calibra sensores do line follower
+            else if(strcmp(tok, CMD_CAL) == 0)	    // entra no modo autocalibracao de joystick
                 gamepad.calibrar();
+            else if(strcmp(tok, CMD_CENTRO) == 0)	// sai do modo de autocalibracao e centra joystick
+                gamepad.centrar();
             #ifdef LINE_FOLLOWER
             else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibra sensores do line follower
                 lineFollower.autoCalibrate();
             #endif
-            else if(strcmp(tok, CMD_MV_INCH) == 0)
-                drive.inch();
-            else if(strcmp(tok, CMD_MV_STOP) == 0)
+            else if(strcmp(tok, CMD_MV_PARAR) == 0)
             {
-                drive.stop();
-                drive2.stop();
+                drive.parar();
+                drive2.parar();
                 eeprom.dados.programa = PRG_RC_SERIAL;
             }
-            else if(strcmp(tok, CMD_MV_WHEELS) == 0)
+            else if(strcmp(tok, CMD_MV_RODAS) == 0)
             {
                 tok = STRTOK(NULL, " ");
                 if (tok)			// second token is the left wheel power percent
@@ -1643,7 +1548,7 @@ void Server::loop()
                     }
                 }
             }
-            else if(strcmp(tok, CMD_MV_VECT) == 0)
+            else if(strcmp(tok, CMD_MV_VET) == 0)
             {
                 eeprom.dados.programa = PRG_RC_SERIAL;
                 Vetor2i direcao;
@@ -1654,11 +1559,7 @@ void Server::loop()
                     if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
                     {
                         direcao.y = atoi(tok);
-
-                        if( direcao.x || direcao.y )
-                            drive.vetorial( direcao );
-                        else
-                            drive.stop();
+                        drive.vetorial( direcao );
 
                         if ((tok = STRTOK(NULL, " ")))  // segundo token eh o percentual de potencia p/ eixo X
                         {
@@ -1666,20 +1567,12 @@ void Server::loop()
                             if ((tok = STRTOK(NULL, " ")))// terceiro token eh o percentual de potencia p/ eixo Y
                             {
                                 direcao.y = atoi(tok);
-
-                                if( direcao.x || direcao.y )
-                                    drive2.vetorial( direcao );
-                                else
-                                    drive2.stop();
+                                drive2.vetorial( direcao );
                             }
                         }
                     }
                 }
             }
-            else if(strcmp(tok, CMD_TURN_LEFT) == 0)
-                drive.turnLeft();
-            else if(strcmp(tok, CMD_TURN_RIGHT) == 0)
-                drive.turnRight();
             else if(strcmp(tok, CMD_STATUS) == 0)
                 enviaStatus();
             else if(strcmp(tok, CMD_UNAME) == 0)
@@ -1697,7 +1590,7 @@ void Server::loop()
                         BEEP(hz, 200);
                 }
             }
-            else if(strcmp(tok, CMD_CLEAR_ERR) == 0)
+            else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
             {
                 lastError = SUCCESSO;
             }
@@ -1708,7 +1601,10 @@ void Server::loop()
                     gamepad.refreshBotoes(atoi(tok));
                     if ((tok = STRTOK(NULL, " ")))		        // terceiro token eh o eixo X
                     {
-
+                        if( gamepad.tipo != ConfigGamepad::TIPO_PC  )
+                        {
+                            gamepad.setConfig( &eeprom.dados.joyPC );
+                        }
                         gamepad.x.setValor(atol(tok));
                         if ((tok = STRTOK(NULL, " ")))	        // quarto token eh o eixo Y
                         {
@@ -1737,6 +1633,9 @@ void Server::loop()
 
 void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
 {
+    if( !s || !s->cfg || s->cfg->tipo != ConfigSensor::SENSOR_RC )
+        return;
+
     if(PCintPort::pinState == HIGH)
         *inicioPulso = micros();
     else
@@ -1809,6 +1708,64 @@ void isrRadio()
         default:
         break;
     }
+}
+
+void trataJoystick()
+{
+    if(gamepad.botoesEdgeF & BT_SEL)
+    {
+        gamepad.calibrar();
+        eeprom.dados.handBrake = 1;
+        eeprom.dados.programa = PRG_RC_SERIAL;
+    }
+
+    if(gamepad.botoesEdgeF & BT_STR)
+    {
+        drive.parar();
+        drive2.parar();
+
+        // auto centra joystick
+        gamepad.centrar();
+
+        // solta freio de mao e poe no modo RC
+        eeprom.dados.handBrake = 0;
+        eeprom.dados.programa = PRG_RC_SERIAL;
+    }
+
+    if(gamepad.botoesEdgeF & BT_Y)
+        eeprom.dados.programa = PRG_NAV_3S;
+
+    if(gamepad.botoesEdgeF & BT_A)
+    {
+        eeprom.dados.handBrake = 1;
+        eeprom.dados.programa = PRG_RC_SERIAL;
+    }
+
+//    if(gamepad.botoesEdgeF & BT_X)
+//    if(gamepad.botoesEdgeF & BT_B)
+
+    if(gamepad.botoesAgora & BT_LT)
+    {
+        // 4 rodas: controla servos com eixos Z e R
+    }
+    if(gamepad.botoesAgora & BT_RT)
+    {
+        eeprom.dados.handBrake = 0;
+#ifdef PINO_ARMA
+        digitalWrite(PINO_ARMA, HIGH);
+    }
+    else
+    {
+        digitalWrite(PINO_ARMA, LOW);
+#endif
+    }
+//                if(gamepad.botoesEdge & BT_LB)
+//                if(gamepad.botoesEdge & BT_RB)
+//                if(gamepad.botoesEdge & BT_L3)
+//                if(gamepad.botoesEdge & BT_R3)
+
+    gamepad.botoesEdgeR = 0;
+    gamepad.botoesEdgeF = 0;
 }
 
 // ******************************************************************************
@@ -1912,7 +1869,7 @@ void loop()
 {
     agora = millis();
 
-    server.loop();
+    telnet.loop();
 
     trataJoystick();
 
@@ -1945,28 +1902,14 @@ void loop()
             Vetor2i direcao( gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox() );
 
             #ifdef RODAS_PWM_x4
-                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
-                    drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-                else
-                    drive.stop();
-
-                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() || gamepad.z.getPorcentoAprox() )
-                    drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-                else
-                    drive2.stop();
-                drive2.refresh();
+                drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
             #else
-                if( gamepad.x.getPorcentoAprox() || gamepad.y.getPorcentoAprox() )
-                {
-                    if( gamepad.botoesAgora & BT_RT ) // por seguranca arma ligada desabilita sensores
-                        drive.vetorial( direcao );
-                    else
-                        drive.vetorialSensor( direcao );
-                }
+                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
+                    drive.vetorial( direcao );
                 else
-                    drive.stop();
+                    drive.vetorialSensor( direcao );
             #endif
-            drive.refresh();
         }
         msExec = eeprom.dados.delays.ES;
         break;
@@ -1994,7 +1937,7 @@ void loop()
         break;
         #endif
 
-        case PRG_COLLISION:
+        case PRG_COLISAO:
         {
             const unsigned int minDist = 200;
             const int timeAlarm = 3;	// segundos pra colisao
@@ -2051,7 +1994,7 @@ void loop()
             }
             else
             {
-                drive.stop();
+                drive.parar();
 
                 const int VELOCIDADE_SERVO = 2;
 
@@ -2110,7 +2053,7 @@ void loop()
         break;
 
         case PRG_KNOB:
-            pan.write(map(analogRead(0), 0, 1023, 5, 174));
+            pan.write( map( analogRead(0), 0, 1023, 5, 174 ));
         msExec = 50;
         break;
 
@@ -2128,21 +2071,21 @@ void loop()
             if( drive.sensorFre->ehMinimo(MARGEM_PING) )
             {
                 if( ! palpite )
-                    palpite = constrain((drive.sensorDir->getReta()-drive.sensorEsq->getReta()), -1, 1);
+                    palpite = constrain( ( drive.sensorDir->getReta() - drive.sensorEsq->getReta() ), -1, 1 );
 
                 if(palpite < 0)
-                    drive.left(50);
+                    drive.giraEsq( 50 );
                 else
-                    drive.right(50);
+                    drive.giraDir( 50 );
             }
             else if( drive.sensorEsq->ehMinimo(MARGEM_SHARP) )
-                drive.right(50);
+                drive.giraEsq( 50 );
             else if( drive.sensorDir->ehMinimo(MARGEM_SHARP) )
-                drive.left(50);
+                drive.giraEsq( 50 );
             else
             {
                 // ceu de brigadeiro
-                drive.forward(100);
+                drive.praFrente( 100 );
                 palpite = 0;
             }
 
@@ -2195,4 +2138,9 @@ void loop()
         break;
         }
     }
+
+    drive.refresh();
+    #ifdef RODAS_PWM_x4
+        drive2.refresh();
+    #endif
 }

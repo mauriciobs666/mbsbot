@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -224,8 +224,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     ChoicePrg->Append(_("PRG_LINE_FOLLOWER"));
     ChoicePrg->Append(_("PRG_SCANNER"));
     ChoicePrg->Append(_("PRG_CHASE"));
-    ChoicePrg->Append(_("PRG_COLLISION"));
-    ChoicePrg->Append(_("PRG_SENTRY"));
+    ChoicePrg->Append(_("PRG_COLISAO"));
+    ChoicePrg->Append(_("PRG_SENTINELA"));
     ChoicePrg->Append(_("PRG_WIICHUCK"));
     ChoicePrg->Append(_("PRG_SCOPE"));
     ChoicePrg->Append(_("PRG_KNOB"));
@@ -402,7 +402,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer4 = new wxFlexGridSizer(3, 1, 0, 0);
     StaticBitmap1 = new wxStaticBitmap(Panel5, ID_STATICBITMAP1, wxBitmap(wxImage(_T("m2d2.jpg"))), wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER, _T("ID_STATICBITMAP1"));
     FlexGridSizer4->Add(StaticBitmap1, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("\nCopyright (C) 2010-2012 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
+    StaticText3 = new wxStaticText(Panel5, ID_STATICTEXT3, _("\nCopyright (C) 2010-2013 - Mauricio Bieze Stefani\n\nMBSBOT is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nMBSBOT is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.\n"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT3"));
     FlexGridSizer4->Add(StaticText3, 1, wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM, 5);
     Panel5->SetSizer(FlexGridSizer4);
     FlexGridSizer4->Fit(Panel5);
@@ -467,15 +467,6 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnSendCommandTextTextEnter);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&serialcomFrame::OnTimer1Trigger);
     //*)
-
-    // Mostra numero de versao
-
-
- /*   SetStatusText( _("v") +
-                  wxString(AutoVersion::UBUNTU_VERSION_STYLE, wxConvUTF8) + _(".") +
-                  wxString(AutoVersion::SVN_REVISION, wxConvUTF8),
-                  2);*/
-// "MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani"
 
     if( MbsBot::getInstance()->init() == 0)
     {
@@ -752,8 +743,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
 
         // aba "EEPROM"
         ChoicePrg->SetSelection(mbsbot->getPrograma());
-        TextCtrlDelayInch->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempoPol()));
-        TextCtrlDelayTurn->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempo90()));
         TextCtrlDelayRead->SetValue(wxString::Format(wxT("%i"), mbsbot->getTempoRF()));
         TextCtrlKp->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKP()));
         TextCtrlKi->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKI()));
@@ -817,17 +806,6 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(joystick->HasV())    v = joystick->GetVPosition();
 
         unsigned short bt = joystick->GetButtonState();
-        static unsigned short btAntes = 0;
-        unsigned short btBorda = bt ^ btAntes;
-
-        if( btBorda & BT_STR )
-        {
-            mbsbot->setPrograma(PRG_RC_SERIAL);
-            mbsbot->stop();
-            //mbsbot->
-        }
-
-        //if( bt & BT_STR ) || ( bt & BT_SEL ))
 
         // Log
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), wxpt.x),  0, 0);
@@ -837,12 +815,9 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), u),  4, 0);
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), v),  5, 0);
         GridJoy->SetCellValue (wxString::Format(wxT("%i"), bt), 6, 0);
-        //StaticTextJoyButtons->SetLabel(wxString::Format(wxT("%i"), bt));
 
         // Envia posicoes joystick
         mbsbot->enviaJoystick( bt, wxpt.x, wxpt.y, z, r );
-
-        // TODO (mbs#1#): Controlar os Servos via joystick
     }
 }
 
