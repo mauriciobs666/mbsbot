@@ -54,7 +54,7 @@ Servo pan;
 Servo tilt;
 Servo roll;
 
-enum Errors lastError = SUCCESSO;
+enum Erros ultimoErro = SUCCESSO;
 unsigned long agora = 0;
 
 // ******************************************************************************
@@ -251,8 +251,8 @@ public:
         dados.velRefresh = 10;
 
         #ifndef RODAS_PWM
-            dados.motorEsq.initServo( PINO_MOTOR_ESQ, MOTOR_CENTRO);
-            dados.motorDir.initServo( PINO_MOTOR_DIR, MOTOR_CENTRO, true);
+            dados.motorEsq.initServo( PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ESQ_INV);
+            dados.motorDir.initServo( PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_DIR_INV);
         #else
             #ifdef PINO_MOTOR_ESQ_N
                 dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, PINO_MOTOR_ESQ_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
@@ -272,8 +272,8 @@ public:
             #endif
         #endif
 
-        dados.delays.sensores = 30000;
-        dados.delays.status = 30000;
+        dados.delays.sensores = 10000;
+        dados.delays.status = 10000;
         dados.delays.ES = 50;
 
         #ifdef LINE_FOLLOWER
@@ -294,14 +294,14 @@ public:
 
         dados.sensores[1].init( ConfigSensor::SENSOR_PING, 15 );
         dados.sensores[1].minimo = 1000;
-        dados.sensores[1].centro = 3000;
-        dados.sensores[1].maximo = 3000;
+        dados.sensores[1].centro = 4000;
+        dados.sensores[1].maximo = 4000;
 
 #if VERSAO_PLACA == 22
         dados.sensores[2].init( ConfigSensor::SENSOR_PING, 16 );
         dados.sensores[2].minimo = 1000;
-        dados.sensores[2].centro = 3000;
-        dados.sensores[2].maximo = 3000;
+        dados.sensores[2].centro = 4000;
+        dados.sensores[2].maximo = 4000;
 #else
         dados.sensores[2].init( ConfigSensor::SENSOR_ANALOGICO, 2, true );
         dados.sensores[2].minimo = 100;
@@ -777,24 +777,6 @@ public:
         motorEsq.move(porc);
         motorDir.move(porc);
     }
-
-/*
-    void backward(char porc=100)
-    {
-        forward(-porc);
-    }
-
-    void leftSmooth(char porc=100)
-    {
-        motorEsq.parar();
-        motorDir.move(porc);
-    }
-    void rightSmooth(char porc=100)
-    {
-        motorEsq.move(porc);
-        motorDir.parar();
-    }
-    */
 }
 drive, drive2;
 
@@ -984,15 +966,14 @@ void fotovoro()
 class LineFollower
 {
 public:
-    LineFollower() : lastError(0), accError(0), nextIter(0)
+    LineFollower() : erroAntes(0), erroAcc(0)
     {}
     void autoCalibrate();
     void loop();
     char calcError(bool * isIRSensorOverLine);
 private:
-    char lastError;
-    int accError;
-    int nextIter;
+    int erroAntes;
+    int erroAcc;
 }
 lineFollower;
 
@@ -1013,15 +994,13 @@ void LineFollower::loop()
         drive.parar();
     else
     {
-        // regular PID control
+        int erro = calcError(IRSensorOverLine);
 
-        int error = calcError(IRSensorOverLine);
-
-        // Proportional
-        int Pterm = eeprom.dados.pid.Kp * error;
+        // Proporcional
+        int Pterm = eeprom.dados.pid.Kp * erro;
 
         // Integral
-        accError += error;
+        erroAcc += erro;
 
         // TODO (mbs#1#): limitar acumulacao do componente integral
         /*
@@ -1031,17 +1010,17 @@ void LineFollower::loop()
         	accErr = MIN_ERROR;
         */
 
-        int Iterm = eeprom.dados.pid.Ki * accError;
+        int Iterm = eeprom.dados.pid.Ki * erroAcc;
 
         // Deritavive
-        int Dterm = eeprom.dados.pid.Kd * ( error - lastError );
+        int Dterm = eeprom.dados.pid.Kd * ( erro - erroAntes );
 
         int MV = Pterm + Iterm + Dterm;
 
         drive.motorEsq.move ( (MV < 0) ? (100 + MV) : 100 );
         drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
 
-        lastError = error;
+        erroAntes = erro;
     }
 }
 
@@ -1055,7 +1034,7 @@ char LineFollower::calcError(bool * isIRSensorOverLine)
         return 0;
 
     // lost track, redo last correction in the hope the track is just a bit ahead
-    return lastError;
+    return erroAntes;
 }
 
 void LineFollower::autoCalibrate()
@@ -1275,7 +1254,7 @@ void enviaStatus(bool enviaComando = true)
     }
     Serial.print(eeprom.dados.programa);
     Serial.print(" ");
-    Serial.print(lastError);
+    Serial.print(ultimoErro);
     Serial.print(" ");
     Serial.print((int)eeprom.dados.handBrake);
     Serial.print(" ");
@@ -1371,7 +1350,7 @@ bool Telnet::recebe()
         {
             pos = 0;
             Serial.println("ERRO_TAM_MAX_CMD");
-            lastError = ERRO_TAM_MAX_CMD;
+            ultimoErro = ERRO_TAM_MAX_CMD;
         }
         else if(c == CMD_EOL)
         {
@@ -1410,9 +1389,9 @@ void Telnet::loop()
                         if(isdigit(dest[0]))                // se destino for um numero entaum eh um pino digital
                             digitalWrite(atoi(dest), valor ? HIGH : LOW);
                         else if(strcmp(dest, VAR_RODA_ESQ) == 0)
-                            drive.motorEsq.write(valor);
+                            drive.motorEsq.move(valor);
                         else if(strcmp(dest, VAR_RODA_DIR) == 0)
-                            drive.motorDir.write(valor);
+                            drive.motorDir.move(valor);
                         else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
                             eeprom.dados.motorEsq.centro = valor;
                         else if(strcmp(dest, VAR_ZERO_DIR) == 0)
@@ -1592,7 +1571,7 @@ void Telnet::loop()
             }
             else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
             {
-                lastError = SUCCESSO;
+                ultimoErro = SUCCESSO;
             }
             else if(strcmp(tok, CMD_JOYPAD) == 0)
             {
@@ -2128,9 +2107,9 @@ void loop()
         break;
 
         default:
-            if( lastError != ERRO_PRG_INVALIDO )
+            if( ultimoErro != ERRO_PRG_INVALIDO )
             {
-                lastError = ERRO_PRG_INVALIDO;
+                ultimoErro = ERRO_PRG_INVALIDO;
                 Serial.print("ERRO_PRG_INVALIDO ");
                 Serial.println(eeprom.dados.programa);
                 eeprom.dados.programa = PRG_RC;

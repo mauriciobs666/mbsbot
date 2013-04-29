@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -39,8 +39,8 @@
 #define PINO_MOTOR_DIR_N    12
 #define PINO_MOTOR_DIR_PWM	5
 
-#define MOTOR_ACEL      10
-#define MOTOR_CENTRO    70
+#define MOTOR_ACEL      5
+#define MOTOR_CENTRO    60
 
 // economia de energia
 #define PINO_UNUSED_CNT 0

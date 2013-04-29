@@ -140,7 +140,7 @@ enum ProgramID
     PRG_ALARME = 12
 };
 
-enum Errors
+enum Erros
 {
     SUCCESSO = 0,
     ERRO_TAM_MAX_CMD,
