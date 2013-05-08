@@ -18,7 +18,7 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 22
+#define VERSAO_PLACA 4
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
@@ -50,12 +50,12 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-#define NUM_SENSORES    6
+#define NUM_SENSORES    8
 
-//#define LINE_FOLLOWER
+#define LINE_FOLLOWER
 
 #ifdef LINE_FOLLOWER
-    #define NUM_IR_TRACK		5
+    #define NUM_IR_TRACK		6
     #define PINO_FIRST_IR_SENSOR 1
     // ex: NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
 #endif
@@ -64,7 +64,7 @@
 // Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
 //#define PINO_BIP 			11
 
-#define PINO_ARMA           10
+//#define PINO_ARMA           10
 
 #define PINO_LED            13
 
@@ -73,10 +73,10 @@
 //#define WIICHUCK_POWER
 
 // RADIO CONTROLE
-#define PINO_JOY_X      2
-#define PINO_JOY_Y      3
+//#define PINO_JOY_X      2
+//#define PINO_JOY_Y      3
 //#define PINO_JOY_Z      17
 //#define PINO_JOY_R      18
-#define PINO_JOY_SW1    4
+//#define PINO_JOY_SW1    4
 
 #endif // BOARD_H_INCLUDED

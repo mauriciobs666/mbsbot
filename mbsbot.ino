@@ -88,6 +88,12 @@ typedef struct
             centro = 1500;
             maximo = 1800;
         }
+        else if(SENSOR_ANALOGICO == tipo)
+        {
+            minimo = 0;
+            centro = 512;
+            maximo = 1023;
+        }
         else
         {
             minimo = 0;
@@ -212,12 +218,6 @@ public:
             unsigned short ES; // intervalo de entrada/saida, leitura de sensores etc
         } delays;
 
-        // parametros do seguidor de linha
-        #ifdef LINE_FOLLOWER
-            unsigned short LF_threshold[NUM_IR_TRACK];
-            bool LF_reverseColor;
-        #endif
-
         // controlador PID
         struct sPID
         {
@@ -276,20 +276,18 @@ public:
         dados.delays.status = 10000;
         dados.delays.ES = 50;
 
-        #ifdef LINE_FOLLOWER
-        for(int x = 0; x < NUM_IR_TRACK; x++)
-        {
-            dados.LF_threshold[x] = 512;
-            dados.LF_reverseColor = false;
-        }
-        #endif
-
         dados.pid.Kp = 100;
         dados.pid.Ki = 0;
         dados.pid.Kd = 0;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
+#if VERSAO_PLACA == 4
+        for( int i = 0; i < 8; i++ )
+            dados.sensores[i].init( ConfigSensor::SENSOR_ANALOGICO, i );
+#endif
+
+#if VERSAO_PLACA == 22
         dados.sensores[0].init( ConfigSensor::SENSOR_ANALOGICO, 0 ); // bateria
 
         dados.sensores[1].init( ConfigSensor::SENSOR_PING, 15 );
@@ -297,20 +295,26 @@ public:
         dados.sensores[1].centro = 4000;
         dados.sensores[1].maximo = 4000;
 
-#if VERSAO_PLACA == 22
         dados.sensores[2].init( ConfigSensor::SENSOR_PING, 16 );
         dados.sensores[2].minimo = 1000;
         dados.sensores[2].centro = 4000;
         dados.sensores[2].maximo = 4000;
-#else
+#endif
+
+#if VERSAO_PLACA == 2
+        dados.sensores[1].init( ConfigSensor::SENSOR_ANALOGICO, 1, true );
+        dados.sensores[1].minimo = 100;
+        dados.sensores[1].maximo = 630;
+
         dados.sensores[2].init( ConfigSensor::SENSOR_ANALOGICO, 2, true );
         dados.sensores[2].minimo = 100;
         dados.sensores[2].maximo = 630;
-#endif
 
         dados.sensores[3].init( ConfigSensor::SENSOR_ANALOGICO, 3, true );
         dados.sensores[3].minimo = 100;
         dados.sensores[3].maximo = 630;
+#endif
+
 
         dados.joyPC.init( ConfigGamepad::TIPO_PC );
 
@@ -536,6 +540,11 @@ public:
         }
     int delta()
         { return valor - anterior; }
+    int getBool()
+    {
+        int meio = ( cfg->maximo - cfg->minimo ) >> 1;
+        return ( valor > meio ) ^ cfg->invertido;
+    }
 }
 sensores[NUM_SENSORES];
 
@@ -962,39 +971,35 @@ void fotovoro()
 //		LINE FOLLOWER
 // ******************************************************************************
 
-#ifdef LINE_FOLLOWER
+//#ifdef LINE_FOLLOWER
 class LineFollower
 {
 public:
     LineFollower() : erroAntes(0), erroAcc(0)
     {}
-    void autoCalibrate();
+    void calibrar();
     void loop();
-    char calcError(bool * isIRSensorOverLine);
+    char calcErro();
 private:
     int erroAntes;
     int erroAcc;
+    bool sensoresBool[NUM_IR_TRACK];
 }
 lineFollower;
 
 void LineFollower::loop()
 {
-    unsigned short IRSensor[NUM_IR_TRACK];
-    bool IRSensorOverLine[NUM_IR_TRACK];		// true if sensor is over the line
-
-    // read IR sensor dados and map into IRSensor[]
     for(int x = 0; x < NUM_IR_TRACK; x++)
     {
-        IRSensor[x] = analogRead(PINO_FIRST_IR_SENSOR + x);
-        IRSensorOverLine[x] = (IRSensor[x] > eeprom.dados.LF_threshold[x]) ^ eeprom.dados.LF_reverseColor;
+        sensores[PINO_FIRST_IR_SENSOR + x].refresh();
+        sensoresBool[x] = sensores[PINO_FIRST_IR_SENSOR + x].getBool();
     }
 
-    // first handle special conditions
-    if (IRSensorOverLine[0] && IRSensorOverLine[1] && IRSensorOverLine[2])	// end of line, parar
+    if (sensoresBool[0] && sensoresBool[1] && sensoresBool[2])	// end of line, parar
         drive.parar();
     else
     {
-        int erro = calcError(IRSensorOverLine);
+        int erro = calcErro();
 
         // Proporcional
         int Pterm = eeprom.dados.pid.Kp * erro;
@@ -1024,37 +1029,27 @@ void LineFollower::loop()
     }
 }
 
-char LineFollower::calcError(bool * isIRSensorOverLine)
+char LineFollower::calcErro()
 {
-    if( isIRSensorOverLine[0] )		// line is to the left
+    if( sensoresBool[0] )		// line is to the left
         return -1;
-    else if( isIRSensorOverLine[2] )// line is to the right
+    else if( sensoresBool[2] )// line is to the right
         return 1;
-    else if( isIRSensorOverLine[1] )// centered
+    else if( sensoresBool[1] )// centered
         return 0;
 
     // lost track, redo last correction in the hope the track is just a bit ahead
     return erroAntes;
 }
 
-void LineFollower::autoCalibrate()
+void LineFollower::calibrar()
 {
-    unsigned short sensorTrack[NUM_IR_TRACK];
-    unsigned short sensorTrackMax[NUM_IR_TRACK];
-    unsigned short sensorTrackMin[NUM_IR_TRACK];
+    for(int x = 0; x < NUM_IR_TRACK; x++)
+    {
+        sensores[PINO_FIRST_IR_SENSOR + x].refresh();
 
-    unsigned short sensorOut[NUM_IR_TRACK];
-    unsigned short sensorOutMax[NUM_IR_TRACK];
-    unsigned short sensorOutMin[NUM_IR_TRACK];
-
-    memset(sensorTrackMax, 0, sizeof(sensorTrackMax));
-    memset(sensorTrackMin, 1023, sizeof(sensorTrackMin));
-    memset(sensorOutMax, 0, sizeof(sensorOut));
-    memset(sensorOutMin, 1023, sizeof(sensorOut));
-
-    Serial.println("Calibrating TRACK");
-
-    // read all sensors at TRACK position
+        sensores[PINO_FIRST_IR_SENSOR + x].calibrar();
+    }
 
     for(int y=0; y < NUM_IR_TRACK; y++)
     {
@@ -1068,8 +1063,6 @@ void LineFollower::autoCalibrate()
     }
 
     Serial.println("\nCalibrate OUTSIDE");
-
-    drive.inch();
 
     // read all sensors at OUTSIDE position
 
@@ -1134,7 +1127,7 @@ void LineFollower::autoCalibrate()
         }
     }
 }
-#endif
+//#endif
 
 // ******************************************************************************
 //		Scanner IR 1D
