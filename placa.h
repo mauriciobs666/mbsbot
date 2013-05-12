@@ -15,10 +15,16 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
+#include "protocolo.h"
+
 #define VERSAO_PLACA 4
+
+#define PRG_DEFAULT PRG_LINE_FOLLOW
+#define DELAY_ES 10
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
@@ -55,8 +61,8 @@
 #define LINE_FOLLOWER
 
 #ifdef LINE_FOLLOWER
-    #define NUM_IR_TRACK		6
-    #define PINO_FIRST_IR_SENSOR 1
+    #define NUM_IR_TRACK		8
+    #define PINO_FIRST_IR_SENSOR 0
     // ex: NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
 #endif
 

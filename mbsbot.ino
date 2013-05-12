@@ -41,18 +41,24 @@
 
 // speaker
 #ifdef PINO_BIP
-#define BEEP(freq, dur) tone(PINO_BIP,freq,dur)
+#define BIP(freq, dur) tone(PINO_BIP,freq,dur)
 #else
-#define BEEP(freq, dur)
+#define BIP(freq, dur)
 #endif
 
 // ******************************************************************************
 //		Plin-plin
 // ******************************************************************************
 
+#ifdef PINO_SERVO_PAN
 Servo pan;
+#endif
+#ifdef PINO_SERVO_TILT
 Servo tilt;
+#endif
+#ifdef PINO_SERVO_ROLL
 Servo roll;
+#endif
 
 enum Erros ultimoErro = SUCCESSO;
 unsigned long agora = 0;
@@ -244,7 +250,7 @@ public:
     }
     void defaults()
     {
-        dados.programa = PRG_RC_SERIAL;
+        dados.programa = PRG_DEFAULT;
         dados.handBrake = 1;
         dados.velMax = 100;
         dados.velEscala = 100;
@@ -274,7 +280,7 @@ public:
 
         dados.delays.sensores = 10000;
         dados.delays.status = 10000;
-        dados.delays.ES = 50;
+        dados.delays.ES = DELAY_ES;
 
         dados.pid.Kp = 100;
         dados.pid.Ki = 0;
@@ -475,6 +481,7 @@ public:
         }
     void calibrar()
         {
+            refresh();
             if( cfg )
             {
                 cfg->minimo = cfg->maximo = cfg->centro = valor;
@@ -540,9 +547,9 @@ public:
         }
     int delta()
         { return valor - anterior; }
-    int getBool()
+    bool getBool()
     {
-        int meio = ( cfg->maximo - cfg->minimo ) >> 1;
+        unsigned short meio = ( cfg->maximo - cfg->minimo ) >> 1;
         return ( valor > meio ) ^ cfg->invertido;
     }
 }
@@ -977,9 +984,22 @@ class LineFollower
 public:
     LineFollower() : erroAntes(0), erroAcc(0)
     {}
+    void refresh()
+    {
+        for(int x = 0; x < NUM_IR_TRACK; x++)
+        {
+            sensores[PINO_FIRST_IR_SENSOR + x].refresh();
+            sensoresBool[x] = sensores[PINO_FIRST_IR_SENSOR + x].getBool();
+        }
+    }
     void calibrar();
+    void inverter( bool inverte )
+    {
+        for(int x = 0; x < NUM_IR_TRACK; x++)
+            sensores[PINO_FIRST_IR_SENSOR + x].cfg->invertido = inverte;
+    }
     void loop();
-    char calcErro();
+    int calcErro();
 private:
     int erroAntes;
     int erroAcc;
@@ -989,15 +1009,17 @@ lineFollower;
 
 void LineFollower::loop()
 {
-    for(int x = 0; x < NUM_IR_TRACK; x++)
-    {
-        sensores[PINO_FIRST_IR_SENSOR + x].refresh();
-        sensoresBool[x] = sensores[PINO_FIRST_IR_SENSOR + x].getBool();
-    }
+    refresh();
 
-    if (sensoresBool[0] && sensoresBool[1] && sensoresBool[2])	// end of line, parar
+    for( int x = 0; x < NUM_IR_TRACK; x++ )
+        digitalWrite( 9 - x , sensoresBool[x] );
+
+    return;
+/*
+    if (sensoresBool[0] && sensoresBool[1] && sensoresBool[2])
         drive.parar();
     else
+*/
     {
         int erro = calcErro();
 
@@ -1017,7 +1039,7 @@ void LineFollower::loop()
 
         int Iterm = eeprom.dados.pid.Ki * erroAcc;
 
-        // Deritavive
+        // Deritavivo
         int Dterm = eeprom.dados.pid.Kd * ( erro - erroAntes );
 
         int MV = Pterm + Iterm + Dterm;
@@ -1029,16 +1051,9 @@ void LineFollower::loop()
     }
 }
 
-char LineFollower::calcErro()
+int LineFollower::calcErro()
 {
-    if( sensoresBool[0] )		// line is to the left
-        return -1;
-    else if( sensoresBool[2] )// line is to the right
-        return 1;
-    else if( sensoresBool[1] )// centered
-        return 0;
 
-    // lost track, redo last correction in the hope the track is just a bit ahead
     return erroAntes;
 }
 
@@ -1046,85 +1061,7 @@ void LineFollower::calibrar()
 {
     for(int x = 0; x < NUM_IR_TRACK; x++)
     {
-        sensores[PINO_FIRST_IR_SENSOR + x].refresh();
-
         sensores[PINO_FIRST_IR_SENSOR + x].calibrar();
-    }
-
-    for(int y=0; y < NUM_IR_TRACK; y++)
-    {
-        sensorTrack[y] = analogRead(PINO_FIRST_IR_SENSOR + y);
-
-        Serial.print(sensorTrack[y]);
-        Serial.print(" ");
-
-        sensorTrackMax[y] = max(sensorTrack[y],sensorTrackMax[y]);
-        sensorTrackMin[y] = min(sensorTrack[y],sensorTrackMin[y]);
-    }
-
-    Serial.println("\nCalibrate OUTSIDE");
-
-    // read all sensors at OUTSIDE position
-
-    for(int y=0; y < NUM_IR_TRACK; y++)
-    {
-        sensorOut[y] = analogRead(PINO_FIRST_IR_SENSOR + y);
-
-        Serial.print(sensorOut[y]);
-        Serial.print(" ");
-
-        sensorOutMax[y] = max(sensorOut[y], sensorOutMax[y]);
-        sensorOutMin[y] = min(sensorOut[y], sensorOutMin[y]);
-    }
-
-    bool reverseSensor[NUM_IR_TRACK];
-
-    Serial.println("\nThresholds: ");
-
-    for(int y=0; y < NUM_IR_TRACK; y++)
-    {
-        reverseSensor[y] = ( sensorOut[y] > sensorTrack[y] );
-        eeprom.dados.LF_threshold[y] = ( sensorOut[y] + sensorTrack[y] ) / 2;
-
-        Serial.print(eeprom.dados.LF_threshold[y]);
-        Serial.print(" ");
-    }
-
-    eeprom.dados.LF_reverseColor = reverseSensor[0];
-
-    if(eeprom.dados.LF_reverseColor)
-        Serial.println("\nReversed Track Color");
-    else
-        Serial.println("\nNormal Track Color");
-
-    for(int x=0; x < NUM_IR_TRACK; x++)
-    {
-        // if one sensor is reversed then all others must also be!
-        if (reverseSensor[x] ^ eeprom.dados.LF_reverseColor)
-        {
-            Serial.print("BAD Reverse ");
-            Serial.println(x);
-            return;
-        }
-
-        if(eeprom.dados.LF_reverseColor)
-        {
-            if(sensorOutMin[x] <= sensorTrackMax[x])
-            {
-                Serial.print("BAD limits ");
-                Serial.println(x);
-                return;
-            }
-        }
-        else
-        {
-            if(sensorOutMax[x] >= sensorTrackMin[x])
-            {
-                Serial.print("BAD limits ");
-                Serial.println(x);
-                return;
-            }
-        }
     }
 }
 //#endif
@@ -1143,7 +1080,11 @@ public:
     bool stepUp();
     bool stepDown();
     void refreshServo()
-        { pan.write( (SCANNER_ANG/2) + stepAtual * SCANNER_ANG ); }
+        {
+            #ifdef PINO_SERVO_PAN
+            pan.write( (SCANNER_ANG/2) + stepAtual * SCANNER_ANG );
+            #endif
+        }
     void chase();
     void fillArray();
     bool step()
@@ -1259,11 +1200,17 @@ void enviaStatus(bool enviaComando = true)
     Serial.print(" ");
     Serial.print(drive2.motorDir.read());
     Serial.print(" ");
-    Serial.print(pan.read());
-    Serial.print(" ");
-    Serial.print(tilt.read());
-    Serial.print(" ");
+    #ifdef PINO_SERVO_PAN
+        Serial.print(pan.read());
+        Serial.print(" ");
+    #endif
+    #ifdef PINO_SERVO_TILT
+        Serial.print(tilt.read());
+        Serial.print(" ");
+    #endif
+    #ifdef PINO_SERVO_ROLL
     Serial.print(roll.read());
+    #endif
     //Serial.print(" ");
     //for(int p=13; p>=0; p--)
     //for(int p=13; p>5; p--)
@@ -1400,12 +1347,18 @@ void Telnet::loop()
                         }
                         else if(strcmp(dest, VAR_T_RF) == 0)
                             eeprom.dados.delays.ES = valor;
+                        #ifdef PINO_SERVO_PAN
                         else if(strcmp(dest, VAR_SERVO_X) == 0)
                             pan.write(valor);
+                        #endif
+                        #ifdef PINO_SERVO_TILT
                         else if(strcmp(dest, VAR_SERVO_Y) == 0)
                             tilt.write(valor);
+                        #endif
+                        #ifdef PINO_SERVO_ROLL
                         else if(strcmp(dest, VAR_SERVO_Z) == 0)
                             roll.write(valor);
+                        #endif
                         else if(strcmp(dest, VAR_PID) == 0)
                         {
                             eeprom.dados.pid.Kp = valor;	// P
@@ -1452,12 +1405,18 @@ void Telnet::loop()
                         Serial.println(eeprom.dados.programa);
                     else if(strcmp(tok, VAR_T_RF) == 0)
                         Serial.println(eeprom.dados.delays.ES);
+                    #ifdef PINO_SERVO_PAN
                     else if(strcmp(tok, VAR_SERVO_X) == 0)
                         Serial.println(pan.read());
+                    #endif
+                    #ifdef PINO_SERVO_TILT
                     else if(strcmp(tok, VAR_SERVO_Y) == 0)
                         Serial.println(tilt.read());
+                    #endif
+                    #ifdef PINO_SERVO_ROLL
                     else if(strcmp(tok, VAR_SERVO_Z) == 0)
                         Serial.println(roll.read());
+                    #endif
                     else if(strcmp(tok, VAR_FREIO) == 0)
                         Serial.println((int)eeprom.dados.handBrake);
                     else if(strcmp(tok, VAR_AS) == 0)
@@ -1498,7 +1457,7 @@ void Telnet::loop()
                 gamepad.centrar();
             #ifdef LINE_FOLLOWER
             else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibra sensores do line follower
-                lineFollower.autoCalibrate();
+                lineFollower.calibrar();
             #endif
             else if(strcmp(tok, CMD_MV_PARAR) == 0)
             {
@@ -1557,9 +1516,9 @@ void Telnet::loop()
                     int hz = atoi(tok);
                     tok = STRTOK(NULL, " ");
                     if (tok)                // duracao
-                        BEEP(hz, atoi(tok));
+                        BIP(hz, atoi(tok));
                     else
-                        BEEP(hz, 200);
+                        BIP(hz, 200);
                 }
             }
             else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
@@ -1781,11 +1740,10 @@ void setup()
     digitalWrite(PINO_ARMA, LOW);
 #endif
 
-#ifdef WIICHUCK_POWER
-    nunchuck_setpowerpins();
-#endif
-
 #ifdef WIICHUCK
+    #ifdef WIICHUCK_POWER
+        nunchuck_setpowerpins();
+    #endif
     nunchuck_init();
 #endif
 
@@ -1832,6 +1790,9 @@ void setup()
         pinMode(unused[p], INPUT);
         digitalWrite(unused[p], HIGH);
     }
+
+    for( int i = 2; i <= 9; i++ )
+        pinMode(i, OUTPUT);
 }
 
 // ******************************************************************************
@@ -2025,7 +1986,9 @@ void loop()
         break;
 
         case PRG_KNOB:
+            #ifdef PINO_SERVO_PAN
             pan.write( map( analogRead(0), 0, 1023, 5, 174 ));
+            #endif
         msExec = 50;
         break;
 
@@ -2079,12 +2042,12 @@ void loop()
             {
                 for(int tom=SIRENE_TOM_MIN;tom<SIRENE_TOM_MAX;tom+=SIRENE_PASSO)
                 {
-                    BEEP(tom,SIRENE_COMPASSO);
+                    BIP(tom,SIRENE_COMPASSO);
                 }
 
                 for(int tom=SIRENE_TOM_MAX;tom>SIRENE_TOM_MIN;tom-=SIRENE_PASSO)
                 {
-                    BEEP(tom,SIRENE_COMPASSO/2);
+                    BIP(tom,SIRENE_COMPASSO/2);
                 }
             }
             delay(1000);
@@ -2105,14 +2068,15 @@ void loop()
                 ultimoErro = ERRO_PRG_INVALIDO;
                 Serial.print("ERRO_PRG_INVALIDO ");
                 Serial.println(eeprom.dados.programa);
-                eeprom.dados.programa = PRG_RC;
+                eeprom.dados.programa = PRG_DEFAULT;
             }
         break;
         }
     }
-
+/*
     drive.refresh();
     #ifdef RODAS_PWM_x4
         drive2.refresh();
     #endif
+*/
 }
