@@ -479,7 +479,7 @@ public:
             }
             valor = v;
         }
-    void calibrar()
+    unsigned short calibrar()
         {
             refresh();
             if( cfg )
@@ -487,6 +487,7 @@ public:
                 cfg->minimo = cfg->maximo = cfg->centro = valor;
                 cfg->autoMinMax = true;
             }
+            return valor;
         }
     void centrar()
         { if( cfg ) cfg->centro = valor; }
@@ -548,10 +549,10 @@ public:
     int delta()
         { return valor - anterior; }
     bool getBool()
-    {
-        unsigned short meio = ( cfg->maximo - cfg->minimo ) >> 1;
-        return ( valor > meio ) ^ cfg->invertido;
-    }
+        {
+            unsigned short meio = ( ( cfg->maximo - cfg->minimo ) >> 1 ) + cfg->minimo;
+            return ( ( valor > meio ) ^ cfg->invertido );
+        }
 }
 sensores[NUM_SENSORES];
 
@@ -1024,25 +1025,20 @@ void LineFollower::loop()
         int erro = calcErro();
 
         // Proporcional
-        int Pterm = eeprom.dados.pid.Kp * erro;
+
+        int P = eeprom.dados.pid.Kp * erro;
 
         // Integral
+
         erroAcc += erro;
 
-        // TODO (mbs#1#): limitar acumulacao do componente integral
-        /*
-        if (accErr > MAX_ERROR)
-        	accErr = MAX_ERROR;
-        else if (accErr < MIN_ERROR)
-        	accErr = MIN_ERROR;
-        */
-
-        int Iterm = eeprom.dados.pid.Ki * erroAcc;
+        int I = eeprom.dados.pid.Ki * erroAcc;
 
         // Deritavivo
-        int Dterm = eeprom.dados.pid.Kd * ( erro - erroAntes );
 
-        int MV = Pterm + Iterm + Dterm;
+        int D = eeprom.dados.pid.Kd * ( erro - erroAntes );
+
+        int MV = P + I + D;
 
         drive.motorEsq.move ( (MV < 0) ? (100 + MV) : 100 );
         drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
@@ -1053,16 +1049,45 @@ void LineFollower::loop()
 
 int LineFollower::calcErro()
 {
-
     return erroAntes;
 }
 
 void LineFollower::calibrar()
 {
+    unsigned short valores[NUM_IR_TRACK];
+    int num0s = 0;
+    int num1s = 0;
+    unsigned short minimo = 1023;
+    unsigned short maximo = 0;
+
+    // primeira rodada de leitura
+
     for(int x = 0; x < NUM_IR_TRACK; x++)
     {
-        sensores[PINO_FIRST_IR_SENSOR + x].calibrar();
+        valores[x] = sensores[PINO_FIRST_IR_SENSOR + x].calibrar();
+
+        if( valores[x] < minimo ) minimo = valores[x];
+        if( valores[x] > maximo ) maximo = valores[x];
     }
+
+    // descobre threshold medio e classifica
+
+    unsigned short meio = ( ( maximo - minimo ) >> 1 ) + minimo;
+
+    for( x = 0; x < NUM_IR_TRACK; x++ )
+    {
+        sensoresBool[x] = valores[x] > meio;
+
+        if( sensoresBool[x] )
+            num1s++;
+        else
+            num0s++;
+    }
+
+    // se tem mais linha que pista inverte td
+
+    if( num1s > num0s )
+        inverter( true );
 }
 //#endif
 
