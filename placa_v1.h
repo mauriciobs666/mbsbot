@@ -37,8 +37,8 @@
 
 // LINE FOLLOWER (pinos analogicos!)
 #define NUM_IR_TRACK		3
-#define PINO_FIRST_IR_SENSOR 1
-// onde NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
+#define PINO_TRACK_0 1
+// onde NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 
 #define PINO_BIP 			13
 

@@ -989,15 +989,15 @@ public:
     {
         for(int x = 0; x < NUM_IR_TRACK; x++)
         {
-            sensores[PINO_FIRST_IR_SENSOR + x].refresh();
-            sensoresBool[x] = sensores[PINO_FIRST_IR_SENSOR + x].getBool();
+            sensores[PINO_TRACK_0 + x].refresh();
+            sensoresBool[x] = sensores[PINO_TRACK_0 + x].getBool();
         }
     }
     void calibrar();
     void inverter( bool inverte )
     {
         for(int x = 0; x < NUM_IR_TRACK; x++)
-            sensores[PINO_FIRST_IR_SENSOR + x].cfg->invertido = inverte;
+            sensores[PINO_TRACK_0 + x].cfg->invertido = inverte;
     }
     void loop();
     int calcErro();
@@ -1064,7 +1064,7 @@ void LineFollower::calibrar()
 
     for(int x = 0; x < NUM_IR_TRACK; x++)
     {
-        valores[x] = sensores[PINO_FIRST_IR_SENSOR + x].calibrar();
+        valores[x] = sensores[PINO_TRACK_0 + x].calibrar();
 
         if( valores[x] < minimo ) minimo = valores[x];
         if( valores[x] > maximo ) maximo = valores[x];
@@ -1074,7 +1074,7 @@ void LineFollower::calibrar()
 
     unsigned short meio = ( ( maximo - minimo ) >> 1 ) + minimo;
 
-    for( x = 0; x < NUM_IR_TRACK; x++ )
+    for( int x = 0; x < NUM_IR_TRACK; x++ )
     {
         sensoresBool[x] = valores[x] > meio;
 
@@ -1818,6 +1818,9 @@ void setup()
 
     for( int i = 2; i <= 9; i++ )
         pinMode(i, OUTPUT);
+
+    if( eeprom.dados.programa == PRG_LINE_FOLLOW )
+        lineFollower.calibrar();
 }
 
 // ******************************************************************************
@@ -1846,6 +1849,17 @@ void loop()
         #ifdef WIICHUCK
             nunchuck_print_data();
         #endif
+    }
+
+    static unsigned long ultimoLoop = 0;
+    static unsigned long passagensLoop = 0;
+    passagensLoop++;
+
+    if( delaySemBlock(&ultimoLoop, 5000) )
+    {
+        Serial.print( passagensLoop / 5 );
+        Serial.println(" fps");
+        passagensLoop = 0;
     }
 
     static unsigned short msExec = 10;

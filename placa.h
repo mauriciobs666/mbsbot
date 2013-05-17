@@ -62,8 +62,8 @@
 
 #ifdef LINE_FOLLOWER
     #define NUM_IR_TRACK		8
-    #define PINO_FIRST_IR_SENSOR 0
-    // ex: NUM_IR_TRACK=3 e PINO_FIRST_IR_SENSOR=2 significa que os pinos A2, A3 e A4 estao conectados
+    #define PINO_TRACK_0 0
+    // ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 #endif
 
 // http://arduino.cc/en/Reference/Tone
