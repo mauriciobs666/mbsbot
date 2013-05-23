@@ -78,14 +78,12 @@ typedef struct
     int a, b; // = a*x + b
 
     void init(eTipoSensor tipo_ = SENSOR_VIRTUAL,
-              unsigned char pino_ = 0,
+              unsigned char pino_ = -1,
               bool invertido_ = false)
     {
-        if( pino_ )
-        {
-            pino = pino_;
+        pino = pino_;
+        if( pino_ >= 0 )
             invertido = invertido_;
-        }
 
         tipo = tipo_;
         if(SENSOR_RC == tipo)
@@ -140,10 +138,10 @@ typedef struct
     ConfigSensor X, Y, Z, R;
 
     void init(  eTipoGamepad t,
-                char pinoX = 0,
-                char pinoY = 0,
-                char pinoZ = 0,
-                char pinoR = 0
+                char pinoX = -1,
+                char pinoY = -1,
+                char pinoZ = -1,
+                char pinoR = -1
             )
     {
         tipo = t;
@@ -250,8 +248,8 @@ public:
     }
     void defaults()
     {
-        dados.programa = PRG_DEFAULT;
-        dados.handBrake = 1;
+        dados.programa = DFT_PROGRAMA;
+        dados.handBrake = DFT_FREIO_MAO;
         dados.velMax = 100;
         dados.velEscala = 100;
         dados.velRefresh = 10;
@@ -280,7 +278,7 @@ public:
 
         dados.delays.sensores = 10000;
         dados.delays.status = 10000;
-        dados.delays.ES = DELAY_ES;
+        dados.delays.ES = DFT_DELAY_ES;
 
         dados.pid.Kp = 100;
         dados.pid.Ki = 0;
@@ -289,7 +287,7 @@ public:
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
 #if VERSAO_PLACA == 4
-        for( int i = 0; i < 8; i++ )
+        for( int i = 0; i < NUM_SENSORES; i++ )
             dados.sensores[i].init( ConfigSensor::SENSOR_ANALOGICO, i );
 #endif
 
@@ -493,7 +491,7 @@ public:
         { if( cfg ) cfg->centro = valor; }
     unsigned short refresh()
         {
-            if(cfg)
+            if( cfg && ( cfg->pino >= 0 ) )
             {
                 switch(cfg->tipo)
                 {
@@ -985,6 +983,9 @@ class LineFollower
 public:
     LineFollower() : erroAntes(0), erroAcc(0)
     {}
+    void calibrar();
+    void loop();
+private:
     void refresh()
     {
         for(int x = 0; x < NUM_IR_TRACK; x++)
@@ -993,15 +994,12 @@ public:
             sensoresBool[x] = sensores[PINO_TRACK_0 + x].getBool();
         }
     }
-    void calibrar();
     void inverter( bool inverte )
     {
         for(int x = 0; x < NUM_IR_TRACK; x++)
             sensores[PINO_TRACK_0 + x].cfg->invertido = inverte;
     }
-    void loop();
     int calcErro();
-private:
     int erroAntes;
     int erroAcc;
     bool sensoresBool[NUM_IR_TRACK];
@@ -1013,38 +1011,34 @@ void LineFollower::loop()
     refresh();
 
     for( int x = 0; x < NUM_IR_TRACK; x++ )
-        digitalWrite( 9 - x , sensoresBool[x] );
-
-    return;
-/*
-    if (sensoresBool[0] && sensoresBool[1] && sensoresBool[2])
-        drive.parar();
-    else
-*/
     {
-        int erro = calcErro();
-
-        // Proporcional
-
-        int P = eeprom.dados.pid.Kp * erro;
-
-        // Integral
-
-        erroAcc += erro;
-
-        int I = eeprom.dados.pid.Ki * erroAcc;
-
-        // Deritavivo
-
-        int D = eeprom.dados.pid.Kd * ( erro - erroAntes );
-
-        int MV = P + I + D;
-
-        drive.motorEsq.move ( (MV < 0) ? (100 + MV) : 100 );
-        drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
-
-        erroAntes = erro;
+        digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
+        //Serial.print( sensoresBool[x] ? "1" : "0" );
     }
+    //Serial.println();
+
+    int erro = calcErro();
+
+    // Proporcional
+
+    int P = eeprom.dados.pid.Kp * erro;
+
+    // Integral
+
+    erroAcc += erro;
+
+    int I = eeprom.dados.pid.Ki * erroAcc;
+
+    // Deritavivo
+
+    int D = eeprom.dados.pid.Kd * ( erro - erroAntes );
+
+    int MV = P + I + D;
+
+//    drive.motorEsq.move ( (MV < 0) ? (100 + MV) : 100 );
+//    drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
+
+    erroAntes = erro;
 }
 
 int LineFollower::calcErro()
@@ -1816,7 +1810,7 @@ void setup()
         digitalWrite(unused[p], HIGH);
     }
 
-    for( int i = 2; i <= 9; i++ )
+    for( int i = 39; i <= 53; i += 2 )
         pinMode(i, OUTPUT);
 
     if( eeprom.dados.programa == PRG_LINE_FOLLOW )
@@ -1853,11 +1847,9 @@ void loop()
 
     static unsigned long ultimoLoop = 0;
     static unsigned long passagensLoop = 0;
-    passagensLoop++;
-
-    if( delaySemBlock(&ultimoLoop, 5000) )
+    if( delaySemBlock(&ultimoLoop, 10000) )
     {
-        Serial.print( passagensLoop / 5 );
+        Serial.print( passagensLoop / 10 );
         Serial.println(" fps");
         passagensLoop = 0;
     }
@@ -1866,6 +1858,7 @@ void loop()
     static unsigned long ultimaExec = 0;
     if( delaySemBlock(&ultimaExec, msExec) )
     {
+        passagensLoop++;
         switch(eeprom.dados.programa)
         {
         case PRG_RC:
@@ -1877,10 +1870,10 @@ void loop()
                 drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
             #else
-                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
+//                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
                     drive.vetorial( direcao );
-                else
-                    drive.vetorialSensor( direcao );
+//                else
+//                    drive.vetorialSensor( direcao );
             #endif
         }
         msExec = eeprom.dados.delays.ES;
@@ -2107,15 +2100,18 @@ void loop()
                 ultimoErro = ERRO_PRG_INVALIDO;
                 Serial.print("ERRO_PRG_INVALIDO ");
                 Serial.println(eeprom.dados.programa);
-                eeprom.dados.programa = PRG_DEFAULT;
+                eeprom.dados.programa = DFT_PROGRAMA;
             }
         break;
         }
     }
-/*
-    drive.refresh();
-    #ifdef RODAS_PWM_x4
-        drive2.refresh();
-    #endif
-*/
+
+    static unsigned long ultimoRefreshMotores = 0;
+    if( delaySemBlock( &ultimoRefreshMotores, eeprom.dados.velRefresh ) )
+    {
+        drive.refresh();
+        #ifdef RODAS_PWM_x4
+            drive2.refresh();
+        #endif
+    }
 }
