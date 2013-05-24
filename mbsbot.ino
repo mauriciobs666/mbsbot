@@ -974,7 +974,7 @@ void fotovoro()
 }
 
 // ******************************************************************************
-//		LINE FOLLOWER
+//   LINE FOLLOWER
 // ******************************************************************************
 
 //#ifdef LINE_FOLLOWER
@@ -999,12 +999,38 @@ private:
         for(int x = 0; x < NUM_IR_TRACK; x++)
             sensores[PINO_TRACK_0 + x].cfg->invertido = inverte;
     }
-    int calcErro();
+    int agrupaLinha();
+
     int erroAntes;
     int erroAcc;
+
     bool sensoresBool[NUM_IR_TRACK];
+
+    int linha;
+    int grupos[NUM_IR_TRACK/2];
 }
 lineFollower;
+
+int LineFollower::agrupaLinha()
+{
+    for( int c = 0; c < NUM_IR_TRACK; c++ )
+    {
+        if( sensoresBool[c] )
+        {
+            sensoresBool[c] = false; // limpa pra proxima iteracao
+            if( ( c < NUM_IR_TRACK-1 ) && ( sensoresBool[c+1] ) )
+            {
+                // se nao for o ultimo e o proximo tb for linha
+                sensoresBool[c+1] = false;
+                return c*2 + 2; // agrupa e devolve par
+            }
+            else
+                return c*2 + 1; // impar
+        }
+    }
+    return 0;
+}
+
 
 void LineFollower::loop()
 {
@@ -1017,7 +1043,9 @@ void LineFollower::loop()
     }
     //Serial.println();
 
-    int erro = calcErro();
+    linha = agrupaLinha();
+
+    int erro = linha; // - set point
 
     // Proporcional
 
@@ -1029,7 +1057,7 @@ void LineFollower::loop()
 
     int I = eeprom.dados.pid.Ki * erroAcc;
 
-    // Deritavivo
+    // Derivativo
 
     int D = eeprom.dados.pid.Kd * ( erro - erroAntes );
 
@@ -1039,11 +1067,6 @@ void LineFollower::loop()
 //    drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
 
     erroAntes = erro;
-}
-
-int LineFollower::calcErro()
-{
-    return erroAntes;
 }
 
 void LineFollower::calibrar()
