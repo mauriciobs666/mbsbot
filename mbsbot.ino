@@ -1045,7 +1045,8 @@ void LineFollower::loop()
 
     linha = agrupaLinha();
 
-    int erro = linha; // - set point
+    int setPoint = NUM_IR_TRACK;
+    int erro = linha - setPoint;
 
     // Proporcional
 
@@ -1061,10 +1062,10 @@ void LineFollower::loop()
 
     int D = eeprom.dados.pid.Kd * ( erro - erroAntes );
 
-    int MV = P + I + D;
+    int MV = constrain( (P + I + D), -100, 100 );
 
-//    drive.motorEsq.move ( (MV < 0) ? (100 + MV) : 100 );
-//    drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
+    drive.motorEsq.move( (MV < 0) ? (100 + MV) : 100 );
+    drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
 
     erroAntes = erro;
 }
