@@ -280,7 +280,7 @@ public:
         dados.delays.status = 10000;
         dados.delays.ES = DFT_DELAY_ES;
 
-        dados.pid.Kp = 100;
+        dados.pid.Kp = 14;
         dados.pid.Ki = 0;
         dados.pid.Kd = 0;
 
@@ -981,7 +981,7 @@ void fotovoro()
 class LineFollower
 {
 public:
-    LineFollower() : erroAntes(0), erroAcc(0)
+    LineFollower() : erroAcc(0), linhaAntes(0)
     {}
     void calibrar();
     void loop();
@@ -1001,12 +1001,10 @@ private:
     }
     int agrupaLinha();
 
-    int erroAntes;
-    int erroAcc;
-
     bool sensoresBool[NUM_IR_TRACK];
-
+    int erroAcc;
     int linha;
+    int linhaAntes;
     int grupos[NUM_IR_TRACK/2];
 }
 lineFollower;
@@ -1037,11 +1035,7 @@ void LineFollower::loop()
     refresh();
 
     for( int x = 0; x < NUM_IR_TRACK; x++ )
-    {
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
-        //Serial.print( sensoresBool[x] ? "1" : "0" );
-    }
-    //Serial.println();
 
     linha = agrupaLinha();
 
@@ -1056,18 +1050,18 @@ void LineFollower::loop()
 
     erroAcc += erro;
 
-    int I = eeprom.dados.pid.Ki * erroAcc;
+    int I = 0; //eeprom.dados.pid.Ki * erroAcc;
 
     // Derivativo
 
-    int D = eeprom.dados.pid.Kd * ( erro - erroAntes );
+    int D = 0; //eeprom.dados.pid.Kd * ( linha - linhaAntes );
 
     int MV = constrain( (P + I + D), -100, 100 );
 
     drive.motorEsq.move( (MV < 0) ? (100 + MV) : 100 );
     drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
 
-    erroAntes = erro;
+    linhaAntes = linha;
 }
 
 void LineFollower::calibrar()
@@ -1220,6 +1214,10 @@ void enviaSensores(bool enviaComando = true)
         Serial.print(" ");
     }
     Serial.println("");
+
+    for( int x = 0; x < NUM_IR_TRACK; x++ )
+        Serial.print( lineFollower.sensoresBool[x] ? "1" : "0" );
+    Serial.println();
 }
 
 void enviaStatus(bool enviaComando = true)
