@@ -22,7 +22,7 @@ MbsBot *MbsBot::instancia = 0;
 MbsBot::MbsBot()
 {
 	memset(serialPortDevice, 0, sizeof(serialPortDevice));
-	sensores = std::vector<int>(6);
+	sensores = std::vector<int>(16);
 }
 
 int MbsBot::init(const char *port, int baud)
@@ -149,12 +149,11 @@ char * MbsBot::recebe()
             }
             else if(strcmp(tok, VAR_AS) == 0)	// todos sensores analogicos
             {
-                for(int s = 0; s < 6; s++)
+                int s = 0;
+                while( (tok = strtok(NULL, " ")) )
                 {
-                    if ( (tok = strtok(NULL, " ")) )
-                        sensores[s] = atoi(tok);
-                    else
-                        break;
+                    sensores[s] = atoi(tok);
+                    s++;
                 }
             }
             else if(strcmp(tok, CMD_STATUS) == 0)

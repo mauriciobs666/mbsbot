@@ -658,14 +658,12 @@
 										<label>Entradas analogicas</label>
 										<object class="sizeritem">
 											<object class="wxGrid" name="ID_GRID1" variable="Grid1" member="yes">
-												<cols>5</cols>
-												<rows>6</rows>
+												<cols>3</cols>
+												<rows>16</rows>
 												<collabels>
 													<item>Agora</item>
 													<item>Min</item>
 													<item>Max</item>
-													<item>Media/10</item>
-													<item>f(X)</item>
 												</collabels>
 												<rowlabels>
 													<item>0</item>
@@ -674,95 +672,106 @@
 													<item>3</item>
 													<item>4</item>
 													<item>5</item>
+													<item>6</item>
+													<item>7</item>
+													<item>8</item>
+													<item>9</item>
+													<item>10</item>
+													<item>11</item>
+													<item>12</item>
+													<item>13</item>
+													<item>14</item>
+													<item>15</item>
 												</rowlabels>
 												<celltext>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
+													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
+													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
+													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
+													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
+													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
 													<item>1023</item>
 													<item>0</item>
 													<item>0</item>
+													<item>1023</item>
+													<item>0</item>
+													<item>0</item>
+													<item>1023</item>
+													<item>0</item>
+													<item>0</item>
+													<item>1023</item>
+													<item>0</item>
+													<item>0</item>
+													<item>1023</item>
+													<item>0</item>
+													<item>0</item>
+													<item>1023</item>
 													<item>0</item>
 												</celltext>
-												<size>492,182</size>
+												<size>339,323</size>
 											</object>
-											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
-									</object>
-									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>5</border>
-									<option>1</option>
-								</object>
-								<object class="sizeritem">
-									<object class="wxStaticBoxSizer" variable="StaticBoxSizer5" member="no">
-										<label>Controles</label>
 										<object class="sizeritem">
-											<object class="wxCheckBox" name="ID_CHECKBOX7" variable="CheckBoxAutoRefreshSensors" member="yes">
-												<label>Auto-refresh</label>
+											<object class="wxStaticBoxSizer" variable="StaticBoxSizer5" member="no">
+												<label>Controles</label>
+												<orient>wxVERTICAL</orient>
+												<object class="sizeritem">
+													<object class="wxCheckBox" name="ID_CHECKBOX7" variable="CheckBoxAutoRefreshSensors" member="yes">
+														<label>Auto-refresh</label>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxButton" name="ID_BUTTON4" variable="Button4" member="yes">
+														<label>Refresh</label>
+														<handler function="OnButton4Click" entry="EVT_BUTTON" />
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxButton" name="ID_BUTTON5" variable="Button5" member="yes">
+														<label>Limpar</label>
+														<handler function="OnButton5Click" entry="EVT_BUTTON" />
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
 											</object>
-											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 											<border>5</border>
-										</object>
-										<object class="sizeritem">
-											<object class="wxButton" name="ID_BUTTON4" variable="Button4" member="yes">
-												<label>Refresh</label>
-												<handler function="OnButton4Click" entry="EVT_BUTTON" />
-											</object>
-											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-										</object>
-										<object class="sizeritem">
-											<object class="wxButton" name="ID_BUTTON5" variable="Button5" member="yes">
-												<label>Limpar</label>
-												<handler function="OnButton5Click" entry="EVT_BUTTON" />
-											</object>
-											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-										</object>
-										<object class="sizeritem">
-											<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticText12" member="yes">
-												<label>f(X) = </label>
-												<size>-1,-1</size>
-											</object>
-											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-										</object>
-										<object class="sizeritem">
-											<object class="wxTextCtrl" name="ID_TEXTCTRL15" variable="TextCtrl3" member="yes">
-												<value>x</value>
-												<size>-1,-1</size>
-											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<option>1</option>
 										</object>
 									</object>
-									<flag>wxALL|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+									<flag>wxALL|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>

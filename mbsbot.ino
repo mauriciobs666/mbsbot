@@ -1029,7 +1029,6 @@ int LineFollower::agrupaLinha()
     return 0;
 }
 
-
 void LineFollower::loop()
 {
     refresh();
@@ -1039,29 +1038,34 @@ void LineFollower::loop()
 
     linha = agrupaLinha();
 
-    int setPoint = NUM_IR_TRACK;
-    int erro = linha - setPoint;
+    if( linha )
+    {
+        int setPoint = NUM_IR_TRACK;
+        int erro = linha - setPoint;
 
-    // Proporcional
+        // Proporcional
 
-    int P = eeprom.dados.pid.Kp * erro;
+        int P = eeprom.dados.pid.Kp * erro;
 
-    // Integral
+        // Integral
 
-    erroAcc += erro;
+        //erroAcc += erro;
 
-    int I = 0; //eeprom.dados.pid.Ki * erroAcc;
+        int I = eeprom.dados.pid.Ki * erroAcc;
 
-    // Derivativo
+        // Derivativo
 
-    int D = 0; //eeprom.dados.pid.Kd * ( linha - linhaAntes );
+        int D = eeprom.dados.pid.Kd * ( linha - linhaAntes );
 
-    int MV = constrain( (P + I + D), -100, 100 );
+        int MV = constrain( (P + I + D), -100, 100 );
 
-    drive.motorEsq.move( (MV < 0) ? (100 + MV) : 100 );
-    drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
+        drive.motorEsq.move( (MV < 0) ? (100 + MV) : 100 );
+        drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
 
-    linhaAntes = linha;
+        linhaAntes = linha;
+    }
+    else
+        drive.parar();
 }
 
 void LineFollower::calibrar()
@@ -1216,7 +1220,7 @@ void enviaSensores(bool enviaComando = true)
     Serial.println("");
 
     for( int x = 0; x < NUM_IR_TRACK; x++ )
-        Serial.print( lineFollower.sensoresBool[x] ? "1" : "0" );
+        Serial.print( sensores[PINO_TRACK_0 + x].getBool() ? "1" : "0" );
     Serial.println();
 }
 

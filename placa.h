@@ -47,7 +47,7 @@
 #define PINO_MOTOR_DIR_PWM	5
 
 #define MOTOR_ACEL      5
-#define MOTOR_CENTRO    60
+#define MOTOR_CENTRO    40
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
