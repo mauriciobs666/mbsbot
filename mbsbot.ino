@@ -233,7 +233,8 @@ public:
         ConfigGamepad joyRC, joyPC;
 
         ConfigSensor sensores[NUM_SENSORES];
-    } dados;
+    }
+    dados;
     void load()
     {
         char * dest = (char*) &dados;
@@ -251,7 +252,7 @@ public:
         dados.programa = DFT_PROGRAMA;
         dados.handBrake = DFT_FREIO_MAO;
         dados.velMax = 100;
-        dados.velEscala = 100;
+        dados.velEscala = 50;
         dados.velRefresh = 10;
 
         #ifndef RODAS_PWM
@@ -276,11 +277,11 @@ public:
             #endif
         #endif
 
-        dados.delays.sensores = 10000;
-        dados.delays.status = 10000;
+        dados.delays.sensores = 180000; // 3m
+        dados.delays.status = 180000;
         dados.delays.ES = DFT_DELAY_ES;
 
-        dados.pid.Kp = 14;
+        dados.pid.Kp = 30;
         dados.pid.Ki = 0;
         dados.pid.Kd = 0;
 
@@ -489,7 +490,7 @@ public:
         }
     void centrar()
         { if( cfg ) cfg->centro = valor; }
-    unsigned short refresh()
+    Sensor& refresh()
         {
             if( cfg && ( cfg->pino >= 0 ) )
             {
@@ -514,7 +515,7 @@ public:
                     break;
                 }
             }
-            return valor;
+            return *this;
         }
     bool ehMinimo(unsigned short margem = 0)
         { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
@@ -548,6 +549,8 @@ public:
         { return valor - anterior; }
     bool getBool()
         {
+            if( cfg->maximo - cfg->minimo < 200 )
+                return false;
             unsigned short meio = ( ( cfg->maximo - cfg->minimo ) >> 1 ) + cfg->minimo;
             return ( ( valor > meio ) ^ cfg->invertido );
         }
@@ -756,8 +759,12 @@ public:
 
     void refresh()
     {
-        motorEsq.refresh();
-        motorDir.refresh();
+        static unsigned long ultimoRefreshMotores = 0;
+        if( delaySemBlock( &ultimoRefreshMotores, eeprom.dados.velRefresh ) )
+        {
+            motorEsq.refresh();
+            motorDir.refresh();
+        }
     }
 
     void vetorial(Vetor2i direcao);
@@ -981,67 +988,62 @@ void fotovoro()
 class LineFollower
 {
 public:
-    LineFollower() : erroAcc(0), linhaAntes(0)
+    LineFollower() : erroAcc(0), linhaAntes(0), nGrupos(0)
     {}
     void calibrar();
     void loop();
 private:
     void refresh()
     {
-        for(int x = 0; x < NUM_IR_TRACK; x++)
+        nGrupos = 0;
+        tamMaior = 0;
+
+        for(int s = 0; s < NUM_IR_TRACK; s++)
         {
-            sensores[PINO_TRACK_0 + x].refresh();
-            sensoresBool[x] = sensores[PINO_TRACK_0 + x].getBool();
+            if( sensores[ PINO_TRACK_0 + s ].refresh().getBool() )
+            {
+                grupos[ nGrupos ] = 2*s + 1;
+                int tamanho = 1;
+
+                // agrupa enquanto o proximo for "linha"
+                while( ( s < NUM_IR_TRACK-1 ) && ( sensores[ PINO_TRACK_0 + s + 1 ].refresh().getBool() ) )
+                {
+                    s++;
+                    grupos[ nGrupos ] += 2*s + 1;
+                    tamanho++;
+                }
+
+                grupos[ nGrupos ] /= tamanho;
+
+                if( tamanho > tamMaior )
+                    tamMaior = tamanho;
+
+                nGrupos++;
+            }
         }
     }
-    void inverter( bool inverte )
-    {
-        for(int x = 0; x < NUM_IR_TRACK; x++)
-            sensores[PINO_TRACK_0 + x].cfg->invertido = inverte;
-    }
-    int agrupaLinha();
-
-    bool sensoresBool[NUM_IR_TRACK];
     int erroAcc;
     int linha;
     int linhaAntes;
     int grupos[NUM_IR_TRACK/2];
+    int nGrupos;
+    int tamMaior;
 }
 lineFollower;
-
-int LineFollower::agrupaLinha()
-{
-    for( int c = 0; c < NUM_IR_TRACK; c++ )
-    {
-        if( sensoresBool[c] )
-        {
-            sensoresBool[c] = false; // limpa pra proxima iteracao
-            if( ( c < NUM_IR_TRACK-1 ) && ( sensoresBool[c+1] ) )
-            {
-                // se nao for o ultimo e o proximo tb for linha
-                sensoresBool[c+1] = false;
-                return c*2 + 2; // agrupa e devolve par
-            }
-            else
-                return c*2 + 1; // impar
-        }
-    }
-    return 0;
-}
 
 void LineFollower::loop()
 {
     refresh();
-
+/*
+    // plaquinha com 8 leds
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
-
-    linha = agrupaLinha();
-
-    if( linha )
+*/
+    if( nGrupos )
     {
-        int setPoint = NUM_IR_TRACK;
-        int erro = linha - setPoint;
+        linha = grupos[0];
+
+        int erro = linha - NUM_IR_TRACK;
 
         // Proporcional
 
@@ -1057,7 +1059,7 @@ void LineFollower::loop()
 
         int D = eeprom.dados.pid.Kd * ( linha - linhaAntes );
 
-        int MV = constrain( (P + I + D), -100, 100 );
+        int MV = constrain( (P + I + D), -200, 200 );
 
         drive.motorEsq.move( (MV < 0) ? (100 + MV) : 100 );
         drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
@@ -1080,7 +1082,7 @@ void LineFollower::calibrar()
 
     for(int x = 0; x < NUM_IR_TRACK; x++)
     {
-        valores[x] = sensores[PINO_TRACK_0 + x].calibrar();
+        valores[x] = sensores[ PINO_TRACK_0 + x ].calibrar();
 
         if( valores[x] < minimo ) minimo = valores[x];
         if( valores[x] > maximo ) maximo = valores[x];
@@ -1092,9 +1094,7 @@ void LineFollower::calibrar()
 
     for( int x = 0; x < NUM_IR_TRACK; x++ )
     {
-        sensoresBool[x] = valores[x] > meio;
-
-        if( sensoresBool[x] )
+        if( valores[x] > meio )
             num1s++;
         else
             num0s++;
@@ -1102,8 +1102,8 @@ void LineFollower::calibrar()
 
     // se tem mais linha que pista inverte td
 
-    if( num1s > num0s )
-        inverter( true );
+    for( int x = 0; x < NUM_IR_TRACK; x++ )
+        sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 }
 //#endif
 
@@ -1209,12 +1209,12 @@ void enviaSensores(bool enviaComando = true)
 {
     if(enviaComando)
     {
-        Serial.print(VAR_AS);
+        Serial.print( VAR_AS);
         Serial.print(" ");
     }
     for (int x = 0; x < NUM_SENSORES; x++)
     {
-        Serial.print(sensores[x].refresh());
+        Serial.print( sensores[x].refresh().getValor() );
         Serial.print(" ");
     }
     Serial.println("");
@@ -1555,16 +1555,18 @@ void Telnet::loop()
                 uname();
             else if(strcmp(tok, CMD_BIP) == 0)
             {
-                tok = STRTOK(NULL, " ");
-                if (tok)			        // frequencia
-                {
-                    int hz = atoi(tok);
+                #ifdef PINO_BIP
                     tok = STRTOK(NULL, " ");
-                    if (tok)                // duracao
-                        BIP(hz, atoi(tok));
-                    else
-                        BIP(hz, 200);
-                }
+                    if (tok)			        // frequencia
+                    {
+                        int hz = atoi(tok);
+                        tok = STRTOK(NULL, " ");
+                        if (tok)                // duracao
+                            BIP(hz, atoi(tok));
+                        else
+                            BIP(hz, 200);
+                    }
+                #endif
             }
             else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
             {
@@ -1935,7 +1937,7 @@ void loop()
             const int s0 = 700;			// posicao da colisao
 
             // ignora objetos muito longe
-            if(drive.sensorFre->refresh() > minDist)
+            if( drive.sensorFre->refresh().getValor() > minDist )
             {
                 // calc velocidade em unidades sensor / segundo
                 int v = ((long)drive.sensorFre->delta() * 1000) / eeprom.dados.delays.ES;
@@ -2132,12 +2134,8 @@ void loop()
         }
     }
 
-    static unsigned long ultimoRefreshMotores = 0;
-    if( delaySemBlock( &ultimoRefreshMotores, eeprom.dados.velRefresh ) )
-    {
-        drive.refresh();
-        #ifdef RODAS_PWM_x4
-            drive2.refresh();
-        #endif
-    }
+    drive.refresh();
+    #ifdef RODAS_PWM_x4
+        drive2.refresh();
+    #endif
 }

@@ -697,7 +697,7 @@ void serialcomFrame::OnButton4Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton5Click(wxCommandEvent& event)
 {
-    for(int s = 0; s < 6; s++)
+    for(int s = 0; s < 16; s++)
     {
         Grid1->SetCellValue (_("1023"), s, 1);
         Grid1->SetCellValue (_("0"), s, 2);
