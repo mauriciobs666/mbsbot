@@ -46,8 +46,8 @@
 #define PINO_MOTOR_DIR_N    12
 #define PINO_MOTOR_DIR_PWM	5
 
-#define MOTOR_ACEL      5
-#define MOTOR_CENTRO    40
+#define MOTOR_ACEL      255
+#define MOTOR_CENTRO    0
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
@@ -62,8 +62,8 @@
 #define LINE_FOLLOWER
 
 #ifdef LINE_FOLLOWER
-    #define NUM_IR_TRACK    8
-    #define PINO_TRACK_0    1
+    #define NUM_IR_TRACK    10
+    #define PINO_TRACK_0    0
     // ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 #endif
 

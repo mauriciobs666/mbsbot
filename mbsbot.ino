@@ -252,7 +252,7 @@ public:
         dados.programa = DFT_PROGRAMA;
         dados.handBrake = DFT_FREIO_MAO;
         dados.velMax = 100;
-        dados.velEscala = 50;
+        dados.velEscala = 100;
         dados.velRefresh = 10;
 
         #ifndef RODAS_PWM
@@ -281,15 +281,15 @@ public:
         dados.delays.status = 180000;
         dados.delays.ES = DFT_DELAY_ES;
 
-        dados.pid.Kp = 30;
+        dados.pid.Kp = 40;
         dados.pid.Ki = 0;
         dados.pid.Kd = 0;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
 #if VERSAO_PLACA == 4
-        for( int i = 0; i < NUM_SENSORES; i++ )
-            dados.sensores[i].init( ConfigSensor::SENSOR_ANALOGICO, i );
+        for( int p = 0; p < NUM_SENSORES; p++ )
+            dados.sensores[p].init( ConfigSensor::SENSOR_ANALOGICO, p );
 #endif
 
 #if VERSAO_PLACA == 22
@@ -677,31 +677,34 @@ public:
     {
         // acelerador: v = v0 + at
 
-        while( agora >= ultimoAcel + eeprom.dados.velRefresh )
+        if( delaySemBlock( &ultimoAcel, eeprom.dados.velRefresh ) )
         {
-            ultimoAcel += eeprom.dados.velRefresh;
             if ( meta > atual)
             {
-                if( atual == 0 ) // estava parado
+                if( atual == 0 && cfg->centro ) // estava parado
                     atual = cfg->centro;
-                else
+                else if( cfg->aceleracao )
                     atual += cfg->aceleracao;
+                else
+                    atual = meta;
 
                 if( meta < atual) // passou do ponto
                     atual = meta;
             }
             else if ( meta < atual)
             {
-                if( atual == 0 ) // estava parado
+                if( atual == 0 && cfg->centro ) // estava parado
                     atual = -cfg->centro;
-                else
+                else if( cfg->aceleracao )
                     atual -= cfg->aceleracao;
+                else
+                    atual = meta;
 
                 if ( meta > atual)
                     atual = meta;
             }
 
-            if ( abs(atual) < cfg->centro )
+            if ( -cfg->centro < atual && atual < cfg->centro )
                 atual = 0;
         }
 
@@ -716,7 +719,7 @@ public:
 
             digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
 
-            if( cfg->pinoDirN > 0) // pino de direcao invertido
+            if( cfg->pinoDirN > 0 ) // pino de direcao invertido
             {
                 if( atual ) // movendo, dirN = !dir
                     digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
@@ -724,10 +727,10 @@ public:
                     digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
             }
 
-//            if( ( !atual ) && ( dirN > 0 ) )    // freio
-//                analogWrite(pwm, 255);          // conduz 100% pra freiar
-//            else                                // operacao normal
-                analogWrite( cfg->pino, abs( atual ));
+            if( atual == 0 && cfg->pinoDirN > 0 )  // conduz 100% pra freiar
+                analogWrite( cfg->pino, 255 );
+            else                                   // operacao normal
+                analogWrite( cfg->pino, abs( atual ) );
         }
         else // tipo == MOTOR_SERVO
         {
@@ -1044,6 +1047,11 @@ void LineFollower::loop()
         linha = grupos[0];
 
         int erro = linha - NUM_IR_TRACK;
+
+        #ifdef TRACE
+        Serial.print("Erro = ");
+        Serial.println(erro);
+        #endif
 
         // Proporcional
 
@@ -1866,7 +1874,7 @@ void loop()
     static unsigned long ultimoSensores = 0;
     if( delaySemBlock(&ultimoSensores, eeprom.dados.delays.sensores) )
     {
-        enviaJoystick();
+        //enviaJoystick();
         enviaSensores();
         #ifdef WIICHUCK
             nunchuck_print_data();
