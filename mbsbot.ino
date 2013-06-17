@@ -70,7 +70,7 @@ unsigned long agora = 0;
 
 typedef struct
 {
-    enum eTipoSensor { SENSOR_VIRTUAL, SENSOR_ANALOGICO, SENSOR_PING, SENSOR_RC } tipo;
+    enum eTipoSensor { SENSOR_VIRTUAL, SENSOR_ANALOGICO, SENSOR_PING, SENSOR_RC, SENSOR_DIGITAL } tipo;
     unsigned char pino;
     bool invertido;
     volatile unsigned short minimo, maximo, centro;
@@ -216,10 +216,10 @@ public:
         struct sDelays  // duracao (ms) de movimentos pra animacao
         {
             // timeout de envios pela serial de status e sensores
-            unsigned short sensores;
-            unsigned short status;
+            int sensores;
+            int status;
 
-            unsigned short ES; // intervalo de entrada/saida, leitura de sensores etc
+            int ES; // intervalo de entrada/saida, leitura de sensores etc
         } delays;
 
         // controlador PID
@@ -277,8 +277,8 @@ public:
             #endif
         #endif
 
-        dados.delays.sensores = 180000; // 3m
-        dados.delays.status = 180000;
+        dados.delays.sensores = -1; // 3m
+        dados.delays.status = -1;
         dados.delays.ES = DFT_DELAY_ES;
 
         dados.pid.Kp = 40;
@@ -341,16 +341,15 @@ eeprom;
 // ******************************************************************************
 //		DELAY SEM BLOCK (nao cumulativo)
 // ******************************************************************************
-bool delaySemBlock(unsigned long *ultimaVez, unsigned long ms)
+bool delaySemBlock(unsigned long *ultimaVez, long ms)
 {
-    if( agora >= *ultimaVez + ms )
+    if( ms >= 0 && agora >= ( *ultimaVez + ms ) )
     {
         *ultimaVez = agora; // += ms;
         return true;
     }
     return false;
 }
-
 
 // ******************************************************************************
 //      Vetor 2D int
@@ -497,20 +496,41 @@ public:
                 switch(cfg->tipo)
                 {
                     case ConfigSensor::SENSOR_ANALOGICO:
-                        setValor(analogRead(cfg->pino));
+                        setValor( analogRead( cfg->pino ) );
                     break;
                     case ConfigSensor::SENSOR_PING:
                         // manda pulso de 2ms pro ping))) pra acionar leitura
-                        pinMode(cfg->pino, OUTPUT);
-                        digitalWrite(cfg->pino, LOW);
-                        delayMicroseconds(2);
-                        digitalWrite(cfg->pino, HIGH);
-                        delayMicroseconds(5);
-                        digitalWrite(cfg->pino, LOW);
+                        pinMode( cfg->pino, OUTPUT );
+                        digitalWrite( cfg->pino, LOW );
+                        delayMicroseconds( 2 );
+                        digitalWrite( cfg->pino, HIGH );
+                        delayMicroseconds( 5 );
+                        digitalWrite( cfg->pino, LOW );
 
                         // duracao do pulso = distancia
-                        pinMode(cfg->pino, INPUT);
-                        setValor(pulseIn(cfg->pino, HIGH));
+                        pinMode( cfg->pino, INPUT );
+                        setValor( pulseIn( cfg->pino, HIGH ) );
+                    break;
+                    case ConfigSensor::SENSOR_DIGITAL:
+                        digitalRead( cfg->pino );
+                        /*
+                        if (reading != lastButtonState)
+                            lastDebounceTime = millis();
+
+                        if ((millis() - lastDebounceTime) > debounceDelay)
+                        {
+                            if (reading != buttonState)
+                            {
+                                buttonState = reading;
+
+                                if (buttonState == HIGH)
+                                    ledState = !ledState;
+                            }
+                        }
+                        digitalWrite(ledPin, ledState);
+                        lastButtonState = reading;
+                        */
+                    break;
                     default:
                     break;
                 }
@@ -770,6 +790,12 @@ public:
         }
     }
 
+    void move( char esq100, char dir100 )
+    {
+        motorEsq.move( esq100 );
+        motorDir.move( dir100 );
+    }
+
     void vetorial(Vetor2i direcao);
 
     void vetorialSensor(Vetor2i direcao);
@@ -991,7 +1017,7 @@ void fotovoro()
 class LineFollower
 {
 public:
-    LineFollower() : erroAcc(0), linhaAntes(0), nGrupos(0)
+    LineFollower() : acumulador(0), iniHist(0), fimHist(0), nGrupos(0)
     {}
     void calibrar();
     void loop();
@@ -1005,31 +1031,44 @@ private:
         {
             if( sensores[ PINO_TRACK_0 + s ].refresh().getBool() )
             {
-                grupos[ nGrupos ] = 2*s + 1;
-                int tamanho = 1;
+                grupos[ nGrupos ].pontoMedio = 2*s + 1;
+                grupos[ nGrupos ].tamanho = 1;
 
                 // agrupa enquanto o proximo for "linha"
                 while( ( s < NUM_IR_TRACK-1 ) && ( sensores[ PINO_TRACK_0 + s + 1 ].refresh().getBool() ) )
                 {
                     s++;
-                    grupos[ nGrupos ] += 2*s + 1;
-                    tamanho++;
+                    grupos[ nGrupos ].pontoMedio += 2*s + 1;
+                    grupos[ nGrupos ].tamanho++;
                 }
 
-                grupos[ nGrupos ] /= tamanho;
+                grupos[ nGrupos ].pontoMedio /= grupos[ nGrupos ].tamanho;
 
-                if( tamanho > tamMaior )
-                    tamMaior = tamanho;
+                if( grupos[ nGrupos ].tamanho > tamMaior )
+                    tamMaior = grupos[ nGrupos ].tamanho;
 
                 nGrupos++;
             }
         }
     }
-    int erroAcc;
-    int linha;
-    int linhaAntes;
-    int grupos[NUM_IR_TRACK/2];
+
+    long acumulador;
+
+    int historico[50]; // buffer circular erros
+    int iniHist;
+    int fimHist;
+
+    typedef struct
+    {
+        int pontoMedio;
+        int tamanho;
+    } Grupo;
+
+    Grupo grupos[NUM_IR_TRACK/2];
     int nGrupos;
+
+    Grupo linha;
+
     int tamMaior;
 }
 lineFollower;
@@ -1046,34 +1085,27 @@ void LineFollower::loop()
     {
         linha = grupos[0];
 
-        int erro = linha - NUM_IR_TRACK;
+        int erro = linha.pontoMedio - NUM_IR_TRACK;
 
         #ifdef TRACE
         Serial.print("Erro = ");
         Serial.println(erro);
         #endif
 
-        // Proporcional
+        int Proporcional = eeprom.dados.pid.Kp * erro;
 
-        int P = eeprom.dados.pid.Kp * erro;
+        acumulador += erro;
 
-        // Integral
+        int Integral = eeprom.dados.pid.Ki * acumulador;
+        Integral /= 1;
 
-        //erroAcc += erro;
+        int Derivativo = eeprom.dados.pid.Kd;// * ( linha - linhaAntes );
 
-        int I = eeprom.dados.pid.Ki * erroAcc;
+        int MV = constrain( (Proporcional + Integral + Derivativo), -200, 200 );
 
-        // Derivativo
+        drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
 
-        int D = eeprom.dados.pid.Kd * ( linha - linhaAntes );
-
-        int MV = constrain( (P + I + D), -200, 200 );
-
-        drive.motorEsq.move( (MV < 0) ? (100 + MV) : 100 );
-        drive.motorDir.move( (MV > 0) ? (100 - MV) : 100 );
-
-        linhaAntes = linha;
-    }
+     }
     else
         drive.parar();
 }
@@ -1112,6 +1144,24 @@ void LineFollower::calibrar()
 
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
+
+    drive.move( -100, 100 );
+    do
+    {
+        refresh();
+        drive.refresh();
+    }
+    while( grupos[0].pontoMedio < 2 * NUM_IR_TRACK );
+
+    drive.move( 100, -100 );
+    do
+    {
+        refresh();
+        drive.refresh();
+    }
+    while( grupos[0].pontoMedio > 1 );
+
+    drive.parar();
 }
 //#endif
 
@@ -1849,8 +1899,10 @@ void setup()
     for( int i = 39; i <= 53; i += 2 )
         pinMode(i, OUTPUT);
 
+/*
     if( eeprom.dados.programa == PRG_LINE_FOLLOW )
         lineFollower.calibrar();
+*/
 }
 
 // ******************************************************************************
@@ -1867,13 +1919,15 @@ void loop()
     static unsigned long ultimoStatus = 0;
     if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
     {
+        Serial.println(agora);
         enviaStatus();
-        digitalWrite(PINO_LED, !digitalRead(PINO_LED));
+        //digitalWrite(PINO_LED, !digitalRead(PINO_LED));
     }
 
     static unsigned long ultimoSensores = 0;
     if( delaySemBlock(&ultimoSensores, eeprom.dados.delays.sensores) )
     {
+        Serial.println(agora);
         //enviaJoystick();
         enviaSensores();
         #ifdef WIICHUCK
@@ -1881,31 +1935,34 @@ void loop()
         #endif
     }
 
-    static unsigned long ultimoLoop = 0;
+    #ifdef TESTE_PERFORMANCE
     static unsigned long passagensLoop = 0;
+    static unsigned long ultimoLoop = 0;
     if( delaySemBlock(&ultimoLoop, 10000) )
     {
         Serial.print( passagensLoop / 10 );
         Serial.println(" fps");
         passagensLoop = 0;
     }
+    #endif
 
     static unsigned short msExec = 10;
     static unsigned long ultimaExec = 0;
     if( delaySemBlock(&ultimaExec, msExec) )
     {
+        #ifdef TESTE_PERFORMANCE
         passagensLoop++;
+        #endif
         switch(eeprom.dados.programa)
         {
         case PRG_RC:
         case PRG_RC_SERIAL:
         {
-            Vetor2i direcao( gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox() );
-
             #ifdef RODAS_PWM_x4
                 drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
             #else
+                Vetor2i direcao( gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox() );
 //                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
                     drive.vetorial( direcao );
 //                else
