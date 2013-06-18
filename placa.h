@@ -27,27 +27,30 @@
 #define DFT_DELAY_ES 10
 #define DFT_FREIO_MAO 0
 
+#define MOTOR_ACEL      255
+#define MOTOR_CENTRO    0
+
+#define DFT_VEL_MAX     100
+#define DFT_VEL_ESCALA  100
+#define DFT_VEL_REFRESH 100
+#define DFT_BALANCO     100
+
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
 
-// inverte direcao de giro dos motores
+// inverte sentido dos motores
 #define MOTOR_ESQ_INV 0
 #define MOTOR_DIR_INV 0
 #define MOTOR_E_T_INV 0
 #define MOTOR_D_T_INV 0
 
-// canal 1
 #define PINO_MOTOR_ESQ  	7
 #define PINO_MOTOR_ESQ_N	8
 #define PINO_MOTOR_ESQ_PWM	6
 
-// canal 2
 #define PINO_MOTOR_DIR      9
 #define PINO_MOTOR_DIR_N    12
 #define PINO_MOTOR_DIR_PWM	5
-
-#define MOTOR_ACEL      255
-#define MOTOR_CENTRO    0
 
 // economia de energia
 #define PINO_UNUSED_CNT 0

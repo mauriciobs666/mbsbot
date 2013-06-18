@@ -204,6 +204,7 @@ public:
 
         char handBrake;
 
+        unsigned char balanco;   // % balanco motor esq / dir
         unsigned char velMax;    // %
         unsigned char velEscala; // %
         unsigned short velRefresh; // intervalo de execucao entre os refresh de motores
@@ -251,9 +252,10 @@ public:
     {
         dados.programa = DFT_PROGRAMA;
         dados.handBrake = DFT_FREIO_MAO;
-        dados.velMax = 100;
-        dados.velEscala = 100;
-        dados.velRefresh = 10;
+        dados.velMax = DFT_VEL_MAX;
+        dados.velEscala = DFT_VEL_ESCALA;
+        dados.velRefresh = DFT_VEL_REFRESH;
+        dados.balanco = DFT_BALANCO;
 
         #ifndef RODAS_PWM
             dados.motorEsq.initServo( PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ESQ_INV);
@@ -675,18 +677,19 @@ public:
         */
         if ( potencia100 )
         {
-            potencia100 = map( potencia100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
-            potencia100 = constrain( potencia100, -eeprom.dados.velMax, eeprom.dados.velMax );  // velocidade maxima
-            short c = potencia100 > 0 ? cfg->centro : -cfg->centro;           // c = "centro" com sinal
-            short fator = 255 - cfg->centro;                             // faixa de controle (linear?)
+            short c = potencia100 > 0 ? cfg->centro : -cfg->centro; // c = "centro" com sinal
+            short fator = 255 - cfg->centro;                        // faixa de controle (linear?)
             meta = c + ( potencia100 * fator ) / 100;               // converte % de potencia pra PWM 8 b
-            meta = constrain( meta, -255, 255 );                      // range de saida: +/- centro ... 255
+            meta = constrain( meta, -255, 255 );                    // range de saida: +/- centro ... 255
         }
         else
             meta = 0;
     }
 
-    short read() { return atual; }
+    short read()
+    {
+        return atual;
+    }
 
     void write(int valor)
     {
@@ -782,17 +785,20 @@ public:
 
     void refresh()
     {
-        static unsigned long ultimoRefreshMotores = 0;
-        if( delaySemBlock( &ultimoRefreshMotores, eeprom.dados.velRefresh ) )
-        {
-            motorEsq.refresh();
-            motorDir.refresh();
-        }
+        motorEsq.refresh();
+        motorDir.refresh();
     }
 
     void move( char esq100, char dir100 )
     {
+        esq100 = map( esq100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
+        esq100 = constrain( esq100, -eeprom.dados.velMax, eeprom.dados.velMax );
+        esq100 += eeprom.dados.balanco;
         motorEsq.move( esq100 );
+
+        dir100 = map( dir100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
+        dir100 = constrain( dir100, -eeprom.dados.velMax, eeprom.dados.velMax );
+        dir100 -= eeprom.dados.balanco;
         motorDir.move( dir100 );
     }
 
@@ -813,20 +819,17 @@ public:
 
     void giraEsq( char porc = 100 )
     {
-        motorEsq.move( -porc );
-        motorDir.move( porc );
+        move( -porc, porc );
     }
 
     void giraDir( char porc = 100 )
     {
-        motorEsq.move( porc );
-        motorDir.move( -porc );
+        move( porc, -porc );
     }
 
     void praFrente( char porc = 100 )
     {
-        motorEsq.move(porc);
-        motorDir.move(porc);
+        move( porc, porc );
     }
 }
 drive, drive2;
@@ -1031,10 +1034,11 @@ private:
         {
             if( sensores[ PINO_TRACK_0 + s ].refresh().getBool() )
             {
+                grupos[ nGrupos ].trilho = false;
                 grupos[ nGrupos ].pontoMedio = 2*s + 1;
                 grupos[ nGrupos ].tamanho = 1;
 
-                // agrupa enquanto o proximo for "linha"
+                // agrupa enquanto o proximo for "trilho"
                 while( ( s < NUM_IR_TRACK-1 ) && ( sensores[ PINO_TRACK_0 + s + 1 ].refresh().getBool() ) )
                 {
                     s++;
@@ -1062,12 +1066,13 @@ private:
     {
         int pontoMedio;
         int tamanho;
+        bool trilho;
     } Grupo;
 
     Grupo grupos[NUM_IR_TRACK/2];
     int nGrupos;
 
-    Grupo linha;
+    Grupo trilho;
 
     int tamMaior;
 }
@@ -1076,16 +1081,13 @@ lineFollower;
 void LineFollower::loop()
 {
     refresh();
-/*
-    // plaquinha com 8 leds
-    for( int x = 0; x < NUM_IR_TRACK; x++ )
-        digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
-*/
+
     if( nGrupos )
     {
-        linha = grupos[0];
 
-        int erro = linha.pontoMedio - NUM_IR_TRACK;
+        trilho = grupos[0];
+
+        int erro = trilho.pontoMedio - NUM_IR_TRACK;
 
         #ifdef TRACE
         Serial.print("Erro = ");
@@ -1096,10 +1098,9 @@ void LineFollower::loop()
 
         acumulador += erro;
 
-        int Integral = eeprom.dados.pid.Ki * acumulador;
-        Integral /= 1;
+        int Integral = acumulador / eeprom.dados.pid.Ki;
 
-        int Derivativo = eeprom.dados.pid.Kd;// * ( linha - linhaAntes );
+        int Derivativo = eeprom.dados.pid.Kd;// * ( trilho - trilhoAntes );
 
         int MV = constrain( (Proporcional + Integral + Derivativo), -200, 200 );
 
@@ -1140,28 +1141,41 @@ void LineFollower::calibrar()
             num0s++;
     }
 
-    // se tem mais linha que pista inverte td
+    // se tem mais trilho que brita inverte tds
 
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
-    drive.move( -100, 100 );
-    do
-    {
-        refresh();
-        drive.refresh();
-    }
-    while( grupos[0].pontoMedio < 2 * NUM_IR_TRACK );
+    drive.giraEsq( 60 );
 
-    drive.move( 100, -100 );
+    unsigned long timeout = millis() + 5000;
+
     do
     {
-        refresh();
+        agora = millis();
         drive.refresh();
+        refresh();
     }
-    while( grupos[0].pontoMedio > 1 );
+    while( agora < timeout && ( ! nGrupos || grupos[0].pontoMedio < 2 * ( NUM_IR_TRACK-1 ) ));
 
     drive.parar();
+
+    if( agora < timeout )
+    {
+        delay( 100 );
+
+        drive.giraDir( 60 );
+
+        do
+        {
+            agora = millis();
+            drive.refresh();
+            refresh();
+        }
+        while( agora < timeout && grupos[0].pontoMedio > 1 );
+
+        drive.parar();
+    }
 }
 //#endif
 
@@ -1486,6 +1500,8 @@ void Telnet::loop()
                             eeprom.dados.velEscala = valor;
                         else if(strcmp(dest, VAR_VEL_REFRESH) == 0)
                             eeprom.dados.velRefresh = valor;
+                        else if(strcmp(dest, VAR_BALANCO) == 0)
+                            eeprom.dados.balanco = valor;
                     }
                 }
             }
@@ -1546,6 +1562,8 @@ void Telnet::loop()
                         Serial.println((int)eeprom.dados.velEscala);
                     else if(strcmp(tok, VAR_VEL_REFRESH) == 0)
                         Serial.println((int)eeprom.dados.velRefresh);
+                    else if(strcmp(tok, VAR_BALANCO) == 0)
+                        Serial.println((int)eeprom.dados.balanco);
                 }
             }
             else if(strcmp(tok, CMD_GRAVA) == 0)	// salva temporarios na EEPROM
@@ -1896,13 +1914,16 @@ void setup()
         digitalWrite(unused[p], HIGH);
     }
 
+/*
+    // plaquinha com 8 leds conectada no canto do mega
     for( int i = 39; i <= 53; i += 2 )
         pinMode(i, OUTPUT);
+    for( int x = 0; x < NUM_IR_TRACK; x++ )
+        digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
+*/
 
-/*
     if( eeprom.dados.programa == PRG_LINE_FOLLOW )
         lineFollower.calibrar();
-*/
 }
 
 // ******************************************************************************

@@ -122,6 +122,7 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define VAR_VEL_MAX     "vm" // limite de velocidade em %
 #define VAR_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
 #define VAR_VEL_REFRESH "vr" // intervalo de refresh dos motores
+#define VAR_BALANCO     "bal" // balanco rodas esq/dir
 
 enum ProgramID
 {
