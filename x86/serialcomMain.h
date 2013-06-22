@@ -121,6 +121,10 @@ private:
     static const long ID_TEXTCTRL9;
     static const long ID_STATICTEXT8;
     static const long ID_TEXTCTRL10;
+    static const long ID_STATICTEXT4;
+    static const long ID_TEXTCTRL15;
+    static const long ID_STATICTEXT5;
+    static const long ID_TEXTCTRL16;
     static const long ID_STATICTEXT9;
     static const long ID_TEXTCTRL11;
     static const long ID_STATICTEXT10;
@@ -205,6 +209,7 @@ private:
     wxStaticText* StaticText3;
     wxGrid* Grid1;
     wxTextCtrl* TextCtrlDelayInch;
+    wxTextCtrl* TextCtrlDealyMotor;
     wxButton* Button2;
     wxPanel* Panel6;
     wxPanel* Panel3;
@@ -224,11 +229,14 @@ private:
     wxStatusBar* StatusBar1;
     wxButton* Button9;
     wxSlider* SliderRodaEsquerda;
+    wxTextCtrl* TextCtrl1;
+    wxStaticText* StaticText12;
     wxTextCtrl* TextCtrlDelayTurn;
     wxPanel* Panel2;
     wxSlider* SliderPan;
     wxTextCtrl* TextCtrlRodaDireita;
     wxTextCtrl* TextCtrlKi;
+    wxStaticText* StaticText4;
     wxChoice* Choice1;
     wxToolBarToolBase* ToolBarItem2;
     wxSlider* SliderRodaDireita;

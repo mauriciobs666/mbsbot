@@ -32,7 +32,7 @@
 
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA  100
-#define DFT_VEL_REFRESH 100
+#define DFT_VEL_REFRESH   1
 #define DFT_BALANCO     100
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)

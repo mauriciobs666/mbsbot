@@ -137,7 +137,7 @@
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer13" member="no">
-										<label>Joystick</label>
+										<label>Gamepad</label>
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
 											<object class="wxFlexGridSizer" variable="FlexGridSizer7" member="no">
@@ -222,7 +222,7 @@
 												<cols>2</cols>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT6" variable="StaticText5" member="yes">
-														<label>Programa:</label>
+														<label>Programa (p):</label>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -252,42 +252,80 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT7" variable="StaticText6" member="yes">
-														<label>Delay pol:</label>
+														<label>Vel Max % (vm):</label>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL9" variable="TextCtrlDelayInch" member="yes" />
+													<object class="wxTextCtrl" name="ID_TEXTCTRL9" variable="TextCtrlDelayInch" member="yes">
+														<style>wxTE_READONLY</style>
+													</object>
 													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT8" variable="StaticText7" member="yes">
-														<label>Delay 90:</label>
+														<label>Vel Escala % (ve)</label>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL10" variable="TextCtrlDelayTurn" member="yes" />
+													<object class="wxTextCtrl" name="ID_TEXTCTRL10" variable="TextCtrlDelayTurn" member="yes">
+														<style>wxTE_READONLY</style>
+													</object>
+													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT4" variable="StaticText4" member="yes">
+														<label>Balanco -esq / +dir (bal):</label>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL15" variable="TextCtrl1" member="yes">
+														<style>wxTE_READONLY</style>
+													</object>
+													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticText12" member="yes">
+														<label>Delay motores (dm):</label>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL16" variable="TextCtrlDealyMotor" member="yes">
+														<style>wxTE_READONLY</style>
+													</object>
 													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT9" variable="StaticText8" member="yes">
-														<label>Delay RF:</label>
+														<label>Delay E/S (drf):</label>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL11" variable="TextCtrlDelayRead" member="yes" />
+													<object class="wxTextCtrl" name="ID_TEXTCTRL11" variable="TextCtrlDelayRead" member="yes">
+														<style>wxTE_READONLY</style>
+													</object>
 													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
@@ -309,7 +347,9 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL12" variable="TextCtrlKp" member="yes" />
+													<object class="wxTextCtrl" name="ID_TEXTCTRL12" variable="TextCtrlKp" member="yes">
+														<style>wxTE_READONLY</style>
+													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
@@ -323,7 +363,9 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL13" variable="TextCtrlKi" member="yes" />
+													<object class="wxTextCtrl" name="ID_TEXTCTRL13" variable="TextCtrlKi" member="yes">
+														<style>wxTE_READONLY</style>
+													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
@@ -339,6 +381,7 @@
 												<object class="sizeritem">
 													<object class="wxTextCtrl" name="ID_TEXTCTRL14" variable="TextCtrlKd" member="yes">
 														<size>-1,-1</size>
+														<style>wxTE_READONLY</style>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -355,7 +398,7 @@
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticBoxSizer" variable="StaticBoxSizer6" member="no">
-										<label>Controls</label>
+										<label>Controles</label>
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON6" variable="Button6" member="yes">
@@ -745,7 +788,7 @@
 												<orient>wxVERTICAL</orient>
 												<object class="sizeritem">
 													<object class="wxCheckBox" name="ID_CHECKBOX7" variable="CheckBoxAutoRefreshSensors" member="yes">
-														<label>Auto-refresh</label>
+														<label>Polling</label>
 													</object>
 													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>

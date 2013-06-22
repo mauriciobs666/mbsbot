@@ -118,10 +118,10 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define VAR_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
 #define VAR_T_SE     "dse"  // tempo minimo entre envio de SEnsores
 #define VAR_T_ST     "dst"  // tempo minimo entre envio de STatus
+#define VAR_T_MOTOR  "dm"   // intervalo de refresh dos motores
 
 #define VAR_VEL_MAX     "vm" // limite de velocidade em %
 #define VAR_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
-#define VAR_VEL_REFRESH "vr" // intervalo de refresh dos motores
 #define VAR_BALANCO     "bal" // balanco rodas esq/dir
 
 enum ProgramID

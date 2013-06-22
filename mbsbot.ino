@@ -172,7 +172,7 @@ typedef struct
     int pinoDir;
     int pinoDirN;
     short centro;
-    short aceleracao;   // % de potencia => dv / eeprom.velRefresh
+    short aceleracao;   // % de potencia => dv / eeprom.delays.motores
 
     void initServo(int pino_, short centro_=1500, bool inverso=false)
     {
@@ -207,7 +207,6 @@ public:
         unsigned char balanco;   // % balanco motor esq / dir
         unsigned char velMax;    // %
         unsigned char velEscala; // %
-        unsigned short velRefresh; // intervalo de execucao entre os refresh de motores
 
         ConfigMotor motorEsq;
         ConfigMotor motorEsqT;
@@ -221,6 +220,7 @@ public:
             int status;
 
             int ES; // intervalo de entrada/saida, leitura de sensores etc
+            int motores; // intervalo de execucao entre os refresh de motores
         } delays;
 
         // controlador PID
@@ -254,7 +254,6 @@ public:
         dados.handBrake = DFT_FREIO_MAO;
         dados.velMax = DFT_VEL_MAX;
         dados.velEscala = DFT_VEL_ESCALA;
-        dados.velRefresh = DFT_VEL_REFRESH;
         dados.balanco = DFT_BALANCO;
 
         #ifndef RODAS_PWM
@@ -282,6 +281,7 @@ public:
         dados.delays.sensores = -1; // 3m
         dados.delays.status = -1;
         dados.delays.ES = DFT_DELAY_ES;
+        dados.delays.motores = DFT_VEL_REFRESH;
 
         dados.pid.Kp = 40;
         dados.pid.Ki = 0;
@@ -700,7 +700,7 @@ public:
     {
         // acelerador: v = v0 + at
 
-        if( delaySemBlock( &ultimoAcel, eeprom.dados.velRefresh ) )
+        if( delaySemBlock( &ultimoAcel, eeprom.dados.delays.motores ) )
         {
             if ( meta > atual)
             {
@@ -1498,8 +1498,8 @@ void Telnet::loop()
                             eeprom.dados.velMax = valor;
                         else if(strcmp(dest, VAR_VEL_ESCALA) == 0)
                             eeprom.dados.velEscala = valor;
-                        else if(strcmp(dest, VAR_VEL_REFRESH) == 0)
-                            eeprom.dados.velRefresh = valor;
+                        else if(strcmp(dest, VAR_T_MOTOR) == 0)
+                            eeprom.dados.delays.motores = valor;
                         else if(strcmp(dest, VAR_BALANCO) == 0)
                             eeprom.dados.balanco = valor;
                     }
@@ -1560,8 +1560,8 @@ void Telnet::loop()
                         Serial.println((int)eeprom.dados.velMax);
                     else if(strcmp(tok, VAR_VEL_ESCALA) == 0)
                         Serial.println((int)eeprom.dados.velEscala);
-                    else if(strcmp(tok, VAR_VEL_REFRESH) == 0)
-                        Serial.println((int)eeprom.dados.velRefresh);
+                    else if(strcmp(tok, VAR_T_MOTOR) == 0)
+                        Serial.println((int)eeprom.dados.delays.motores);
                     else if(strcmp(tok, VAR_BALANCO) == 0)
                         Serial.println((int)eeprom.dados.balanco);
                 }
