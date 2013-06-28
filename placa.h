@@ -24,7 +24,7 @@
 #define VERSAO_PLACA 4
 
 #define DFT_PROGRAMA PRG_LINE_FOLLOW
-#define DFT_DELAY_ES 10
+#define DFT_DELAY_ES  2
 #define DFT_FREIO_MAO 0
 
 #define MOTOR_ACEL      255
@@ -33,7 +33,7 @@
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA  100
 #define DFT_VEL_REFRESH   1
-#define DFT_BALANCO     100
+#define DFT_BALANCO       0
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1

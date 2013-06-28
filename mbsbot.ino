@@ -132,6 +132,8 @@ typedef struct
 }
 ConfigSensor;
 
+ConfigSensor cfgBtCal, cfgBtPrg;
+
 typedef struct
 {
     enum eTipoGamepad { TIPO_RC, TIPO_PC, TIPO_WII } tipo;
@@ -571,13 +573,27 @@ public:
         { return valor - anterior; }
     bool getBool()
         {
-            if( cfg->maximo - cfg->minimo < 200 )
-                return false;
-            unsigned short meio = ( ( cfg->maximo - cfg->minimo ) >> 1 ) + cfg->minimo;
-            return ( ( valor > meio ) ^ cfg->invertido );
+            switch( cfg->tipo )
+            {
+                case ConfigSensor::SENSOR_ANALOGICO:
+                    if( cfg->maximo - cfg->minimo > 200 )
+                    {
+                        unsigned short meio = ( ( cfg->maximo - cfg->minimo ) >> 1 ) + cfg->minimo;
+                        return ( ( valor > meio ) ^ cfg->invertido );
+                    }
+                break;
+
+                case ConfigSensor::SENSOR_DIGITAL:
+                    return ( valor ^ cfg->invertido );
+                break;
+
+                default:
+                break;
+            }
+            return false;
         }
 }
-sensores[NUM_SENSORES];
+sensores[NUM_SENSORES], botaoCal, botaoPrg;
 
 // ******************************************************************************
 //		GAMEPAD E R/C
@@ -1024,7 +1040,30 @@ public:
     {}
     void calibrar();
     void loop();
+
 private:
+    long acumulador;
+
+    int historico[50]; // buffer circular erros
+    int iniHist;
+    int fimHist;
+
+    int nGrupos;
+    int tamMaior;
+
+    class Grupo
+    {
+    public:
+        int pontoMedio;
+        int pontoMin;
+        int pontoMax;
+        int tamanho;
+        bool trilho;
+        Grupo() : trilho(false)
+        {}
+    }
+    grupos[NUM_IR_TRACK/2], trilho;
+
     void refresh()
     {
         nGrupos = 0;
@@ -1035,14 +1074,15 @@ private:
             if( sensores[ PINO_TRACK_0 + s ].refresh().getBool() )
             {
                 grupos[ nGrupos ].trilho = false;
-                grupos[ nGrupos ].pontoMedio = 2*s + 1;
+                grupos[ nGrupos ].pontoMin = grupos[ nGrupos ].pontoMedio = 2*s + 1;
                 grupos[ nGrupos ].tamanho = 1;
 
                 // agrupa enquanto o proximo for "trilho"
                 while( ( s < NUM_IR_TRACK-1 ) && ( sensores[ PINO_TRACK_0 + s + 1 ].refresh().getBool() ) )
                 {
                     s++;
-                    grupos[ nGrupos ].pontoMedio += 2*s + 1;
+                    grupos[ nGrupos ].pontoMax = 2*s + 1;
+                    grupos[ nGrupos ].pontoMedio += grupos[ nGrupos ].pontoMax;
                     grupos[ nGrupos ].tamanho++;
                 }
 
@@ -1055,26 +1095,6 @@ private:
             }
         }
     }
-
-    long acumulador;
-
-    int historico[50]; // buffer circular erros
-    int iniHist;
-    int fimHist;
-
-    typedef struct
-    {
-        int pontoMedio;
-        int tamanho;
-        bool trilho;
-    } Grupo;
-
-    Grupo grupos[NUM_IR_TRACK/2];
-    int nGrupos;
-
-    Grupo trilho;
-
-    int tamMaior;
 }
 lineFollower;
 
@@ -1085,7 +1105,24 @@ void LineFollower::loop()
     if( nGrupos )
     {
 
-        trilho = grupos[0];
+        if( nGrupos == 1 || ! trilho.trilho )
+            trilho = grupos[0];
+        else
+        {
+            int grupo = 0;
+            int dist = 1000;
+            for( int n = 0; n < nGrupos; n++ )
+            {
+                int distancia = abs( grupos[n].pontoMedio - trilho.pontoMedio );
+                if( distancia < dist )
+                {
+                    dist = distancia;
+                    grupo = n;
+                }
+            }
+            grupos[grupo].trilho = true;
+            trilho = grupos[grupo];
+        }
 
         int erro = trilho.pontoMedio - NUM_IR_TRACK;
 
@@ -1096,13 +1133,26 @@ void LineFollower::loop()
 
         int Proporcional = eeprom.dados.pid.Kp * erro;
 
-        acumulador += erro;
+        int Integral = 0;
 
-        int Integral = acumulador / eeprom.dados.pid.Ki;
+        if( eeprom.dados.pid.Ki )
+        {
+            if( erro )
+                acumulador += erro;
+            else
+                acumulador = 0;
 
-        int Derivativo = eeprom.dados.pid.Kd;// * ( trilho - trilhoAntes );
+            Integral = acumulador / eeprom.dados.pid.Ki;
+        }
 
-        int MV = constrain( (Proporcional + Integral + Derivativo), -200, 200 );
+        int Derivada = 0;
+
+        if( eeprom.dados.pid.Kd )
+        {
+            // * ( trilho - trilhoAntes );
+        }
+
+        int MV = constrain( ( Proporcional + Integral + Derivada ), -200, 200 );
 
         drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
 
@@ -1118,6 +1168,9 @@ void LineFollower::calibrar()
     int num1s = 0;
     unsigned short minimo = 1023;
     unsigned short maximo = 0;
+
+    drive.parar();
+    delay(1000);
 
     // primeira rodada de leitura
 
@@ -1146,7 +1199,7 @@ void LineFollower::calibrar()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
-    drive.giraEsq( 60 );
+    drive.giraEsq( 100 );
 
     unsigned long timeout = millis() + 5000;
 
@@ -1164,7 +1217,7 @@ void LineFollower::calibrar()
     {
         delay( 100 );
 
-        drive.giraDir( 60 );
+        drive.giraDir( 100 );
 
         do
         {
@@ -1873,17 +1926,10 @@ void setup()
     for(int s=0; s<NUM_SENSORES; s++)
         sensores[s].setConfig(&eeprom.dados.sensores[s]);
 
-//#if VERSAO_PLACA == 22
     drive.sensorEsq = &sensores[1];
     drive.sensorDir = &sensores[2];
     drive.sensorFre = &sensores[3];
-/*
-#else
-    sensorFre = &sensores[1];
-    sensorDir = &sensores[2];
-    sensorEsq = &sensores[3];
-#endif
-*/
+
     gamepad.setConfig( &eeprom.dados.joyRC );
 
 #ifdef PINO_JOY_X
@@ -1922,6 +1968,12 @@ void setup()
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
 */
 
+    cfgBtCal.init( ConfigSensor::SENSOR_DIGITAL, 37 );
+    botaoCal.setConfig( &cfgBtCal );
+
+    cfgBtPrg.init( ConfigSensor::SENSOR_DIGITAL, 39 );
+    botaoPrg.setConfig( &cfgBtPrg );
+
     if( eeprom.dados.programa == PRG_LINE_FOLLOW )
         lineFollower.calibrar();
 }
@@ -1936,6 +1988,10 @@ void loop()
     telnet.loop();
 
     trataJoystick();
+
+    botaoCal.refresh();
+
+    botaoPrg.refresh();
 
     static unsigned long ultimoStatus = 0;
     if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
