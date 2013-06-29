@@ -1149,8 +1149,7 @@ void LineFollower::loop()
 
     if( nGrupos )
     {
-
-        if( nGrupos == 1 || ! trilho.trilho )
+        if( nGrupos == 1 )
             trilho = grupos[0];
         else
         {
@@ -1166,7 +1165,7 @@ void LineFollower::loop()
                 }
             }
             grupos[grupo].trilho = true;
-            trilho = grupos[grupo];
+            //trilho = grupos[grupo];
         }
 
         int erro = trilho.pontoMedio - NUM_IR_TRACK;
@@ -1179,8 +1178,8 @@ void LineFollower::loop()
         {
             if( erro )
                 acumulador += erro;
-            else
-                acumulador = 0;
+            //else
+            //    acumulador = 0;
 
             int limite = 1000;
 
@@ -1257,7 +1256,7 @@ void LineFollower::calibrar()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
-    drive.giraEsq( 100 );
+    drive.giraEsq( 80 );
 
     unsigned long timeout = millis() + 5000;
 
@@ -1275,7 +1274,7 @@ void LineFollower::calibrar()
     {
         delay( 100 );
 
-        drive.giraDir( 100 );
+        drive.giraDir( 80 );
 
         do
         {
@@ -2044,8 +2043,8 @@ void loop()
             Serial. println("[CAL] apertado");
         else
         {
-            lineFollower.calibrar();
             Serial. println("[CAL] solto");
+            lineFollower.calibrar();
         }
     }
 
