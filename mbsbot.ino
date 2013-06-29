@@ -132,8 +132,6 @@ typedef struct
 }
 ConfigSensor;
 
-ConfigSensor cfgBtCal, cfgBtPrg;
-
 typedef struct
 {
     enum eTipoGamepad { TIPO_RC, TIPO_PC, TIPO_WII } tipo;
@@ -516,24 +514,7 @@ public:
                         setValor( pulseIn( cfg->pino, HIGH ) );
                     break;
                     case ConfigSensor::SENSOR_DIGITAL:
-                        digitalRead( cfg->pino );
-                        /*
-                        if (reading != lastButtonState)
-                            lastDebounceTime = millis();
-
-                        if ((millis() - lastDebounceTime) > debounceDelay)
-                        {
-                            if (reading != buttonState)
-                            {
-                                buttonState = reading;
-
-                                if (buttonState == HIGH)
-                                    ledState = !ledState;
-                            }
-                        }
-                        digitalWrite(ledPin, ledState);
-                        lastButtonState = reading;
-                        */
+                        setValor( digitalRead( cfg->pino ) );
                     break;
                     default:
                     break;
@@ -593,7 +574,62 @@ public:
             return false;
         }
 }
-sensores[NUM_SENSORES], botaoCal, botaoPrg;
+sensores[NUM_SENSORES];
+
+class Botao
+{
+public:
+    Botao( int pino = -1, bool invertido = true ) : debounce(0), antes(false), estado(false), trocou(false)
+    {
+         if( pino >= 0 )
+            init( pino, invertido );
+    }
+    void init( int pino, bool invertido = true )
+    {
+        pinMode( pino, invertido ? INPUT_PULLUP : INPUT );
+        cfg.init( ConfigSensor::SENSOR_DIGITAL, pino, invertido );
+        s.setConfig( &cfg );
+    }
+    bool refresh()
+    {
+        s.refresh();
+
+        bool atual = s.getBool();
+
+        if( atual != antes )
+            debounce = agora;
+
+        if( ( agora - debounce ) > 100 )
+        {
+            if( estado != atual )
+            {
+                estado = atual;
+                trocou = true;
+            }
+        }
+        antes = atual;
+        return estado;
+    }
+    bool getEstado()
+    {
+        return estado;
+    }
+    bool trocouEstado()
+    {
+        if( trocou )
+        {
+            trocou = false;
+            return true;
+        }
+        return false;
+    }
+private:
+    Sensor s;
+    ConfigSensor cfg;
+    unsigned long debounce;
+    bool antes, estado, trocou;
+}
+botaoCal(37), botaoPrg(39);
 
 // ******************************************************************************
 //		GAMEPAD E R/C
@@ -818,9 +854,163 @@ public:
         motorDir.move( dir100 );
     }
 
-    void vetorial(Vetor2i direcao);
+    void vetorial(Vetor2i direcao)
+    {
+        direcao.Constrain( /* -100, 100 */ ); // entrada em %
 
-    void vetorialSensor(Vetor2i direcao);
+        /*
+            as equacoes de interpolacao dos movimentos de giro a esquerda
+               e a direita estao divididas em 4 quadrantes:
+
+                      y
+                      |
+             Q2 (-,+) | Q1 (+,+)
+            __________|__________ x
+                      |
+             Q3 (-,-) | Q4 (+,-)
+                      |
+
+            a ideia eh controlar os motores como se uma reta a 45o dividisse cada quadrante em 2:
+
+            y
+            | *1
+            |  /
+            | / *2
+            |/____x
+
+            * 1 - curva suave, ex: roda direita > 0
+            * 2 - rotacao, ex: roda direita < 0
+        */
+
+        if( direcao.y >= 0)
+        {
+            if( direcao.x >= 0)   // Q1 (+,+)
+            {
+                motorEsq.move( max( direcao.x, direcao.y ) );
+                motorDir.move( direcao.y - direcao.x );
+            }
+            else        // Q2 (-,+)
+            {
+                motorEsq.move( direcao.x + direcao.y );
+                motorDir.move( max( -direcao.x, direcao.y ) );
+            }
+        }
+        else // (y < 0)
+        {
+            if( direcao.x < 0)    // Q3(-,-)
+            {
+
+                motorEsq.move( min( direcao.x, direcao.y ) );
+                motorDir.move( direcao.y - direcao.x );
+            }
+            else        // Q4 (+,-)
+            {
+                motorEsq.move( direcao.x + direcao.y );
+                motorDir.move( min( -direcao.x, direcao.y ) );
+            }
+        }
+    }
+
+    void vetorialSensor(Vetor2i direcao)
+    {
+        direcao.Constrain();
+
+        //#define TRACE
+        #ifdef TRACE
+            Serial.print(" dir");
+            direcao.print();
+        #endif
+
+        Vetor2i resultante = direcao;
+
+        if( direcao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
+        {
+            // int angulo = 45;    // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
+            int seno = 70;      // %
+            int cosseno = 70;   // %
+
+            // pra evitar interferencias, atualiza um sensor de cada vez
+            static char turno = 0;
+            ( turno ^= 1 ) ? sensorEsq->refresh() : sensorDir->refresh() ;
+
+            int s_esq = sensorEsq->getPorcentoAprox();
+            int s_dir = sensorDir->getPorcentoAprox();;
+
+            #ifdef TRACE
+                Serial.print(" se=");
+                Serial.print(s_esq);
+                Serial.print(" sd=");
+                Serial.print(s_dir);
+            #endif
+
+            /*        y
+                ______|______ x
+                 dir /|\ esq
+                    / | \
+                   V  |  V
+                      V
+                  obstaculos
+            */
+
+            Vetor2i esq( -( ( seno * s_esq ) / 100 ) , ( ( cosseno * s_esq ) / 100 ) );
+
+            #ifdef TRACE
+                Serial.print(" esq");
+                esq.print();
+            #endif
+
+            Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
+
+            #ifdef TRACE
+                Serial.print(" dir");
+                dir.print();
+            #endif
+
+            Vetor2i obstaculos = esq + dir;
+
+            #ifdef TRACE
+                Serial.print(" obs" );
+                obstaculos.print();
+                Serial.print(" |obs| ");
+                Serial.print(obstaculos.norma());
+            #endif
+
+            //obstaculos.normalizar();
+            obstaculos.Constrain();
+
+            #ifdef TRACE
+                Serial.print(" obs");
+                obstaculos.print();
+            #endif
+
+            resultante += obstaculos ;
+
+            #ifdef TRACE
+                Serial.print(" |res| ");
+                Serial.print(resultante.norma());
+            #endif
+
+            //resultante.normalizar();
+
+            //resultante.y = constrain( resultante.y, 0, 100 ); // never come back !
+        }
+
+        #ifdef TRACE
+            Serial.print(" res");
+            resultante.print();
+        #endif
+
+        vetorial( resultante );
+
+        #ifdef TRACE
+            Serial.println("\n");
+        #endif
+
+        #ifdef TRACE
+            printRodas();
+        #endif
+        //#undef TRACE
+    }
 
     void printRodas()
     {
@@ -850,164 +1040,6 @@ public:
 }
 drive, drive2;
 
-void Drive::vetorial( Vetor2i direcao )
-{
-    direcao.Constrain( /* -100, 100 */ ); // entrada em %
-
-    /*
-        as equacoes de interpolacao dos movimentos de giro a esquerda
-           e a direita estao divididas em 4 quadrantes:
-
-                  y
-                  |
-         Q2 (-,+) | Q1 (+,+)
-        __________|__________ x
-                  |
-         Q3 (-,-) | Q4 (+,-)
-                  |
-
-        a ideia eh controlar os motores como se uma reta a 45o dividisse cada quadrante em 2:
-
-        y
-        | *1
-        |  /
-        | / *2
-        |/____x
-
-        * 1 - curva suave, ex: roda direita > 0
-        * 2 - rotacao, ex: roda direita < 0
-    */
-
-    if( direcao.y >= 0)
-    {
-        if( direcao.x >= 0)   // Q1 (+,+)
-        {
-            motorEsq.move( max( direcao.x, direcao.y ) );
-            motorDir.move( direcao.y - direcao.x );
-        }
-        else        // Q2 (-,+)
-        {
-            motorEsq.move( direcao.x + direcao.y );
-            motorDir.move( max( -direcao.x, direcao.y ) );
-        }
-    }
-    else // (y < 0)
-    {
-        if( direcao.x < 0)    // Q3(-,-)
-        {
-
-            motorEsq.move( min( direcao.x, direcao.y ) );
-            motorDir.move( direcao.y - direcao.x );
-        }
-        else        // Q4 (+,-)
-        {
-            motorEsq.move( direcao.x + direcao.y );
-            motorDir.move( min( -direcao.x, direcao.y ) );
-        }
-    }
-}
-
-void Drive::vetorialSensor( Vetor2i direcao )
-{
-    direcao.Constrain();
-
-    //#define TRACE
-    #ifdef TRACE
-        Serial.print(" dir");
-        direcao.print();
-    #endif
-
-    Vetor2i resultante = direcao;
-
-    if( direcao.y > 0 ) // ainda nao ha sensores atras :. soh trata sensores se estiver indo pra frente
-    {
-        // int angulo = 45;    // em relacao ao eixo Y / direcao "frente", sen=cos=0,707
-        int seno = 70;      // %
-        int cosseno = 70;   // %
-
-        // pra evitar interferencias, atualiza um sensor de cada vez
-        static char turno = 0;
-        ( turno ^= 1 ) ? sensorEsq->refresh() : sensorDir->refresh() ;
-
-        int s_esq = sensorEsq->getPorcentoAprox();
-        int s_dir = sensorDir->getPorcentoAprox();;
-
-        #ifdef TRACE
-            Serial.print(" se=");
-            Serial.print(s_esq);
-            Serial.print(" sd=");
-            Serial.print(s_dir);
-        #endif
-
-        /*        y
-            ______|______ x
-             dir /|\ esq
-                / | \
-               V  |  V
-                  V
-              obstaculos
-        */
-
-        Vetor2i esq( -( ( seno * s_esq ) / 100 ) , ( ( cosseno * s_esq ) / 100 ) );
-
-        #ifdef TRACE
-            Serial.print(" esq");
-            esq.print();
-        #endif
-
-        Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
-
-        #ifdef TRACE
-            Serial.print(" dir");
-            dir.print();
-        #endif
-
-        Vetor2i obstaculos = esq + dir;
-
-        #ifdef TRACE
-            Serial.print(" obs" );
-            obstaculos.print();
-            Serial.print(" |obs| ");
-            Serial.print(obstaculos.norma());
-        #endif
-
-        //obstaculos.normalizar();
-        obstaculos.Constrain();
-
-        #ifdef TRACE
-            Serial.print(" obs");
-            obstaculos.print();
-        #endif
-
-        resultante += obstaculos ;
-
-        #ifdef TRACE
-            Serial.print(" |res| ");
-            Serial.print(resultante.norma());
-        #endif
-
-        //resultante.normalizar();
-
-        //resultante.y = constrain( resultante.y, 0, 100 ); // never come back !
-    }
-
-    #ifdef TRACE
-        Serial.print(" res");
-        resultante.print();
-    #endif
-
-    drive.vetorial( resultante );
-
-    #ifdef TRACE
-        Serial.println("\n");
-    #endif
-
-    #ifdef TRACE
-        printRodas();
-    #endif
-    //#undef TRACE
-}
-
 // ******************************************************************************
 //		FOTOVORO
 // ******************************************************************************
@@ -1036,11 +1068,20 @@ void fotovoro()
 class LineFollower
 {
 public:
-    LineFollower() : acumulador(0), iniHist(0), fimHist(0), nGrupos(0)
+    LineFollower() :
+        acumulador(0),
+        iniHist(0), fimHist(0),
+        nGrupos(0), tamMaior(0),
+        erroAnterior(0), tEanterior(0), tEatual(0)
     {}
     void calibrar();
     void loop();
 
+    void print()
+    {
+        Serial.print( "erroAnt = " );
+        Serial.println( erroAnterior );
+    }
 private:
     long acumulador;
 
@@ -1050,6 +1091,10 @@ private:
 
     int nGrupos;
     int tamMaior;
+
+    int erroAnterior;
+    unsigned long tEanterior;
+    unsigned long tEatual;
 
     class Grupo
     {
@@ -1126,11 +1171,6 @@ void LineFollower::loop()
 
         int erro = trilho.pontoMedio - NUM_IR_TRACK;
 
-        #ifdef TRACE
-        Serial.print("Erro = ");
-        Serial.println(erro);
-        #endif
-
         int Proporcional = eeprom.dados.pid.Kp * erro;
 
         int Integral = 0;
@@ -1142,6 +1182,13 @@ void LineFollower::loop()
             else
                 acumulador = 0;
 
+            int limite = 1000;
+
+            if( acumulador > limite )
+                acumulador = limite;
+            else if( acumulador < -limite )
+                acumulador = -limite;
+
             Integral = acumulador / eeprom.dados.pid.Ki;
         }
 
@@ -1149,7 +1196,18 @@ void LineFollower::loop()
 
         if( eeprom.dados.pid.Kd )
         {
-            // * ( trilho - trilhoAntes );
+            if( erro != erroAnterior )
+            {
+                tEanterior = tEatual;
+                tEatual = agora;
+            }
+
+            int intervalo = tEatual - tEanterior;
+
+            if( (int) ( agora - tEatual ) > intervalo )
+                intervalo = agora - tEatual;
+
+            Derivada = eeprom.dados.pid.Kd / intervalo;
         }
 
         int MV = constrain( ( Proporcional + Integral + Derivada ), -200, 200 );
@@ -1243,16 +1301,64 @@ class Scanner
 public:
     Scanner() : stepAtual(0), stepDir(1)
         {}
-    bool stepUp();
-    bool stepDown();
+    bool stepUp()
+    {
+        if(upperBound())
+            stepAtual = (SCANNER_STEPS-1);
+        else
+            stepAtual++;
+        return upperBound();
+    }
+    bool stepDown()
+    {
+        if(lowerBound())
+            stepAtual = 0;
+        else
+            stepAtual--;
+        return lowerBound();
+    }
     void refreshServo()
         {
             #ifdef PINO_SERVO_PAN
             pan.write( (SCANNER_ANG/2) + stepAtual * SCANNER_ANG );
             #endif
         }
-    void chase();
-    void fillArray();
+    void chase()
+    {
+        if( s->refresh() > 300 ) // threshold
+        {
+            if(stepDir < 0)
+                stepDown();
+            else
+                stepUp();
+        }
+        else // nada a vista, apenas continua na mesma direcao
+            step();
+
+        if(upperBound() || lowerBound())
+            reverseDir();
+
+        refreshServo();
+    }
+    void fillArray()
+    {
+        dataArray[stepAtual] = s->refresh(); // le sensor
+
+        if( step() ) // calcula proxima posicao, retorna true se encheu array
+        {
+            reverseDir();
+            /*
+            Serial.print("RFA ");
+            for(int x = 0; x < SCANNER_STEPS; x++)
+            {
+                Serial.print(dataArray[x]);
+                Serial.print(" ");
+            }
+            Serial.println("");
+            */
+        }
+        refreshServo();
+    }
     bool step()
         { return (stepDir < 0) ? stepDown() : stepUp(); }
     void reverseDir()
@@ -1270,170 +1376,7 @@ private:
     unsigned short dataArray[SCANNER_STEPS];
 }
 scanner;
-
-bool Scanner::stepUp()
-{
-    if(upperBound())
-        stepAtual = (SCANNER_STEPS-1);
-    else
-        stepAtual++;
-    return upperBound();
-}
-
-bool Scanner::stepDown()
-{
-    if(lowerBound())
-        stepAtual = 0;
-    else
-        stepAtual--;
-    return lowerBound();
-}
-
-void Scanner::chase()
-{
-    if( s->refresh() > 300 ) // threshold
-    {
-        if(stepDir < 0)
-            stepDown();
-        else
-            stepUp();
-    }
-    else // nada a vista, apenas continua na mesma direcao
-        step();
-
-    if(upperBound() || lowerBound())
-        reverseDir();
-
-    refreshServo();
-}
-
-void Scanner::fillArray()
-{
-    dataArray[stepAtual] = s->refresh(); // le sensor
-
-    if( step() ) // calcula proxima posicao, retorna true se encheu array
-    {
-        reverseDir();
-/*
-        Serial.print("RFA ");
-        for(int x = 0; x < SCANNER_STEPS; x++)
-        {
-            Serial.print(dataArray[x]);
-            Serial.print(" ");
-        }
-        Serial.println("");
-*/
-    }
-    refreshServo();
-}
 #endif
-// ******************************************************************************
-//		DEBUG / SENSORES
-// ******************************************************************************
-void enviaSensores(bool enviaComando = true)
-{
-    if(enviaComando)
-    {
-        Serial.print( VAR_AS);
-        Serial.print(" ");
-    }
-    for (int x = 0; x < NUM_SENSORES; x++)
-    {
-        Serial.print( sensores[x].refresh().getValor() );
-        Serial.print(" ");
-    }
-    Serial.println("");
-
-    for( int x = 0; x < NUM_IR_TRACK; x++ )
-        Serial.print( sensores[PINO_TRACK_0 + x].getBool() ? "1" : "0" );
-    Serial.println();
-}
-
-void enviaStatus(bool enviaComando = true)
-{
-    if(enviaComando)
-    {
-        Serial.print(CMD_STATUS);
-        Serial.print(" ");
-    }
-    Serial.print(eeprom.dados.programa);
-    Serial.print(" ");
-    Serial.print(ultimoErro);
-    Serial.print(" ");
-    Serial.print((int)eeprom.dados.handBrake);
-    Serial.print(" ");
-    Serial.print(drive.motorEsq.read());
-    Serial.print(" ");
-    Serial.print(drive.motorDir.read());
-    Serial.print(" ");
-    Serial.print(drive2.motorEsq.read());
-    Serial.print(" ");
-    Serial.print(drive2.motorDir.read());
-    Serial.print(" ");
-    #ifdef PINO_SERVO_PAN
-        Serial.print(pan.read());
-        Serial.print(" ");
-    #endif
-    #ifdef PINO_SERVO_TILT
-        Serial.print(tilt.read());
-        Serial.print(" ");
-    #endif
-    #ifdef PINO_SERVO_ROLL
-    Serial.print(roll.read());
-    #endif
-    //Serial.print(" ");
-    //for(int p=13; p>=0; p--)
-    //for(int p=13; p>5; p--)
-    //    Serial.print(digitalRead(p));
-    Serial.println("");
-}
-
-void enviaJoystick()
-{
-    Serial.print(CMD_JOYPAD);
-    Serial.print(" X ");
-    Serial.print(gamepad.x.getPorcentoAprox(0));
-    Serial.print(" ~ ");
-    Serial.print(gamepad.x.getPorcentoAprox());
-
-    Serial.print(" (");
-    Serial.print(gamepad.x.cfg->minimo);
-    Serial.print(",");
-    Serial.print(gamepad.x.cfg->centro);
-    Serial.print(",");
-    Serial.print(gamepad.x.cfg->maximo);
-    Serial.print(") ");
-    Serial.println(gamepad.x.valor);
-
-    Serial.print(CMD_JOYPAD);
-    Serial.print(" Y ");
-    Serial.print(gamepad.y.getPorcentoAprox(0));
-    Serial.print(" ~ ");
-    Serial.print(gamepad.y.getPorcentoAprox());
-
-    Serial.print(" (");
-    Serial.print(gamepad.y.cfg->minimo);
-    Serial.print(",");
-    Serial.print(gamepad.y.cfg->centro);
-    Serial.print(",");
-    Serial.print(gamepad.y.cfg->maximo);
-    Serial.print(") ");
-    Serial.println(gamepad.y.valor);
-/*
-    Serial.print(" Z ");
-    Serial.print(gamepad.z.getPorcentoAprox(0));
-    Serial.print(" R ");
-    Serial.println(gamepad.r.getPorcentoAprox(0));
-*/
-}
-
-void uname()
-{
-    Serial.print("MBSBOT hw ");
-    Serial.print(VERSAO_PLACA);
-    Serial.print(" sw ");
-    Serial.println(VERSAO_PROTOCOLO);
-}
 
 // ******************************************************************************
 //		SERVIDOR TELNET
@@ -1441,298 +1384,403 @@ void uname()
 class Telnet
 {
 public:
-    Telnet() : pos(0) {}
-    bool recebe();
-    void loop();
-private:
-    char command[MAX_CMD];
-    short pos;
-}
-telnet;
+    Telnet() : pos(0)
+    {}
 
-bool Telnet::recebe()
-{
-    while(Serial.available() > 0)
+    bool recebe()
     {
-        char c = Serial.read();
-
-        if (pos == MAX_CMD)
+        while(Serial.available() > 0)
         {
-            pos = 0;
-            Serial.println("ERRO_TAM_MAX_CMD");
-            ultimoErro = ERRO_TAM_MAX_CMD;
-        }
-        else if(c == CMD_EOL)
-        {
-            command[pos] = 0;
-            pos = 0;
-            return true;
-        }
-        else
-            command[pos++] = c;
-    }
-    return false;
-}
+            char c = Serial.read();
 
-void Telnet::loop()
-{
-    if( telnet.recebe() )
-    {
-        char *tok;
-
-        char *pqp;	// algumas avr-libc linux naum tem strtok():
-        #define STRTOK(a, b) strtok_r(a, b, &pqp)
-
-        if((tok = STRTOK(command, " ")))					// primeiro token eh o comando/acao
-        {
-            if(strcmp(tok, CMD_SET) == 0)					// atribui um valor a uma variavel
+            if (pos == MAX_CMD)
             {
-                if((tok = STRTOK(NULL, " =")))				// segundo token eh o nome da variavel
+                pos = 0;
+                Serial.println("ERRO_TAM_MAX_CMD");
+                ultimoErro = ERRO_TAM_MAX_CMD;
+            }
+            else if(c == CMD_EOL)
+            {
+                command[pos] = 0;
+                pos = 0;
+                return true;
+            }
+            else
+                command[pos++] = c;
+        }
+        return false;
+    }
+
+    void loop()
+    {
+        if( recebe() )
+        {
+            char *tok;
+
+            char *pqp;	// algumas avr-libc linux naum tem strtok():
+            #define STRTOK(a, b) strtok_r(a, b, &pqp)
+
+            if((tok = STRTOK(command, " ")))					// primeiro token eh o comando/acao
+            {
+                if(strcmp(tok, CMD_SET) == 0)					// atribui um valor a uma variavel
                 {
-                    char dest[10];
-                    strcpy(dest,tok);
-
-                    if((tok = STRTOK(NULL, " ")))			// terceiro token eh o valor a ser atribuido
+                    if((tok = STRTOK(NULL, " =")))				// segundo token eh o nome da variavel
                     {
-                        int valor = atoi(tok);
+                        char dest[10];
+                        strcpy(dest,tok);
 
-                        if(isdigit(dest[0]))                // se destino for um numero entaum eh um pino digital
-                            digitalWrite(atoi(dest), valor ? HIGH : LOW);
-                        else if(strcmp(dest, VAR_RODA_ESQ) == 0)
-                            drive.motorEsq.move(valor);
-                        else if(strcmp(dest, VAR_RODA_DIR) == 0)
-                            drive.motorDir.move(valor);
-                        else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
-                            eeprom.dados.motorEsq.centro = valor;
-                        else if(strcmp(dest, VAR_ZERO_DIR) == 0)
-                            eeprom.dados.motorDir.centro = valor;
-                        else if(strcmp(dest, VAR_ZERO_ESQ_T) == 0)
-                            eeprom.dados.motorEsqT.centro = valor;
-                        else if(strcmp(dest, VAR_ZERO_DIR_T) == 0)
-                            eeprom.dados.motorDirT.centro = valor;
-                        else if(strcmp(dest, VAR_PROGRAMA) == 0)
+                        if((tok = STRTOK(NULL, " ")))			// terceiro token eh o valor a ser atribuido
                         {
-                            drive.parar();
-                            eeprom.dados.programa = valor;
+                            int valor = atoi(tok);
+
+                            if(isdigit(dest[0]))                // se destino for um numero entaum eh um pino digital
+                                digitalWrite(atoi(dest), valor ? HIGH : LOW);
+                            else if(strcmp(dest, VAR_RODA_ESQ) == 0)
+                                drive.motorEsq.move(valor);
+                            else if(strcmp(dest, VAR_RODA_DIR) == 0)
+                                drive.motorDir.move(valor);
+                            else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
+                                eeprom.dados.motorEsq.centro = valor;
+                            else if(strcmp(dest, VAR_ZERO_DIR) == 0)
+                                eeprom.dados.motorDir.centro = valor;
+                            else if(strcmp(dest, VAR_ZERO_ESQ_T) == 0)
+                                eeprom.dados.motorEsqT.centro = valor;
+                            else if(strcmp(dest, VAR_ZERO_DIR_T) == 0)
+                                eeprom.dados.motorDirT.centro = valor;
+                            else if(strcmp(dest, VAR_PROGRAMA) == 0)
+                            {
+                                drive.parar();
+                                eeprom.dados.programa = valor;
+                            }
+                            else if(strcmp(dest, VAR_T_RF) == 0)
+                                eeprom.dados.delays.ES = valor;
+                            #ifdef PINO_SERVO_PAN
+                            else if(strcmp(dest, VAR_SERVO_X) == 0)
+                                pan.write(valor);
+                            #endif
+                            #ifdef PINO_SERVO_TILT
+                            else if(strcmp(dest, VAR_SERVO_Y) == 0)
+                                tilt.write(valor);
+                            #endif
+                            #ifdef PINO_SERVO_ROLL
+                            else if(strcmp(dest, VAR_SERVO_Z) == 0)
+                                roll.write(valor);
+                            #endif
+                            else if(strcmp(dest, VAR_PID) == 0)
+                            {
+                                eeprom.dados.pid.Kp = valor;	// P
+                                if((tok = STRTOK(NULL, " ")))	// I
+                                    eeprom.dados.pid.Ki = atoi(tok);
+                                if((tok = STRTOK(NULL, " ")))	// D
+                                    eeprom.dados.pid.Kd = atoi(tok);
+                            }
+                            else if(strcmp(dest, VAR_FREIO) == 0)
+                                eeprom.dados.handBrake = valor;
+                            else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
+                                eeprom.dados.motorEsq.aceleracao = valor;
+                            else if(strcmp(dest, VAR_ACEL_DIR) == 0)
+                                eeprom.dados.motorDir.aceleracao = valor;
+                            else if(strcmp(dest, VAR_T_ST) == 0)
+                                eeprom.dados.delays.status = (unsigned short)valor;
+                            else if(strcmp(dest, VAR_T_SE) == 0)
+                                eeprom.dados.delays.sensores = (unsigned short)valor;
+                            else if(strcmp(dest, VAR_VEL_MAX) == 0)
+                                eeprom.dados.velMax = valor;
+                            else if(strcmp(dest, VAR_VEL_ESCALA) == 0)
+                                eeprom.dados.velEscala = valor;
+                            else if(strcmp(dest, VAR_T_MOTOR) == 0)
+                                eeprom.dados.delays.motores = valor;
+                            else if(strcmp(dest, VAR_BALANCO) == 0)
+                                eeprom.dados.balanco = valor;
                         }
-                        else if(strcmp(dest, VAR_T_RF) == 0)
-                            eeprom.dados.delays.ES = valor;
+                    }
+                }
+                else if(strcmp(tok, CMD_GET) == 0)	// le uma variavel
+                {
+                    if((tok = STRTOK(NULL, " ")))	// segundo token eh o nome da variavel a ser lida
+                    {
+                        Serial.print(tok);          // ecoa nome da variavel
+                        Serial.print(" ");
+
+                        if(strcmp(tok, VAR_RODA_ESQ) == 0)
+                            Serial.println(drive.motorEsq.read());
+                        else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
+                            Serial.println(eeprom.dados.motorEsq.centro);
+                        else if(strcmp(tok, VAR_RODA_DIR) == 0)
+                            Serial.println(drive.motorDir.read());
+                        else if(strcmp(tok, VAR_ZERO_DIR) == 0)
+                            Serial.println(eeprom.dados.motorDir.centro);
+                        else if(strcmp(tok, VAR_PROGRAMA) == 0)
+                            Serial.println(eeprom.dados.programa);
+                        else if(strcmp(tok, VAR_T_RF) == 0)
+                            Serial.println(eeprom.dados.delays.ES);
                         #ifdef PINO_SERVO_PAN
-                        else if(strcmp(dest, VAR_SERVO_X) == 0)
-                            pan.write(valor);
+                        else if(strcmp(tok, VAR_SERVO_X) == 0)
+                            Serial.println(pan.read());
                         #endif
                         #ifdef PINO_SERVO_TILT
-                        else if(strcmp(dest, VAR_SERVO_Y) == 0)
-                            tilt.write(valor);
+                        else if(strcmp(tok, VAR_SERVO_Y) == 0)
+                            Serial.println(tilt.read());
                         #endif
                         #ifdef PINO_SERVO_ROLL
-                        else if(strcmp(dest, VAR_SERVO_Z) == 0)
-                            roll.write(valor);
+                        else if(strcmp(tok, VAR_SERVO_Z) == 0)
+                            Serial.println(roll.read());
                         #endif
-                        else if(strcmp(dest, VAR_PID) == 0)
+                        else if(strcmp(tok, VAR_FREIO) == 0)
+                            Serial.println((int)eeprom.dados.handBrake);
+                        else if(strcmp(tok, VAR_AS) == 0)
+                            enviaSensores(false);
+                        else if(strcmp(tok, VAR_PID) == 0)
                         {
-                            eeprom.dados.pid.Kp = valor;	// P
-                            if((tok = STRTOK(NULL, " ")))	// I
-                                eeprom.dados.pid.Ki = atoi(tok);
-                            if((tok = STRTOK(NULL, " ")))	// D
-                                eeprom.dados.pid.Kd = atoi(tok);
+                            Serial.print(eeprom.dados.pid.Kp);
+                            Serial.print(" ");
+                            Serial.print(eeprom.dados.pid.Ki);
+                            Serial.print(" ");
+                            Serial.println(eeprom.dados.pid.Kd);
                         }
-                        else if(strcmp(dest, VAR_FREIO) == 0)
-                            eeprom.dados.handBrake = valor;
-                        else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
-                            eeprom.dados.motorEsq.aceleracao = valor;
-                        else if(strcmp(dest, VAR_ACEL_DIR) == 0)
-                            eeprom.dados.motorDir.aceleracao = valor;
-                        else if(strcmp(dest, VAR_T_ST) == 0)
-                            eeprom.dados.delays.status = (unsigned short)valor;
-                        else if(strcmp(dest, VAR_T_SE) == 0)
-                            eeprom.dados.delays.sensores = (unsigned short)valor;
-                        else if(strcmp(dest, VAR_VEL_MAX) == 0)
-                            eeprom.dados.velMax = valor;
-                        else if(strcmp(dest, VAR_VEL_ESCALA) == 0)
-                            eeprom.dados.velEscala = valor;
-                        else if(strcmp(dest, VAR_T_MOTOR) == 0)
-                            eeprom.dados.delays.motores = valor;
-                        else if(strcmp(dest, VAR_BALANCO) == 0)
-                            eeprom.dados.balanco = valor;
+                        else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
+                            Serial.println((int)eeprom.dados.motorEsq.aceleracao);
+                        else if(strcmp(tok, VAR_ACEL_DIR) == 0)
+                            Serial.println((int)eeprom.dados.motorDir.aceleracao);
+                        else if(strcmp(tok, VAR_T_ST) == 0)
+                            Serial.println((int)eeprom.dados.delays.status);
+                        else if(strcmp(tok, VAR_T_SE) == 0)
+                            Serial.println((int)eeprom.dados.delays.sensores);
+                        else if(strcmp(tok, VAR_VEL_MAX) == 0)
+                            Serial.println((int)eeprom.dados.velMax);
+                        else if(strcmp(tok, VAR_VEL_ESCALA) == 0)
+                            Serial.println((int)eeprom.dados.velEscala);
+                        else if(strcmp(tok, VAR_T_MOTOR) == 0)
+                            Serial.println((int)eeprom.dados.delays.motores);
+                        else if(strcmp(tok, VAR_BALANCO) == 0)
+                            Serial.println((int)eeprom.dados.balanco);
                     }
                 }
-            }
-            else if(strcmp(tok, CMD_GET) == 0)	// le uma variavel
-            {
-                if((tok = STRTOK(NULL, " ")))	// segundo token eh o nome da variavel a ser lida
-                {
-                    Serial.print(tok);          // ecoa nome da variavel
-                    Serial.print(" ");
-
-                    if(strcmp(tok, VAR_RODA_ESQ) == 0)
-                        Serial.println(drive.motorEsq.read());
-                    else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
-                        Serial.println(eeprom.dados.motorEsq.centro);
-                    else if(strcmp(tok, VAR_RODA_DIR) == 0)
-                        Serial.println(drive.motorDir.read());
-                    else if(strcmp(tok, VAR_ZERO_DIR) == 0)
-                        Serial.println(eeprom.dados.motorDir.centro);
-                    else if(strcmp(tok, VAR_PROGRAMA) == 0)
-                        Serial.println(eeprom.dados.programa);
-                    else if(strcmp(tok, VAR_T_RF) == 0)
-                        Serial.println(eeprom.dados.delays.ES);
-                    #ifdef PINO_SERVO_PAN
-                    else if(strcmp(tok, VAR_SERVO_X) == 0)
-                        Serial.println(pan.read());
-                    #endif
-                    #ifdef PINO_SERVO_TILT
-                    else if(strcmp(tok, VAR_SERVO_Y) == 0)
-                        Serial.println(tilt.read());
-                    #endif
-                    #ifdef PINO_SERVO_ROLL
-                    else if(strcmp(tok, VAR_SERVO_Z) == 0)
-                        Serial.println(roll.read());
-                    #endif
-                    else if(strcmp(tok, VAR_FREIO) == 0)
-                        Serial.println((int)eeprom.dados.handBrake);
-                    else if(strcmp(tok, VAR_AS) == 0)
-                        enviaSensores(false);
-                    else if(strcmp(tok, VAR_PID) == 0)
-                    {
-                        Serial.print(eeprom.dados.pid.Kp);
-                        Serial.print(" ");
-                        Serial.print(eeprom.dados.pid.Ki);
-                        Serial.print(" ");
-                        Serial.println(eeprom.dados.pid.Kd);
-                    }
-                    else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
-                        Serial.println((int)eeprom.dados.motorEsq.aceleracao);
-                    else if(strcmp(tok, VAR_ACEL_DIR) == 0)
-                        Serial.println((int)eeprom.dados.motorDir.aceleracao);
-                    else if(strcmp(tok, VAR_T_ST) == 0)
-                        Serial.println((int)eeprom.dados.delays.status);
-                    else if(strcmp(tok, VAR_T_SE) == 0)
-                        Serial.println((int)eeprom.dados.delays.sensores);
-                    else if(strcmp(tok, VAR_VEL_MAX) == 0)
-                        Serial.println((int)eeprom.dados.velMax);
-                    else if(strcmp(tok, VAR_VEL_ESCALA) == 0)
-                        Serial.println((int)eeprom.dados.velEscala);
-                    else if(strcmp(tok, VAR_T_MOTOR) == 0)
-                        Serial.println((int)eeprom.dados.delays.motores);
-                    else if(strcmp(tok, VAR_BALANCO) == 0)
-                        Serial.println((int)eeprom.dados.balanco);
-                }
-            }
-            else if(strcmp(tok, CMD_GRAVA) == 0)	// salva temporarios na EEPROM
-                eeprom.save();
-            else if(strcmp(tok, CMD_CARREGA) == 0)	// descarta mudancas e recarrega da EEPROM
-                eeprom.load();
-            else if(strcmp(tok, CMD_DEFAULT) == 0)  // hard-coded
-                eeprom.defaults();
-            else if(strcmp(tok, CMD_CAL) == 0)	    // entra no modo autocalibracao de joystick
-                gamepad.calibrar();
-            else if(strcmp(tok, CMD_CENTRO) == 0)	// sai do modo de autocalibracao e centra joystick
-                gamepad.centrar();
-            #ifdef LINE_FOLLOWER
-            else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibra sensores do line follower
-                lineFollower.calibrar();
-            #endif
-            else if(strcmp(tok, CMD_MV_PARAR) == 0)
-            {
-                drive.parar();
-                drive2.parar();
-                eeprom.dados.programa = PRG_RC_SERIAL;
-            }
-            else if(strcmp(tok, CMD_MV_RODAS) == 0)
-            {
-                tok = STRTOK(NULL, " ");
-                if (tok)			// second token is the left wheel power percent
-                {
-                    int lw = atoi(tok);
-                    tok = STRTOK(NULL, " ");
-                    if (tok)		// third token is the right wheel power percent
-                    {
-                        drive.motorEsq.move(lw);
-                        drive.motorDir.move(atoi(tok));
-                    }
-                }
-            }
-            else if(strcmp(tok, CMD_MV_VET) == 0)
-            {
-                eeprom.dados.programa = PRG_RC_SERIAL;
-                Vetor2i direcao;
-
-                if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
-                {
-                    direcao.x = atoi(tok);
-                    if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
-                    {
-                        direcao.y = atoi(tok);
-                        drive.vetorial( direcao );
-
-                        if ((tok = STRTOK(NULL, " ")))  // segundo token eh o percentual de potencia p/ eixo X
-                        {
-                            direcao.x = atoi(tok);
-                            if ((tok = STRTOK(NULL, " ")))// terceiro token eh o percentual de potencia p/ eixo Y
-                            {
-                                direcao.y = atoi(tok);
-                                drive2.vetorial( direcao );
-                            }
-                        }
-                    }
-                }
-            }
-            else if(strcmp(tok, CMD_STATUS) == 0)
-                enviaStatus();
-            else if(strcmp(tok, CMD_UNAME) == 0)
-                uname();
-            else if(strcmp(tok, CMD_BIP) == 0)
-            {
-                #ifdef PINO_BIP
-                    tok = STRTOK(NULL, " ");
-                    if (tok)			        // frequencia
-                    {
-                        int hz = atoi(tok);
-                        tok = STRTOK(NULL, " ");
-                        if (tok)                // duracao
-                            BIP(hz, atoi(tok));
-                        else
-                            BIP(hz, 200);
-                    }
+                else if(strcmp(tok, CMD_GRAVA) == 0)	// salva temporarios na EEPROM
+                    eeprom.save();
+                else if(strcmp(tok, CMD_CARREGA) == 0)	// descarta mudancas e recarrega da EEPROM
+                    eeprom.load();
+                else if(strcmp(tok, CMD_DEFAULT) == 0)  // hard-coded
+                    eeprom.defaults();
+                else if(strcmp(tok, CMD_CAL) == 0)	    // entra no modo autocalibracao de joystick
+                    gamepad.calibrar();
+                else if(strcmp(tok, CMD_CENTRO) == 0)	// sai do modo de autocalibracao e centra joystick
+                    gamepad.centrar();
+                #ifdef LINE_FOLLOWER
+                else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibra sensores do line follower
+                    lineFollower.calibrar();
                 #endif
-            }
-            else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
-            {
-                ultimoErro = SUCCESSO;
-            }
-            else if(strcmp(tok, CMD_JOYPAD) == 0)
-            {
-                if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
+                else if(strcmp(tok, CMD_MV_PARAR) == 0)
                 {
-                    gamepad.refreshBotoes(atoi(tok));
-                    if ((tok = STRTOK(NULL, " ")))		        // terceiro token eh o eixo X
+                    drive.parar();
+                    drive2.parar();
+                    eeprom.dados.programa = PRG_RC_SERIAL;
+                }
+                else if(strcmp(tok, CMD_MV_RODAS) == 0)
+                {
+                    tok = STRTOK(NULL, " ");
+                    if (tok)			// second token is the left wheel power percent
                     {
-                        if( gamepad.tipo != ConfigGamepad::TIPO_PC  )
+                        int lw = atoi(tok);
+                        tok = STRTOK(NULL, " ");
+                        if (tok)		// third token is the right wheel power percent
                         {
-                            gamepad.setConfig( &eeprom.dados.joyPC );
+                            drive.motorEsq.move(lw);
+                            drive.motorDir.move(atoi(tok));
                         }
-                        gamepad.x.setValor(atol(tok));
-                        if ((tok = STRTOK(NULL, " ")))	        // quarto token eh o eixo Y
+                    }
+                }
+                else if(strcmp(tok, CMD_MV_VET) == 0)
+                {
+                    eeprom.dados.programa = PRG_RC_SERIAL;
+                    Vetor2i direcao;
+
+                    if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
+                    {
+                        direcao.x = atoi(tok);
+                        if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
                         {
-                            gamepad.y.setValor(atol(tok));
-                            if ((tok = STRTOK(NULL, " ")))		// quinto token eh o eixo Z
+                            direcao.y = atoi(tok);
+                            drive.vetorial( direcao );
+
+                            if ((tok = STRTOK(NULL, " ")))  // segundo token eh o percentual de potencia p/ eixo X
                             {
-                                gamepad.z.setValor(atol(tok));
-                                if ((tok = STRTOK(NULL, " ")))	// sexto token eh o eixo Rudder
+                                direcao.x = atoi(tok);
+                                if ((tok = STRTOK(NULL, " ")))// terceiro token eh o percentual de potencia p/ eixo Y
                                 {
-                                    gamepad.r.setValor(atol(tok));
+                                    direcao.y = atoi(tok);
+                                    drive2.vetorial( direcao );
                                 }
                             }
                         }
                     }
                 }
-                else
-                    enviaJoystick();
+                else if(strcmp(tok, CMD_STATUS) == 0)
+                    enviaStatus();
+                else if(strcmp(tok, CMD_UNAME) == 0)
+                    uname();
+                else if(strcmp(tok, CMD_BIP) == 0)
+                {
+                    #ifdef PINO_BIP
+                        tok = STRTOK(NULL, " ");
+                        if (tok)			        // frequencia
+                        {
+                            int hz = atoi(tok);
+                            tok = STRTOK(NULL, " ");
+                            if (tok)                // duracao
+                                BIP(hz, atoi(tok));
+                            else
+                                BIP(hz, 200);
+                        }
+                    #endif
+                }
+                else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
+                {
+                    ultimoErro = SUCCESSO;
+                }
+                else if(strcmp(tok, CMD_JOYPAD) == 0)
+                {
+                    if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
+                    {
+                        gamepad.refreshBotoes(atoi(tok));
+                        if ((tok = STRTOK(NULL, " ")))		        // terceiro token eh o eixo X
+                        {
+                            if( gamepad.tipo != ConfigGamepad::TIPO_PC  )
+                            {
+                                gamepad.setConfig( &eeprom.dados.joyPC );
+                            }
+                            gamepad.x.setValor(atol(tok));
+                            if ((tok = STRTOK(NULL, " ")))	        // quarto token eh o eixo Y
+                            {
+                                gamepad.y.setValor(atol(tok));
+                                if ((tok = STRTOK(NULL, " ")))		// quinto token eh o eixo Z
+                                {
+                                    gamepad.z.setValor(atol(tok));
+                                    if ((tok = STRTOK(NULL, " ")))	// sexto token eh o eixo Rudder
+                                    {
+                                        gamepad.r.setValor(atol(tok));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                        enviaJoystick();
+                }
             }
         }
     }
+
+    void enviaSensores(bool enviaComando = true)
+    {
+        if(enviaComando)
+        {
+            Serial.print( VAR_AS);
+            Serial.print(" ");
+        }
+        for (int x = 0; x < NUM_SENSORES; x++)
+        {
+            Serial.print( sensores[x].refresh().getValor() );
+            Serial.print(" ");
+        }
+        Serial.println("");
+
+        for( int x = 0; x < NUM_IR_TRACK; x++ )
+            Serial.print( sensores[PINO_TRACK_0 + x].getBool() ? "1" : "0" );
+        Serial.println();
+    }
+
+    void enviaStatus(bool enviaComando = true)
+    {
+        if(enviaComando)
+        {
+            Serial.print(CMD_STATUS);
+            Serial.print(" ");
+        }
+        Serial.print(eeprom.dados.programa);
+        Serial.print(" ");
+        Serial.print(ultimoErro);
+        Serial.print(" ");
+        Serial.print((int)eeprom.dados.handBrake);
+        Serial.print(" ");
+        Serial.print(drive.motorEsq.read());
+        Serial.print(" ");
+        Serial.print(drive.motorDir.read());
+        Serial.print(" ");
+        Serial.print(drive2.motorEsq.read());
+        Serial.print(" ");
+        Serial.print(drive2.motorDir.read());
+        Serial.print(" ");
+        #ifdef PINO_SERVO_PAN
+            Serial.print(pan.read());
+            Serial.print(" ");
+        #endif
+        #ifdef PINO_SERVO_TILT
+            Serial.print(tilt.read());
+            Serial.print(" ");
+        #endif
+        #ifdef PINO_SERVO_ROLL
+        Serial.print(roll.read());
+        #endif
+        //Serial.print(" ");
+        //for(int p=13; p>=0; p--)
+        //for(int p=13; p>5; p--)
+        //    Serial.print(digitalRead(p));
+        Serial.println("");
+    }
+
+    void enviaJoystick()
+    {
+        Serial.print(CMD_JOYPAD);
+        Serial.print(" X ");
+        Serial.print(gamepad.x.getPorcentoAprox(0));
+        Serial.print(" ~ ");
+        Serial.print(gamepad.x.getPorcentoAprox());
+
+        Serial.print(" (");
+        Serial.print(gamepad.x.cfg->minimo);
+        Serial.print(",");
+        Serial.print(gamepad.x.cfg->centro);
+        Serial.print(",");
+        Serial.print(gamepad.x.cfg->maximo);
+        Serial.print(") ");
+        Serial.println(gamepad.x.valor);
+
+        Serial.print(CMD_JOYPAD);
+        Serial.print(" Y ");
+        Serial.print(gamepad.y.getPorcentoAprox(0));
+        Serial.print(" ~ ");
+        Serial.print(gamepad.y.getPorcentoAprox());
+
+        Serial.print(" (");
+        Serial.print(gamepad.y.cfg->minimo);
+        Serial.print(",");
+        Serial.print(gamepad.y.cfg->centro);
+        Serial.print(",");
+        Serial.print(gamepad.y.cfg->maximo);
+        Serial.print(") ");
+        Serial.println(gamepad.y.valor);
+    /*
+        Serial.print(" Z ");
+        Serial.print(gamepad.z.getPorcentoAprox(0));
+        Serial.print(" R ");
+        Serial.println(gamepad.r.getPorcentoAprox(0));
+    */
+    }
+
+    void uname()
+    {
+        Serial.print("MBSBOT hw ");
+        Serial.print(VERSAO_PLACA);
+        Serial.print(" sw ");
+        Serial.println(VERSAO_PROTOCOLO);
+    }
+
+private:
+    char command[MAX_CMD];
+    short pos;
 }
+telnet;
 
 // ******************************************************************************
 //		INTS DE R/C - http://code.google.com/p/arduino-pinchangeint/wiki/Usage
@@ -1881,7 +1929,7 @@ void trataJoystick()
 void setup()
 {
     Serial.begin(115200);
-    uname();
+    telnet.uname();
 
     eeprom.load();
 
@@ -1967,13 +2015,13 @@ void setup()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
 */
-
+/*
     cfgBtCal.init( ConfigSensor::SENSOR_DIGITAL, 37 );
     botaoCal.setConfig( &cfgBtCal );
 
     cfgBtPrg.init( ConfigSensor::SENSOR_DIGITAL, 39 );
     botaoPrg.setConfig( &cfgBtPrg );
-
+*/
     if( eeprom.dados.programa == PRG_LINE_FOLLOW )
         lineFollower.calibrar();
 }
@@ -1990,14 +2038,41 @@ void loop()
     trataJoystick();
 
     botaoCal.refresh();
+    if( botaoCal.trocouEstado() )
+    {
+        if( botaoCal.getEstado() )
+            Serial. println("[CAL] apertado");
+        else
+        {
+            lineFollower.calibrar();
+            Serial. println("[CAL] solto");
+        }
+    }
 
     botaoPrg.refresh();
+    if( botaoPrg.trocouEstado() )
+    {
+        if( botaoPrg.getEstado() )
+            Serial. println("[PRG] apertado");
+        else
+        {
+            if( eeprom.dados.programa == PRG_LINE_FOLLOW )
+            {
+                drive.parar();
+                eeprom.dados.programa = DFT_PROGRAMA;
+            }
+            else
+                eeprom.dados.programa = PRG_LINE_FOLLOW;
+
+            Serial. println("[PRG] solto");
+        }
+    }
 
     static unsigned long ultimoStatus = 0;
     if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
     {
         Serial.println(agora);
-        enviaStatus();
+        telnet.enviaStatus();
         //digitalWrite(PINO_LED, !digitalRead(PINO_LED));
     }
 
@@ -2005,8 +2080,8 @@ void loop()
     if( delaySemBlock(&ultimoSensores, eeprom.dados.delays.sensores) )
     {
         Serial.println(agora);
-        //enviaJoystick();
-        enviaSensores();
+        //telnet.enviaJoystick();
+        telnet.enviaSensores();
         #ifdef WIICHUCK
             nunchuck_print_data();
         #endif
