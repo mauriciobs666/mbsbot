@@ -60,12 +60,12 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-#define NUM_SENSORES    10
+#define NUM_SENSORES    16
 
 #define LINE_FOLLOWER
 
 #ifdef LINE_FOLLOWER
-    #define NUM_IR_TRACK    10
+    #define NUM_IR_TRACK    16
     #define PINO_TRACK_0    0
     // ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 #endif

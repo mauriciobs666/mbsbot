@@ -278,7 +278,7 @@ public:
             #endif
         #endif
 
-        dados.delays.sensores = -1; // 3m
+        dados.delays.sensores = -1;
         dados.delays.status = -1;
         dados.delays.ES = DFT_DELAY_ES;
         dados.delays.motores = DFT_VEL_REFRESH;
@@ -1103,8 +1103,7 @@ private:
         int pontoMin;
         int pontoMax;
         int tamanho;
-        bool trilho;
-        Grupo() : trilho(false)
+        Grupo()
         {}
     }
     grupos[NUM_IR_TRACK/2], trilho;
@@ -1118,7 +1117,6 @@ private:
         {
             if( sensores[ PINO_TRACK_0 + s ].refresh().getBool() )
             {
-                grupos[ nGrupos ].trilho = false;
                 grupos[ nGrupos ].pontoMin = grupos[ nGrupos ].pontoMedio = 2*s + 1;
                 grupos[ nGrupos ].tamanho = 1;
 
@@ -1149,10 +1147,17 @@ void LineFollower::loop()
 
     if( nGrupos )
     {
-        if( nGrupos == 1 )
-            trilho = grupos[0];
-        else
+        if( nGrupos == 1 && tamMaior < 6 )
         {
+            trilho = grupos[0];
+        }
+        else // ( nGrupos > 1 )
+        {
+            static bool cruzamento = false;
+            static bool marcaEsq = false;
+            static bool marcaDir = false;
+
+            /*
             int grupo = 0;
             int dist = 1000;
             for( int n = 0; n < nGrupos; n++ )
@@ -1164,8 +1169,7 @@ void LineFollower::loop()
                     grupo = n;
                 }
             }
-            grupos[grupo].trilho = true;
-            //trilho = grupos[grupo];
+            */
         }
 
         int erro = trilho.pontoMedio - NUM_IR_TRACK;
@@ -1212,7 +1216,6 @@ void LineFollower::loop()
         int MV = constrain( ( Proporcional + Integral + Derivada ), -200, 200 );
 
         drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
-
      }
     else
         drive.parar();
