@@ -1072,7 +1072,7 @@ public:
         acumulador(0),
         iniHist(0), fimHist(0),
         nGrupos(0), tamMaior(0),
-        erroAnterior(0), tEanterior(0), tEatual(0)
+        erroAnterior(0), direcao(0), tEanterior(0), tEatual(0)
     {}
     void calibrar();
     void loop();
@@ -1092,7 +1092,9 @@ private:
     int nGrupos;
     int tamMaior;
 
+    int erro;
     int erroAnterior;
+    int direcao;
     unsigned long tEanterior;
     unsigned long tEatual;
 
@@ -1147,7 +1149,9 @@ void LineFollower::loop()
 
     if( nGrupos )
     {
-        if( nGrupos == 1 && tamMaior < 6 )
+        digitalWrite( PINO_LED, true );
+
+        if( nGrupos == 1 )
         {
             trilho = grupos[0];
         }
@@ -1156,23 +1160,9 @@ void LineFollower::loop()
             static bool cruzamento = false;
             static bool marcaEsq = false;
             static bool marcaDir = false;
-
-            /*
-            int grupo = 0;
-            int dist = 1000;
-            for( int n = 0; n < nGrupos; n++ )
-            {
-                int distancia = abs( grupos[n].pontoMedio - trilho.pontoMedio );
-                if( distancia < dist )
-                {
-                    dist = distancia;
-                    grupo = n;
-                }
-            }
-            */
         }
 
-        int erro = trilho.pontoMedio - NUM_IR_TRACK;
+        erro = trilho.pontoMedio - NUM_IR_TRACK;
 
         int Proporcional = eeprom.dados.pid.Kp * erro;
 
@@ -1203,6 +1193,8 @@ void LineFollower::loop()
             {
                 tEanterior = tEatual;
                 tEatual = agora;
+                direcao = erro - erroAnterior;
+                erroAnterior = erro;
             }
 
             int intervalo = tEatual - tEanterior;
@@ -1210,15 +1202,24 @@ void LineFollower::loop()
             if( (int) ( agora - tEatual ) > intervalo )
                 intervalo = agora - tEatual;
 
-            Derivada = eeprom.dados.pid.Kd / intervalo;
+            Derivada = eeprom.dados.pid.Kd / ( direcao > 0 ? intervalo : -intervalo );
         }
 
-        int MV = constrain( ( Proporcional + Integral + Derivada ), -200, 200 );
+        int MV = constrain( ( Proporcional + Integral + Derivada ), -100, 100 );
 
         drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
      }
     else
+    {
+        static unsigned long piscaLed=0;
+        static bool estadoLed = false;
+        if( delaySemBlock( &piscaLed, 500 ) )
+        {
+            estadoLed = ! estadoLed;
+            digitalWrite( PINO_LED, estadoLed );
+        }
         drive.parar();
+    }
 }
 
 void LineFollower::calibrar()
@@ -1259,7 +1260,7 @@ void LineFollower::calibrar()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
-    drive.giraEsq( 80 );
+    drive.giraEsq( 100 );
 
     unsigned long timeout = millis() + 5000;
 
@@ -1269,26 +1270,37 @@ void LineFollower::calibrar()
         drive.refresh();
         refresh();
     }
-    while( agora < timeout && ( ! nGrupos || grupos[0].pontoMedio < 2 * ( NUM_IR_TRACK-1 ) ));
+    while( agora < timeout && ( ! nGrupos || grupos[0].pontoMedio < ( 2 * ( NUM_IR_TRACK-1 ) ) + 1 ));
 
     drive.parar();
 
-    if( agora < timeout )
+    delay( 100 );
+
+    drive.giraDir( 100 );
+
+    do
     {
-        delay( 100 );
-
-        drive.giraDir( 80 );
-
-        do
-        {
-            agora = millis();
-            drive.refresh();
-            refresh();
-        }
-        while( agora < timeout && grupos[0].pontoMedio > 1 );
-
-        drive.parar();
+        agora = millis();
+        drive.refresh();
+        refresh();
     }
+    while( agora < timeout && grupos[0].pontoMedio > 1 );
+
+    drive.parar();
+
+    delay( 100 );
+
+    drive.giraEsq( 100 );
+
+    do
+    {
+        agora = millis();
+        drive.refresh();
+        refresh();
+    }
+    while( agora < timeout && grupos[0].pontoMedio <  NUM_IR_TRACK );
+
+    drive.parar();
 }
 //#endif
 
@@ -2017,15 +2029,8 @@ void setup()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
 */
-/*
-    cfgBtCal.init( ConfigSensor::SENSOR_DIGITAL, 37 );
-    botaoCal.setConfig( &cfgBtCal );
-
-    cfgBtPrg.init( ConfigSensor::SENSOR_DIGITAL, 39 );
-    botaoPrg.setConfig( &cfgBtPrg );
-*/
-    if( eeprom.dados.programa == PRG_LINE_FOLLOW )
-        lineFollower.calibrar();
+//    if( eeprom.dados.programa == PRG_LINE_FOLLOW )
+//        lineFollower.calibrar();
 }
 
 // ******************************************************************************
@@ -2062,6 +2067,7 @@ void loop()
             {
                 drive.parar();
                 eeprom.dados.programa = DFT_PROGRAMA;
+                digitalWrite( PINO_LED, false );
             }
             else
                 eeprom.dados.programa = PRG_LINE_FOLLOW;
