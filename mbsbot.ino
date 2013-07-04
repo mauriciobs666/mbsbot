@@ -224,11 +224,16 @@ public:
         } delays;
 
         // controlador PID
+
         struct sPID
         {
             int Kp;		// proporcional
             int Ki;		// integral
             int Kd;		// derivativo
+            int maxMV;
+            int debounce;
+            int limite;
+            bool zeraAcc;
         } pid;
 
         ConfigGamepad joyRC, joyPC;
@@ -283,9 +288,13 @@ public:
         dados.delays.ES = DFT_DELAY_ES;
         dados.delays.motores = DFT_VEL_REFRESH;
 
-        dados.pid.Kp = 40;
-        dados.pid.Ki = 0;
-        dados.pid.Kd = 0;
+        dados.pid.Kp = DFT_PID_P;
+        dados.pid.Ki = DFT_PID_I;
+        dados.pid.Kd = DFT_PID_D;
+        dados.pid.debounce = DFT_PID_DEBOUNCE;
+        dados.pid.maxMV = DFT_PID_MAX_MV;
+        dados.pid.limite = DFT_PID_LIMITE;
+        dados.pid.zeraAcc = false;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
@@ -599,7 +608,7 @@ public:
         if( atual != antes )
             debounce = agora;
 
-        if( ( agora - debounce ) > 100 )
+        if( ( agora - debounce ) > 50 )
         {
             if( estado != atual )
             {
@@ -1072,7 +1081,7 @@ public:
         acumulador(0),
         iniHist(0), fimHist(0),
         nGrupos(0), tamMaior(0),
-        erroAnterior(0), direcao(0), tEanterior(0), tEatual(0)
+        erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), debounce(0)
     {}
     void calibrar();
     void loop();
@@ -1097,6 +1106,8 @@ private:
     int direcao;
     unsigned long tEanterior;
     unsigned long tEatual;
+    unsigned long fimDaVolta;
+    unsigned long debounce;
 
     class Grupo
     {
@@ -1151,15 +1162,33 @@ void LineFollower::loop()
     {
         digitalWrite( PINO_LED, true );
 
+        static bool cruzamento = false;
+        static bool marcaEsq = false;
+        static bool marcaDir = false;
+
         if( nGrupos == 1 )
         {
-            trilho = grupos[0];
+            if( debounce )
+                debounce--;
+            else
+            {
+                trilho = grupos[0];
+                if( marcaEsq )
+                    marcaEsq = false;
+                if( cruzamento )
+                    cruzamento = false;
+                if( marcaDir )
+                    marcaDir = false;
+            }
         }
         else // ( nGrupos > 1 )
         {
-            static bool cruzamento = false;
-            static bool marcaEsq = false;
-            static bool marcaDir = false;
+            debounce = eeprom.dados.pid.debounce;
+
+            for( int ig = 0 ; ig < nGrupos ; ig++ )
+            {
+                //if( grupos[ig].)
+            }
         }
 
         erro = trilho.pontoMedio - NUM_IR_TRACK;
@@ -1172,15 +1201,13 @@ void LineFollower::loop()
         {
             if( erro )
                 acumulador += erro;
-            //else
-            //    acumulador = 0;
+            else if( eeprom.dados.pid.zeraAcc )
+                acumulador = 0;
 
-            int limite = 1000;
-
-            if( acumulador > limite )
-                acumulador = limite;
-            else if( acumulador < -limite )
-                acumulador = -limite;
+            if( acumulador > eeprom.dados.pid.limite )
+                acumulador = eeprom.dados.pid.limite;
+            else if( acumulador < -eeprom.dados.pid.limite )
+                acumulador = -eeprom.dados.pid.limite;
 
             Integral = acumulador / eeprom.dados.pid.Ki;
         }
@@ -1205,7 +1232,7 @@ void LineFollower::loop()
             Derivada = eeprom.dados.pid.Kd / ( direcao > 0 ? intervalo : -intervalo );
         }
 
-        int MV = constrain( ( Proporcional + Integral + Derivada ), -100, 100 );
+        int MV = constrain( ( Proporcional + Integral + Derivada ), -eeprom.dados.pid.maxMV , eeprom.dados.pid.maxMV );
 
         drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
      }
@@ -1231,7 +1258,12 @@ void LineFollower::calibrar()
     unsigned short maximo = 0;
 
     drive.parar();
+
+    digitalWrite( PINO_LED, true );
+    delay(100);
+    digitalWrite( PINO_LED, false );
     delay(1000);
+    digitalWrite( PINO_LED, true );
 
     // primeira rodada de leitura
 
@@ -1260,7 +1292,12 @@ void LineFollower::calibrar()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
-    drive.giraEsq( 100 );
+    int backupVE = eeprom.dados.velEscala;
+    eeprom.dados.velEscala = 100;
+
+    const char v = 60;
+
+    drive.giraEsq( v );
 
     unsigned long timeout = millis() + 5000;
 
@@ -1276,7 +1313,7 @@ void LineFollower::calibrar()
 
     delay( 100 );
 
-    drive.giraDir( 100 );
+    drive.giraDir( v );
 
     do
     {
@@ -1290,7 +1327,7 @@ void LineFollower::calibrar()
 
     delay( 100 );
 
-    drive.giraEsq( 100 );
+    drive.giraEsq( v );
 
     do
     {
@@ -1301,6 +1338,10 @@ void LineFollower::calibrar()
     while( agora < timeout && grupos[0].pontoMedio <  NUM_IR_TRACK );
 
     drive.parar();
+
+    digitalWrite( PINO_LED, false );
+
+    eeprom.dados.velEscala = backupVE;
 }
 //#endif
 
@@ -1488,6 +1529,14 @@ public:
                                 if((tok = STRTOK(NULL, " ")))	// D
                                     eeprom.dados.pid.Kd = atoi(tok);
                             }
+                            else if(strcmp(dest, VAR_PID_MMV) == 0)
+                                eeprom.dados.pid.maxMV = valor;
+                            else if(strcmp(dest, VAR_PID_DEB) == 0)
+                                eeprom.dados.pid.debounce = valor;
+                            else if(strcmp(dest, VAR_PID_LIM) == 0)
+                                eeprom.dados.pid.limite = valor;
+                            else if(strcmp(dest, VAR_PID_ZAC) == 0)
+                                eeprom.dados.pid.zeraAcc = valor;
                             else if(strcmp(dest, VAR_FREIO) == 0)
                                 eeprom.dados.handBrake = valor;
                             else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
@@ -1902,11 +1951,15 @@ void trataJoystick()
     }
 
     if(gamepad.botoesEdgeF & BT_Y)
-        eeprom.dados.programa = PRG_NAV_3S;
+    {
+        eeprom.dados.handBrake = 0;
+        eeprom.dados.programa = PRG_LINE_FOLLOW;
+    }
 
     if(gamepad.botoesEdgeF & BT_A)
     {
-        eeprom.dados.handBrake = 1;
+        drive.parar();
+        drive2.parar();
         eeprom.dados.programa = PRG_RC_SERIAL;
     }
 
@@ -2067,7 +2120,6 @@ void loop()
             {
                 drive.parar();
                 eeprom.dados.programa = DFT_PROGRAMA;
-                digitalWrite( PINO_LED, false );
             }
             else
                 eeprom.dados.programa = PRG_LINE_FOLLOW;
@@ -2118,6 +2170,23 @@ void loop()
         case PRG_RC:
         case PRG_RC_SERIAL:
         {
+            static unsigned long piscaLed = 0;
+            static int intervalo = 100;
+
+            if( delaySemBlock( &piscaLed, intervalo) )
+            {
+                if( intervalo == 100 )
+                {
+                    digitalWrite( PINO_LED, false );
+                    intervalo = 1000;
+                }
+                else
+                {
+                    digitalWrite( PINO_LED, true );
+                    intervalo = 100;
+                }
+            }
+            digitalWrite( PINO_LED, false );
             #ifdef RODAS_PWM_x4
                 drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
