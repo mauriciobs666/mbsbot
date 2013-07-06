@@ -1074,6 +1074,7 @@ void fotovoro()
 // ******************************************************************************
 
 //#ifdef LINE_FOLLOWER
+#define TRACE_LF
 class LineFollower
 {
 public:
@@ -1082,21 +1083,28 @@ public:
         nGrupos(0), tamMaior(0),
         Proporcional(0), Integral(0), Derivada(0), MV(0),
         erro(0), erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), fimDaVolta(0), debounce(0),
-        marcaEsq(false), marcaDir(false)
+        marcaEsq(false), marcaDir(false), esperaFimVolta(false), fodeu(false)
     {}
     void calibrar();
     void loop();
 
     void print()
     {
-        Serial.print( "erroAnt = " );
-        Serial.println( erroAnterior );
+        #ifdef TRACE_LF
+            Serial.print( "LF " );
+            Serial.print( Proporcional );
+            Serial.print( " " );
+            Serial.print( Integral );
+            Serial.print( " " );
+            Serial.println( Derivada );
+        #endif
     }
 
     void iniciarCorrida()
     {
         inicioCorrida = agora;
         fimDaVolta = 0;
+        esperaFimVolta = false;
     }
 
     int acumulador;
@@ -1121,6 +1129,8 @@ public:
     bool debounceArray[ NUM_IR_TRACK ];
     bool marcaEsq;
     bool marcaDir;
+    bool esperaFimVolta;
+    bool fodeu;
 
     class Grupo
     {
@@ -1133,15 +1143,17 @@ public:
         {}
         void print()
         {
-            Serial.print(" m ");
-            Serial.print((int)pontoMedio);
-            Serial.print(" i ");
-            Serial.print((int)pontoMin);
-            Serial.print(" x ");
-            Serial.print((int)pontoMax);
-            Serial.print(" t ");
-            Serial.print((int)tamanho);
-            Serial.println("");
+            #ifdef TRACE_LF
+                Serial.print(" m ");
+                Serial.print((int)pontoMedio);
+                Serial.print(" i ");
+                Serial.print((int)pontoMin);
+                Serial.print(" x ");
+                Serial.print((int)pontoMax);
+                Serial.print(" t ");
+                Serial.print((int)tamanho);
+                Serial.println("");
+            #endif
         }
     }
     grupos[NUM_IR_TRACK/2], trilho;
@@ -1196,16 +1208,22 @@ public:
         {
             if( debounceArray[s] )
             {
-                Serial.print( "1" );
                 debounceArray[s] = false;
+                #ifdef TRACE_LF
+                    Serial.print( "1" );
+                #endif
             }
             else
             {
-                Serial.print( "0" );
                 todosTrue = false;
+                #ifdef TRACE_LF
+                    Serial.print( "0" );
+                #endif
             }
         }
-        Serial.println();
+        #ifdef TRACE_LF
+            Serial.println();
+        #endif
 
         return todosTrue;
     }
@@ -1219,6 +1237,7 @@ void LineFollower::loop()
         if( agora > fimDaVolta )
         {
             fimDaVolta = 0;
+            esperaFimVolta = false;
             drive.parar();
             drive.refresh();
             delay( 5000 );
@@ -1233,6 +1252,8 @@ void LineFollower::loop()
     {
         digitalWrite( PINO_LED, true );
 
+        fodeu = false;
+
         if( nGrupos == 1 )
         {
             if( debounce )
@@ -1245,19 +1266,40 @@ void LineFollower::loop()
                     {
                         if( marcaEsq )
                         {
-                            Serial.println("Marca esquerda");
+                            #ifdef TRACE_LF
+                                Serial.println("Marca esquerda");
+                            #endif
                         }
 
                         if( marcaDir )
                         {
-                            Serial.println("Marca direita");
-                            fimDaVolta = agora + 500;
+
+                            if( esperaFimVolta )
+                            {
+                                fimDaVolta = agora + 500;
+                                #ifdef TRACE_LF
+                                    Serial.println("Fim de volta");
+                                #endif
+                            }
+                            else
+                            {
+                                esperaFimVolta = true;
+                                #ifdef TRACE_LF
+                                    Serial.println("Inicio de volta");
+                                #endif
+                            }
                         }
                     }
                     else
-                        Serial.println("Cruzamento");
+                    {
+                        #ifdef TRACE_LF
+                            Serial.println("Cruzamento");
+                        #endif
+                    }
 
-                    Serial.println("");
+                    #ifdef TRACE_LF
+                        Serial.println("");
+                    #endif
 
                     marcaEsq = marcaDir = false;
                 }
@@ -1269,18 +1311,20 @@ void LineFollower::loop()
         }
         else // ( nGrupos > 1 )
         {
-            if( false && ! debounce )
-            {
-                Serial.print("ng=");
-                Serial.println((int)nGrupos);
+            #ifdef TRACE_LF
+                if( false && ! debounce )
+                {
+                    Serial.print("ng=");
+                    Serial.println((int)nGrupos);
 
-                for( int x = 0; x < NUM_IR_TRACK; x++ )
-                    Serial.print( sensoresBool[x] ? "1" : "0" );
-                Serial.println();
+                    for( int x = 0; x < NUM_IR_TRACK; x++ )
+                        Serial.print( sensoresBool[x] ? "1" : "0" );
+                    Serial.println();
 
-                for( int ig = 0 ; ig < nGrupos ; ig++ )
-                    grupos[ig].print();
-            }
+                    for( int ig = 0 ; ig < nGrupos ; ig++ )
+                        grupos[ig].print();
+                }
+            #endif
 
             debounce = eeprom.dados.pid.debounce;
 
@@ -1345,6 +1389,12 @@ void LineFollower::loop()
      }
     else
     {
+        if( ! fodeu )
+        {
+            fodeu = true;
+            print();
+        }
+
         static unsigned long piscaLed=0;
         static bool estadoLed = false;
         if( delaySemBlock( &piscaLed, 500 ) )
@@ -2293,7 +2343,7 @@ void loop()
             static unsigned long piscaLed = 0;
             static int intervalo = 100;
 
-            if( delaySemBlock( &piscaLed, intervalo) )
+            if( delaySemBlock( &piscaLed, intervalo ) )
             {
                 if( intervalo == 100 )
                 {
@@ -2306,7 +2356,6 @@ void loop()
                     intervalo = 100;
                 }
             }
-            digitalWrite( PINO_LED, false );
             #ifdef RODAS_PWM_x4
                 drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
                 drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());

@@ -38,7 +38,7 @@
 #define DFT_PID_P           10
 #define DFT_PID_I           500
 #define DFT_PID_D           10000
-#define DFT_PID_DEBOUNCE    50
+#define DFT_PID_DEBOUNCE    30
 #define DFT_PID_MAX_MV      100
 #define DFT_PID_LIMITE      10000
 
