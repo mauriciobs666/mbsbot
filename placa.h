@@ -36,11 +36,13 @@
 #define DFT_BALANCO       0
 
 #define DFT_PID_P           10
-#define DFT_PID_I           500
-#define DFT_PID_D           10000
-#define DFT_PID_DEBOUNCE    30
-#define DFT_PID_MAX_MV      100
-#define DFT_PID_LIMITE      10000
+#define DFT_PID_I           150
+#define DFT_PID_D           1500
+#define DFT_PID_DEBOUNCE    20
+#define DFT_PID_MAX_MV      200
+#define DFT_PID_LIM_P       15
+#define DFT_PID_LIM_I       10000
+#define DFT_PID_LIM_D       1000
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1

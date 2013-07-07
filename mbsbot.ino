@@ -232,7 +232,9 @@ public:
             int Kd;		// derivativo
             int maxMV;
             int debounce;
-            int limite;
+            int limiteP;
+            int limiteI;
+            int limiteD;
             int zeraAcc;
         } pid;
 
@@ -293,7 +295,9 @@ public:
         dados.pid.Kd = DFT_PID_D;
         dados.pid.debounce = DFT_PID_DEBOUNCE;
         dados.pid.maxMV = DFT_PID_MAX_MV;
-        dados.pid.limite = DFT_PID_LIMITE;
+        dados.pid.limiteP = DFT_PID_LIM_P;
+        dados.pid.limiteI = DFT_PID_LIM_I;
+        dados.pid.limiteD = DFT_PID_LIM_D;
         dados.pid.zeraAcc = 0;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
@@ -1074,7 +1078,7 @@ void fotovoro()
 // ******************************************************************************
 
 //#ifdef LINE_FOLLOWER
-#define TRACE_LF
+//#define TRACE_LF
 class LineFollower
 {
 public:
@@ -1082,7 +1086,7 @@ public:
         acumulador(0),
         nGrupos(0), tamMaior(0),
         Proporcional(0), Integral(0), Derivada(0), MV(0),
-        erro(0), erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), fimDaVolta(0), debounce(0),
+        erro(0), erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), fimDaVolta(0), debounce(0), debounceReducao(0),
         marcaEsq(false), marcaDir(false), esperaFimVolta(false), fodeu(false)
     {}
     void calibrar();
@@ -1090,21 +1094,21 @@ public:
 
     void print()
     {
-        #ifdef TRACE_LF
-            Serial.print( "LF " );
-            Serial.print( Proporcional );
-            Serial.print( " " );
-            Serial.print( Integral );
-            Serial.print( " " );
-            Serial.println( Derivada );
-        #endif
+        Serial.print( "LF " );
+        Serial.print( Proporcional );
+        Serial.print( " " );
+        Serial.print( Integral );
+        Serial.print( " " );
+        Serial.println( Derivada );
     }
 
     void iniciarCorrida()
     {
+        eeprom.dados.programa = PRG_LINE_FOLLOW;
         inicioCorrida = agora;
         fimDaVolta = 0;
         esperaFimVolta = false;
+        debounceReducao = 0;
     }
 
     int acumulador;
@@ -1125,6 +1129,7 @@ public:
     unsigned long inicioCorrida;
     unsigned long fimDaVolta;
     unsigned long debounce;
+    unsigned long debounceReducao;
     bool sensoresBool[ NUM_IR_TRACK ];
     bool debounceArray[ NUM_IR_TRACK ];
     bool marcaEsq;
@@ -1199,7 +1204,7 @@ public:
 
     bool cruzamento()
     {
-        bool todosTrue = true;
+        int conta1s = 0;
 
         if( marcaEsq && marcaDir )
             return true;
@@ -1208,6 +1213,7 @@ public:
         {
             if( debounceArray[s] )
             {
+                conta1s++;
                 debounceArray[s] = false;
                 #ifdef TRACE_LF
                     Serial.print( "1" );
@@ -1215,7 +1221,6 @@ public:
             }
             else
             {
-                todosTrue = false;
                 #ifdef TRACE_LF
                     Serial.print( "0" );
                 #endif
@@ -1225,7 +1230,7 @@ public:
             Serial.println();
         #endif
 
-        return todosTrue;
+        return conta1s > ( ( NUM_IR_TRACK * 8 ) / 10 ) ;
     }
 }
 lineFollower;
@@ -1240,7 +1245,18 @@ void LineFollower::loop()
             esperaFimVolta = false;
             drive.parar();
             drive.refresh();
-            delay( 5000 );
+            Serial.print("Volta:");
+            Serial.println(int((agora-inicioCorrida)/1000));
+            delay( 3000 );
+        }
+    }
+
+    if( debounceReducao )
+    {
+        if( agora > debounceReducao )
+        {
+            debounceReducao = 0;
+            eeprom.dados.velEscala += 20;
         }
     }
 
@@ -1266,6 +1282,8 @@ void LineFollower::loop()
                     {
                         if( marcaEsq )
                         {
+                            debounceReducao = agora + 200;
+                            eeprom.dados.velEscala -= 20;
                             #ifdef TRACE_LF
                                 Serial.println("Marca esquerda");
                             #endif
@@ -1343,7 +1361,14 @@ void LineFollower::loop()
 
         erro = trilho.pontoMedio - NUM_IR_TRACK;
 
-        Proporcional = eeprom.dados.pid.Kp * erro;
+        Proporcional = erro;
+
+        if( Proporcional > eeprom.dados.pid.limiteP )
+            Proporcional = eeprom.dados.pid.limiteP;
+        else if( Proporcional < -eeprom.dados.pid.limiteP )
+            Proporcional = -eeprom.dados.pid.limiteP;
+
+        Proporcional *= eeprom.dados.pid.Kp;
 
         Integral = 0;
 
@@ -1354,10 +1379,10 @@ void LineFollower::loop()
             else if( eeprom.dados.pid.zeraAcc )
                 acumulador = 0;
 
-            if( acumulador > eeprom.dados.pid.limite )
-                acumulador = eeprom.dados.pid.limite;
-            else if( acumulador < -eeprom.dados.pid.limite )
-                acumulador = -eeprom.dados.pid.limite;
+            if( acumulador > eeprom.dados.pid.limiteI )
+                acumulador = eeprom.dados.pid.limiteI;
+            else if( acumulador < -eeprom.dados.pid.limiteI )
+                acumulador = -eeprom.dados.pid.limiteI;
 
             Integral = acumulador / eeprom.dados.pid.Ki;
         }
@@ -1378,6 +1403,11 @@ void LineFollower::loop()
 
             if( (int) ( agora - tEatual ) > intervalo )
                 intervalo = agora - tEatual;
+
+            if( intervalo > eeprom.dados.pid.limiteD )
+                intervalo = eeprom.dados.pid.limiteD;
+            else if( intervalo < -eeprom.dados.pid.limiteD )
+                intervalo = -eeprom.dados.pid.limiteD;
 
             Derivada = eeprom.dados.pid.Kd / ( direcao > 0 ? intervalo : -intervalo );
         }
@@ -1454,7 +1484,7 @@ void LineFollower::calibrar()
     int backupVE = eeprom.dados.velEscala;
     eeprom.dados.velEscala = 100;
 
-    const char v = 60;
+    const char v = 50;
 
     drive.giraEsq( v );
 
@@ -1696,7 +1726,7 @@ public:
                             else if(strcmp(dest, VAR_PID_DEB) == 0)
                                 eeprom.dados.pid.debounce = valor;
                             else if(strcmp(dest, VAR_PID_LIM) == 0)
-                                eeprom.dados.pid.limite = valor;
+                                eeprom.dados.pid.limiteI = valor;
                             else if(strcmp(dest, VAR_PID_ZAC) == 0)
                                 eeprom.dados.pid.zeraAcc = valor;
                             else if(strcmp(dest, VAR_FREIO) == 0)
@@ -1768,7 +1798,7 @@ public:
                         else if(strcmp(tok, VAR_PID_DEB) == 0)
                             Serial.println((int)eeprom.dados.pid.debounce);
                         else if(strcmp(tok, VAR_PID_LIM) == 0)
-                            Serial.println((int)eeprom.dados.pid.limite);
+                            Serial.println((int)eeprom.dados.pid.limiteI);
                         else if(strcmp(tok, VAR_PID_ZAC) == 0)
                             Serial.println((int)eeprom.dados.pid.zeraAcc);
                         else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
@@ -2123,7 +2153,7 @@ void trataJoystick()
     if(gamepad.botoesEdgeF & BT_Y)
     {
         eeprom.dados.handBrake = 0;
-        eeprom.dados.programa = PRG_LINE_FOLLOW;
+        lineFollower.iniciarCorrida();
     }
 
     if(gamepad.botoesEdgeF & BT_A)
@@ -2271,10 +2301,12 @@ void loop()
     if( botaoCal.trocouEstado() )
     {
         if( botaoCal.getEstado() )
-            Serial. println("[CAL] apertado");
+        {
+//            Serial. println("[CAL] apertado");
+        }
         else
         {
-            Serial. println("[CAL] solto");
+//            Serial. println("[CAL] solto");
             lineFollower.calibrar();
         }
     }
@@ -2283,7 +2315,9 @@ void loop()
     if( botaoPrg.trocouEstado() )
     {
         if( botaoPrg.getEstado() )
-            Serial. println("[PRG] apertado");
+        {
+//            Serial. println("[PRG] apertado");
+        }
         else
         {
             if( eeprom.dados.programa == PRG_LINE_FOLLOW )
@@ -2292,9 +2326,9 @@ void loop()
                 eeprom.dados.programa = DFT_PROGRAMA;
             }
             else
-                eeprom.dados.programa = PRG_LINE_FOLLOW;
+                lineFollower.iniciarCorrida();
 
-            Serial. println("[PRG] solto");
+//            Serial. println("[PRG] solto");
         }
     }
 
@@ -2317,6 +2351,7 @@ void loop()
         #endif
     }
 
+    //#define TESTE_PERFORMANCE
     #ifdef TESTE_PERFORMANCE
     static unsigned long passagensLoop = 0;
     static unsigned long ultimoLoop = 0;
