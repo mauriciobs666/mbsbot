@@ -1230,13 +1230,15 @@ public:
             Serial.println();
         #endif
 
-        return conta1s > ( ( NUM_IR_TRACK * 8 ) / 10 ) ;
+        return conta1s > ( ( NUM_IR_TRACK * 7 ) / 10 ) ;
     }
 }
 lineFollower;
 
 void LineFollower::loop()
 {
+    static int escalaBackup;
+
     if( fimDaVolta )
     {
         if( agora > fimDaVolta )
@@ -1245,7 +1247,7 @@ void LineFollower::loop()
             esperaFimVolta = false;
             drive.parar();
             drive.refresh();
-            Serial.print("Volta:");
+            Serial.print("Lap:");
             Serial.println(int((agora-inicioCorrida)/1000));
             delay( 3000 );
         }
@@ -1256,7 +1258,7 @@ void LineFollower::loop()
         if( agora > debounceReducao )
         {
             debounceReducao = 0;
-            eeprom.dados.velEscala += 20;
+            eeprom.dados.velEscala = escalaBackup;
         }
     }
 
@@ -1270,7 +1272,7 @@ void LineFollower::loop()
 
         fodeu = false;
 
-        if( nGrupos == 1 )
+        if( nGrupos == 1 && tamMaior < (NUM_IR_TRACK/2) )
         {
             if( debounce )
             {
@@ -1282,10 +1284,16 @@ void LineFollower::loop()
                     {
                         if( marcaEsq )
                         {
-                            debounceReducao = agora + 200;
-                            eeprom.dados.velEscala -= 20;
+                            /*
+                            if( ! debounceReducao )
+                            {
+                                escalaBackup = eeprom.dados.velEscala;
+                                eeprom.dados.velEscala = 70;
+                            }
+                            debounceReducao = agora + 500;
+                            */
                             #ifdef TRACE_LF
-                                Serial.println("Marca esquerda");
+                                Serial.println("Esq");
                             #endif
                         }
 
@@ -1296,14 +1304,14 @@ void LineFollower::loop()
                             {
                                 fimDaVolta = agora + 500;
                                 #ifdef TRACE_LF
-                                    Serial.println("Fim de volta");
+                                    Serial.println("Fim lap");
                                 #endif
                             }
                             else
                             {
                                 esperaFimVolta = true;
                                 #ifdef TRACE_LF
-                                    Serial.println("Inicio de volta");
+                                    Serial.println("Ini lap");
                                 #endif
                             }
                         }
@@ -1311,7 +1319,7 @@ void LineFollower::loop()
                     else
                     {
                         #ifdef TRACE_LF
-                            Serial.println("Cruzamento");
+                            Serial.println("Cruz");
                         #endif
                     }
 
@@ -1413,16 +1421,15 @@ void LineFollower::loop()
         }
 
         MV = constrain( ( Proporcional + Integral + Derivada ), -eeprom.dados.pid.maxMV , eeprom.dados.pid.maxMV );
-
-        drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
-        drive.refresh();
      }
     else
     {
         if( ! fodeu )
         {
             fodeu = true;
-            print();
+            #ifdef TRACE_LF
+                print();
+            #endif
         }
 
         static unsigned long piscaLed=0;
@@ -1432,9 +1439,10 @@ void LineFollower::loop()
             estadoLed = ! estadoLed;
             digitalWrite( PINO_LED, estadoLed );
         }
-        drive.parar();
-        drive.refresh();
     }
+
+    drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
+    drive.refresh();
 }
 
 void LineFollower::calibrar()

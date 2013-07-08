@@ -31,14 +31,14 @@
 #define MOTOR_CENTRO    0
 
 #define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA  100
+#define DFT_VEL_ESCALA   85
 #define DFT_VEL_REFRESH   2
 #define DFT_BALANCO       0
 
 #define DFT_PID_P           10
 #define DFT_PID_I           150
 #define DFT_PID_D           1500
-#define DFT_PID_DEBOUNCE    20
+#define DFT_PID_DEBOUNCE    15
 #define DFT_PID_MAX_MV      200
 #define DFT_PID_LIM_P       15
 #define DFT_PID_LIM_I       10000
