@@ -1086,8 +1086,8 @@ public:
         acumulador(0),
         nGrupos(0), tamMaior(0),
         Proporcional(0), Integral(0), Derivada(0), MV(0),
-        erro(0), erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), fimDaVolta(0), debounce(0), debounceReducao(0),
-        marcaEsq(false), marcaDir(false), esperaFimVolta(false), fodeu(false)
+        erro(0), erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), fimDaVolta(0), debounce(0),
+        marcaEsq(false), marcaDir(false), esperaFimVolta(false), fodeu(false), estadoLed(false)
     {}
     void calibrar();
     void loop();
@@ -1105,10 +1105,9 @@ public:
     void iniciarCorrida()
     {
         eeprom.dados.programa = PRG_LINE_FOLLOW;
-        inicioCorrida = agora;
         fimDaVolta = 0;
         esperaFimVolta = false;
-        debounceReducao = 0;
+        estadoLed = true;
     }
 
     int acumulador;
@@ -1129,13 +1128,13 @@ public:
     unsigned long inicioCorrida;
     unsigned long fimDaVolta;
     unsigned long debounce;
-    unsigned long debounceReducao;
     bool sensoresBool[ NUM_IR_TRACK ];
     bool debounceArray[ NUM_IR_TRACK ];
     bool marcaEsq;
     bool marcaDir;
     bool esperaFimVolta;
     bool fodeu;
+    bool estadoLed;
 
     class Grupo
     {
@@ -1237,102 +1236,74 @@ lineFollower;
 
 void LineFollower::loop()
 {
-    static int escalaBackup;
-
     if( fimDaVolta )
     {
         if( agora > fimDaVolta )
         {
             fimDaVolta = 0;
-            esperaFimVolta = false;
             drive.parar();
             drive.refresh();
             Serial.print("Lap:");
             Serial.println(int((agora-inicioCorrida)/1000));
-            delay( 3000 );
+            delay( 2000 );
         }
     }
-
-    if( debounceReducao )
-    {
-        if( agora > debounceReducao )
-        {
-            debounceReducao = 0;
-            eeprom.dados.velEscala = escalaBackup;
-        }
-    }
-
-//    if( agora)
 
     refresh();
 
     if( nGrupos )
     {
-        digitalWrite( PINO_LED, true );
-
         fodeu = false;
 
         if( nGrupos == 1 && tamMaior < (NUM_IR_TRACK/2) )
         {
-            if( debounce )
+            trilho = grupos[0];
+
+            if( agora > debounce )
             {
-                debounce--;
+                debounce = 0;
 
-                if( ! debounce )
+                if( ! cruzamento() )
                 {
-                    if( ! cruzamento() )
+                    if( marcaEsq )
                     {
-                        if( marcaEsq )
-                        {
-                            /*
-                            if( ! debounceReducao )
-                            {
-                                escalaBackup = eeprom.dados.velEscala;
-                                eeprom.dados.velEscala = 70;
-                            }
-                            debounceReducao = agora + 500;
-                            */
-                            #ifdef TRACE_LF
-                                Serial.println("Esq");
-                            #endif
-                        }
-
-                        if( marcaDir )
-                        {
-
-                            if( esperaFimVolta )
-                            {
-                                fimDaVolta = agora + 500;
-                                #ifdef TRACE_LF
-                                    Serial.println("Fim lap");
-                                #endif
-                            }
-                            else
-                            {
-                                esperaFimVolta = true;
-                                #ifdef TRACE_LF
-                                    Serial.println("Ini lap");
-                                #endif
-                            }
-                        }
-                    }
-                    else
-                    {
+                        estadoLed = ! estadoLed;
                         #ifdef TRACE_LF
-                            Serial.println("Cruz");
+                            Serial.println("Esq");
                         #endif
                     }
 
-                    #ifdef TRACE_LF
-                        Serial.println("");
-                    #endif
-
-                    marcaEsq = marcaDir = false;
+                    if( marcaDir )
+                    {
+                        if( esperaFimVolta )
+                        {
+                            fimDaVolta = agora + 500;
+                            #ifdef TRACE_LF
+                                Serial.println("Fim lap");
+                            #endif
+                        }
+                        else
+                        {
+                            inicioCorrida = agora;
+                            esperaFimVolta = true;
+                            #ifdef TRACE_LF
+                                Serial.println("Ini lap");
+                            #endif
+                        }
+                    }
                 }
-            }
-            else
-            {
-                trilho = grupos[0];
+                else
+                {
+                    #ifdef TRACE_LF
+                        Serial.println("Cruz");
+                    #endif
+                }
+
+                #ifdef TRACE_LF
+                    Serial.println("");
+                #endif
+
+                marcaEsq = marcaDir = false;
             }
         }
         else // ( nGrupos > 1 )
@@ -1357,6 +1328,15 @@ void LineFollower::loop()
             for( int s = 0; s < NUM_IR_TRACK; s++ )
                 debounceArray[s] |= sensoresBool[s];
 
+            if( tamMaior < (NUM_IR_TRACK/2) )
+            {
+                for( int ig = 0 ; ig < nGrupos ; ig++ )
+                {
+                    if( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
+                        trilho = grupos[ig];
+                }
+            }
+
             for( int ig = 0 ; ig < nGrupos ; ig++ )
             {
                 if( ( grupos[ig].pontoMax + 2 ) < trilho.pontoMin )
@@ -1380,7 +1360,7 @@ void LineFollower::loop()
 
         Integral = 0;
 
-        if( eeprom.dados.pid.Ki )
+        if( eeprom.dados.pid.Ki ) // zero desativa
         {
             if( erro )
                 acumulador += erro;
@@ -1397,28 +1377,25 @@ void LineFollower::loop()
 
         Derivada = 0;
 
-        if( eeprom.dados.pid.Kd )
+        if( erro != erroAnterior )
         {
-            if( erro != erroAnterior )
-            {
-                tEanterior = tEatual;
-                tEatual = agora;
-                direcao = erro - erroAnterior;
-                erroAnterior = erro;
-            }
-
-            int intervalo = tEatual - tEanterior;
-
-            if( (int) ( agora - tEatual ) > intervalo )
-                intervalo = agora - tEatual;
-
-            if( intervalo > eeprom.dados.pid.limiteD )
-                intervalo = eeprom.dados.pid.limiteD;
-            else if( intervalo < -eeprom.dados.pid.limiteD )
-                intervalo = -eeprom.dados.pid.limiteD;
-
-            Derivada = eeprom.dados.pid.Kd / ( direcao > 0 ? intervalo : -intervalo );
+            tEanterior = tEatual;
+            tEatual = agora;
+            direcao = erro - erroAnterior;
+            erroAnterior = erro;
         }
+
+        int intervalo = tEatual - tEanterior;
+
+        if( (int) ( agora - tEatual ) > intervalo )
+            intervalo = agora - tEatual;
+
+        if( intervalo > eeprom.dados.pid.limiteD )
+            intervalo = eeprom.dados.pid.limiteD;
+        else if( intervalo < -eeprom.dados.pid.limiteD )
+            intervalo = -eeprom.dados.pid.limiteD;
+
+        Derivada = eeprom.dados.pid.Kd / ( direcao > 0 ? intervalo : -intervalo );
 
         MV = constrain( ( Proporcional + Integral + Derivada ), -eeprom.dados.pid.maxMV , eeprom.dados.pid.maxMV );
      }
@@ -1433,16 +1410,14 @@ void LineFollower::loop()
         }
 
         static unsigned long piscaLed=0;
-        static bool estadoLed = false;
         if( delaySemBlock( &piscaLed, 500 ) )
-        {
             estadoLed = ! estadoLed;
-            digitalWrite( PINO_LED, estadoLed );
-        }
     }
 
     drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
     drive.refresh();
+
+    digitalWrite( PINO_LED, estadoLed );
 }
 
 void LineFollower::calibrar()
@@ -1535,6 +1510,21 @@ void LineFollower::calibrar()
         refresh();
     }
     while( agora < timeout && grupos[0].pontoMedio <  NUM_IR_TRACK );
+
+    drive.parar();
+    drive.refresh();
+
+    delay( 100 );
+
+    drive.giraDir( v );
+
+    do
+    {
+        agora = millis();
+        drive.refresh();
+        refresh();
+    }
+    while( agora < timeout && grupos[0].pontoMedio > 1 );
 
     drive.parar();
     drive.refresh();
@@ -2171,7 +2161,10 @@ void trataJoystick()
         eeprom.dados.programa = PRG_RC_SERIAL;
     }
 
-//    if(gamepad.botoesEdgeF & BT_X)
+    if(gamepad.botoesEdgeF & BT_X)
+    {
+        lineFollower.calibrar();
+    }
 //    if(gamepad.botoesEdgeF & BT_B)
 
     if(gamepad.botoesAgora & BT_LT)
