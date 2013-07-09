@@ -1205,9 +1205,6 @@ public:
     {
         int conta1s = 0;
 
-        if( marcaEsq && marcaDir )
-            return true;
-
         for( int s = 0; s < NUM_IR_TRACK; s++ )
         {
             if( debounceArray[s] )
@@ -1215,19 +1212,22 @@ public:
                 conta1s++;
                 debounceArray[s] = false;
                 #ifdef TRACE_LF
-                    Serial.print( "1" );
+//                    Serial.print( "1" );
                 #endif
             }
             else
             {
                 #ifdef TRACE_LF
-                    Serial.print( "0" );
+ //                   Serial.print( "0" );
                 #endif
             }
         }
         #ifdef TRACE_LF
-            Serial.println();
+   //         Serial.println();
         #endif
+
+        if( marcaEsq && marcaDir )
+            return true;
 
         return conta1s > ( ( NUM_IR_TRACK * 7 ) / 10 ) ;
     }
@@ -1255,7 +1255,7 @@ void LineFollower::loop()
     {
         fodeu = false;
 
-        if( nGrupos == 1 && tamMaior < (NUM_IR_TRACK/2) )
+        if( nGrupos == 1 && tamMaior <= (NUM_IR_TRACK/4) )
         {
             trilho = grupos[0];
 
@@ -1299,10 +1299,6 @@ void LineFollower::loop()
                     #endif
                 }
 
-                #ifdef TRACE_LF
-                    Serial.println("");
-                #endif
-
                 marcaEsq = marcaDir = false;
             }
         }
@@ -1328,11 +1324,12 @@ void LineFollower::loop()
             for( int s = 0; s < NUM_IR_TRACK; s++ )
                 debounceArray[s] |= sensoresBool[s];
 
-            if( tamMaior < (NUM_IR_TRACK/2) )
+
             {
                 for( int ig = 0 ; ig < nGrupos ; ig++ )
                 {
-                    if( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
+                    if( ( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
+                       && ( grupos[ig].tamanho <= (NUM_IR_TRACK/4) ) )
                         trilho = grupos[ig];
                 }
             }
