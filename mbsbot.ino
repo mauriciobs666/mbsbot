@@ -1078,7 +1078,7 @@ void fotovoro()
 // ******************************************************************************
 
 //#ifdef LINE_FOLLOWER
-//#define TRACE_LF
+#define TRACE_LF
 class LineFollower
 {
 public:
@@ -1255,7 +1255,7 @@ void LineFollower::loop()
     {
         fodeu = false;
 
-        if( nGrupos == 1 && tamMaior <= (NUM_IR_TRACK/4) )
+        if( nGrupos == 1 && tamMaior <= (NUM_IR_TRACK/3) )
         {
             trilho = grupos[0];
 
@@ -1263,40 +1263,37 @@ void LineFollower::loop()
             {
                 debounce = 0;
 
-                if( ! cruzamento() )
+                if( cruzamento() )
+                {
+                    #ifdef TRACE_LF
+                        //Serial.println("C");
+                    #endif
+                }
+                else
                 {
                     if( marcaEsq )
                     {
                         estadoLed = ! estadoLed;
                         #ifdef TRACE_LF
-                            Serial.println("Esq");
+                            //Serial.println("E");
                         #endif
                     }
 
                     if( marcaDir )
                     {
+                        #ifdef TRACE_LF
+                            //Serial.println("D");
+                        #endif
                         if( esperaFimVolta )
                         {
                             fimDaVolta = agora + 500;
-                            #ifdef TRACE_LF
-                                Serial.println("Fim lap");
-                            #endif
                         }
                         else
                         {
                             inicioCorrida = agora;
                             esperaFimVolta = true;
-                            #ifdef TRACE_LF
-                                Serial.println("Ini lap");
-                            #endif
                         }
                     }
-                }
-                else
-                {
-                    #ifdef TRACE_LF
-                        Serial.println("Cruz");
-                    #endif
                 }
 
                 marcaEsq = marcaDir = false;
@@ -1307,9 +1304,6 @@ void LineFollower::loop()
             #ifdef TRACE_LF
                 if( false && ! debounce )
                 {
-                    Serial.print("ng=");
-                    Serial.println((int)nGrupos);
-
                     for( int x = 0; x < NUM_IR_TRACK; x++ )
                         Serial.print( sensoresBool[x] ? "1" : "0" );
                     Serial.println();
@@ -1325,13 +1319,11 @@ void LineFollower::loop()
                 debounceArray[s] |= sensoresBool[s];
 
 
+            for( int ig = 0 ; ig < nGrupos ; ig++ )
             {
-                for( int ig = 0 ; ig < nGrupos ; ig++ )
-                {
-                    if( ( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
-                       && ( grupos[ig].tamanho <= (NUM_IR_TRACK/4) ) )
-                        trilho = grupos[ig];
-                }
+                if( ( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
+                   && ( grupos[ig].tamanho <= (NUM_IR_TRACK/3) ) )
+                    trilho = grupos[ig];
             }
 
             for( int ig = 0 ; ig < nGrupos ; ig++ )
@@ -1521,7 +1513,7 @@ void LineFollower::calibrar()
         drive.refresh();
         refresh();
     }
-    while( agora < timeout && grupos[0].pontoMedio > 1 );
+    while( agora < timeout && grupos[0].pontoMedio > NUM_IR_TRACK );
 
     drive.parar();
     drive.refresh();
