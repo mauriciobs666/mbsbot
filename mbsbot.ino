@@ -112,22 +112,22 @@ typedef struct
 
     void print()
     {
-        Serial.print((int)pino);
-        Serial.print(" ");
-        Serial.print((int)tipo);
-        Serial.print(" ");
-        Serial.print((int)invertido);
-        Serial.print(" ");
-        Serial.print(minimo);
-        Serial.print(" ");
-        Serial.print(maximo);
-        Serial.print(" ");
-        Serial.print(centro);
-        Serial.print(" ");
-        Serial.print(a);
-        Serial.print(" ");
-        Serial.print(b);
-        Serial.println("");
+        SERIALX.print((int)pino);
+        SERIALX.print(" ");
+        SERIALX.print((int)tipo);
+        SERIALX.print(" ");
+        SERIALX.print((int)invertido);
+        SERIALX.print(" ");
+        SERIALX.print(minimo);
+        SERIALX.print(" ");
+        SERIALX.print(maximo);
+        SERIALX.print(" ");
+        SERIALX.print(centro);
+        SERIALX.print(" ");
+        SERIALX.print(a);
+        SERIALX.print(" ");
+        SERIALX.print(b);
+        SERIALX.println("");
     }
 }
 ConfigSensor;
@@ -453,11 +453,11 @@ public:
 
     void print( )
     {
-        Serial.print( "(" );
-        Serial.print( x );
-        Serial.print( "," );
-        Serial.print( y );
-        Serial.print( ")" );
+        SERIALX.print( "(" );
+        SERIALX.print( x );
+        SERIALX.print( "," );
+        SERIALX.print( y );
+        SERIALX.print( ")" );
     }
 };
 
@@ -930,7 +930,7 @@ public:
 
         //#define TRACE
         #ifdef TRACE
-            Serial.print(" dir");
+            SERIALX.print(" dir");
             direcao.print();
         #endif
 
@@ -950,10 +950,10 @@ public:
             int s_dir = sensorDir->getPorcentoAprox();;
 
             #ifdef TRACE
-                Serial.print(" se=");
-                Serial.print(s_esq);
-                Serial.print(" sd=");
-                Serial.print(s_dir);
+                SERIALX.print(" se=");
+                SERIALX.print(s_esq);
+                SERIALX.print(" sd=");
+                SERIALX.print(s_dir);
             #endif
 
             /*        y
@@ -968,39 +968,39 @@ public:
             Vetor2i esq( -( ( seno * s_esq ) / 100 ) , ( ( cosseno * s_esq ) / 100 ) );
 
             #ifdef TRACE
-                Serial.print(" esq");
+                SERIALX.print(" esq");
                 esq.print();
             #endif
 
             Vetor2i dir( ( ( seno * s_dir ) / 100 ) , ( ( cosseno * s_dir ) / 100 ) );
 
             #ifdef TRACE
-                Serial.print(" dir");
+                SERIALX.print(" dir");
                 dir.print();
             #endif
 
             Vetor2i obstaculos = esq + dir;
 
             #ifdef TRACE
-                Serial.print(" obs" );
+                SERIALX.print(" obs" );
                 obstaculos.print();
-                Serial.print(" |obs| ");
-                Serial.print(obstaculos.norma());
+                SERIALX.print(" |obs| ");
+                SERIALX.print(obstaculos.norma());
             #endif
 
             //obstaculos.normalizar();
             obstaculos.Constrain();
 
             #ifdef TRACE
-                Serial.print(" obs");
+                SERIALX.print(" obs");
                 obstaculos.print();
             #endif
 
             resultante += obstaculos ;
 
             #ifdef TRACE
-                Serial.print(" |res| ");
-                Serial.print(resultante.norma());
+                SERIALX.print(" |res| ");
+                SERIALX.print(resultante.norma());
             #endif
 
             //resultante.normalizar();
@@ -1009,14 +1009,14 @@ public:
         }
 
         #ifdef TRACE
-            Serial.print(" res");
+            SERIALX.print(" res");
             resultante.print();
         #endif
 
         vetorial( resultante );
 
         #ifdef TRACE
-            Serial.println("\n");
+            SERIALX.println("\n");
         #endif
 
         #ifdef TRACE
@@ -1027,13 +1027,13 @@ public:
 
     void printRodas()
     {
-        Serial.print( VAR_RODA_ESQ );
-        Serial.print(" ");
-        Serial.println( motorEsq.read() );
+        SERIALX.print( VAR_RODA_ESQ );
+        SERIALX.print(" ");
+        SERIALX.println( motorEsq.read() );
 
-        Serial.print( VAR_RODA_DIR );
-        Serial.print(" ");
-        Serial.println( motorDir.read() );
+        SERIALX.print( VAR_RODA_DIR );
+        SERIALX.print(" ");
+        SERIALX.println( motorDir.read() );
     }
 
     void giraEsq( char porc = 100 )
@@ -1094,12 +1094,12 @@ public:
 
     void print()
     {
-        Serial.print( "LF " );
-        Serial.print( Proporcional );
-        Serial.print( " " );
-        Serial.print( Integral );
-        Serial.print( " " );
-        Serial.println( Derivada );
+        SERIALX.print( "LF " );
+        SERIALX.print( Proporcional );
+        SERIALX.print( " " );
+        SERIALX.print( Integral );
+        SERIALX.print( " " );
+        SERIALX.println( Derivada );
     }
 
     void iniciarCorrida()
@@ -1148,15 +1148,15 @@ public:
         void print()
         {
             #ifdef TRACE_LF
-                Serial.print(" m ");
-                Serial.print((int)pontoMedio);
-                Serial.print(" i ");
-                Serial.print((int)pontoMin);
-                Serial.print(" x ");
-                Serial.print((int)pontoMax);
-                Serial.print(" t ");
-                Serial.print((int)tamanho);
-                Serial.println("");
+                SERIALX.print(" m ");
+                SERIALX.print((int)pontoMedio);
+                SERIALX.print(" i ");
+                SERIALX.print((int)pontoMin);
+                SERIALX.print(" x ");
+                SERIALX.print((int)pontoMax);
+                SERIALX.print(" t ");
+                SERIALX.print((int)tamanho);
+                SERIALX.println("");
             #endif
         }
     }
@@ -1212,18 +1212,18 @@ public:
                 conta1s++;
                 debounceArray[s] = false;
                 #ifdef TRACE_LF
-//                    Serial.print( "1" );
+//                    SERIALX.print( "1" );
                 #endif
             }
             else
             {
                 #ifdef TRACE_LF
- //                   Serial.print( "0" );
+ //                   SERIALX.print( "0" );
                 #endif
             }
         }
         #ifdef TRACE_LF
-   //         Serial.println();
+   //         SERIALX.println();
         #endif
 
         if( marcaEsq && marcaDir )
@@ -1243,8 +1243,8 @@ void LineFollower::loop()
             fimDaVolta = 0;
             drive.parar();
             drive.refresh();
-            Serial.print("Lap:");
-            Serial.println(int((agora-inicioCorrida)/1000));
+            SERIALX.print("Lap:");
+            SERIALX.println(int((agora-inicioCorrida)/1000));
             delay( 2000 );
         }
     }
@@ -1266,7 +1266,7 @@ void LineFollower::loop()
                 if( cruzamento() )
                 {
                     #ifdef TRACE_LF
-                        //Serial.println("C");
+                        //SERIALX.println("C");
                     #endif
                 }
                 else
@@ -1275,18 +1275,24 @@ void LineFollower::loop()
                     {
                         estadoLed = ! estadoLed;
                         #ifdef TRACE_LF
-                            //Serial.println("E");
+                            //SERIALX.println("E");
                         #endif
                     }
 
                     if( marcaDir )
                     {
                         #ifdef TRACE_LF
-                            //Serial.println("D");
+                            //SERIALX.println("D");
+                            for( int x = 0; x < NUM_IR_TRACK; x++ )
+                                SERIALX.print( sensoresBool[x] ? "1" : "0" );
+                            SERIALX.println();
+
+                            for( int ig = 0 ; ig < nGrupos ; ig++ )
+                                grupos[ig].print();
                         #endif
                         if( esperaFimVolta )
                         {
-                            fimDaVolta = agora + 500;
+                            fimDaVolta = agora; // + 500;
                         }
                         else
                         {
@@ -1302,11 +1308,11 @@ void LineFollower::loop()
         else // ( nGrupos > 1 )
         {
             #ifdef TRACE_LF
-                if( false && ! debounce )
+                if( ! debounce )
                 {
                     for( int x = 0; x < NUM_IR_TRACK; x++ )
-                        Serial.print( sensoresBool[x] ? "1" : "0" );
-                    Serial.println();
+                        SERIALX.print( sensoresBool[x] ? "1" : "0" );
+                    SERIALX.println();
 
                     for( int ig = 0 ; ig < nGrupos ; ig++ )
                         grupos[ig].print();
@@ -1351,10 +1357,14 @@ void LineFollower::loop()
 
         if( eeprom.dados.pid.Ki ) // zero desativa
         {
-            if( erro )
-                acumulador += erro;
+            static unsigned long ultimoLoop = 0;
+
+            if( erro && ultimoLoop )
+                acumulador += erro * (agora - ultimoLoop);
             else if( eeprom.dados.pid.zeraAcc )
                 acumulador = 0;
+
+            ultimoLoop = agora;
 
             if( acumulador > eeprom.dados.pid.limiteI )
                 acumulador = eeprom.dados.pid.limiteI;
@@ -1381,13 +1391,11 @@ void LineFollower::loop()
 
         if( intervalo > eeprom.dados.pid.limiteD )
             intervalo = eeprom.dados.pid.limiteD;
-        else if( intervalo < -eeprom.dados.pid.limiteD )
-            intervalo = -eeprom.dados.pid.limiteD;
 
         Derivada = eeprom.dados.pid.Kd / ( direcao > 0 ? intervalo : -intervalo );
 
         MV = constrain( ( Proporcional + Integral + Derivada ), -eeprom.dados.pid.maxMV , eeprom.dados.pid.maxMV );
-     }
+    }
     else
     {
         if( ! fodeu )
@@ -1582,13 +1590,13 @@ public:
         {
             reverseDir();
             /*
-            Serial.print("RFA ");
+            SERIALX.print("RFA ");
             for(int x = 0; x < SCANNER_STEPS; x++)
             {
-                Serial.print(dataArray[x]);
-                Serial.print(" ");
+                SERIALX.print(dataArray[x]);
+                SERIALX.print(" ");
             }
-            Serial.println("");
+            SERIALX.println("");
             */
         }
         refreshServo();
@@ -1623,14 +1631,14 @@ public:
 
     bool recebe()
     {
-        while(Serial.available() > 0)
+        while(SERIALX.available() > 0)
         {
-            char c = Serial.read();
+            char c = SERIALX.read();
 
             if (pos == MAX_CMD)
             {
                 pos = 0;
-                Serial.println("ERRO_TAM_MAX_CMD");
+                SERIALX.println("ERRO_TAM_MAX_CMD");
                 ultimoErro = ERRO_TAM_MAX_CMD;
             }
             else if(c == CMD_EOL)
@@ -1712,8 +1720,12 @@ public:
                                 eeprom.dados.pid.maxMV = valor;
                             else if(strcmp(dest, VAR_PID_DEB) == 0)
                                 eeprom.dados.pid.debounce = valor;
-                            else if(strcmp(dest, VAR_PID_LIM) == 0)
+                            else if(strcmp(dest, VAR_PID_LIM_P) == 0)
+                                eeprom.dados.pid.limiteP = valor;
+                            else if(strcmp(dest, VAR_PID_LIM_I) == 0)
                                 eeprom.dados.pid.limiteI = valor;
+                            else if(strcmp(dest, VAR_PID_LIM_D) == 0)
+                                eeprom.dados.pid.limiteD = valor;
                             else if(strcmp(dest, VAR_PID_ZAC) == 0)
                                 eeprom.dados.pid.zeraAcc = valor;
                             else if(strcmp(dest, VAR_FREIO) == 0)
@@ -1741,69 +1753,73 @@ public:
                 {
                     if((tok = STRTOK(NULL, " ")))	// segundo token eh o nome da variavel a ser lida
                     {
-                        Serial.print(tok);          // ecoa nome da variavel
-                        Serial.print(" ");
+                        SERIALX.print(tok);          // ecoa nome da variavel
+                        SERIALX.print(" ");
 
                         if(strcmp(tok, VAR_RODA_ESQ) == 0)
-                            Serial.println(drive.motorEsq.read());
+                            SERIALX.println(drive.motorEsq.read());
                         else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
-                            Serial.println(eeprom.dados.motorEsq.centro);
+                            SERIALX.println(eeprom.dados.motorEsq.centro);
                         else if(strcmp(tok, VAR_RODA_DIR) == 0)
-                            Serial.println(drive.motorDir.read());
+                            SERIALX.println(drive.motorDir.read());
                         else if(strcmp(tok, VAR_ZERO_DIR) == 0)
-                            Serial.println(eeprom.dados.motorDir.centro);
+                            SERIALX.println(eeprom.dados.motorDir.centro);
                         else if(strcmp(tok, VAR_PROGRAMA) == 0)
-                            Serial.println(eeprom.dados.programa);
+                            SERIALX.println(eeprom.dados.programa);
                         else if(strcmp(tok, VAR_T_RF) == 0)
-                            Serial.println(eeprom.dados.delays.ES);
+                            SERIALX.println(eeprom.dados.delays.ES);
                         #ifdef PINO_SERVO_PAN
                         else if(strcmp(tok, VAR_SERVO_X) == 0)
-                            Serial.println(pan.read());
+                            SERIALX.println(pan.read());
                         #endif
                         #ifdef PINO_SERVO_TILT
                         else if(strcmp(tok, VAR_SERVO_Y) == 0)
-                            Serial.println(tilt.read());
+                            SERIALX.println(tilt.read());
                         #endif
                         #ifdef PINO_SERVO_ROLL
                         else if(strcmp(tok, VAR_SERVO_Z) == 0)
-                            Serial.println(roll.read());
+                            SERIALX.println(roll.read());
                         #endif
                         else if(strcmp(tok, VAR_FREIO) == 0)
-                            Serial.println((int)eeprom.dados.handBrake);
+                            SERIALX.println((int)eeprom.dados.handBrake);
                         else if(strcmp(tok, VAR_AS) == 0)
                             enviaSensores(false);
                         else if(strcmp(tok, VAR_PID) == 0)
                         {
-                            Serial.print(eeprom.dados.pid.Kp);
-                            Serial.print(" ");
-                            Serial.print(eeprom.dados.pid.Ki);
-                            Serial.print(" ");
-                            Serial.println(eeprom.dados.pid.Kd);
+                            SERIALX.print(eeprom.dados.pid.Kp);
+                            SERIALX.print(" ");
+                            SERIALX.print(eeprom.dados.pid.Ki);
+                            SERIALX.print(" ");
+                            SERIALX.println(eeprom.dados.pid.Kd);
                         }
                         else if(strcmp(tok, VAR_PID_MMV) == 0)
-                            Serial.println((int)eeprom.dados.pid.maxMV);
+                            SERIALX.println((int)eeprom.dados.pid.maxMV);
                         else if(strcmp(tok, VAR_PID_DEB) == 0)
-                            Serial.println((int)eeprom.dados.pid.debounce);
-                        else if(strcmp(tok, VAR_PID_LIM) == 0)
-                            Serial.println((int)eeprom.dados.pid.limiteI);
+                            SERIALX.println((int)eeprom.dados.pid.debounce);
+                        else if(strcmp(tok, VAR_PID_LIM_P) == 0)
+                            SERIALX.println((int)eeprom.dados.pid.limiteP);
+                        else if(strcmp(tok, VAR_PID_LIM_I) == 0)
+                            SERIALX.println((int)eeprom.dados.pid.limiteI);
+                        else if(strcmp(tok, VAR_PID_LIM_D) == 0)
+                            SERIALX.println((int)eeprom.dados.pid.limiteD);
                         else if(strcmp(tok, VAR_PID_ZAC) == 0)
-                            Serial.println((int)eeprom.dados.pid.zeraAcc);
+                            SERIALX.println((int)eeprom.dados.pid.zeraAcc);
                         else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
-                            Serial.println((int)eeprom.dados.motorEsq.aceleracao);
+                            SERIALX.println((int)eeprom.dados.motorEsq.aceleracao);
                         else if(strcmp(tok, VAR_ACEL_DIR) == 0)
-                            Serial.println((int)eeprom.dados.motorDir.aceleracao);
+                            SERIALX.println((int)eeprom.dados.motorDir.aceleracao);
                         else if(strcmp(tok, VAR_T_ST) == 0)
-                            Serial.println((int)eeprom.dados.delays.status);
+                            SERIALX.println((int)eeprom.dados.delays.status);
                         else if(strcmp(tok, VAR_T_SE) == 0)
-                            Serial.println((int)eeprom.dados.delays.sensores);
+                            SERIALX.println((int)eeprom.dados.delays.sensores);
                         else if(strcmp(tok, VAR_VEL_MAX) == 0)
-                            Serial.println((int)eeprom.dados.velMax);
+                            SERIALX.println((int)eeprom.dados.velMax);
                         else if(strcmp(tok, VAR_VEL_ESCALA) == 0)
-                            Serial.println((int)eeprom.dados.velEscala);
+                            SERIALX.println((int)eeprom.dados.velEscala);
                         else if(strcmp(tok, VAR_T_MOTOR) == 0)
-                            Serial.println((int)eeprom.dados.delays.motores);
+                            SERIALX.println((int)eeprom.dados.delays.motores);
                         else if(strcmp(tok, VAR_BALANCO) == 0)
-                            Serial.println((int)eeprom.dados.balanco);
+                            SERIALX.println((int)eeprom.dados.balanco);
                     }
                 }
                 else if(strcmp(tok, CMD_GRAVA) == 0)	// salva temporarios na EEPROM
@@ -1925,105 +1941,105 @@ public:
     {
         if(enviaComando)
         {
-            Serial.print( VAR_AS);
-            Serial.print(" ");
+            SERIALX.print( VAR_AS);
+            SERIALX.print(" ");
         }
         for (int x = 0; x < NUM_SENSORES; x++)
         {
-            Serial.print( sensores[x].refresh().getValor() );
-            Serial.print(" ");
+            SERIALX.print( sensores[x].refresh().getValor() );
+            SERIALX.print(" ");
         }
-        Serial.println("");
+        SERIALX.println("");
 
         for( int x = 0; x < NUM_IR_TRACK; x++ )
-            Serial.print( sensores[PINO_TRACK_0 + x].getBool() ? "1" : "0" );
-        Serial.println();
+            SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "1" : "0" );
+        SERIALX.println();
     }
 
     void enviaStatus(bool enviaComando = true)
     {
         if(enviaComando)
         {
-            Serial.print(CMD_STATUS);
-            Serial.print(" ");
+            SERIALX.print(CMD_STATUS);
+            SERIALX.print(" ");
         }
-        Serial.print(eeprom.dados.programa);
-        Serial.print(" ");
-        Serial.print(ultimoErro);
-        Serial.print(" ");
-        Serial.print((int)eeprom.dados.handBrake);
-        Serial.print(" ");
-        Serial.print(drive.motorEsq.read());
-        Serial.print(" ");
-        Serial.print(drive.motorDir.read());
-        Serial.print(" ");
-        Serial.print(drive2.motorEsq.read());
-        Serial.print(" ");
-        Serial.print(drive2.motorDir.read());
-        Serial.print(" ");
+        SERIALX.print(eeprom.dados.programa);
+        SERIALX.print(" ");
+        SERIALX.print(ultimoErro);
+        SERIALX.print(" ");
+        SERIALX.print((int)eeprom.dados.handBrake);
+        SERIALX.print(" ");
+        SERIALX.print(drive.motorEsq.read());
+        SERIALX.print(" ");
+        SERIALX.print(drive.motorDir.read());
+        SERIALX.print(" ");
+        SERIALX.print(drive2.motorEsq.read());
+        SERIALX.print(" ");
+        SERIALX.print(drive2.motorDir.read());
+        SERIALX.print(" ");
         #ifdef PINO_SERVO_PAN
-            Serial.print(pan.read());
-            Serial.print(" ");
+            SERIALX.print(pan.read());
+            SERIALX.print(" ");
         #endif
         #ifdef PINO_SERVO_TILT
-            Serial.print(tilt.read());
-            Serial.print(" ");
+            SERIALX.print(tilt.read());
+            SERIALX.print(" ");
         #endif
         #ifdef PINO_SERVO_ROLL
-        Serial.print(roll.read());
+        SERIALX.print(roll.read());
         #endif
-        //Serial.print(" ");
+        //SERIALX.print(" ");
         //for(int p=13; p>=0; p--)
         //for(int p=13; p>5; p--)
-        //    Serial.print(digitalRead(p));
-        Serial.println("");
+        //    SERIALX.print(digitalRead(p));
+        SERIALX.println("");
     }
 
     void enviaJoystick()
     {
-        Serial.print(CMD_JOYPAD);
-        Serial.print(" X ");
-        Serial.print(gamepad.x.getPorcentoAprox(0));
-        Serial.print(" ~ ");
-        Serial.print(gamepad.x.getPorcentoAprox());
+        SERIALX.print(CMD_JOYPAD);
+        SERIALX.print(" X ");
+        SERIALX.print(gamepad.x.getPorcentoAprox(0));
+        SERIALX.print(" ~ ");
+        SERIALX.print(gamepad.x.getPorcentoAprox());
 
-        Serial.print(" (");
-        Serial.print(gamepad.x.cfg->minimo);
-        Serial.print(",");
-        Serial.print(gamepad.x.cfg->centro);
-        Serial.print(",");
-        Serial.print(gamepad.x.cfg->maximo);
-        Serial.print(") ");
-        Serial.println(gamepad.x.valor);
+        SERIALX.print(" (");
+        SERIALX.print(gamepad.x.cfg->minimo);
+        SERIALX.print(",");
+        SERIALX.print(gamepad.x.cfg->centro);
+        SERIALX.print(",");
+        SERIALX.print(gamepad.x.cfg->maximo);
+        SERIALX.print(") ");
+        SERIALX.println(gamepad.x.valor);
 
-        Serial.print(CMD_JOYPAD);
-        Serial.print(" Y ");
-        Serial.print(gamepad.y.getPorcentoAprox(0));
-        Serial.print(" ~ ");
-        Serial.print(gamepad.y.getPorcentoAprox());
+        SERIALX.print(CMD_JOYPAD);
+        SERIALX.print(" Y ");
+        SERIALX.print(gamepad.y.getPorcentoAprox(0));
+        SERIALX.print(" ~ ");
+        SERIALX.print(gamepad.y.getPorcentoAprox());
 
-        Serial.print(" (");
-        Serial.print(gamepad.y.cfg->minimo);
-        Serial.print(",");
-        Serial.print(gamepad.y.cfg->centro);
-        Serial.print(",");
-        Serial.print(gamepad.y.cfg->maximo);
-        Serial.print(") ");
-        Serial.println(gamepad.y.valor);
+        SERIALX.print(" (");
+        SERIALX.print(gamepad.y.cfg->minimo);
+        SERIALX.print(",");
+        SERIALX.print(gamepad.y.cfg->centro);
+        SERIALX.print(",");
+        SERIALX.print(gamepad.y.cfg->maximo);
+        SERIALX.print(") ");
+        SERIALX.println(gamepad.y.valor);
     /*
-        Serial.print(" Z ");
-        Serial.print(gamepad.z.getPorcentoAprox(0));
-        Serial.print(" R ");
-        Serial.println(gamepad.r.getPorcentoAprox(0));
+        SERIALX.print(" Z ");
+        SERIALX.print(gamepad.z.getPorcentoAprox(0));
+        SERIALX.print(" R ");
+        SERIALX.println(gamepad.r.getPorcentoAprox(0));
     */
     }
 
     void uname()
     {
-        Serial.print("MBSBOT hw ");
-        Serial.print(VERSAO_PLACA);
-        Serial.print(" sw ");
-        Serial.println(VERSAO_PROTOCOLO);
+        SERIALX.print("MBSBOT hw ");
+        SERIALX.print(VERSAO_PLACA);
+        SERIALX.print(" sw ");
+        SERIALX.println(VERSAO_PROTOCOLO);
     }
 
 private:
@@ -2185,10 +2201,13 @@ void trataJoystick()
 // ******************************************************************************
 void setup()
 {
-    Serial.begin(115200);
+    SERIALX.begin(115200);
     telnet.uname();
 
     eeprom.load();
+
+    SERIALX.print(sizeof(eeprom.dados));
+    SERIALX.println("B lidos EEPROM");
 
     drive.motorEsq.init( &eeprom.dados.motorEsq );
     drive.motorDir.init( &eeprom.dados.motorDir );
@@ -2292,11 +2311,11 @@ void loop()
     {
         if( botaoCal.getEstado() )
         {
-//            Serial. println("[CAL] apertado");
+//            SERIALX. println("[CAL] apertado");
         }
         else
         {
-//            Serial. println("[CAL] solto");
+//            SERIALX. println("[CAL] solto");
             lineFollower.calibrar();
         }
     }
@@ -2306,7 +2325,7 @@ void loop()
     {
         if( botaoPrg.getEstado() )
         {
-//            Serial. println("[PRG] apertado");
+//            SERIALX. println("[PRG] apertado");
         }
         else
         {
@@ -2318,14 +2337,14 @@ void loop()
             else
                 lineFollower.iniciarCorrida();
 
-//            Serial. println("[PRG] solto");
+//            SERIALX. println("[PRG] solto");
         }
     }
 
     static unsigned long ultimoStatus = 0;
     if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
     {
-        Serial.println(agora);
+        SERIALX.println(agora);
         telnet.enviaStatus();
         //digitalWrite(PINO_LED, !digitalRead(PINO_LED));
     }
@@ -2333,7 +2352,7 @@ void loop()
     static unsigned long ultimoSensores = 0;
     if( delaySemBlock(&ultimoSensores, eeprom.dados.delays.sensores) )
     {
-        Serial.println(agora);
+        SERIALX.println(agora);
         //telnet.enviaJoystick();
         telnet.enviaSensores();
         #ifdef WIICHUCK
@@ -2347,8 +2366,8 @@ void loop()
     static unsigned long ultimoLoop = 0;
     if( delaySemBlock(&ultimoLoop, 10000) )
     {
-        Serial.print( passagensLoop / 10 );
-        Serial.println(" fps");
+        SERIALX.print( passagensLoop / 10 );
+        SERIALX.println(" fps");
         passagensLoop = 0;
     }
     #endif
@@ -2526,7 +2545,7 @@ void loop()
         {
             // pra conseguir performance melhor descarta os 2 bits menos significativos
             // e envia somente um byte
-            Serial.write((analogRead(0) >> 2) & 0xFF);
+            SERIALX.write((analogRead(0) >> 2) & 0xFF);
         }
         msExec = eeprom.dados.delays.ES;
         eeprom.dados.delays.sensores = 0;
@@ -2579,7 +2598,7 @@ void loop()
         case PRG_ALARME:
         {
             digitalWrite(PINO_LED, HIGH);
-            Serial.println("ALARM");
+            SERIALX.println("ALARM");
 
             #define SIRENE_TOM_MIN  1000
             #define SIRENE_TOM_MAX  3000
@@ -2614,8 +2633,8 @@ void loop()
             if( ultimoErro != ERRO_PRG_INVALIDO )
             {
                 ultimoErro = ERRO_PRG_INVALIDO;
-                Serial.print("ERRO_PRG_INVALIDO ");
-                Serial.println(eeprom.dados.programa);
+                SERIALX.print("ERRO_PRG_INVALIDO ");
+                SERIALX.println(eeprom.dados.programa);
                 eeprom.dados.programa = DFT_PROGRAMA;
             }
         break;

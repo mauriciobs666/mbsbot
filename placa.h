@@ -23,20 +23,22 @@
 
 #define VERSAO_PLACA 4
 
+#define SERIALX Serial1
+
 #define DFT_PROGRAMA PRG_RC_SERIAL
-#define DFT_DELAY_ES  2
+#define DFT_DELAY_ES  1
 #define DFT_FREIO_MAO 0
 
 #define MOTOR_ACEL      255
 #define MOTOR_CENTRO    0
 
 #define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA   85
-#define DFT_VEL_REFRESH   2
+#define DFT_VEL_ESCALA  100
+#define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
 
 #define DFT_PID_P           10
-#define DFT_PID_I           150
+#define DFT_PID_I           300
 #define DFT_PID_D           1500
 #define DFT_PID_DEBOUNCE    30
 #define DFT_PID_MAX_MV      200

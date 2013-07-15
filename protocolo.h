@@ -119,11 +119,13 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define VAR_T_ST     "dst"  // tempo minimo entre envio de STatus
 #define VAR_T_MOTOR  "dm"   // intervalo de refresh dos motores
 
-#define VAR_PID      "pid"  // coeficientes do algoritmo de PID
-#define VAR_PID_MMV  "mmv"  // valor maximo MV (100-200)
-#define VAR_PID_DEB  "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
-#define VAR_PID_LIM  "lim"  // limite acumulador
-#define VAR_PID_ZAC  "zac"  // zera acumulador
+#define VAR_PID       "pid"  // coeficientes do algoritmo de PID
+#define VAR_PID_MMV   "mmv"  // valor maximo MV (100-200)
+#define VAR_PID_DEB   "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
+#define VAR_PID_LIM_P "lmp"  // limite proporcional
+#define VAR_PID_LIM_I "lmi"  // limite acumulador
+#define VAR_PID_LIM_D "lmd"  // limite derivada
+#define VAR_PID_ZAC   "zac"  // zera acumulador
 
 #define VAR_VEL_MAX     "vm" // limite de velocidade em %
 #define VAR_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades

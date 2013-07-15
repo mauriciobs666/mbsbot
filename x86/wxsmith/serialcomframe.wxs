@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <wxsmith>
 	<object class="wxFrame" name="serialcomFrame">
-		<title>MBSBOT - (c) 2010-2012 GPL - Mauricio Bieze Stefani</title>
+		<title>MBSBOT - (c) 2010-2013 GPL - Mauricio Bieze Stefani</title>
 		<size>800,480</size>
 		<id_arg>0</id_arg>
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
