@@ -248,6 +248,10 @@ public:
         char * dest = (char*) &dados;
         for(unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
             *dest = eeprom_read_byte((unsigned char *) addr);
+
+        SERIALX.print("EEPROM ");
+        SERIALX.print(sizeof(dados));
+        SERIALX.println(" B");
     }
     void save()
     {
@@ -1094,11 +1098,11 @@ public:
 
     void print()
     {
-        SERIALX.print( "LF " );
+        SERIALX.print( "P " );
         SERIALX.print( Proporcional );
-        SERIALX.print( " " );
+        SERIALX.print( " I " );
         SERIALX.print( Integral );
-        SERIALX.print( " " );
+        SERIALX.print( " D " );
         SERIALX.println( Derivada );
     }
 
@@ -1266,7 +1270,7 @@ void LineFollower::loop()
                 if( cruzamento() )
                 {
                     #ifdef TRACE_LF
-                        //SERIALX.println("C");
+                        SERIALX.println("C");
                     #endif
                 }
                 else
@@ -1275,14 +1279,14 @@ void LineFollower::loop()
                     {
                         estadoLed = ! estadoLed;
                         #ifdef TRACE_LF
-                            //SERIALX.println("E");
+                            SERIALX.println("E");
                         #endif
                     }
 
                     if( marcaDir )
                     {
                         #ifdef TRACE_LF
-                            //SERIALX.println("D");
+                            SERIALX.println("D");
                             for( int x = 0; x < NUM_IR_TRACK; x++ )
                                 SERIALX.print( sensoresBool[x] ? "1" : "0" );
                             SERIALX.println();
@@ -2205,9 +2209,6 @@ void setup()
     telnet.uname();
 
     eeprom.load();
-
-    SERIALX.print(sizeof(eeprom.dados));
-    SERIALX.println("B lidos EEPROM");
 
     drive.motorEsq.init( &eeprom.dados.motorEsq );
     drive.motorDir.init( &eeprom.dados.motorDir );
