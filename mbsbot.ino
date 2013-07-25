@@ -1091,7 +1091,7 @@ public:
         nGrupos(0), tamMaior(0),
         Proporcional(0), Integral(0), Derivada(0), MV(0),
         erro(0), erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), fimDaVolta(0), debounce(0),
-        marcaEsq(false), marcaDir(false), esperaFimVolta(false), fodeu(false), estadoLed(false)
+        marcaEsq(false), marcaDir(false), buscaInicioVolta(true), fodeu(false), estadoLed(false)
     {}
     void calibrar();
     void loop();
@@ -1110,7 +1110,7 @@ public:
     {
         eeprom.dados.programa = PRG_LINE_FOLLOW;
         fimDaVolta = 0;
-        esperaFimVolta = false;
+        buscaInicioVolta = true;
         estadoLed = true;
     }
 
@@ -1127,6 +1127,8 @@ public:
     int erro;
     int erroAnterior;
     int direcao;
+    int rodaEsq;
+    int rodaDir;
     unsigned long tEanterior;
     unsigned long tEatual;
     unsigned long inicioCorrida;
@@ -1136,7 +1138,7 @@ public:
     bool debounceArray[ NUM_IR_TRACK ];
     bool marcaEsq;
     bool marcaDir;
-    bool esperaFimVolta;
+    bool buscaInicioVolta;
     bool fodeu;
     bool estadoLed;
 
@@ -1204,37 +1206,6 @@ public:
             }
         }
     }
-
-    bool cruzamento()
-    {
-        int conta1s = 0;
-
-        for( int s = 0; s < NUM_IR_TRACK; s++ )
-        {
-            if( debounceArray[s] )
-            {
-                conta1s++;
-                debounceArray[s] = false;
-                #ifdef TRACE_LF
-//                    SERIALX.print( "1" );
-                #endif
-            }
-            else
-            {
-                #ifdef TRACE_LF
- //                   SERIALX.print( "0" );
-                #endif
-            }
-        }
-        #ifdef TRACE_LF
-   //         SERIALX.println();
-        #endif
-
-        if( marcaEsq && marcaDir )
-            return true;
-
-        return conta1s > ( ( NUM_IR_TRACK * 7 ) / 10 ) ;
-    }
 }
 lineFollower;
 
@@ -1263,53 +1234,58 @@ void LineFollower::loop()
         {
             trilho = grupos[0];
 
-            if( agora > debounce )
+            if( debounce && agora > debounce )
             {
                 debounce = 0;
 
-                if( cruzamento() )
+                int conta1s = 0;
+                for( int s = 0; s < NUM_IR_TRACK; s++ )
+                {
+                    if( debounceArray[s] )
+                    {
+                        conta1s++;
+                        debounceArray[s] = false;
+                    }
+                }
+
+                if( ( marcaEsq && marcaDir ) || ( conta1s > ( ( NUM_IR_TRACK * 7 ) / 10 ) ) )
                 {
                     #ifdef TRACE_LF
                         SERIALX.println("C");
                     #endif
                 }
-                else
+                else if( marcaEsq )
                 {
-                    if( marcaEsq )
+                    estadoLed = ! estadoLed;
+                    #ifdef TRACE_LF
+                        SERIALX.println("E");
+                    #endif
+                }
+                else if( marcaDir )
+                {
+                    #ifdef TRACE_LF
+                        SERIALX.println("D");
+                        for( int x = 0; x < NUM_IR_TRACK; x++ )
+                            SERIALX.print( sensoresBool[x] ? "1" : "0" );
+                        SERIALX.println();
+
+                        for( int ig = 0 ; ig < nGrupos ; ig++ )
+                            grupos[ig].print();
+                    #endif
+                    if( buscaInicioVolta )
                     {
-                        estadoLed = ! estadoLed;
-                        #ifdef TRACE_LF
-                            SERIALX.println("E");
-                        #endif
+                        inicioCorrida = agora;
+                        buscaInicioVolta = false;
                     }
-
-                    if( marcaDir )
+                    else
                     {
-                        #ifdef TRACE_LF
-                            SERIALX.println("D");
-                            for( int x = 0; x < NUM_IR_TRACK; x++ )
-                                SERIALX.print( sensoresBool[x] ? "1" : "0" );
-                            SERIALX.println();
-
-                            for( int ig = 0 ; ig < nGrupos ; ig++ )
-                                grupos[ig].print();
-                        #endif
-                        if( esperaFimVolta )
-                        {
-                            fimDaVolta = agora; // + 500;
-                        }
-                        else
-                        {
-                            inicioCorrida = agora;
-                            esperaFimVolta = true;
-                        }
+                        fimDaVolta = agora; // + 500;
                     }
                 }
-
                 marcaEsq = marcaDir = false;
             }
         }
-        else // ( nGrupos > 1 )
+        else // ( nGrupos > 1 ) || tamMaior > (NUM_IR_TRACK/3)
         {
             #ifdef TRACE_LF
                 if( ! debounce )
@@ -1328,21 +1304,25 @@ void LineFollower::loop()
             for( int s = 0; s < NUM_IR_TRACK; s++ )
                 debounceArray[s] |= sensoresBool[s];
 
-
-            for( int ig = 0 ; ig < nGrupos ; ig++ )
+            if( nGrupos == 1 )
+                trilho = grupos[0];
+            else
             {
-                if( ( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
-                   && ( grupos[ig].tamanho <= (NUM_IR_TRACK/3) ) )
-                    trilho = grupos[ig];
-            }
+                for( int ig = 0 ; ig < nGrupos ; ig++ )
+                {
+                    if( ( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
+                       && ( grupos[ig].tamanho <= (NUM_IR_TRACK/3) ) )
+                        trilho = grupos[ig];
+                }
 
-            for( int ig = 0 ; ig < nGrupos ; ig++ )
-            {
-                if( ( grupos[ig].pontoMax + 2 ) < trilho.pontoMin )
-                    marcaEsq = true;
+                for( int ig = 0 ; ig < nGrupos ; ig++ )
+                {
+                    if( ( grupos[ig].pontoMax + 2 ) < trilho.pontoMin )
+                        marcaEsq = true;
 
-                if( ( trilho.pontoMax + 2 ) < grupos[ig].pontoMin )
-                    marcaDir = true;
+                    if( ( trilho.pontoMax + 2 ) < grupos[ig].pontoMin )
+                        marcaDir = true;
+                }
             }
         }
 
@@ -1396,9 +1376,12 @@ void LineFollower::loop()
         if( intervalo > eeprom.dados.pid.limiteD )
             intervalo = eeprom.dados.pid.limiteD;
 
-        Derivada = eeprom.dados.pid.Kd / ( direcao > 0 ? intervalo : -intervalo );
+        Derivada = ( eeprom.dados.pid.Kd * direcao ) / intervalo;
 
         MV = constrain( ( Proporcional + Integral + Derivada ), -eeprom.dados.pid.maxMV , eeprom.dados.pid.maxMV );
+
+        rodaEsq = (MV < 0) ? (100 + MV) : 100;
+        rodaDir = (MV > 0) ? (100 - MV) : 100;
     }
     else
     {
@@ -1413,9 +1396,11 @@ void LineFollower::loop()
         static unsigned long piscaLed=0;
         if( delaySemBlock( &piscaLed, 500 ) )
             estadoLed = ! estadoLed;
+
+        rodaEsq = rodaDir = 0;
     }
 
-    drive.move( ( (MV < 0) ? (100 + MV) : 100 ) , ( (MV > 0) ? (100 - MV) : 100 ) );
+    drive.move( rodaEsq , rodaDir );
     drive.refresh();
 
     digitalWrite( PINO_LED, estadoLed );
@@ -1434,6 +1419,10 @@ void LineFollower::calibrar()
 
     digitalWrite( PINO_LED, true );
     delay(100);
+
+    agora = millis();
+    drive.refresh();
+
     digitalWrite( PINO_LED, false );
     delay(1000);
     digitalWrite( PINO_LED, true );
