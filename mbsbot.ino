@@ -765,11 +765,11 @@ public:
         meta = atual = valor;
     }
 
-    void refresh()
+    void refresh( bool imediato = false )
     {
         // acelerador: v = v0 + at
 
-        if( delaySemBlock( &ultimoAcel, eeprom.dados.delays.motores ) )
+        if( delaySemBlock( &ultimoAcel, eeprom.dados.delays.motores ) || imediato )
         {
             if ( meta > atual)
             {
@@ -852,10 +852,10 @@ public:
         motorDir.parar();
     }
 
-    void refresh()
+    void refresh( bool imediato = false )
     {
-        motorEsq.refresh();
-        motorDir.refresh();
+        motorEsq.refresh( imediato );
+        motorDir.refresh( imediato );
     }
 
     void move( char esq100, char dir100 )
@@ -1086,13 +1086,10 @@ void fotovoro()
 class LineFollower
 {
 public:
-    LineFollower() :
-        acumulador(0),
-        nGrupos(0), tamMaior(0),
-        Proporcional(0), Integral(0), Derivada(0), MV(0),
-        erro(0), erroAnterior(0), direcao(0), tEanterior(0), tEatual(0), fimDaVolta(0), debounce(0),
-        marcaEsq(false), marcaDir(false), buscaInicioVolta(true), fodeu(false), estadoLed(false)
-    {}
+    LineFollower()
+    {
+        zeraTudo();
+    }
     void calibrar();
     void loop();
 
@@ -1106,12 +1103,24 @@ public:
         SERIALX.println( Derivada );
     }
 
+    void zeraTudo()
+    {
+        nGrupos = tamMaior = 0;
+        erro = erroAnterior = direcao = acumulador = 0;
+        Proporcional = Integral = Derivada = MV = 0;
+        inicioCorrida = tEanterior = tEatual = fimDaVolta = debounce = 0;
+        rodaEsq = rodaDir = 0;
+        marcaEsq = marcaDir = fodeu = estadoLed = false;
+        estadoLed = buscaInicioVolta = true;
+
+        for(int sb = 0; sb < NUM_IR_TRACK; sb++)
+            sensoresBool[sb] = debounceArray[sb] = false;
+    }
+
     void iniciarCorrida()
     {
         eeprom.dados.programa = PRG_LINE_FOLLOW;
-        fimDaVolta = 0;
-        buscaInicioVolta = true;
-        estadoLed = true;
+        zeraTudo();
     }
 
     int acumulador;
@@ -1123,12 +1132,12 @@ public:
     int Integral;
     int Derivada;
     int MV;
+    int rodaEsq;
+    int rodaDir;
 
     int erro;
     int erroAnterior;
     int direcao;
-    int rodaEsq;
-    int rodaDir;
     unsigned long tEanterior;
     unsigned long tEatual;
     unsigned long inicioCorrida;
@@ -1211,17 +1220,14 @@ lineFollower;
 
 void LineFollower::loop()
 {
-    if( fimDaVolta )
+    if( fimDaVolta && agora > fimDaVolta )
     {
-        if( agora > fimDaVolta )
-        {
-            fimDaVolta = 0;
-            drive.parar();
-            drive.refresh();
-            SERIALX.print("Lap:");
-            SERIALX.println(int((agora-inicioCorrida)/1000));
-            delay( 2000 );
-        }
+        fimDaVolta = 0;
+        drive.parar();
+        drive.refresh( true );
+        SERIALX.print("Lap:");
+        SERIALX.println(int((agora-inicioCorrida)/1000));
+        delay( 2000 );
     }
 
     refresh();
@@ -1415,13 +1421,10 @@ void LineFollower::calibrar()
     unsigned short maximo = 0;
 
     drive.parar();
-    drive.refresh();
+    drive.refresh( true );
 
     digitalWrite( PINO_LED, true );
     delay(100);
-
-    agora = millis();
-    drive.refresh();
 
     digitalWrite( PINO_LED, false );
     delay(1000);
