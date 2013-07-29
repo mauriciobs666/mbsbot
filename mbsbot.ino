@@ -477,68 +477,70 @@ public:
     Sensor() : valor(0), anterior(0), cfg(NULL)
         {}
     void setConfig(ConfigSensor *c)
-        {
-            cfg=c;
-            valor = anterior = cfg->centro;
-        }
+    {
+        cfg=c;
+        valor = anterior = cfg->centro;
+    }
     unsigned short getValor()
         { return valor; }
     void setValor(unsigned short v)
+    {
+        if( cfg )
         {
-            if( cfg )
+            anterior = valor;
+            if( cfg->autoMinMax )
             {
-                anterior = valor;
-                if( cfg->autoMinMax )
-                {
-                    if (v < cfg->minimo) cfg->minimo = v;
-                    if (v > cfg->maximo) cfg->maximo = v;
-                }
+                if (v < cfg->minimo) cfg->minimo = v;
+                if (v > cfg->maximo) cfg->maximo = v;
             }
-            valor = v;
         }
+        valor = v;
+    }
     unsigned short calibrar()
+    {
+        refresh();
+        if( cfg )
         {
-            refresh();
-            if( cfg )
-            {
-                cfg->minimo = cfg->maximo = cfg->centro = valor;
-                cfg->autoMinMax = true;
-            }
-            return valor;
+            cfg->minimo = cfg->maximo = cfg->centro = valor;
+            cfg->autoMinMax = true;
         }
+        return valor;
+    }
+    bool calibrado()
+        { return ( (cfg->maximo - cfg->minimo ) > 200 ); }
     void centrar()
         { if( cfg ) cfg->centro = valor; }
     Sensor& refresh()
+    {
+        if( cfg && ( cfg->pino >= 0 ) )
         {
-            if( cfg && ( cfg->pino >= 0 ) )
+            switch(cfg->tipo)
             {
-                switch(cfg->tipo)
-                {
-                    case ConfigSensor::SENSOR_ANALOGICO:
-                        setValor( analogRead( cfg->pino ) );
-                    break;
-                    case ConfigSensor::SENSOR_PING:
-                        // manda pulso de 2ms pro ping))) pra acionar leitura
-                        pinMode( cfg->pino, OUTPUT );
-                        digitalWrite( cfg->pino, LOW );
-                        delayMicroseconds( 2 );
-                        digitalWrite( cfg->pino, HIGH );
-                        delayMicroseconds( 5 );
-                        digitalWrite( cfg->pino, LOW );
+                case ConfigSensor::SENSOR_ANALOGICO:
+                    setValor( analogRead( cfg->pino ) );
+                break;
+                case ConfigSensor::SENSOR_PING:
+                    // manda pulso de 2ms pro ping))) pra acionar leitura
+                    pinMode( cfg->pino, OUTPUT );
+                    digitalWrite( cfg->pino, LOW );
+                    delayMicroseconds( 2 );
+                    digitalWrite( cfg->pino, HIGH );
+                    delayMicroseconds( 5 );
+                    digitalWrite( cfg->pino, LOW );
 
-                        // duracao do pulso = distancia
-                        pinMode( cfg->pino, INPUT );
-                        setValor( pulseIn( cfg->pino, HIGH ) );
-                    break;
-                    case ConfigSensor::SENSOR_DIGITAL:
-                        setValor( digitalRead( cfg->pino ) );
-                    break;
-                    default:
-                    break;
-                }
+                    // duracao do pulso = distancia
+                    pinMode( cfg->pino, INPUT );
+                    setValor( pulseIn( cfg->pino, HIGH ) );
+                break;
+                case ConfigSensor::SENSOR_DIGITAL:
+                    setValor( digitalRead( cfg->pino ) );
+                break;
+                default:
+                break;
             }
-            return *this;
         }
+        return *this;
+    }
     bool ehMinimo(unsigned short margem = 0)
         { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
     bool ehMaximo(unsigned short margem = 0)
@@ -548,48 +550,48 @@ public:
     int getReta()
         { return ( cfg->a * valor + cfg->b ); }
     int getPorcentoAprox(int grude=10)
-        {
-            long x = (long)valor - (long)cfg->centro;
+    {
+        long x = (long)valor - (long)cfg->centro;
 
-            // calcula o range de 0 a +/-extremo
-            long r = ( x > 0 ) ? (cfg->maximo - cfg->centro) : (cfg->centro - cfg->minimo);
+        // calcula o range de 0 a +/-extremo
+        long r = ( x > 0 ) ? (cfg->maximo - cfg->centro) : (cfg->centro - cfg->minimo);
 
-            // x%
-            if(r)
-                x = constrain( ((x * 100) / r ) , -100, 100 );
-            else
-                x = 0;
+        // x%
+        if(r)
+            x = constrain( ((x * 100) / r ) , -100, 100 );
+        else
+            x = 0;
 
-            // arredonda no centro e pontas
-            if( 100 + x < grude) x = -100;
-            if(  abs(x) < grude) x = 0;
-            if( 100 - x < grude) x = 100;
+        // arredonda no centro e pontas
+        if( 100 + x < grude) x = -100;
+        if(  abs(x) < grude) x = 0;
+        if( 100 - x < grude) x = 100;
 
-            return x;
-        }
+        return x;
+    }
     int delta()
         { return valor - anterior; }
     bool getBool()
+    {
+        switch( cfg->tipo )
         {
-            switch( cfg->tipo )
-            {
-                case ConfigSensor::SENSOR_ANALOGICO:
-                    if( cfg->maximo - cfg->minimo > 200 )
-                    {
-                        unsigned short meio = ( ( cfg->maximo - cfg->minimo ) >> 1 ) + cfg->minimo;
-                        return ( ( valor > meio ) ^ cfg->invertido );
-                    }
-                break;
+            case ConfigSensor::SENSOR_ANALOGICO:
+                if( calibrado() )
+                {
+                    unsigned short meio = ( ( cfg->maximo - cfg->minimo ) >> 1 ) + cfg->minimo;
+                    return ( ( valor > meio ) ^ cfg->invertido );
+                }
+            break;
 
-                case ConfigSensor::SENSOR_DIGITAL:
-                    return ( valor ^ cfg->invertido );
-                break;
+            case ConfigSensor::SENSOR_DIGITAL:
+                return ( valor ^ cfg->invertido );
+            break;
 
-                default:
-                break;
-            }
-            return false;
+            default:
+            break;
         }
+        return false;
+    }
 }
 sensores[NUM_SENSORES];
 
@@ -1040,14 +1042,19 @@ public:
         SERIALX.println( motorDir.read() );
     }
 
+    void gira( char porc = 0 )
+    {
+        move( porc, -porc );
+    }
+
     void giraEsq( char porc = 100 )
     {
-        move( -porc, porc );
+        gira( -porc );
     }
 
     void giraDir( char porc = 100 )
     {
-        move( porc, -porc );
+        gira( porc );
     }
 
     void praFrente( char porc = 100 )
@@ -1090,7 +1097,17 @@ public:
     {
         zeraTudo();
     }
+
     void calibrar();
+
+    bool calibrado()
+    {
+        for(int sb = 0; sb < NUM_IR_TRACK; sb++)
+            if( ! sensores[ PINO_TRACK_0 + sb ].calibrado() )
+                return false;
+        return true;
+    }
+
     void loop();
 
     void print()
@@ -1119,8 +1136,16 @@ public:
 
     void iniciarCorrida()
     {
-        eeprom.dados.programa = PRG_LINE_FOLLOW;
         zeraTudo();
+
+        if( ! calibrado() )
+        {
+            calibrar();
+            if( ! calibrado() )
+                return;
+        }
+
+        eeprom.dados.programa = PRG_LINE_FOLLOW;
     }
 
     int acumulador;
@@ -1215,6 +1240,24 @@ public:
             }
         }
     }
+
+    int giraP( int setPoint = NUM_IR_TRACK )
+    {
+        refresh();
+
+        if( nGrupos )
+            trilho = grupos[0];
+
+        erro = trilho.pontoMedio - setPoint;
+
+        int P = erro * 5 /* Kp */;
+
+        drive.gira( constrain( P, -100 , 100 ) );
+
+        drive.refresh();
+
+        return erro;
+    }
 }
 lineFollower;
 
@@ -1225,9 +1268,17 @@ void LineFollower::loop()
         fimDaVolta = 0;
         drive.parar();
         drive.refresh( true );
+
         SERIALX.print("Lap:");
         SERIALX.println(int((agora-inicioCorrida)/1000));
-        delay( 2000 );
+
+        for( int l = 0; l < 15; l ++ )
+        {
+            delay(50);
+            digitalWrite( PINO_LED, false );
+            delay(100);
+            digitalWrite( PINO_LED, true );
+        }
     }
 
     refresh();
@@ -1423,12 +1474,15 @@ void LineFollower::calibrar()
     drive.parar();
     drive.refresh( true );
 
-    digitalWrite( PINO_LED, true );
-    delay(100);
+    // avisa que vai entrar em modo auto
 
-    digitalWrite( PINO_LED, false );
-    delay(1000);
-    digitalWrite( PINO_LED, true );
+    for( int l = 0; l < 15; l ++ )
+    {
+        delay(50);
+        digitalWrite( PINO_LED, false );
+        delay(100);
+        digitalWrite( PINO_LED, true );
+    }
 
     // primeira rodada de leitura
 
@@ -1440,7 +1494,7 @@ void LineFollower::calibrar()
         if( valores[x] > maximo ) maximo = valores[x];
     }
 
-    // descobre threshold medio e classifica
+    // chuta threshold medio e classifica
 
     unsigned short meio = ( ( maximo - minimo ) >> 1 ) + minimo;
 
@@ -1452,7 +1506,7 @@ void LineFollower::calibrar()
             num0s++;
     }
 
-    // se tem mais trilho que brita inverte tds
+    // se tem mais trilho que brita inverte td
 
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
@@ -1460,67 +1514,33 @@ void LineFollower::calibrar()
     int backupVE = eeprom.dados.velEscala;
     eeprom.dados.velEscala = 100;
 
-    const char v = 50;
-
-    drive.giraEsq( v );
-
     unsigned long timeout = millis() + 5000;
 
+    trilho.pontoMedio = NUM_IR_TRACK; // supoe que robo ta centrado na linha
+
+    // gira tudo pra esquerda
     do
     {
         agora = millis();
-        drive.refresh();
-        refresh();
     }
-    while( agora < timeout && ( ! nGrupos || grupos[0].pontoMedio < ( 2 * ( NUM_IR_TRACK-1 ) ) + 1 ));
+    while( agora < timeout && giraP( ( 2 * (NUM_IR_TRACK-1) ) + 1 ) );
 
-    drive.parar();
-    drive.refresh();
-
-    delay( 100 );
-
-    drive.giraDir( v );
-
+    // gira tudo pra direita
     do
     {
         agora = millis();
-        drive.refresh();
-        refresh();
     }
-    while( agora < timeout && grupos[0].pontoMedio > 1 );
+    while( agora < timeout && giraP( 1 ) );
 
-    drive.parar();
-    drive.refresh();
-
-    delay( 100 );
-
-    drive.giraEsq( v );
-
+    // centra
     do
     {
         agora = millis();
-        drive.refresh();
-        refresh();
     }
-    while( agora < timeout && grupos[0].pontoMedio <  NUM_IR_TRACK );
+    while( agora < timeout && giraP( NUM_IR_TRACK ) );
 
     drive.parar();
-    drive.refresh();
-
-    delay( 100 );
-
-    drive.giraDir( v );
-
-    do
-    {
-        agora = millis();
-        drive.refresh();
-        refresh();
-    }
-    while( agora < timeout && grupos[0].pontoMedio > NUM_IR_TRACK );
-
-    drive.parar();
-    drive.refresh();
+    drive.refresh( true );
 
     digitalWrite( PINO_LED, false );
 
@@ -2385,7 +2405,7 @@ void loop()
                 if( intervalo == 100 )
                 {
                     digitalWrite( PINO_LED, false );
-                    intervalo = 1000;
+                    intervalo = 2000;
                 }
                 else
                 {
