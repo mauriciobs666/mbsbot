@@ -1084,6 +1084,110 @@ void fotovoro()
         drive.praFrente();
 }
 
+typedef struct
+{
+    int Kp;		// proporcional
+    int Ki;		// integral
+    int Kd;		// derivativo
+    int maxMV;
+    int debounce;
+    int limiteP;
+    int limiteI;
+    int limiteD;
+    int zeraAcc;
+}
+ConfigPID;
+
+class PID
+{
+public:
+    ConfigPID *cfg;
+    int Proporcional;
+    int Integral;
+    int Derivada;
+    int MV;
+    int erro;
+    int acumulador;
+    int erroAnterior;
+    int delta;
+    unsigned long tEanterior;
+    unsigned long tEatual;
+    unsigned long ultimoLoop;
+
+    void reset()
+    {
+        Proporcional = Integral = Derivada = 0;
+        MV = erro = acumulador = erroAnterior = delta = 0;
+        tEanterior = tEatual = ultimoLoop = 0;
+    }
+
+    int executa()
+    {
+        // P
+
+        Proporcional = erro * cfg->Kp;
+
+        if( Proporcional > cfg->limiteP )
+            Proporcional = cfg->limiteP;
+        else if( Proporcional < -cfg->limiteP )
+            Proporcional = -cfg->limiteP;
+
+        // I
+
+        if( cfg->Ki ) // zero desativa
+        {
+            if( erro && ultimoLoop )
+                acumulador += erro * (agora - ultimoLoop);
+            else if( cfg->zeraAcc )
+                acumulador = 0;
+
+            ultimoLoop = agora;
+
+            if( acumulador > cfg->limiteI )
+                acumulador = cfg->limiteI;
+            else if( acumulador < -cfg->limiteI )
+                acumulador = -cfg->limiteI;
+
+            Integral = acumulador / cfg->Ki;
+        }
+
+        // D
+
+        if( erro != erroAnterior )
+        {
+            tEanterior = tEatual;
+            tEatual = agora;
+            delta = erro - erroAnterior;
+            erroAnterior = erro;
+        }
+
+        int intervalo = tEatual - tEanterior;
+
+        if( (int) ( agora - tEatual ) > intervalo )
+            intervalo = agora - tEatual;
+
+        if( intervalo > cfg->limiteD )
+            intervalo = cfg->limiteD;
+
+        if( intervalo )
+            Derivada = ( cfg->Kd * delta ) / intervalo;
+
+        MV = constrain( ( Proporcional + Integral + Derivada ), -cfg->maxMV , cfg->maxMV );
+
+        return MV;
+    }
+
+    void print()
+    {
+        SERIALX.print( "P " );
+        SERIALX.print( Proporcional );
+        SERIALX.print( " I " );
+        SERIALX.print( Integral );
+        SERIALX.print( " D " );
+        SERIALX.println( Derivada );
+    }
+};
+
 // ******************************************************************************
 //   LINE FOLLOWER
 // ******************************************************************************
@@ -1093,6 +1197,7 @@ void fotovoro()
 class LineFollower
 {
 public:
+
     LineFollower()
     {
         zeraTudo();
@@ -1123,7 +1228,7 @@ public:
     void zeraTudo()
     {
         nGrupos = tamMaior = 0;
-        erro = erroAnterior = direcao = acumulador = 0;
+        erro = erroAnterior = acumulador = 0;
         Proporcional = Integral = Derivada = MV = 0;
         inicioCorrida = tEanterior = tEatual = fimDaVolta = debounce = 0;
         rodaEsq = rodaDir = 0;
@@ -1148,23 +1253,23 @@ public:
         eeprom.dados.programa = PRG_LINE_FOLLOW;
     }
 
-    int acumulador;
 
     int nGrupos;
     int tamMaior;
 
+    int acumulador;
     int Proporcional;
     int Integral;
     int Derivada;
+    int erro;
+    int erroAnterior;
+    unsigned long tEanterior;
+    unsigned long tEatual;
     int MV;
+
     int rodaEsq;
     int rodaDir;
 
-    int erro;
-    int erroAnterior;
-    int direcao;
-    unsigned long tEanterior;
-    unsigned long tEatual;
     unsigned long inicioCorrida;
     unsigned long fimDaVolta;
     unsigned long debounce;
@@ -1250,7 +1355,7 @@ public:
 
         erro = trilho.pontoMedio - setPoint;
 
-        int P = erro * 5 /* Kp */;
+        int P = erro * 10 /* Kp */;
 
         drive.gira( constrain( P, -100 , 100 ) );
 
@@ -1417,6 +1522,8 @@ void LineFollower::loop()
 
         Derivada = 0;
 
+        static int direcao;
+
         if( erro != erroAnterior )
         {
             tEanterior = tEatual;
@@ -1512,7 +1619,7 @@ void LineFollower::calibrar()
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
     int backupVE = eeprom.dados.velEscala;
-    eeprom.dados.velEscala = 100;
+//    eeprom.dados.velEscala = 100;
 
     unsigned long timeout = millis() + 5000;
 
@@ -1536,8 +1643,9 @@ void LineFollower::calibrar()
     do
     {
         agora = millis();
+        giraP( NUM_IR_TRACK );
     }
-    while( agora < timeout && giraP( NUM_IR_TRACK ) );
+    while( agora < timeout );
 
     drive.parar();
     drive.refresh( true );
