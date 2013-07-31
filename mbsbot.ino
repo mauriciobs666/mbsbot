@@ -195,6 +195,20 @@ typedef struct
 }
 ConfigMotor;
 
+typedef struct
+{
+    int Kp;		// proporcional
+    int Ki;		// integral
+    int Kd;		// derivativo
+    int maxMV;
+    int debounce;
+    int limiteP;
+    int limiteI;
+    int limiteD;
+    int zeraAcc;
+}
+ConfigPID;
+
 class Eeprom
 {
 public:
@@ -225,18 +239,7 @@ public:
 
         // controlador PID
 
-        struct sPID
-        {
-            int Kp;		// proporcional
-            int Ki;		// integral
-            int Kd;		// derivativo
-            int maxMV;
-            int debounce;
-            int limiteP;
-            int limiteI;
-            int limiteD;
-            int zeraAcc;
-        } pid;
+        ConfigPID pid;
 
         ConfigGamepad joyRC, joyPC;
 
@@ -1084,24 +1087,12 @@ void fotovoro()
         drive.praFrente();
 }
 
-typedef struct
-{
-    int Kp;		// proporcional
-    int Ki;		// integral
-    int Kd;		// derivativo
-    int maxMV;
-    int debounce;
-    int limiteP;
-    int limiteI;
-    int limiteD;
-    int zeraAcc;
-}
-ConfigPID;
 
 class PID
 {
 public:
     ConfigPID *cfg;
+
     int Proporcional;
     int Integral;
     int Derivada;
@@ -1110,11 +1101,12 @@ public:
     int acumulador;
     int erroAnterior;
     int delta;
+
     unsigned long tEanterior;
     unsigned long tEatual;
     unsigned long ultimoLoop;
 
-    void reset()
+    void zera()
     {
         Proporcional = Integral = Derivada = 0;
         MV = erro = acumulador = erroAnterior = delta = 0;
@@ -1200,6 +1192,7 @@ public:
 
     LineFollower()
     {
+        pid.cfg = &eeprom.dados.pid;
         zeraTudo();
     }
 
@@ -1215,22 +1208,12 @@ public:
 
     void loop();
 
-    void print()
-    {
-        SERIALX.print( "P " );
-        SERIALX.print( Proporcional );
-        SERIALX.print( " I " );
-        SERIALX.print( Integral );
-        SERIALX.print( " D " );
-        SERIALX.println( Derivada );
-    }
-
     void zeraTudo()
     {
+        pid.zera();
+
         nGrupos = tamMaior = 0;
-        erro = erroAnterior = acumulador = 0;
-        Proporcional = Integral = Derivada = MV = 0;
-        inicioCorrida = tEanterior = tEatual = fimDaVolta = debounce = 0;
+        inicioCorrida = fimDaVolta = debounce = 0;
         rodaEsq = rodaDir = 0;
         marcaEsq = marcaDir = fodeu = estadoLed = false;
         estadoLed = buscaInicioVolta = true;
@@ -1253,23 +1236,9 @@ public:
         eeprom.dados.programa = PRG_LINE_FOLLOW;
     }
 
-
-    int nGrupos;
-    int tamMaior;
-
-    int acumulador;
-    int Proporcional;
-    int Integral;
-    int Derivada;
-    int erro;
-    int erroAnterior;
-    unsigned long tEanterior;
-    unsigned long tEatual;
-    int MV;
-
+    PID pid;
     int rodaEsq;
     int rodaDir;
-
     unsigned long inicioCorrida;
     unsigned long fimDaVolta;
     unsigned long debounce;
@@ -1280,6 +1249,9 @@ public:
     bool buscaInicioVolta;
     bool fodeu;
     bool estadoLed;
+
+    int nGrupos;
+    int tamMaior;
 
     class Grupo
     {
@@ -1353,15 +1325,15 @@ public:
         if( nGrupos )
             trilho = grupos[0];
 
-        erro = trilho.pontoMedio - setPoint;
+        pid.erro = trilho.pontoMedio - setPoint;
 
-        int P = erro * 10 /* Kp */;
+        pid.executa();
 
-        drive.gira( constrain( P, -100 , 100 ) );
+        drive.gira( constrain( pid.MV, -100 , 100 ) );
 
         drive.refresh();
 
-        return erro;
+        return pid.erro;
     }
 }
 lineFollower;
@@ -1488,64 +1460,12 @@ void LineFollower::loop()
             }
         }
 
-        erro = trilho.pontoMedio - NUM_IR_TRACK;
+        pid.erro = trilho.pontoMedio - NUM_IR_TRACK;
 
-        Proporcional = erro;
+        pid.executa();
 
-        if( Proporcional > eeprom.dados.pid.limiteP )
-            Proporcional = eeprom.dados.pid.limiteP;
-        else if( Proporcional < -eeprom.dados.pid.limiteP )
-            Proporcional = -eeprom.dados.pid.limiteP;
-
-        Proporcional *= eeprom.dados.pid.Kp;
-
-        Integral = 0;
-
-        if( eeprom.dados.pid.Ki ) // zero desativa
-        {
-            static unsigned long ultimoLoop = 0;
-
-            if( erro && ultimoLoop )
-                acumulador += erro * (agora - ultimoLoop);
-            else if( eeprom.dados.pid.zeraAcc )
-                acumulador = 0;
-
-            ultimoLoop = agora;
-
-            if( acumulador > eeprom.dados.pid.limiteI )
-                acumulador = eeprom.dados.pid.limiteI;
-            else if( acumulador < -eeprom.dados.pid.limiteI )
-                acumulador = -eeprom.dados.pid.limiteI;
-
-            Integral = acumulador / eeprom.dados.pid.Ki;
-        }
-
-        Derivada = 0;
-
-        static int direcao;
-
-        if( erro != erroAnterior )
-        {
-            tEanterior = tEatual;
-            tEatual = agora;
-            direcao = erro - erroAnterior;
-            erroAnterior = erro;
-        }
-
-        int intervalo = tEatual - tEanterior;
-
-        if( (int) ( agora - tEatual ) > intervalo )
-            intervalo = agora - tEatual;
-
-        if( intervalo > eeprom.dados.pid.limiteD )
-            intervalo = eeprom.dados.pid.limiteD;
-
-        Derivada = ( eeprom.dados.pid.Kd * direcao ) / intervalo;
-
-        MV = constrain( ( Proporcional + Integral + Derivada ), -eeprom.dados.pid.maxMV , eeprom.dados.pid.maxMV );
-
-        rodaEsq = (MV < 0) ? (100 + MV) : 100;
-        rodaDir = (MV > 0) ? (100 - MV) : 100;
+        rodaEsq = (pid.MV < 0) ? (100 + pid.MV) : 100;
+        rodaDir = (pid.MV > 0) ? (100 - pid.MV) : 100;
     }
     else
     {
@@ -1553,7 +1473,7 @@ void LineFollower::loop()
         {
             fodeu = true;
             #ifdef TRACE_LF
-                print();
+                pid.print();
             #endif
         }
 
@@ -1618,9 +1538,6 @@ void LineFollower::calibrar()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
-    int backupVE = eeprom.dados.velEscala;
-//    eeprom.dados.velEscala = 100;
-
     unsigned long timeout = millis() + 5000;
 
     trilho.pontoMedio = NUM_IR_TRACK; // supoe que robo ta centrado na linha
@@ -1651,8 +1568,6 @@ void LineFollower::calibrar()
     drive.refresh( true );
 
     digitalWrite( PINO_LED, false );
-
-    eeprom.dados.velEscala = backupVE;
 }
 //#endif
 
