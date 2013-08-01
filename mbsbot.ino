@@ -197,14 +197,13 @@ ConfigMotor;
 
 typedef struct
 {
-    int Kp;		// proporcional
-    int Ki;		// integral
-    int Kd;		// derivativo
-    int maxMV;
-    int debounce;
+    int Kp;
+    int Ki;
+    int Kd;
     int limiteP;
     int limiteI;
     int limiteD;
+    int maxMV;
     int zeraAcc;
 }
 ConfigPID;
@@ -235,9 +234,9 @@ public:
 
             int ES; // intervalo de entrada/saida, leitura de sensores etc
             int motores; // intervalo de execucao entre os refresh de motores
-        } delays;
 
-        // controlador PID
+            int debounce; // debounce de cruzamento / marcaEs / marcaDir
+        } delays;
 
         ConfigPID pid;
 
@@ -296,11 +295,11 @@ public:
         dados.delays.status = -1;
         dados.delays.ES = DFT_DELAY_ES;
         dados.delays.motores = DFT_VEL_REFRESH;
+        dados.delays.debounce = DFT_PID_DEBOUNCE;
 
         dados.pid.Kp = DFT_PID_P;
         dados.pid.Ki = DFT_PID_I;
         dados.pid.Kd = DFT_PID_D;
-        dados.pid.debounce = DFT_PID_DEBOUNCE;
         dados.pid.maxMV = DFT_PID_MAX_MV;
         dados.pid.limiteP = DFT_PID_LIM_P;
         dados.pid.limiteI = DFT_PID_LIM_I;
@@ -1145,12 +1144,15 @@ public:
 
         // D
 
+        bool erroMudou = false;
+
         if( erro != erroAnterior )
         {
             tEanterior = tEatual;
             tEatual = agora;
             delta = erro - erroAnterior;
             erroAnterior = erro;
+            erroMudou = true;
         }
 
         int intervalo = tEatual - tEanterior;
@@ -1166,17 +1168,24 @@ public:
 
         MV = constrain( ( Proporcional + Integral + Derivada ), -cfg->maxMV , cfg->maxMV );
 
+        if( erroMudou )
+            print();
+
         return MV;
     }
 
     void print()
     {
-        SERIALX.print( "P " );
+        SERIALX.print( "E " );
+        SERIALX.print( erro );
+        SERIALX.print( " P " );
         SERIALX.print( Proporcional );
         SERIALX.print( " I " );
         SERIALX.print( Integral );
         SERIALX.print( " D " );
-        SERIALX.println( Derivada );
+        SERIALX.print( Derivada );
+        SERIALX.print( " MV " );
+        SERIALX.println( MV );
     }
 };
 
@@ -1192,7 +1201,7 @@ public:
 
     LineFollower()
     {
-        pid.cfg = &eeprom.dados.pid;
+        pid.cfg = NULL;
         zeraTudo();
     }
 
@@ -1233,6 +1242,7 @@ public:
                 return;
         }
 
+        pid.cfg = &eeprom.dados.pid;
         eeprom.dados.programa = PRG_LINE_FOLLOW;
     }
 
@@ -1433,7 +1443,7 @@ void LineFollower::loop()
                 }
             #endif
 
-            debounce = eeprom.dados.pid.debounce;
+            debounce = eeprom.dados.delays.debounce;
 
             for( int s = 0; s < NUM_IR_TRACK; s++ )
                 debounceArray[s] |= sensoresBool[s];
@@ -1498,6 +1508,21 @@ void LineFollower::calibrar()
     unsigned short minimo = 1023;
     unsigned short maximo = 0;
 
+/*
+    int Kp;
+    int Ki;
+    int Kd;
+    int limiteP;
+    int limiteI;
+    int limiteD;
+    int maxMV;
+    int zeraAcc;
+*/
+    ConfigPID pidCal = { 5, 500, 300, 200, 32000, 100, 1 };
+
+    pid.cfg = &pidCal;
+    //pid.cfg = &eeprom.dados.pid;
+
     drive.parar();
     drive.refresh( true );
 
@@ -1538,7 +1563,9 @@ void LineFollower::calibrar()
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
 
-    unsigned long timeout = millis() + 5000;
+    unsigned long timeout = millis() + 3000;
+
+    zeraTudo();
 
     trilho.pontoMedio = NUM_IR_TRACK; // supoe que robo ta centrado na linha
 
@@ -1549,12 +1576,20 @@ void LineFollower::calibrar()
     }
     while( agora < timeout && giraP( ( 2 * (NUM_IR_TRACK-1) ) + 1 ) );
 
+    delay( 100 );
+
+    trilho.print();
+
     // gira tudo pra direita
     do
     {
         agora = millis();
     }
     while( agora < timeout && giraP( 1 ) );
+
+    delay( 100 );
+
+    trilho.print();
 
     // centra
     do
@@ -1758,7 +1793,7 @@ public:
                             else if(strcmp(dest, VAR_PID_MMV) == 0)
                                 eeprom.dados.pid.maxMV = valor;
                             else if(strcmp(dest, VAR_PID_DEB) == 0)
-                                eeprom.dados.pid.debounce = valor;
+                                eeprom.dados.delays.debounce = valor;
                             else if(strcmp(dest, VAR_PID_LIM_P) == 0)
                                 eeprom.dados.pid.limiteP = valor;
                             else if(strcmp(dest, VAR_PID_LIM_I) == 0)
@@ -1834,7 +1869,7 @@ public:
                         else if(strcmp(tok, VAR_PID_MMV) == 0)
                             SERIALX.println((int)eeprom.dados.pid.maxMV);
                         else if(strcmp(tok, VAR_PID_DEB) == 0)
-                            SERIALX.println((int)eeprom.dados.pid.debounce);
+                            SERIALX.println((int)eeprom.dados.delays.debounce);
                         else if(strcmp(tok, VAR_PID_LIM_P) == 0)
                             SERIALX.println((int)eeprom.dados.pid.limiteP);
                         else if(strcmp(tok, VAR_PID_LIM_I) == 0)
