@@ -2,7 +2,10 @@
 <wxsmith>
 	<object class="wxFrame" name="serialcomFrame">
 		<title>MBSBOT - (c) 2010-2013 GPL - Mauricio Bieze Stefani</title>
-		<size>800,480</size>
+		<size>800,600</size>
+		<font>
+			<sysfont>wxSYS_SYSTEM_FONT</sysfont>
+		</font>
 		<id_arg>0</id_arg>
 		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
 			<orient>wxVERTICAL</orient>
@@ -157,7 +160,7 @@
 														<object class="sizeritem">
 															<object class="wxButton" name="ID_BUTTON9" variable="Button9" member="yes">
 																<label>Centrar</label>
-																<size>50,27</size>
+																<size>76,27</size>
 																<handler function="OnButton9Click" entry="EVT_BUTTON" />
 															</object>
 															<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -518,7 +521,7 @@
 										<object class="sizeritem">
 											<object class="wxCheckBox" name="ID_CHECKBOX4" variable="CheckBoxAutoRefresh" member="yes">
 												<label>Refresh</label>
-												<size>52,25</size>
+												<size>88,33</size>
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
@@ -527,6 +530,7 @@
 										<object class="sizeritem">
 											<object class="wxCheckBox" name="ID_CHECKBOX8" variable="CheckBoxPoll" member="yes">
 												<label>Polling</label>
+												<size>89,34</size>
 											</object>
 											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
@@ -776,9 +780,9 @@
 													<item>1023</item>
 													<item>0</item>
 												</celltext>
-												<size>339,323</size>
+												<size>345,455</size>
 											</object>
-											<flag>wxALL|wxEXPAND|wxSHAPED|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -814,7 +818,7 @@
 											<border>5</border>
 										</object>
 									</object>
-									<flag>wxALL|wxSHAPED|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
+									<flag>wxALL|wxEXPAND|wxALIGN_TOP|wxALIGN_CENTER_HORIZONTAL</flag>
 									<border>5</border>
 									<option>1</option>
 								</object>

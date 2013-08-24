@@ -1097,9 +1097,9 @@ public:
     int Derivada;
     int MV;
     int erro;
-    int acumulador;
     int erroAnterior;
     int delta;
+    int acumulador;
 
     unsigned long tEanterior;
     unsigned long tEatual;
@@ -1491,7 +1491,7 @@ void LineFollower::loop()
         if( delaySemBlock( &piscaLed, 500 ) )
             estadoLed = ! estadoLed;
 
-        rodaEsq = rodaDir = 0;
+        //rodaEsq = rodaDir = 0;
     }
 
     drive.move( rodaEsq , rodaDir );
@@ -2026,7 +2026,7 @@ public:
         SERIALX.println("");
 
         for( int x = 0; x < NUM_IR_TRACK; x++ )
-            SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "1" : "0" );
+            SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "|" : "_" );
         SERIALX.println();
     }
 
@@ -2207,14 +2207,14 @@ void isrRadio()
 
 void trataJoystick()
 {
-    if(gamepad.botoesEdgeF & BT_SEL)
+    if(gamepad.botoesEdgeR & BT_L3)
     {
         gamepad.calibrar();
         eeprom.dados.handBrake = 1;
         eeprom.dados.programa = PRG_RC_SERIAL;
     }
 
-    if(gamepad.botoesEdgeF & BT_STR)
+    if( (gamepad.botoesEdgeF & BT_A) || (gamepad.botoesEdgeF & BT_B) )
     {
         drive.parar();
         drive2.parar();
@@ -2222,9 +2222,17 @@ void trataJoystick()
         // auto centra joystick
         gamepad.centrar();
 
-        // solta freio de mao e poe no modo RC
-        eeprom.dados.handBrake = 0;
+        eeprom.dados.handBrake = (gamepad.botoesEdgeF & BT_B);
+
+        // poe no modo RC
         eeprom.dados.programa = PRG_RC_SERIAL;
+        eeprom.dados.velEscala = 60;
+    }
+
+    if(gamepad.botoesEdgeF & BT_X)
+    {
+        eeprom.dados.handBrake = 0;
+        lineFollower.calibrar();
     }
 
     if(gamepad.botoesEdgeF & BT_Y)
@@ -2233,23 +2241,11 @@ void trataJoystick()
         lineFollower.iniciarCorrida();
     }
 
-    if(gamepad.botoesEdgeF & BT_A)
-    {
-        drive.parar();
-        drive2.parar();
-        eeprom.dados.programa = PRG_RC_SERIAL;
-    }
-
-    if(gamepad.botoesEdgeF & BT_X)
-    {
-        lineFollower.calibrar();
-    }
-//    if(gamepad.botoesEdgeF & BT_B)
-
     if(gamepad.botoesAgora & BT_LT)
     {
         // 4 rodas: controla servos com eixos Z e R
     }
+
     if(gamepad.botoesAgora & BT_RT)
     {
         eeprom.dados.handBrake = 0;
@@ -2261,10 +2257,24 @@ void trataJoystick()
         digitalWrite(PINO_ARMA, LOW);
 #endif
     }
-//                if(gamepad.botoesEdge & BT_LB)
-//                if(gamepad.botoesEdge & BT_RB)
-//                if(gamepad.botoesEdge & BT_L3)
-//                if(gamepad.botoesEdge & BT_R3)
+
+    if(gamepad.botoesEdgeF & BT_LB)
+    {
+        if( eeprom.dados.velEscala > 30 )
+            eeprom.dados.velEscala -= 10;
+
+        if( eeprom.dados.velEscala < 30 )
+            eeprom.dados.velEscala = 30;
+    }
+
+    if(gamepad.botoesEdgeF & BT_RB)
+    {
+        if( eeprom.dados.velEscala < 100 )
+            eeprom.dados.velEscala += 10;
+
+        if( eeprom.dados.velEscala > 100 )
+            eeprom.dados.velEscala = 100;
+    }
 
     gamepad.botoesEdgeR = 0;
     gamepad.botoesEdgeF = 0;
