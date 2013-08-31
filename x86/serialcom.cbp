@@ -90,6 +90,9 @@
 			<Add directory="$(#mbsutil.lib)" />
 			<Add directory="$(#wx.lib)/gcc_dll" />
 		</Linker>
+		<Unit filename="../3pi.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="../dimensoes.txt" />
 		<Unit filename="../mbsbot.ino" />
 		<Unit filename="../nunchuck_funcs.h" />
