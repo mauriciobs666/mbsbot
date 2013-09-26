@@ -21,13 +21,13 @@
 #include <wx/msgdlg.h>
 
 //(*InternalHeaders(serialcomFrame)
-#include <wx/artprov.h>
-#include <wx/bitmap.h>
 #include <wx/settings.h>
-#include <wx/font.h>
-#include <wx/intl.h>
-#include <wx/image.h>
 #include <wx/string.h>
+#include <wx/intl.h>
+#include <wx/font.h>
+#include <wx/bitmap.h>
+#include <wx/image.h>
+#include <wx/artprov.h>
 //*)
 
 //(*IdInit(serialcomFrame)
@@ -112,33 +112,33 @@ END_EVENT_TABLE()
 serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
 {
     //(*Initialize(serialcomFrame)
-    wxFlexGridSizer* FlexGridSizer4;
-    wxStaticBoxSizer* StaticBoxSizer12;
-    wxStaticBoxSizer* StaticBoxSizer14;
-    wxStaticBoxSizer* StaticBoxSizer4;
-    wxFlexGridSizer* FlexGridSizer10;
-    wxFlexGridSizer* FlexGridSizer3;
-    wxFlexGridSizer* FlexGridSizer5;
-    wxFlexGridSizer* FlexGridSizer2;
-    wxStaticBoxSizer* StaticBoxSizer9;
-    wxBoxSizer* BoxSizer2;
-    wxFlexGridSizer* FlexGridSizer7;
-    wxStaticBoxSizer* StaticBoxSizer7;
-    wxStaticBoxSizer* StaticBoxSizer13;
-    wxStaticBoxSizer* StaticBoxSizer10;
-    wxStaticBoxSizer* StaticBoxSizer8;
-    wxStaticBoxSizer* StaticBoxSizer3;
-    wxStaticBoxSizer* StaticBoxSizer6;
     wxFlexGridSizer* FlexGridSizer8;
-    wxStaticBoxSizer* StaticBoxSizer11;
+    wxStaticBoxSizer* StaticBoxSizer10;
+    wxFlexGridSizer* FlexGridSizer1;
+    wxFlexGridSizer* FlexGridSizer2;
+    wxStaticBoxSizer* StaticBoxSizer7;
+    wxStaticBoxSizer* StaticBoxSizer5;
+    wxFlexGridSizer* FlexGridSizer11;
+    wxStaticBoxSizer* StaticBoxSizer12;
+    wxFlexGridSizer* FlexGridSizer7;
+    wxBoxSizer* BoxSizer2;
+    wxFlexGridSizer* FlexGridSizer4;
+    wxStaticBoxSizer* StaticBoxSizer3;
+    wxFlexGridSizer* FlexGridSizer6;
+    wxStaticBoxSizer* StaticBoxSizer13;
+    wxFlexGridSizer* FlexGridSizer3;
+    wxStaticBoxSizer* StaticBoxSizer8;
+    wxStaticBoxSizer* StaticBoxSizer4;
+    wxStaticBoxSizer* StaticBoxSizer9;
+    wxStaticBoxSizer* StaticBoxSizer6;
+    wxStaticBoxSizer* StaticBoxSizer14;
+    wxFlexGridSizer* FlexGridSizer10;
     wxBoxSizer* BoxSizer1;
+    wxStaticBoxSizer* StaticBoxSizer11;
     wxFlexGridSizer* FlexGridSizer13;
     wxFlexGridSizer* FlexGridSizer12;
-    wxFlexGridSizer* FlexGridSizer6;
+    wxFlexGridSizer* FlexGridSizer5;
     wxStaticBoxSizer* StaticBoxSizer1;
-    wxFlexGridSizer* FlexGridSizer1;
-    wxFlexGridSizer* FlexGridSizer11;
-    wxStaticBoxSizer* StaticBoxSizer5;
 
     Create(parent, wxID_ANY, _("MBSBOT - (c) 2010-2013 GPL - Mauricio Bieze Stefani"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     SetClientSize(wxSize(800,600));
