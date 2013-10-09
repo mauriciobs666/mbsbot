@@ -1518,7 +1518,7 @@ void LineFollower::calibrar()
     int maxMV;
     int zeraAcc;
 */
-    ConfigPID pidCal = { 5, 500, 300, 200, 32000, 100, 1 };
+    ConfigPID pidCal = { 5, 500, 300, 200, 32000, 100, 100, 1 };
 
     pid.cfg = &pidCal;
     //pid.cfg = &eeprom.dados.pid;
@@ -2027,7 +2027,7 @@ public:
 
         for( int x = 0; x < NUM_IR_TRACK; x++ )
             SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "|" : "_" );
-        SERIALX.println();
+        SERIALX.println("");
     }
 
     void enviaStatus(bool enviaComando = true)
