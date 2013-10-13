@@ -1230,10 +1230,11 @@ public:
     {
         pid.zera();
 
-        nGrupos = tamMaior = 0;
+        nGrupos = 0;
+        //tamMaior = 0;
         inicioCorrida = fimDaVolta = debounce = 0;
         rodaEsq = rodaDir = 0;
-        marcaEsq = marcaDir = fodeu = estadoLed = false;
+        marcaEsq = marcaDir = estadoLed = false;
         estadoLed = buscaInicioVolta = true;
 
         for(int sb = 0; sb < NUM_IR_TRACK; sb++)
@@ -1266,11 +1267,10 @@ public:
     bool marcaEsq;
     bool marcaDir;
     bool buscaInicioVolta;
-    bool fodeu;
     bool estadoLed;
 
     int nGrupos;
-    int tamMaior;
+    //int tamMaior;
 
     class Grupo
     {
@@ -1301,7 +1301,7 @@ public:
     void refresh()
     {
         nGrupos = 0;
-        tamMaior = 0;
+        //tamMaior = 0;
 
         for(int sb = 0; sb < NUM_IR_TRACK; sb++)
             sensoresBool[sb] = sensores[ PINO_TRACK_0 + sb ].refresh().getBool();
@@ -1329,8 +1329,8 @@ public:
 
                 grupos[ nGrupos ].pontoMedio /= grupos[ nGrupos ].tamanho;
 
-                if( grupos[ nGrupos ].tamanho > tamMaior )
-                    tamMaior = grupos[ nGrupos ].tamanho;
+                //if( grupos[ nGrupos ].tamanho > tamMaior )
+                //    tamMaior = grupos[ nGrupos ].tamanho;
 
                 nGrupos++;
             }
@@ -1359,6 +1359,8 @@ lineFollower;
 
 void LineFollower::loop()
 {
+    bool traceLF = false;
+
     if( fimDaVolta && agora > fimDaVolta )
     {
         fimDaVolta = 0;
@@ -1366,7 +1368,8 @@ void LineFollower::loop()
         drive.refresh( true );
 
         SERIALX.print("Lap:");
-        SERIALX.println(int((agora-inicioCorrida)/1000));
+        SERIALX.print(int((agora-inicioCorrida)/1000));
+        SERIALX.println("s");
 
         for( int l = 0; l < 15; l ++ )
         {
@@ -1381,12 +1384,40 @@ void LineFollower::loop()
 
     if( nGrupos )
     {
-        fodeu = false;
+        int eleito = -1;
+        int distEleito = 3; // distancia maxima do trilho anterior
 
-        if( nGrupos == 1 && tamMaior <= (NUM_IR_TRACK/3) )
+        for( int ig = 0 ; ig < nGrupos ; ig++ )
         {
-            trilho = grupos[0];
+            if( grupos[ig].tamanho < (NUM_IR_TRACK/3) )
+            {
+                int distancia = abs( grupos[ig].pontoMedio - trilho.pontoMedio );
 
+                if( distancia < distEleito )
+                {
+                    eleito = ig;
+                    distEleito = distancia;
+                }
+            }
+        }
+
+        if( eleito >= 0 )
+            trilho = grupos[ eleito ];
+
+        for( int ig = 0 ; ig < nGrupos ; ig++ )
+        {
+            if( ig != eleito )
+            {
+                if( ( grupos[ig].pontoMax + 2 ) < trilho.pontoMin )
+                    marcaEsq = true;
+
+                if( ( trilho.pontoMax + 2 ) < grupos[ig].pontoMin )
+                    marcaDir = true;
+            }
+        }
+
+        if( nGrupos == 1 && grupos[0].tamanho < (NUM_IR_TRACK/3) )
+        {
             if( debounce && agora > debounce )
             {
                 debounce = 0;
@@ -1409,7 +1440,6 @@ void LineFollower::loop()
                 }
                 else if( marcaEsq )
                 {
-                    estadoLed = ! estadoLed;
                     #ifdef TRACE_LF
                         SERIALX.println("E");
                     #endif
@@ -1418,12 +1448,6 @@ void LineFollower::loop()
                 {
                     #ifdef TRACE_LF
                         SERIALX.println("D");
-                        for( int x = 0; x < NUM_IR_TRACK; x++ )
-                            SERIALX.print( sensoresBool[x] ? "1" : "0" );
-                        SERIALX.println();
-
-                        for( int ig = 0 ; ig < nGrupos ; ig++ )
-                            grupos[ig].print();
                     #endif
                     if( buscaInicioVolta )
                     {
@@ -1436,77 +1460,57 @@ void LineFollower::loop()
                     }
                 }
                 marcaEsq = marcaDir = false;
+
+                traceLF = true;
             }
         }
-        else // ( nGrupos > 1 ) || tamMaior > (NUM_IR_TRACK/3)
+        else // ( nGrupos > 1 ) || grupos[0].tamanho < (NUM_IR_TRACK/3)
         {
-            #ifdef TRACE_LF
-                if( ! debounce )
-                {
-                    for( int x = 0; x < NUM_IR_TRACK; x++ )
-                        SERIALX.print( sensoresBool[x] ? "1" : "0" );
-                    SERIALX.println();
+            traceLF = ! debounce;
 
-                    for( int ig = 0 ; ig < nGrupos ; ig++ )
-                        grupos[ig].print();
-                }
-            #endif
-
-            debounce = eeprom.dados.delays.debounce;
+            debounce = agora + eeprom.dados.delays.debounce;
 
             for( int s = 0; s < NUM_IR_TRACK; s++ )
                 debounceArray[s] |= sensoresBool[s];
-
-            if( nGrupos == 1 )
-                trilho = grupos[0];
-            else
-            {
-                for( int ig = 0 ; ig < nGrupos ; ig++ )
-                {
-                    if( ( abs( grupos[ig].pontoMedio - trilho.pontoMedio ) <= 1  )
-                       && ( grupos[ig].tamanho <= (NUM_IR_TRACK/3) ) )
-                        trilho = grupos[ig];
-                }
-
-                for( int ig = 0 ; ig < nGrupos ; ig++ )
-                {
-                    if( ( grupos[ig].pontoMax + 2 ) < trilho.pontoMin )
-                        marcaEsq = true;
-
-                    if( ( trilho.pontoMax + 2 ) < grupos[ig].pontoMin )
-                        marcaDir = true;
-                }
-            }
         }
-
-        pid.erro = trilho.pontoMedio - NUM_IR_TRACK;
-
-        pid.executa();
-
-        rodaEsq = (pid.MV < 0) ? (100 + pid.MV) : 100;
-        rodaDir = (pid.MV > 0) ? (100 - pid.MV) : 100;
     }
     else
     {
-        if( ! fodeu )
-        {
-            fodeu = true;
-            #ifdef TRACE_LF
-                pid.print();
-            #endif
-        }
-
         static unsigned long piscaLed=0;
         if( delaySemBlock( &piscaLed, 500 ) )
+        {
+            traceLF = true;
             estadoLed = ! estadoLed;
-
-        //rodaEsq = rodaDir = 0;
+        }
     }
+
+    pid.erro = trilho.pontoMedio - NUM_IR_TRACK;
+
+    pid.executa();
+
+    rodaEsq = (pid.MV < 0) ? (100 + pid.MV) : 100;
+    rodaDir = (pid.MV > 0) ? (100 - pid.MV) : 100;
 
     drive.move( rodaEsq , rodaDir );
     drive.refresh();
 
     digitalWrite( PINO_LED, estadoLed );
+
+    #ifdef TRACE_LF
+    if( traceLF )
+    {
+        traceLF = false;
+
+        for( int x = 0; x < NUM_IR_TRACK; x++ )
+            SERIALX.print( sensoresBool[x] ? "|" : "_" );
+        SERIALX.println();
+
+        for( int ig = 0 ; ig < nGrupos ; ig++ )
+            grupos[ig].print();
+
+        pid.print();
+    }
+    #endif
 }
 
 void LineFollower::calibrar()
