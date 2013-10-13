@@ -238,7 +238,7 @@ public:
             int debounce; // debounce de cruzamento / marcaEs / marcaDir
         } delays;
 
-        ConfigPID pid;
+        ConfigPID pid[PID_N];
 
         ConfigGamepad joyRC, joyPC;
 
@@ -297,14 +297,23 @@ public:
         dados.delays.motores = DFT_VEL_REFRESH;
         dados.delays.debounce = DFT_PID_DEBOUNCE;
 
-        dados.pid.Kp = DFT_PID_P;
-        dados.pid.Ki = DFT_PID_I;
-        dados.pid.Kd = DFT_PID_D;
-        dados.pid.maxMV = DFT_PID_MAX_MV;
-        dados.pid.limiteP = DFT_PID_LIM_P;
-        dados.pid.limiteI = DFT_PID_LIM_I;
-        dados.pid.limiteD = DFT_PID_LIM_D;
-        dados.pid.zeraAcc = 0;
+        dados.pid[ PID_CALIBRA ].Kp = 5;
+        dados.pid[ PID_CALIBRA ].Ki = 100;
+        dados.pid[ PID_CALIBRA ].Kd = 300;
+        dados.pid[ PID_CALIBRA ].limiteP = 200;
+        dados.pid[ PID_CALIBRA ].limiteI = 32000;
+        dados.pid[ PID_CALIBRA ].limiteD = 100;
+        dados.pid[ PID_CALIBRA ].maxMV = 100;
+        dados.pid[ PID_CALIBRA ].zeraAcc = 1;
+
+        dados.pid[ PID_CORRIDA ].Kp = DFT_PID_P;
+        dados.pid[ PID_CORRIDA ].Ki = DFT_PID_I;
+        dados.pid[ PID_CORRIDA ].Kd = DFT_PID_D;
+        dados.pid[ PID_CORRIDA ].limiteP = DFT_PID_LIM_P;
+        dados.pid[ PID_CORRIDA ].limiteI = DFT_PID_LIM_I;
+        dados.pid[ PID_CORRIDA ].limiteD = DFT_PID_LIM_D;
+        dados.pid[ PID_CORRIDA ].maxMV = DFT_PID_MAX_MV;
+        dados.pid[ PID_CORRIDA ].zeraAcc = 0;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
@@ -1242,7 +1251,7 @@ public:
                 return;
         }
 
-        pid.cfg = &eeprom.dados.pid;
+        pid.cfg = &eeprom.dados.pid[ PID_CORRIDA ];
         eeprom.dados.programa = PRG_LINE_FOLLOW;
     }
 
@@ -1508,20 +1517,7 @@ void LineFollower::calibrar()
     unsigned short minimo = 1023;
     unsigned short maximo = 0;
 
-/*
-    int Kp;
-    int Ki;
-    int Kd;
-    int limiteP;
-    int limiteI;
-    int limiteD;
-    int maxMV;
-    int zeraAcc;
-*/
-    ConfigPID pidCal = { 5, 500, 300, 200, 32000, 100, 100, 1 };
-
-    pid.cfg = &pidCal;
-    //pid.cfg = &eeprom.dados.pid;
+    pid.cfg = &eeprom.dados.pid[ PID_CALIBRA ];
 
     drive.parar();
     drive.refresh( true );
@@ -1784,24 +1780,24 @@ public:
                             #endif
                             else if(strcmp(dest, VAR_PID) == 0)
                             {
-                                eeprom.dados.pid.Kp = valor;	// P
+                                eeprom.dados.pid[ PID_CORRIDA ].Kp = valor;	// P
                                 if((tok = STRTOK(NULL, " ")))	// I
-                                    eeprom.dados.pid.Ki = atoi(tok);
+                                    eeprom.dados.pid[ PID_CORRIDA ].Ki = atoi(tok);
                                 if((tok = STRTOK(NULL, " ")))	// D
-                                    eeprom.dados.pid.Kd = atoi(tok);
+                                    eeprom.dados.pid[ PID_CORRIDA ].Kd = atoi(tok);
                             }
                             else if(strcmp(dest, VAR_PID_MMV) == 0)
-                                eeprom.dados.pid.maxMV = valor;
+                                eeprom.dados.pid[ PID_CORRIDA ].maxMV = valor;
                             else if(strcmp(dest, VAR_PID_DEB) == 0)
                                 eeprom.dados.delays.debounce = valor;
                             else if(strcmp(dest, VAR_PID_LIM_P) == 0)
-                                eeprom.dados.pid.limiteP = valor;
+                                eeprom.dados.pid[ PID_CORRIDA ].limiteP = valor;
                             else if(strcmp(dest, VAR_PID_LIM_I) == 0)
-                                eeprom.dados.pid.limiteI = valor;
+                                eeprom.dados.pid[ PID_CORRIDA ].limiteI = valor;
                             else if(strcmp(dest, VAR_PID_LIM_D) == 0)
-                                eeprom.dados.pid.limiteD = valor;
+                                eeprom.dados.pid[ PID_CORRIDA ].limiteD = valor;
                             else if(strcmp(dest, VAR_PID_ZAC) == 0)
-                                eeprom.dados.pid.zeraAcc = valor;
+                                eeprom.dados.pid[ PID_CORRIDA ].zeraAcc = valor;
                             else if(strcmp(dest, VAR_FREIO) == 0)
                                 eeprom.dados.handBrake = valor;
                             else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
@@ -1860,24 +1856,24 @@ public:
                             enviaSensores(false);
                         else if(strcmp(tok, VAR_PID) == 0)
                         {
-                            SERIALX.print(eeprom.dados.pid.Kp);
+                            SERIALX.print(eeprom.dados.pid[ PID_CORRIDA ].Kp);
                             SERIALX.print(" ");
-                            SERIALX.print(eeprom.dados.pid.Ki);
+                            SERIALX.print(eeprom.dados.pid[ PID_CORRIDA ].Ki);
                             SERIALX.print(" ");
-                            SERIALX.println(eeprom.dados.pid.Kd);
+                            SERIALX.println(eeprom.dados.pid[ PID_CORRIDA ].Kd);
                         }
                         else if(strcmp(tok, VAR_PID_MMV) == 0)
-                            SERIALX.println((int)eeprom.dados.pid.maxMV);
+                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].maxMV);
                         else if(strcmp(tok, VAR_PID_DEB) == 0)
                             SERIALX.println((int)eeprom.dados.delays.debounce);
                         else if(strcmp(tok, VAR_PID_LIM_P) == 0)
-                            SERIALX.println((int)eeprom.dados.pid.limiteP);
+                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteP);
                         else if(strcmp(tok, VAR_PID_LIM_I) == 0)
-                            SERIALX.println((int)eeprom.dados.pid.limiteI);
+                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteI);
                         else if(strcmp(tok, VAR_PID_LIM_D) == 0)
-                            SERIALX.println((int)eeprom.dados.pid.limiteD);
+                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteD);
                         else if(strcmp(tok, VAR_PID_ZAC) == 0)
-                            SERIALX.println((int)eeprom.dados.pid.zeraAcc);
+                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].zeraAcc);
                         else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
                             SERIALX.println((int)eeprom.dados.motorEsq.aceleracao);
                         else if(strcmp(tok, VAR_ACEL_DIR) == 0)

@@ -118,13 +118,13 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 #define VAR_T_SE     "dse"  // tempo minimo entre envio de SEnsores
 #define VAR_T_ST     "dst"  // tempo minimo entre envio de STatus
 #define VAR_T_MOTOR  "dm"   // intervalo de refresh dos motores
+#define VAR_PID_DEB  "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 
 #define VAR_PID       "pid"  // coeficientes do algoritmo de PID
-#define VAR_PID_MMV   "mmv"  // valor maximo MV (100-200)
-#define VAR_PID_DEB   "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 #define VAR_PID_LIM_P "lmp"  // limite proporcional
 #define VAR_PID_LIM_I "lmi"  // limite acumulador
 #define VAR_PID_LIM_D "lmd"  // limite derivada
+#define VAR_PID_MMV   "mmv"  // valor maximo MV (100-200)
 #define VAR_PID_ZAC   "zac"  // zera acumulador
 
 #define VAR_VEL_MAX     "vm" // limite de velocidade em %
@@ -169,5 +169,12 @@ enum Erros
 #define BT_STR 0x200 //  512 - Start
 #define BT_L3  0x400 // 1024 - L3
 #define BT_R3  0x800 // 2048 - R3
+
+enum Pids
+{
+    PID_CALIBRA = 0,
+    PID_CORRIDA = 1,
+    PID_N
+};
 
 #endif // PROTOCOL_H_INCLUDED

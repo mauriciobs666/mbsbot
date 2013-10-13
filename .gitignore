@@ -1,0 +1,4 @@
+*.layout
+*.depend
+x86/bin
+x86/obj
