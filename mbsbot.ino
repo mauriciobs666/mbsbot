@@ -2240,7 +2240,7 @@ void trataJoystick()
         eeprom.dados.handBrake = 0;
         lineFollower.iniciarCorrida();
     }
-
+/*
     if(gamepad.botoesAgora & BT_LT)
     {
         // 4 rodas: controla servos com eixos Z e R
@@ -2257,7 +2257,7 @@ void trataJoystick()
         digitalWrite(PINO_ARMA, LOW);
 #endif
     }
-
+*/
     if(gamepad.botoesEdgeF & BT_LB)
     {
         if( eeprom.dados.velEscala > 30 )

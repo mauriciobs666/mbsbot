@@ -20,21 +20,21 @@
 #define SERIALCOMMAIN_H
 
 //(*Headers(serialcomFrame)
-#include <wx/grid.h>
-#include <wx/checkbox.h>
-#include <wx/toolbar.h>
-#include <wx/sizer.h>
 #include <wx/notebook.h>
-#include <wx/button.h>
-#include <wx/panel.h>
-#include <wx/slider.h>
-#include <wx/statusbr.h>
-#include <wx/frame.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
+#include <wx/checkbox.h>
+#include <wx/toolbar.h>
+#include <wx/slider.h>
+#include <wx/panel.h>
+#include <wx/grid.h>
 #include <wx/choice.h>
-#include <wx/timer.h>
 #include <wx/statbmp.h>
+#include <wx/button.h>
+#include <wx/frame.h>
+#include <wx/timer.h>
+#include <wx/statusbr.h>
 //*)
 
 #include "MbsBot.h"
@@ -175,77 +175,77 @@ private:
     //*)
 
     //(*Declarations(serialcomFrame)
-    wxTextCtrl* TextCtrlDelayTurn;
-    wxCheckBox* CheckBoxPoll;
-    wxPanel* Panel6;
-    wxPanel* Panel1;
-    wxTextCtrl* TextCtrlKp;
-    wxStatusBar* StatusBar1;
-    wxTextCtrl* TextCtrlDelayRead;
-    wxSlider* SliderRodaEsquerda;
-    wxTextCtrl* TextCtrlRoll;
-    wxGrid* GridJoy;
-    wxChoice* ChoicePrg;
-    wxButton* Button4;
-    wxGrid* Grid1;
-    wxButton* Button1;
-    wxTextCtrl* TextCtrlTilt;
-    wxCheckBox* CheckBoxAutoRefresh;
-    wxButton* Button2;
-    wxTextCtrl* TextCtrlKd;
-    wxSlider* SliderRoll;
-    wxButton* Button3;
-    wxChoice* Choice2;
-    wxButton* Button12;
-    wxTextCtrl* TextCtrlPan;
-    wxStaticText* StaticText1;
     wxStaticText* StaticText10;
-    wxTimer Timer1;
-    wxPanel* Panel2;
-    wxToolBarToolBase* ToolBarItem2;
-    wxButton* Button8;
     wxCheckBox* CheckBoxAutoRefreshSensors;
-    wxTextCtrl* TextCtrlRodaEsquerda;
-    wxStaticText* StaticText3;
-    wxPanel* Panel4;
-    wxCheckBox* CheckBoxHandBrake;
-    wxPanel* Panel5;
-    wxChoice* Choice1;
-    wxButton* Button5;
-    wxStaticText* StaticText8;
-    wxStaticText* StaticText12;
-    wxToolBar* ToolBar1;
-    wxTextCtrl* TextCtrlDealyMotor;
-    wxButton* Button9;
-    wxPanel* Panel3;
-    wxStaticText* StaticText7;
-    wxTextCtrl* Log;
-    wxSlider* SliderPan;
-    wxButton* Button14;
-    wxCheckBox* CheckBoxEnJoystick;
-    wxTextCtrl* TextCtrl1;
-    wxTextCtrl* TextCtrlDelayInch;
-    wxStaticText* StaticText4;
-    wxToolBarToolBase* ToolBarItem1;
-    wxStaticText* StaticText5;
-    wxStaticText* StaticText2;
-    wxTextCtrl* SendCommandText;
-    wxNotebook* Notebook1;
-    wxStaticBitmap* StaticBitmap1;
-    wxToolBarToolBase* ToolBarItem3;
-    wxStaticText* StaticText6;
-    wxTextCtrl* TextCtrlKi;
-    wxButton* Button11;
-    wxTextCtrl* TextCtrlRodaDireita;
-    wxButton* Button7;
-    wxCheckBox* CheckBoxRXdata;
+    wxSlider* SliderRoll;
     wxStaticText* StaticText9;
+    wxGrid* GridJoy;
+    wxCheckBox* CheckBoxEnJoystick;
     wxTextCtrl* TextCtrl4;
+    wxPanel* Panel5;
+    wxToolBar* ToolBar1;
+    wxTextCtrl* Log;
+    wxButton* Button4;
+    wxTextCtrl* TextCtrlRodaEsquerda;
+    wxNotebook* Notebook1;
+    wxToolBarToolBase* ToolBarItem3;
+    wxTextCtrl* TextCtrlTilt;
+    wxStaticText* StaticText2;
+    wxPanel* Panel4;
+    wxCheckBox* CheckBoxRXdata;
     wxSlider* SliderTilt;
-    wxSlider* SliderRodaDireita;
+    wxButton* Button1;
+    wxCheckBox* CheckBoxAutoRefresh;
+    wxStaticText* StaticText6;
+    wxStaticBitmap* StaticBitmap1;
+    wxChoice* ChoicePrg;
+    wxTextCtrl* TextCtrlPan;
+    wxButton* Button14;
+    wxStaticText* StaticText8;
+    wxStaticText* StaticText11;
+    wxTextCtrl* TextCtrlKp;
+    wxPanel* Panel1;
+    wxStaticText* StaticText1;
+    wxStaticText* StaticText3;
+    wxGrid* Grid1;
+    wxTextCtrl* TextCtrlDelayInch;
+    wxTextCtrl* TextCtrlDealyMotor;
+    wxButton* Button2;
+    wxPanel* Panel6;
+    wxPanel* Panel3;
+    wxTextCtrl* TextCtrlKd;
     wxButton* Button6;
     wxButton* Button10;
-    wxStaticText* StaticText11;
+    wxToolBarToolBase* ToolBarItem1;
+    wxTextCtrl* TextCtrlDelayRead;
+    wxButton* Button11;
+    wxButton* Button5;
+    wxCheckBox* CheckBoxHandBrake;
+    wxTextCtrl* TextCtrlRoll;
+    wxButton* Button3;
+    wxStaticText* StaticText5;
+    wxButton* Button7;
+    wxStaticText* StaticText7;
+    wxStatusBar* StatusBar1;
+    wxButton* Button9;
+    wxSlider* SliderRodaEsquerda;
+    wxTextCtrl* TextCtrl1;
+    wxStaticText* StaticText12;
+    wxTextCtrl* TextCtrlDelayTurn;
+    wxPanel* Panel2;
+    wxSlider* SliderPan;
+    wxTextCtrl* TextCtrlRodaDireita;
+    wxTextCtrl* TextCtrlKi;
+    wxStaticText* StaticText4;
+    wxChoice* Choice1;
+    wxToolBarToolBase* ToolBarItem2;
+    wxSlider* SliderRodaDireita;
+    wxChoice* Choice2;
+    wxButton* Button8;
+    wxTimer Timer1;
+    wxButton* Button12;
+    wxTextCtrl* SendCommandText;
+    wxCheckBox* CheckBoxPoll;
     //*)
 
     DECLARE_EVENT_TABLE()
