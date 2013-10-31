@@ -1745,7 +1745,7 @@ public:
                         char dest[10];
                         strcpy(dest,tok);
 
-                        if((tok = STRTOK(NULL, " ")))			// terceiro token eh o valor a ser atribuido
+                        if((tok = STRTOK(NULL, " ")))			// terceiro token eh o valor ou indice a ser atribuido
                         {
                             int valor = atoi(tok);
 
@@ -1784,24 +1784,33 @@ public:
                             #endif
                             else if(strcmp(dest, VAR_PID) == 0)
                             {
-                                eeprom.dados.pid[ PID_CORRIDA ].Kp = valor;	// P
-                                if((tok = STRTOK(NULL, " ")))	// I
-                                    eeprom.dados.pid[ PID_CORRIDA ].Ki = atoi(tok);
-                                if((tok = STRTOK(NULL, " ")))	// D
-                                    eeprom.dados.pid[ PID_CORRIDA ].Kd = atoi(tok);
+                                if((tok = STRTOK(NULL, " ")))	// P
+                                {
+                                    eeprom.dados.pid[ valor ].Kp = atoi(tok);
+
+                                    if((tok = STRTOK(NULL, " ")))	// I
+                                    {
+                                        eeprom.dados.pid[ valor ].Ki = atoi(tok);
+
+                                        if((tok = STRTOK(NULL, " ")))	// D
+                                            eeprom.dados.pid[ valor ].Kd = atoi(tok);
+                                    }
+                                }
                             }
-                            else if(strcmp(dest, VAR_PID_MMV) == 0)
-                                eeprom.dados.pid[ PID_CORRIDA ].maxMV = valor;
+
+                            else if( (strcmp(dest, VAR_PID_LIM_P) == 0) && (tok = STRTOK(NULL, " ")) )
+                                eeprom.dados.pid[ valor ].limiteP = atoi(tok);
+                            else if( (strcmp(dest, VAR_PID_LIM_I) == 0) && (tok = STRTOK(NULL, " ")) )
+                                eeprom.dados.pid[ valor ].limiteI = atoi(tok);
+                            else if( (strcmp(dest, VAR_PID_LIM_D) == 0) && (tok = STRTOK(NULL, " ")) )
+                                eeprom.dados.pid[ valor ].limiteD = atoi(tok);
+                            else if( (strcmp(dest, VAR_PID_ZAC) == 0) && (tok = STRTOK(NULL, " ")) )
+                                eeprom.dados.pid[ valor ].zeraAcc = atoi(tok);
+                            else if( (strcmp(dest, VAR_PID_MMV) == 0) && (tok = STRTOK(NULL, " ")) )
+                                eeprom.dados.pid[ valor ].maxMV = atoi(tok);
+
                             else if(strcmp(dest, VAR_PID_DEB) == 0)
                                 eeprom.dados.delays.debounce = valor;
-                            else if(strcmp(dest, VAR_PID_LIM_P) == 0)
-                                eeprom.dados.pid[ PID_CORRIDA ].limiteP = valor;
-                            else if(strcmp(dest, VAR_PID_LIM_I) == 0)
-                                eeprom.dados.pid[ PID_CORRIDA ].limiteI = valor;
-                            else if(strcmp(dest, VAR_PID_LIM_D) == 0)
-                                eeprom.dados.pid[ PID_CORRIDA ].limiteD = valor;
-                            else if(strcmp(dest, VAR_PID_ZAC) == 0)
-                                eeprom.dados.pid[ PID_CORRIDA ].zeraAcc = valor;
                             else if(strcmp(dest, VAR_FREIO) == 0)
                                 eeprom.dados.handBrake = valor;
                             else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
