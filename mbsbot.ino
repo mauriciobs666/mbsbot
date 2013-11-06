@@ -1697,6 +1697,21 @@ scanner;
 // ******************************************************************************
 //		SERVIDOR TELNET
 // ******************************************************************************
+
+class Interpretador
+{
+public:
+    unsigned char eval( char *cmd )
+    {
+        memcpy( comando, cmd, MAX_CMD );
+
+    }
+private:
+    int getTok();
+    char comando[MAX_CMD];
+    short pos;
+};
+
 class Telnet
 {
 public:
