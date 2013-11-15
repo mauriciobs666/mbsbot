@@ -16,8 +16,16 @@
  */
 
  /*
-   Sketch uses 24.774 bytes (19%) of program storage space. Maximum is 126.976 bytes.
-   Global variables use 2.311 bytes (28%) of dynamic memory, leaving 5.881 bytes for local variables. Maximum is 8.192 bytes.
+    atmega328 ao inves de atmega1280
+    Sketch uses 22.052 bytes (68%) of program storage space. Maximum is 32.256 bytes.
+    Global variables use 1.413 bytes (68%) of dynamic memory, leaving 635 bytes for local variables. Maximum is 2.048 bytes.
+
+    5 sensores ao inves de 16
+    Sketch uses 24.578 bytes (19%) of program storage space. Maximum is 126.976 bytes.
+    Global variables use 2.010 bytes (24%) of dynamic memory, leaving 6.182 bytes for local variables. Maximum is 8.192 bytes.
+
+    Sketch uses 24.774 bytes (19%) of program storage space. Maximum is 126.976 bytes.
+    Global variables use 2.311 bytes (28%) of dynamic memory, leaving 5.881 bytes for local variables. Maximum is 8.192 bytes.
  */
 
 
@@ -26,9 +34,9 @@
 
 #include "protocolo.h"
 
-#define VERSAO_PLACA 4
+#define VERSAO_PLACA 942
 
-#define SERIALX Serial1
+#define SERIALX Serial
 
 #define DFT_PROGRAMA PRG_RC_SERIAL
 #define DFT_DELAY_ES  1
@@ -76,12 +84,12 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-#define NUM_SENSORES    16
+#define NUM_SENSORES    5
 
 #define LINE_FOLLOWER
 
 #ifdef LINE_FOLLOWER
-    #define NUM_IR_TRACK    16
+    #define NUM_IR_TRACK    5
     #define PINO_TRACK_0    0
     // ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 #endif

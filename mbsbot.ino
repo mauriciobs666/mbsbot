@@ -167,14 +167,14 @@ ConfigGamepad;
 typedef struct
 {
     enum eTipoMotor { MOTOR_SERVO, MOTOR_DC } tipo;
-    int pino;
+    unsigned char pino;
     bool invertido;
-    int pinoDir;
-    int pinoDirN;
+    unsigned char pinoDir;
+    unsigned char pinoDirN;
     short centro;
     short aceleracao;   // % de potencia => dv / eeprom.delays.motores
 
-    void initServo(int pino_, short centro_=1500, bool inverso=false)
+    void initServo(unsigned char pino_, short centro_=1500, bool inverso=false)
     {
         tipo = MOTOR_SERVO;
         pino = pino_;
@@ -182,7 +182,7 @@ typedef struct
         invertido = inverso;
     }
 
-    void initDC(int pinoPWM, int pinoDIR, int pinoDIRN=0, short offsetZero=0, short acel=255, bool inverso=false)
+    void initDC(unsigned char  pinoPWM, unsigned char pinoDIR, unsigned char pinoDIRN=0, short offsetZero=0, short acel=255, bool inverso=false)
     {
         tipo = MOTOR_DC;
         pino = pinoPWM;
@@ -523,7 +523,7 @@ public:
         { if( cfg ) cfg->centro = valor; }
     Sensor& refresh()
     {
-        if( cfg && ( cfg->pino >= 0 ) )
+        if( cfg )
         {
             switch(cfg->tipo)
             {
@@ -609,12 +609,11 @@ sensores[NUM_SENSORES];
 class Botao
 {
 public:
-    Botao( int pino = -1, bool invertido = true ) : debounce(0), antes(false), estado(false), trocou(false)
+    Botao( unsigned char pino, bool invertido = true ) : debounce(0), antes(false), estado(false), trocou(false)
     {
-         if( pino >= 0 )
-            init( pino, invertido );
+         init( pino, invertido );
     }
-    void init( int pino, bool invertido = true )
+    void init( unsigned char pino, bool invertido = true )
     {
         pinMode( pino, invertido ? INPUT_PULLUP : INPUT );
         cfg.init( ConfigSensor::SENSOR_DIGITAL, pino, invertido );
@@ -824,7 +823,7 @@ public:
 
             digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
 
-            if( cfg->pinoDirN > 0 ) // pino de direcao invertido
+            if( cfg->pinoDirN ) // pino de direcao invertido
             {
                 if( atual ) // movendo, dirN = !dir
                     digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
@@ -832,7 +831,7 @@ public:
                     digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
             }
 
-            if( atual == 0 && cfg->pinoDirN > 0 )  // conduz 100% pra freiar
+            if( atual == 0 && cfg->pinoDirN )  // conduz 100% pra freiar
                 analogWrite( cfg->pino, 255 );
             else                                   // operacao normal
                 analogWrite( cfg->pino, abs( atual ) );
@@ -1701,15 +1700,20 @@ scanner;
 class Interpretador
 {
 public:
-    unsigned char eval( char *cmd )
+    Interpretador() : pos(0)
+    {}
+    unsigned char eval( char *lnh )
     {
-        memcpy( comando, cmd, MAX_CMD );
-
+        linha = lnh;
     }
 private:
     int getTok();
-    char comando[MAX_CMD];
-    short pos;
+    char *linha;
+    unsigned char pos;
+    struct Token
+    {
+
+    };
 };
 
 class Telnet
@@ -1720,24 +1724,24 @@ public:
 
     bool recebe()
     {
-        while(SERIALX.available() > 0)
+        while( SERIALX.available() > 0 )
         {
             char c = SERIALX.read();
 
-            if (pos == MAX_CMD)
+            if ( pos == MAX_CMD )
             {
                 pos = 0;
-                SERIALX.println("ERRO_TAM_MAX_CMD");
+ //               SERIALX.println( "ERRO_TAM_MAX_CMD" );
                 ultimoErro = ERRO_TAM_MAX_CMD;
             }
-            else if(c == CMD_EOL)
+            else if( c == CMD_EOL )
             {
-                command[pos] = 0;
+                command[ pos ] = 0;
                 pos = 0;
                 return true;
             }
             else
-                command[pos++] = c;
+                command[ pos++ ] = c;
         }
         return false;
     }
@@ -2142,7 +2146,7 @@ public:
 
 private:
     char command[MAX_CMD];
-    short pos;
+    unsigned char pos;
 }
 telnet;
 
@@ -2382,8 +2386,8 @@ void setup()
 #endif
 
     // liga pull-up de pinos livres pra economizar energia
-    int unused[] = PINO_UNUSED_ARRAY;
-    for(int p=0; p < PINO_UNUSED_CNT; p++)
+    unsigned char unused[] = PINO_UNUSED_ARRAY;
+    for(unsigned char p=0; p < PINO_UNUSED_CNT; p++)
     {
         pinMode(unused[p], INPUT);
         digitalWrite(unused[p], HIGH);
