@@ -1700,21 +1700,48 @@ scanner;
 class Interpretador
 {
 public:
-    Interpretador() : pos(0)
+    Interpretador() : linha(NULL)
     {}
+
     unsigned char eval( char *lnh )
     {
         linha = lnh;
     }
 private:
-    int getTok();
     char *linha;
-    unsigned char pos;
-    struct Token
+    enum TipoToken
     {
+        ERRO=-1,//	Erro interno.
+        NULO=0,	//	Fim da stream.
+        NUM,	//	Numero inteiro 16 bits
+        NOME,	//
+        DELIM	//	Qualquer caracter que nao se enquadre nas categorias acima.
+    } tipoToken;
 
-    };
-};
+    char token[10];
+
+    TipoToken getTok()
+    {
+        int tokPos = 0;
+        tipoToken = NULO;
+        token[0] = 0;
+
+        while( *linha == ' ' && *linha != 0 ) linha++;
+
+        if( *linha )
+        {
+
+        }
+
+        linha++;
+        return tipoToken;
+    }
+
+    bool delim()
+    {
+        return true;
+    }
+} interpretador;
 
 class Telnet
 {
@@ -2548,20 +2575,16 @@ void loop()
 
         case PRG_COLISAO:
         {
-            const unsigned int minDist = 200;
-            const int timeAlarm = 3;	// segundos pra colisao
-            const int s0 = 700;			// posicao da colisao
-
             // ignora objetos muito longe
-            if( drive.sensorFre->refresh().getValor() > minDist )
+            if( drive.sensorFre->refresh().getValor() > 200 )
             {
                 // calc velocidade em unidades sensor / segundo
                 int v = ((long)drive.sensorFre->delta() * 1000) / eeprom.dados.delays.ES;
 
                 // s = s0 + v * t;
-                int timeToCollision = (s0 - drive.sensorFre->getValor()) / v;
+                int timeToCollision = (700 - drive.sensorFre->getValor()) / v;
 
-                if(timeToCollision < timeAlarm)
+                if(timeToCollision < 3 )
                     eeprom.dados.programa = PRG_ALARME;
             }
 
