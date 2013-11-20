@@ -60,7 +60,7 @@ Servo tilt;
 Servo roll;
 #endif
 
-enum Erros ultimoErro = SUCCESSO;
+enum Erros ultimoErro = SUCESSO;
 unsigned long agora = 0;
 
 // ******************************************************************************
@@ -1703,43 +1703,155 @@ public:
     Interpretador() : linha(NULL)
     {}
 
-    unsigned char eval( char *lnh )
+    void eval( char *lnh )
     {
         linha = lnh;
+
+        getTok();
+
+        long resultado = 0;
+        evalExpressao( &resultado );
+        SERIALX.print(" = ");
+        SERIALX.println( resultado );
     }
 private:
     char *linha;
+    char token[10];
+
     enum TipoToken
     {
-        ERRO=-1,//	Erro interno.
-        NULO=0,	//	Fim da stream.
-        NUM,	//	Numero inteiro 16 bits
-        NOME,	//
-        DELIM	//	Qualquer caracter que nao se enquadre nas categorias acima.
+        NULO=0,
+        NUMERO,
+        NOME,
+        DELIMIT
     } tipoToken;
 
-    char token[10];
+    Erros evalExpressao( long *resultado )
+    {
+        long temp;
+        char op;
+
+        evalTermo( resultado );
+
+        while( ( op = token[0] ) == '+' || op == '-' )
+        {
+            getTok();
+            evalTermo( &temp );
+            switch( op )
+            {
+            case '-':
+                *resultado -= temp;
+                break;
+            case '+':
+                *resultado += temp;
+                break;
+            }
+        }
+        return SUCESSO;
+    }
+
+    Erros evalTermo( long *resultado )
+    {
+        // Termo -> Fator [ * Fator ] [ / Fator ]
+
+        long temp;
+        char op;
+
+        evalFator( resultado );
+
+        while( ( op = token[0] ) == '*' || op == '/' )
+        {
+            getTok();
+            evalFator( &temp );
+            switch( op )
+            {
+            case '*':
+                *resultado *= temp;
+                break;
+            case '/':
+                *resultado /= temp;
+                break;
+            }
+        }
+        return SUCESSO;
+    }
+
+    Erros evalFator( long *resultado )
+    {
+// Nome, Numero,
+        char op = 0;
+
+        if( tipoToken == DELIMIT && token[0] == '+' || token[0] == '-' )
+        {
+            op = token[0];
+            getTok();
+        }
+
+        // parenteses
+        if( token[0] == '(' )
+        {
+            getTok();
+            evalExpressao( resultado );
+            if( token[0] != ')' )
+                return ERRO_INTERPRETADOR;
+            getTok();
+        }
+        else
+            evalNumero( resultado );
+
+        if( op == '-' )
+            *resultado = -( *resultado );
+
+        return SUCESSO;
+    }
+
+    Erros evalNumero( long *resultado )
+    {
+        if( tipoToken == NUMERO )
+        {
+            *resultado = atol( token );
+            getTok();
+            return SUCESSO;
+        }
+        return ERRO_INTERPRETADOR;
+    }
 
     TipoToken getTok()
     {
-        int tokPos = 0;
         tipoToken = NULO;
-        token[0] = 0;
+
+        char *tok = token;
+        *tok = 0;
 
         while( *linha == ' ' && *linha != 0 ) linha++;
 
         if( *linha )
         {
-
+            if( strchr("+-*/=()", *linha ) )
+            {
+                tipoToken = DELIMIT;
+                *tok++ = *linha++;
+            }
+            else if( isalpha( *linha ))
+            {
+                tipoToken = NOME;
+                while( !isdelim( *linha ) ) *tok++ = *linha++;
+            }
+            else if( isdigit( *linha ))
+            {
+                tipoToken = NUMERO;
+                while( !isdelim( *linha ) ) *tok++ = *linha++;
+            }
         }
-
-        linha++;
+        *tok = 0;
         return tipoToken;
     }
 
-    bool delim()
+    bool isdelim( char c )
     {
-        return true;
+        if( strchr("+-*/=()", c ) || c == 0 || c == ' ' )
+            return true;
+        return false;
     }
 } interpretador;
 
@@ -1777,6 +1889,8 @@ public:
     {
         if( recebe() )
         {
+            interpretador.eval( command );
+
             char *tok;
 
             char *pqp;	// algumas avr-libc linux naum tem strtok():
@@ -2031,7 +2145,7 @@ public:
                 }
                 else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
                 {
-                    ultimoErro = SUCCESSO;
+                    ultimoErro = SUCESSO;
                 }
                 else if(strcmp(tok, CMD_JOYPAD) == 0)
                 {

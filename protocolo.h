@@ -150,9 +150,10 @@ enum ProgramID
 
 enum Erros
 {
-    SUCCESSO = 0,
+    SUCESSO = 0,
     ERRO_TAM_MAX_CMD,
-    ERRO_PRG_INVALIDO
+    ERRO_PRG_INVALIDO,
+    ERRO_INTERPRETADOR
 };
 
 // Mapeamento dos botoes de Joypad (API antiga)

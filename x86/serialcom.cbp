@@ -99,6 +99,7 @@
 		<Unit filename="../placa_v22.h" />
 		<Unit filename="../placa_v3.h" />
 		<Unit filename="../placa_v4.h" />
+		<Unit filename="../placa_v942.h" />
 		<Unit filename="../protocolo.h" />
 		<Unit filename="../reflash.sh" />
 		<Unit filename="MbsBot.cpp" />
