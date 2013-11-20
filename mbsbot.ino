@@ -75,7 +75,6 @@ typedef struct
     bool invertido;
     volatile unsigned short minimo, maximo, centro;
     volatile bool autoMinMax;
-    int a, b; // = a*x + b
 
     void init(eTipoSensor tipo_ = SENSOR_VIRTUAL,
               unsigned char pino_ = -1,
@@ -104,9 +103,6 @@ typedef struct
             centro = 32767;
             maximo = 65535;
         }
-
-        a = invertido ? -1 : 1;
-        b = 0;
         autoMinMax = false;
     }
 
@@ -123,10 +119,6 @@ typedef struct
         SERIALX.print(maximo);
         SERIALX.print(" ");
         SERIALX.print(centro);
-        SERIALX.print(" ");
-        SERIALX.print(a);
-        SERIALX.print(" ");
-        SERIALX.print(b);
         SERIALX.println("");
     }
 }
@@ -556,10 +548,6 @@ public:
         { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
     bool ehMaximo(unsigned short margem = 0)
         { return ( cfg->invertido ? (valor - cfg->minimo) <= margem : (cfg->maximo - valor) <= margem ); }
-    void setReta(int aa, int bb)
-        { cfg->a = aa; cfg->b = bb; }
-    int getReta()
-        { return ( cfg->a * valor + cfg->b ); }
     int getPorcentoAprox(int grude=10)
     {
         long x = (long)valor - (long)cfg->centro;
@@ -2818,8 +2806,10 @@ void loop()
 
             if( drive.sensorFre->ehMinimo(MARGEM_PING) )
             {
-                if( ! palpite )
-                    palpite = constrain( ( drive.sensorDir->getReta() - drive.sensorEsq->getReta() ), -1, 1 );
+//                    int getReta()
+//        { return ( cfg->a * valor + cfg->b ); }
+//                if( ! palpite )
+//                    palpite = constrain( ( drive.sensorDir->getReta() - drive.sensorEsq->getReta() ), -1, 1 );
 
                 if(palpite < 0)
                     drive.giraEsq( 50 );
