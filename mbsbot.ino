@@ -71,7 +71,7 @@ unsigned long agora = 0;
 typedef struct
 {
     enum eTipoSensor { SENSOR_VIRTUAL, SENSOR_ANALOGICO, SENSOR_PING, SENSOR_RC, SENSOR_DIGITAL } tipo;
-    unsigned char pino;
+    char pino;
     bool invertido;
     volatile unsigned short minimo, maximo, centro;
     volatile bool autoMinMax;
@@ -80,11 +80,10 @@ typedef struct
               unsigned char pino_ = -1,
               bool invertido_ = false)
     {
-        pino = pino_;
-        if( pino_ >= 0 )
-            invertido = invertido_;
-
         tipo = tipo_;
+        pino = pino_;
+        invertido = invertido_;
+
         if(SENSOR_RC == tipo)
         {
             minimo = 1200;
@@ -159,14 +158,14 @@ ConfigGamepad;
 typedef struct
 {
     enum eTipoMotor { MOTOR_SERVO, MOTOR_DC } tipo;
-    unsigned char pino;
+    char pino;
     bool invertido;
-    unsigned char pinoDir;
-    unsigned char pinoDirN;
+    char pinoDir;
+    char pinoDirN;
     short centro;
     short aceleracao;   // % de potencia => dv / eeprom.delays.motores
 
-    void initServo(unsigned char pino_, short centro_=1500, bool inverso=false)
+    void initServo( char pino_, short centro_=1500, bool inverso=false )
     {
         tipo = MOTOR_SERVO;
         pino = pino_;
@@ -174,7 +173,7 @@ typedef struct
         invertido = inverso;
     }
 
-    void initDC(unsigned char  pinoPWM, unsigned char pinoDIR, unsigned char pinoDIRN=0, short offsetZero=0, short acel=255, bool inverso=false)
+    void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, short offsetZero=0, short acel=255, bool inverso=false )
     {
         tipo = MOTOR_DC;
         pino = pinoPWM;
@@ -242,10 +241,6 @@ public:
         char * dest = (char*) &dados;
         for(unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
             *dest = eeprom_read_byte((unsigned char *) addr);
-
-        SERIALX.print("EEPROM ");
-        SERIALX.print(sizeof(dados));
-        SERIALX.println(" B");
     }
     void save()
     {
@@ -713,7 +708,7 @@ public:
             pinMode( cfg->pinoDir, OUTPUT );
             digitalWrite( cfg->pinoDir, 0 );
 
-            if ( cfg->pinoDirN )
+            if ( cfg->pinoDirN >= 0 )
             {
                 pinMode( cfg->pinoDirN, OUTPUT);
                 digitalWrite( cfg->pinoDirN, 0);
@@ -721,7 +716,9 @@ public:
         }
         else if( cfg->tipo == ConfigMotor::MOTOR_SERVO )
         {
-            servo.attach( cfg->pino );
+            #ifndef RODAS_PWM
+                servo.attach( cfg->pino );
+            #endif
         }
         parar();
     }
@@ -733,6 +730,7 @@ public:
 
     void move( char potencia100 )
     {
+        #ifndef RODAS_PWM
         if ( cfg->tipo == ConfigMotor::MOTOR_SERVO )
         {
             // TODO (mbs#1#): usar aceleracao e escala pro servo tb
@@ -740,6 +738,7 @@ public:
             write( cfg->invertido ? ( cfg->centro - potencia100*5 ) : ( cfg->centro + potencia100*5 ) );
             return;
         }
+        #endif
         /* onde:
             potencia100 = +/- 0-100 %
             centro = pwm a partir do qual o motor comeca a se mover
@@ -811,7 +810,7 @@ public:
 
             digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
 
-            if( cfg->pinoDirN ) // pino de direcao invertido
+            if( cfg->pinoDirN >= 0 ) // pino de direcao invertido
             {
                 if( atual ) // movendo, dirN = !dir
                     digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
@@ -819,11 +818,12 @@ public:
                     digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
             }
 
-            if( atual == 0 && cfg->pinoDirN )  // conduz 100% pra freiar
+            if( atual == 0 && cfg->pinoDirN >= 0 )  // conduz 100% pra freiar
                 analogWrite( cfg->pino, 255 );
             else                                   // operacao normal
                 analogWrite( cfg->pino, abs( atual ) );
         }
+        #ifndef RODAS_PWM
         else // tipo == MOTOR_SERVO
         {
             if( eeprom.dados.handBrake ) meta = atual = cfg->centro;
@@ -831,13 +831,16 @@ public:
             atual = constrain( atual, 1000, 2000 );
             servo.writeMicroseconds( atual );
         }
+        #endif
     }
 protected:
-    Servo servo;
+    #ifndef RODAS_PWM
+        Servo servo;
+    #endif
     short atual;
     unsigned long ultimoAcel;
     short meta;
-    char prioMeta; // TODO (Mauricio#1#): prioridade de quem setou a meta
+    //char prioMeta; // TODO (Mauricio#1#): prioridade de quem setou a meta
 };
 
 class Drive
@@ -2447,6 +2450,10 @@ void setup()
 
     eeprom.load();
 
+    SERIALX.print("EEPROM ");
+    SERIALX.print(sizeof(eeprom.dados));
+    SERIALX.println(" B");
+
     drive.motorEsq.init( &eeprom.dados.motorEsq );
     drive.motorDir.init( &eeprom.dados.motorDir );
 
@@ -2806,8 +2813,8 @@ void loop()
 
             if( drive.sensorFre->ehMinimo(MARGEM_PING) )
             {
-//                    int getReta()
-//        { return ( cfg->a * valor + cfg->b ); }
+//                int getReta()
+//                    { return ( cfg->a * valor + cfg->b ); }
 //                if( ! palpite )
 //                    palpite = constrain( ( drive.sensorDir->getReta() - drive.sensorEsq->getReta() ), -1, 1 );
 
