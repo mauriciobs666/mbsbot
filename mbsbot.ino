@@ -1690,24 +1690,31 @@ scanner;
 
 class Interpretador
 {
+    #define NUM_VARS 4
+    #define TAM_TOKEN 10
 public:
     Interpretador() : linha(NULL)
-    {}
+    {
+        for( int cx = 0; cx < NUM_VARS; cx++ )
+            vars[cx] = 0;
+    }
 
     void eval( char *lnh )
     {
-        linha = lnh;
-
-        getTok();
-
         long resultado = 0;
+
+        linha = lnh;
+        getToken();
+
         evalExpressao( &resultado );
+
         SERIALX.print(" = ");
         SERIALX.println( resultado );
     }
 private:
     char *linha;
-    char token[10];
+    char token[TAM_TOKEN];
+    long vars[NUM_VARS];
 
     enum TipoToken
     {
@@ -1716,6 +1723,35 @@ private:
         NOME,
         DELIMIT
     } tipoToken;
+
+    Erros evalAtribuicao( long *resultado )
+    {
+        if( tipoToken == NOME )
+        {
+            char bkpToken[TAM_TOKEN];
+            strncpy( bkpToken, token, TAM_TOKEN );
+
+            int slot = toupper( token[0] ) - 'A';
+
+            getToken();
+
+            if( token[0] != '=' )
+            {
+                devolve();
+                strncpy( token, bkpToken, TAM_TOKEN );
+                tipoToken = NOME;
+            }
+            else
+            {
+                getToken();
+                evalExpressao( resultado );
+                vars[ slot ] = *resultado;
+                return SUCESSO;
+            }
+        }
+        evalExpressao( resultado );
+        return SUCESSO;
+    }
 
     Erros evalExpressao( long *resultado )
     {
@@ -1726,7 +1762,7 @@ private:
 
         while( ( op = token[0] ) == '+' || op == '-' )
         {
-            getTok();
+            getToken();
             evalTermo( &temp );
             switch( op )
             {
@@ -1752,7 +1788,7 @@ private:
 
         while( ( op = token[0] ) == '*' || op == '/' )
         {
-            getTok();
+            getToken();
             evalFator( &temp );
             switch( op )
             {
@@ -1775,17 +1811,17 @@ private:
         if( tipoToken == DELIMIT && token[0] == '+' || token[0] == '-' )
         {
             op = token[0];
-            getTok();
+            getToken();
         }
 
         // parenteses
         if( token[0] == '(' )
         {
-            getTok();
+            getToken();
             evalExpressao( resultado );
             if( token[0] != ')' )
                 return ERRO_INTERPRETADOR;
-            getTok();
+            getToken();
         }
         else
             evalNumero( resultado );
@@ -1801,13 +1837,20 @@ private:
         if( tipoToken == NUMERO )
         {
             *resultado = atol( token );
-            getTok();
+            getToken();
+            return SUCESSO;
+        }
+        else if( tipoToken == NOME )
+        {
+            int slot = toupper( token[0] ) - 'A';
+            *resultado = vars[ slot ];
+            getToken();
             return SUCESSO;
         }
         return ERRO_INTERPRETADOR;
     }
 
-    TipoToken getTok()
+    TipoToken getToken()
     {
         tipoToken = NULO;
 
@@ -1836,6 +1879,12 @@ private:
         }
         *tok = 0;
         return tipoToken;
+    }
+
+    void devolve()
+    {
+        for( char *t = token ; *t ; t++ )
+            linha--;
     }
 
     bool isdelim( char c )
