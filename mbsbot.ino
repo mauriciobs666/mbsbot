@@ -27,7 +27,9 @@
 #include <ctype.h>
 #include <string.h>
 
-// Arduino
+// AVR / Arduino
+#include <avr/eeprom.h>
+#include <avr/pgmspace.h>
 #include <Servo.h>
 
 // I2C / wiichuck
@@ -60,13 +62,35 @@ Servo tilt;
 Servo roll;
 #endif
 
-enum Erros ultimoErro = SUCESSO;
 unsigned long agora = 0;
+
+enum Erros primeiroErro = SUCESSO;
+
+char strBuffer[30];
+
+PROGMEM prog_char ErroSucesso[]     = "SUCESSO";
+PROGMEM prog_char ErroTamMaxCmd[]   = "ERRO_TAM_MAX_CMD";
+PROGMEM prog_char ErroPrgInval[]    = "ERRO_PRG_INVALIDO";
+
+PROGMEM const char *tabErros[] =
+{
+    ErroSucesso,
+    ErroTamMaxCmd,
+    ErroPrgInval
+};
+
+void printErro( enum Erros err )
+{
+    strcpy_P( strBuffer, (char*) pgm_read_word( &tabErros[err] ) );
+    SERIALX.println( strBuffer );
+
+    if( ! primeiroErro )
+        primeiroErro = err;
+}
 
 // ******************************************************************************
 //		EEPROM
 // ******************************************************************************
-#include <avr/eeprom.h>
 
 typedef struct
 {
@@ -1688,11 +1712,18 @@ scanner;
 //		SERVIDOR TELNET
 // ******************************************************************************
 
+class Variavel
+{
+public:
+    char tipo;
+    char tam;
+    void *dados;
+};
+
 class Interpretador
 {
-    #define NUM_VARS 4
-    #define TAM_TOKEN 10
 public:
+    Variavel uma[10];
     Interpretador() : linha(NULL)
     {
         for( int cx = 0; cx < NUM_VARS; cx++ )
@@ -1706,7 +1737,7 @@ public:
         linha = lnh;
         getToken();
 
-        evalExpressao( &resultado );
+        evalAtribuicao( &resultado );
 
         SERIALX.print(" = ");
         SERIALX.println( resultado );
@@ -1818,7 +1849,7 @@ private:
         if( token[0] == '(' )
         {
             getToken();
-            evalExpressao( resultado );
+            evalAtribuicao( resultado );
             if( token[0] != ')' )
                 return ERRO_INTERPRETADOR;
             getToken();
@@ -1910,8 +1941,7 @@ public:
             if ( pos == MAX_CMD )
             {
                 pos = 0;
- //               SERIALX.println( "ERRO_TAM_MAX_CMD" );
-                ultimoErro = ERRO_TAM_MAX_CMD;
+                printErro( ERRO_TAM_MAX_CMD );
             }
             else if( c == CMD_EOL )
             {
@@ -2185,7 +2215,7 @@ public:
                 }
                 else if(strcmp(tok, CMD_LIMPA_ERRO) == 0)
                 {
-                    ultimoErro = SUCESSO;
+                    primeiroErro = SUCESSO;
                 }
                 else if(strcmp(tok, CMD_JOYPAD) == 0)
                 {
@@ -2248,7 +2278,7 @@ public:
         }
         SERIALX.print(eeprom.dados.programa);
         SERIALX.print(" ");
-        SERIALX.print(ultimoErro);
+        SERIALX.print(primeiroErro);
         SERIALX.print(" ");
         SERIALX.print((int)eeprom.dados.handBrake);
         SERIALX.print(" ");
@@ -2922,13 +2952,9 @@ void loop()
         break;
 
         default:
-            if( ultimoErro != ERRO_PRG_INVALIDO )
-            {
-                ultimoErro = ERRO_PRG_INVALIDO;
-                SERIALX.print("ERRO_PRG_INVALIDO ");
-                SERIALX.println(eeprom.dados.programa);
-                eeprom.dados.programa = DFT_PROGRAMA;
-            }
+            printErro( ERRO_PRG_INVALIDO );
+            SERIALX.println(eeprom.dados.programa);
+            eeprom.dados.programa = DFT_PROGRAMA;
         break;
         }
     }

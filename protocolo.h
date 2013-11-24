@@ -32,7 +32,10 @@ Formato geral do pacote:
 */
 
 #define CMD_EOL '\n'
-#define MAX_CMD 50 /* bytes, tamanho maximo de um comando */
+#define MAX_CMD 50      // bytes, tamanho maximo de um comando serial
+
+#define TAM_TOKEN 10    // bytes, tamanho max de um token
+#define NUM_VARS 4      // array de variaveis do interpretador: A, B, C, D etc
 
 /* Lista de <comandos>
 */
