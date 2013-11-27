@@ -1709,22 +1709,83 @@ scanner;
 #endif
 
 // ******************************************************************************
-//		SERVIDOR TELNET
+//		SERVIDOR SERIAL
 // ******************************************************************************
+
+typedef enum
+{
+    TIPO_NULO = 0,
+    TIPO_CHAR,
+    TIPO_INT,
+    TIPO_LONG,
+    TIPO_BOOL,
+    TIPO_STRING
+}
+TipoVariavel;
 
 class Variavel
 {
 public:
+    char nome[TAM_TOKEN];
     char tipo;
     char tam;
     void *dados;
+
+    Variavel( TipoVariavel tipo_=TIPO_NULO, char *nome_=NULL, void *dados_=NULL, char tam_=0 )
+    {
+        declara( tipo_, nome_, dados_, tam_ );
+    }
+
+    void declara( TipoVariavel tipo_, char *nome_, void *dados_, char tam_=0 )
+    {
+        tipo = tipo_;
+        strncpy( nome, nome_, TAM_TOKEN );
+        dados = dados_;
+        tam = tam_;
+    }
+
+    bool operator<( const Variavel &v)
+    {
+        return strncmp( nome, v.nome, TAM_TOKEN ) < 0 ;
+    }
 };
 
 class Interpretador
 {
 public:
-    Variavel uma[10];
-    Interpretador() : linha(NULL)
+    Variavel var[NUM_VARS];
+    char nvars;
+
+    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
+    {
+        if( ! buscaVar(nome) && nvars < NUM_VARS-1 )
+        {
+            Variavel nova( tipo, nome, dados, tam );
+
+            // insere ordenado no array
+            for( int ord = nvars; ord > 0; ord-- )
+            {
+                if(  nova < var[ord-1] )
+                {
+                    var[ord] = var[ord-1];
+                }
+                else
+                {
+                    var[ord] = nova;
+                    nvars++;
+                    return &var[ord];
+                }
+            }
+        }
+        return NULL;
+    }
+
+    Variavel* buscaVar( char *nome )
+    {
+
+    }
+
+    Interpretador() : nvars(0), linha(NULL)
     {
         for( int cx = 0; cx < NUM_VARS; cx++ )
             vars[cx] = 0;
@@ -1924,7 +1985,8 @@ private:
             return true;
         return false;
     }
-} interpretador;
+}
+interpretador;
 
 class Telnet
 {
