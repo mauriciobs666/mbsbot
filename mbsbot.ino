@@ -52,6 +52,8 @@
 //		Plin-plin
 // ******************************************************************************
 
+bool traceLF = false;
+
 #ifdef PINO_SERVO_PAN
 Servo pan;
 #endif
@@ -228,13 +230,11 @@ class Eeprom
 public:
     struct sConfiguracao
     {
-        short programa;
-
+        char programa;
         char handBrake;
-
-        unsigned char balanco;   // % balanco motor esq / dir
-        unsigned char velMax;    // %
-        unsigned char velEscala; // %
+        char balanco;   // % balanco motor esq / dir
+        char velMax;    // %
+        char velEscala; // %
 
         ConfigMotor motorEsq;
         ConfigMotor motorEsqT;
@@ -1087,7 +1087,11 @@ public:
         move( porc, porc );
     }
 }
-drive, drive2;
+drive;
+
+#ifdef RODAS_PWM_x4
+	Drive drive2;
+#endif
 
 // ******************************************************************************
 //		FOTOVORO
@@ -1743,12 +1747,12 @@ public:
         dados = dados_;
         tam = tam_;
     }
-
-    bool operator<( const Variavel &v)
-    {
-        return strncmp( nome, v.nome, TAM_TOKEN ) < 0 ;
-    }
 };
+
+int compVar( const void *a, const void *b )
+{
+    return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_TOKEN );
+}
 
 class Interpretador
 {
@@ -1756,16 +1760,28 @@ public:
     Variavel var[NUM_VARS];
     char nvars;
 
+    Variavel* buscaVar( char *nome )
+    {
+        Variavel v;
+        strncpy( v.nome, nome, TAM_TOKEN );
+        return buscaVar( &v );
+    }
+
+    Variavel* buscaVar( Variavel* chave )
+    {
+        return nvars ? ( Variavel* ) bsearch( &chave, var, nvars, sizeof( Variavel ), compVar ) : NULL ;
+    }
+
     Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
     {
-        if( ! buscaVar(nome) && nvars < NUM_VARS-1 )
-        {
-            Variavel nova( tipo, nome, dados, tam );
+        Variavel nova( tipo, nome, dados, tam );
 
+        if( ! buscaVar( &nova ) && nvars < NUM_VARS-1 )
+        {
             // insere ordenado no array
             for( int ord = nvars; ord > 0; ord-- )
             {
-                if(  nova < var[ord-1] )
+                if( compVar( &nova, &var[ord-1] ) < 0 )
                 {
                     var[ord] = var[ord-1];
                 }
@@ -1778,11 +1794,6 @@ public:
             }
         }
         return NULL;
-    }
-
-    Variavel* buscaVar( char *nome )
-    {
-
     }
 
     Interpretador() : nvars(0), linha(NULL)
@@ -1813,7 +1824,10 @@ private:
         NULO=0,
         NUMERO,
         NOME,
-        DELIMIT
+        DELIMIT,
+        STRING,
+        CHAVE,
+        BLOCO
     } tipoToken;
 
     Erros evalAtribuicao( long *resultado )
@@ -2214,7 +2228,9 @@ public:
                 else if(strcmp(tok, CMD_MV_PARAR) == 0)
                 {
                     drive.parar();
-                    drive2.parar();
+					#ifdef RODAS_PWM_x4
+						drive2.parar();
+					#endif
                     eeprom.dados.programa = PRG_RC_SERIAL;
                 }
                 else if(strcmp(tok, CMD_MV_RODAS) == 0)
@@ -2243,17 +2259,18 @@ public:
                         {
                             direcao.y = atoi(tok);
                             drive.vetorial( direcao );
-
-                            if ((tok = STRTOK(NULL, " ")))  // segundo token eh o percentual de potencia p/ eixo X
-                            {
-                                direcao.x = atoi(tok);
-                                if ((tok = STRTOK(NULL, " ")))// terceiro token eh o percentual de potencia p/ eixo Y
-                                {
-                                    direcao.y = atoi(tok);
-                                    drive2.vetorial( direcao );
-                                }
-                            }
-                        }
+							#ifdef RODAS_PWM_x4
+								if ((tok = STRTOK(NULL, " ")))  // quarto token eh o percentual de potencia p/ eixo X
+								{
+									direcao.x = atoi(tok);
+									if ((tok = STRTOK(NULL, " ")))// quinto token eh o percentual de potencia p/ eixo Y
+									{
+										direcao.y = atoi(tok);
+										drive2.vetorial( direcao );
+									}
+								}
+							#endif
+						}
                     }
                 }
                 else if(strcmp(tok, CMD_STATUS) == 0)
@@ -2338,9 +2355,9 @@ public:
             SERIALX.print(CMD_STATUS);
             SERIALX.print(" ");
         }
-        SERIALX.print(eeprom.dados.programa);
+        SERIALX.print((int)eeprom.dados.programa);
         SERIALX.print(" ");
-        SERIALX.print(primeiroErro);
+        SERIALX.print((int)primeiroErro);
         SERIALX.print(" ");
         SERIALX.print((int)eeprom.dados.handBrake);
         SERIALX.print(" ");
@@ -2348,10 +2365,12 @@ public:
         SERIALX.print(" ");
         SERIALX.print(drive.motorDir.read());
         SERIALX.print(" ");
+		#ifdef RODAS_PWM_x4
         SERIALX.print(drive2.motorEsq.read());
         SERIALX.print(" ");
         SERIALX.print(drive2.motorDir.read());
         SERIALX.print(" ");
+		#endif
         #ifdef PINO_SERVO_PAN
             SERIALX.print(pan.read());
             SERIALX.print(" ");
@@ -2363,10 +2382,6 @@ public:
         #ifdef PINO_SERVO_ROLL
         SERIALX.print(roll.read());
         #endif
-        //SERIALX.print(" ");
-        //for(int p=13; p>=0; p--)
-        //for(int p=13; p>5; p--)
-        //    SERIALX.print(digitalRead(p));
         SERIALX.println("");
     }
 
@@ -2518,7 +2533,9 @@ void trataJoystick()
     if( (gamepad.botoesEdgeF & BT_A) || (gamepad.botoesEdgeF & BT_B) )
     {
         drive.parar();
-        drive2.parar();
+		#ifdef RODAS_PWM_x4
+			drive2.parar();
+		#endif
 
         // auto centra joystick
         gamepad.centrar();
@@ -2679,6 +2696,18 @@ void setup()
 */
 //    if( eeprom.dados.programa == PRG_LINE_FOLLOW )
 //        lineFollower.calibrar();
+
+/*
+	TIPO_NULO = 0,
+    TIPO_CHAR,
+    TIPO_INT,
+    TIPO_LONG,
+    TIPO_BOOL,
+    TIPO_STRING
+
+    void declara( TipoVariavel tipo_, char *nome_, void *dados_, char tam_=0 )
+*/
+    interpretador.declaraVar( TIPO_INT, VAR_PID_DEB, &eeprom.dados.delays.debounce );
 }
 
 // ******************************************************************************
