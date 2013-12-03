@@ -3,10 +3,10 @@
 	<Workspace title="Workspace">
 		<Project filename="../mbsutil/MBSUtil.cbp" />
 		<Project filename="cv/cv-win.cbp" />
-		<Project filename="x86/serialcom.cbp" active="1">
+		<Project filename="proksi/proksi-win.cbp" />
+		<Project filename="x86/serialcom.cbp">
 			<Depends filename="../mbsutil/MBSUtil.cbp" />
 		</Project>
-		<Project filename="proksi/proksi-win.cbp" />
 		<Project filename="scope/scope-win.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

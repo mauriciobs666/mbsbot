@@ -16,6 +16,9 @@
  */
 
  /*
+    Sketch uses 23.024 bytes (71%) of program storage space. Maximum is 32.256 bytes.
+    Global variables use 1.390 bytes (67%) of dynamic memory, leaving 658 bytes for local variables. Maximum is 2.048 bytes.
+
     atmega328 ao inves de atmega1280
     Sketch uses 22.052 bytes (68%) of program storage space. Maximum is 32.256 bytes.
     Global variables use 1.413 bytes (68%) of dynamic memory, leaving 635 bytes for local variables. Maximum is 2.048 bytes.

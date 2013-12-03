@@ -1798,8 +1798,8 @@ public:
 
     Interpretador() : nvars(0), linha(NULL)
     {
-        for( int cx = 0; cx < NUM_VARS; cx++ )
-            vars[cx] = 0;
+//        for( int cx = 0; cx < NUM_VARS; cx++ )
+//            vars[cx] = 0;
     }
 
     void eval( char *lnh )
@@ -1817,7 +1817,7 @@ public:
 private:
     char *linha;
     char token[TAM_TOKEN];
-    long vars[NUM_VARS];
+    //long vars[NUM_VARS];
 
     enum TipoToken
     {
@@ -1837,7 +1837,9 @@ private:
             char bkpToken[TAM_TOKEN];
             strncpy( bkpToken, token, TAM_TOKEN );
 
-            int slot = toupper( token[0] ) - 'A';
+            //int slot = toupper( token[0] ) - 'A';
+
+            Variavel *v = buscaVar( token );
 
             getToken();
 
@@ -1851,7 +1853,28 @@ private:
             {
                 getToken();
                 evalExpressao( resultado );
-                vars[ slot ] = *resultado;
+                //vars[ slot ] = *resultado;
+                if( v )
+                {
+                    switch( v->tipo )
+                    {
+                    case TIPO_CHAR:
+                        *( (char*) v->dados ) = *resultado;
+                        break;
+                    case TIPO_INT:
+                        *( (int*) v->dados ) = *resultado;
+                        break;
+                    case TIPO_LONG:
+                        *( (long*) v->dados ) = *resultado;
+                        break;
+                    case TIPO_BOOL:
+                        *( (bool*) v->dados ) = *resultado;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+
                 return SUCESSO;
             }
         }
@@ -1930,7 +1953,7 @@ private:
             getToken();
         }
         else
-            evalNumero( resultado );
+            evalAtomo( resultado );
 
         if( op == '-' )
             *resultado = -( *resultado );
@@ -1938,7 +1961,7 @@ private:
         return SUCESSO;
     }
 
-    Erros evalNumero( long *resultado )
+    Erros evalAtomo( long *resultado )
     {
         if( tipoToken == NUMERO )
         {
@@ -1948,10 +1971,35 @@ private:
         }
         else if( tipoToken == NOME )
         {
-            int slot = toupper( token[0] ) - 'A';
-            *resultado = vars[ slot ];
+            //int slot = toupper( token[0] ) - 'A';
+            //*resultado = vars[ slot ];
+
+            Variavel *v = buscaVar( token );
+
             getToken();
-            return SUCESSO;
+
+            if( v )
+            {
+                switch( v->tipo )
+                {
+                case TIPO_CHAR:
+                    *resultado = *( (char*) v->dados );
+                    break;
+                case TIPO_INT:
+                    *resultado = *( (int*) v->dados );
+                    break;
+                case TIPO_LONG:
+                    *resultado = *( (long*) v->dados );
+                    break;
+                case TIPO_BOOL:
+                    *resultado = *( (bool*) v->dados );
+                    break;
+                default:
+                    break;
+                }
+                return SUCESSO;
+
+            }
         }
         return ERRO_INTERPRETADOR;
     }
@@ -2705,7 +2753,7 @@ void setup()
     TIPO_BOOL,
     TIPO_STRING
 
-    void declara( TipoVariavel tipo_, char *nome_, void *dados_, char tam_=0 )
+    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
 */
     interpretador.declaraVar( TIPO_INT, VAR_PID_DEB, &eeprom.dados.delays.debounce );
 }
