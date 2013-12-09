@@ -15,6 +15,18 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+ATMEGA1280 - placa_v4.h
+
+Sketch uses 26.166 bytes (20%) of program storage space. Maximum is 126.976 bytes.
+Global variables use 2.255 bytes (27%) of dynamic memory, leaving 5.937 bytes for local variables. Maximum is 8.192 bytes.
+
+ATMEGA328 - placa_v942.h
+
+Sketch uses 23.490 bytes (72%) of program storage space. Maximum is 32.256 bytes.
+Global variables use 1.412 bytes (68%) of dynamic memory, leaving 636 bytes for local variables. Maximum is 2.048 bytes.
+*/
+
 // ******************************************************************************
 //		INCLUDEs e CONFIGURACAO
 // ******************************************************************************
@@ -96,15 +108,16 @@ void printErro( enum Erros err )
 
 typedef struct
 {
-    enum eTipoSensor { SENSOR_VIRTUAL, SENSOR_ANALOGICO, SENSOR_PING, SENSOR_RC, SENSOR_DIGITAL } tipo;
+    enum eTipoSensor { SENSOR_VIRTUAL, SENSOR_ANALOGICO, SENSOR_PING, SENSOR_RC, SENSOR_DIGITAL };
+    char tipo;
     char pino;
     bool invertido;
     volatile unsigned short minimo, maximo, centro;
     volatile bool autoMinMax;
 
-    void init(eTipoSensor tipo_ = SENSOR_VIRTUAL,
-              unsigned char pino_ = -1,
-              bool invertido_ = false)
+    void init(  eTipoSensor tipo_ = SENSOR_VIRTUAL,
+                char pino_ = -1,
+                bool invertido_ = false )
     {
         tipo = tipo_;
         pino = pino_;
@@ -130,36 +143,20 @@ typedef struct
         }
         autoMinMax = false;
     }
-
-    void print()
-    {
-        SERIALX.print((int)pino);
-        SERIALX.print(" ");
-        SERIALX.print((int)tipo);
-        SERIALX.print(" ");
-        SERIALX.print((int)invertido);
-        SERIALX.print(" ");
-        SERIALX.print(minimo);
-        SERIALX.print(" ");
-        SERIALX.print(maximo);
-        SERIALX.print(" ");
-        SERIALX.print(centro);
-        SERIALX.println("");
-    }
 }
 ConfigSensor;
 
 typedef struct
 {
-    enum eTipoGamepad { TIPO_RC, TIPO_PC, TIPO_WII } tipo;
+    enum eTipoGamepad { TIPO_RC, TIPO_PC, TIPO_WII };
+    char tipo;
     ConfigSensor X, Y, Z, R;
 
     void init(  eTipoGamepad t,
                 char pinoX = -1,
                 char pinoY = -1,
                 char pinoZ = -1,
-                char pinoR = -1
-            )
+                char pinoR = -1 )
     {
         tipo = t;
 
@@ -231,15 +228,18 @@ public:
     struct sConfiguracao
     {
         char programa;
-        char handBrake;
         char balanco;   // % balanco motor esq / dir
         char velMax;    // %
         char velEscala; // %
+        char handBrake;
 
         ConfigMotor motorEsq;
-        ConfigMotor motorEsqT;
         ConfigMotor motorDir;
-        ConfigMotor motorDirT;
+
+        #ifdef RODAS_PWM_x4
+            ConfigMotor motorEsqT;
+            ConfigMotor motorDirT;
+        #endif
 
         struct sDelays  // duracao (ms) de movimentos pra animacao
         {
@@ -263,14 +263,14 @@ public:
     void load()
     {
         char * dest = (char*) &dados;
-        for(unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
-            *dest = eeprom_read_byte((unsigned char *) addr);
+        for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
+            *dest = eeprom_read_byte(( unsigned char * ) addr );
     }
     void save()
     {
         char * dest = (char*) &dados;
-        for(unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
-            eeprom_write_byte((unsigned char *) addr, *dest);
+        for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
+            eeprom_write_byte(( unsigned char  *) addr, *dest);
     }
     void defaults()
     {
@@ -360,7 +360,6 @@ public:
         dados.sensores[3].minimo = 100;
         dados.sensores[3].maximo = 630;
 #endif
-
 
         dados.joyPC.init( ConfigGamepad::TIPO_PC );
 
@@ -502,6 +501,21 @@ public:
     {
         cfg=c;
         valor = anterior = cfg->centro;
+    }
+    void print()
+    {
+        SERIALX.print((int)cfg->pino);
+        SERIALX.print(" ");
+        SERIALX.print((int)cfg->tipo);
+        SERIALX.print(" ");
+        SERIALX.print((int)cfg->invertido);
+        SERIALX.print(" ");
+        SERIALX.print(cfg->minimo);
+        SERIALX.print(" ");
+        SERIALX.print(cfg->maximo);
+        SERIALX.print(" ");
+        SERIALX.print(cfg->centro);
+        SERIALX.println("");
     }
     unsigned short getValor()
         { return valor; }
@@ -673,7 +687,7 @@ botaoCal(37), botaoPrg(39);
 class MbsGamePad
 {
 public:
-    ConfigGamepad::eTipoGamepad tipo;
+    char tipo;
     Sensor x, y, z, r;
     volatile unsigned int botoesAntes, botoesAgora, botoesEdgeF, botoesEdgeR;
     MbsGamePad() : botoesAntes(0), botoesAgora(0), botoesEdgeF(0), botoesEdgeR(0)
@@ -1762,36 +1776,32 @@ public:
 
     Variavel* buscaVar( char *nome )
     {
-        Variavel v;
-        strncpy( v.nome, nome, TAM_TOKEN );
+        Variavel v( TIPO_NULO, nome );
         return buscaVar( &v );
     }
 
     Variavel* buscaVar( Variavel* chave )
     {
-        return nvars ? ( Variavel* ) bsearch( &chave, var, nvars, sizeof( Variavel ), compVar ) : NULL ;
+        return nvars ? ( Variavel* ) bsearch( chave, var, nvars, sizeof( Variavel ), compVar ) : NULL ;
     }
 
     Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
     {
         Variavel nova( tipo, nome, dados, tam );
 
-        if( ! buscaVar( &nova ) && nvars < NUM_VARS-1 )
+        if( ! buscaVar( nome ) && nvars < NUM_VARS-1 )
         {
+            int elem = nvars-1; // ultimo
+
             // insere ordenado no array
-            for( int ord = nvars; ord > 0; ord-- )
-            {
-                if( compVar( &nova, &var[ord-1] ) < 0 )
-                {
-                    var[ord] = var[ord-1];
-                }
+            for( nvars++ ; elem > 0 ; elem-- )
+                if( compVar( &nova, &var[elem-1] ) < 0 )
+                    var[elem] = var[elem-1];
                 else
-                {
-                    var[ord] = nova;
-                    nvars++;
-                    return &var[ord];
-                }
-            }
+                    break;
+
+            var[elem] = nova;
+            return &var[elem];
         }
         return NULL;
     }
@@ -1837,8 +1847,6 @@ private:
             char bkpToken[TAM_TOKEN];
             strncpy( bkpToken, token, TAM_TOKEN );
 
-            //int slot = toupper( token[0] ) - 'A';
-
             Variavel *v = buscaVar( token );
 
             getToken();
@@ -1848,37 +1856,40 @@ private:
                 devolve();
                 strncpy( token, bkpToken, TAM_TOKEN );
                 tipoToken = NOME;
+                return evalExpressao( resultado );
             }
             else
             {
                 getToken();
                 evalExpressao( resultado );
-                //vars[ slot ] = *resultado;
+
                 if( v )
                 {
                     switch( v->tipo )
                     {
                     case TIPO_CHAR:
                         *( (char*) v->dados ) = *resultado;
-                        break;
+                        return SUCESSO;
                     case TIPO_INT:
                         *( (int*) v->dados ) = *resultado;
-                        break;
+                        return SUCESSO;
                     case TIPO_LONG:
                         *( (long*) v->dados ) = *resultado;
-                        break;
+                        return SUCESSO;
                     case TIPO_BOOL:
                         *( (bool*) v->dados ) = *resultado;
-                        break;
+                        return SUCESSO;
                     default:
-                        break;
+                        return ERRO_INTERPRETADOR;
                     }
                 }
-
-                return SUCESSO;
+                else
+                    return ERRO_INTERPRETADOR;
             }
         }
-        evalExpressao( resultado );
+        else
+            return evalExpressao( resultado );
+
         return SUCESSO;
     }
 
@@ -2113,10 +2124,12 @@ public:
                                 eeprom.dados.motorEsq.centro = valor;
                             else if(strcmp(dest, VAR_ZERO_DIR) == 0)
                                 eeprom.dados.motorDir.centro = valor;
+                            #ifdef RODAS_PWM_x4
                             else if(strcmp(dest, VAR_ZERO_ESQ_T) == 0)
                                 eeprom.dados.motorEsqT.centro = valor;
                             else if(strcmp(dest, VAR_ZERO_DIR_T) == 0)
                                 eeprom.dados.motorDirT.centro = valor;
+                            #endif
                             else if(strcmp(dest, VAR_PROGRAMA) == 0)
                             {
                                 drive.parar();
@@ -2735,26 +2748,32 @@ void setup()
         digitalWrite(unused[p], HIGH);
     }
 
-/*
-    // plaquinha com 8 leds conectada no canto do mega
+/*    // plaquinha com 8 leds conectada no canto do mega
     for( int i = 39; i <= 53; i += 2 )
         pinMode(i, OUTPUT);
     for( int x = 0; x < NUM_IR_TRACK; x++ )
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
 */
-//    if( eeprom.dados.programa == PRG_LINE_FOLLOW )
-//        lineFollower.calibrar();
 
-/*
+
+/*  Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
 	TIPO_NULO = 0,
     TIPO_CHAR,
     TIPO_INT,
     TIPO_LONG,
     TIPO_BOOL,
     TIPO_STRING
-
-    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
 */
+
+    interpretador.declaraVar( TIPO_CHAR, VAR_BALANCO,    &eeprom.dados.balanco );
+    interpretador.declaraVar( TIPO_CHAR, VAR_VEL_MAX,    &eeprom.dados.velMax );
+    interpretador.declaraVar( TIPO_CHAR, VAR_VEL_ESCALA, &eeprom.dados.velEscala );
+    interpretador.declaraVar( TIPO_CHAR, VAR_FREIO,      &eeprom.dados.handBrake );
+
+    interpretador.declaraVar( TIPO_INT, VAR_T_SE,    &eeprom.dados.delays.sensores );
+    interpretador.declaraVar( TIPO_INT, VAR_T_ST,    &eeprom.dados.delays.status );
+    interpretador.declaraVar( TIPO_INT, VAR_T_RF,    &eeprom.dados.delays.ES );
+    interpretador.declaraVar( TIPO_INT, VAR_T_MOTOR, &eeprom.dados.delays.motores );
     interpretador.declaraVar( TIPO_INT, VAR_PID_DEB, &eeprom.dados.delays.debounce );
 }
 
@@ -2807,7 +2826,7 @@ void loop()
     static unsigned long ultimoStatus = 0;
     if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
     {
-        SERIALX.println(agora);
+        //SERIALX.println(agora);
         telnet.enviaStatus();
         //digitalWrite(PINO_LED, !digitalRead(PINO_LED));
     }
@@ -2815,7 +2834,7 @@ void loop()
     static unsigned long ultimoSensores = 0;
     if( delaySemBlock(&ultimoSensores, eeprom.dados.delays.sensores) )
     {
-        SERIALX.println(agora);
+        //SERIALX.println(agora);
         //telnet.enviaJoystick();
         telnet.enviaSensores();
         #ifdef WIICHUCK
@@ -2906,10 +2925,10 @@ void loop()
             if( drive.sensorFre->refresh().getValor() > 200 )
             {
                 // calc velocidade em unidades sensor / segundo
-                int v = ((long)drive.sensorFre->delta() * 1000) / eeprom.dados.delays.ES;
+                int v = ( (long) drive.sensorFre->delta() * 1000 ) / eeprom.dados.delays.ES;
 
                 // s = s0 + v * t;
-                int timeToCollision = (700 - drive.sensorFre->getValor()) / v;
+                int timeToCollision = ( 700 - drive.sensorFre->getValor() ) / v;
 
                 if(timeToCollision < 3 )
                     eeprom.dados.programa = PRG_ALARME;

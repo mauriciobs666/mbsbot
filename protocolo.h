@@ -35,7 +35,7 @@ Formato geral do pacote:
 #define MAX_CMD 50      // bytes, tamanho maximo de um comando serial
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
-#define NUM_VARS 4      // array de variaveis do interpretador
+#define NUM_VARS 10      // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */

@@ -16,12 +16,6 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- /*
-Sketch uses 25.704 bytes (20%) of program storage space. Maximum is 126.976 bytes.
-Global variables use 2.244 bytes (27%) of dynamic memory, leaving 5.948 bytes for local variables. Maximum is 8.192 bytes.
- */
-
-
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 

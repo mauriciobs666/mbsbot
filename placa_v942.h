@@ -15,23 +15,6 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
- /*
-    Sketch uses 23.024 bytes (71%) of program storage space. Maximum is 32.256 bytes.
-    Global variables use 1.390 bytes (67%) of dynamic memory, leaving 658 bytes for local variables. Maximum is 2.048 bytes.
-
-    atmega328 ao inves de atmega1280
-    Sketch uses 22.052 bytes (68%) of program storage space. Maximum is 32.256 bytes.
-    Global variables use 1.413 bytes (68%) of dynamic memory, leaving 635 bytes for local variables. Maximum is 2.048 bytes.
-
-    5 sensores ao inves de 16
-    Sketch uses 24.578 bytes (19%) of program storage space. Maximum is 126.976 bytes.
-    Global variables use 2.010 bytes (24%) of dynamic memory, leaving 6.182 bytes for local variables. Maximum is 8.192 bytes.
-
-    Sketch uses 24.774 bytes (19%) of program storage space. Maximum is 126.976 bytes.
-    Global variables use 2.311 bytes (28%) of dynamic memory, leaving 5.881 bytes for local variables. Maximum is 8.192 bytes.
- */
-
-
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
