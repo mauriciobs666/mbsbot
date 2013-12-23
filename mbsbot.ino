@@ -18,8 +18,8 @@
 /*
 ATMEGA1280 - placa_v4.h
 
-Sketch uses 26.166 bytes (20%) of program storage space. Maximum is 126.976 bytes.
-Global variables use 2.255 bytes (27%) of dynamic memory, leaving 5.937 bytes for local variables. Maximum is 8.192 bytes.
+Sketch uses 25.786 bytes (20%) of program storage space. Maximum is 126.976 bytes.
+Global variables use 2.361 bytes (28%) of dynamic memory, leaving 5.831 bytes for local variables. Maximum is 8.192 bytes.
 
 ATMEGA328 - placa_v942.h
 
@@ -180,15 +180,16 @@ ConfigGamepad;
 
 typedef struct
 {
-    enum eTipoMotor { MOTOR_SERVO, MOTOR_DC } tipo;
+    enum eTipoMotor { MOTOR_SERVO, MOTOR_DC };
+    char tipo;
     char pino;
     bool invertido;
     char pinoDir;
     char pinoDirN;
-    short centro;
-    short aceleracao;   // % de potencia => dv / eeprom.delays.motores
+    int centro;      // zero
+    int aceleracao;  // variacao abs de potencia aplicada => dp / eeprom.delays.motores
 
-    void initServo( char pino_, short centro_=1500, bool inverso=false )
+    void initServo( char pino_, int centro_=1500, bool inverso=false )
     {
         tipo = MOTOR_SERVO;
         pino = pino_;
@@ -196,7 +197,7 @@ typedef struct
         invertido = inverso;
     }
 
-    void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, short offsetZero=0, short acel=255, bool inverso=false )
+    void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, int offsetZero=0, int acel=255, bool inverso=false )
     {
         tipo = MOTOR_DC;
         pino = pinoPWM;
@@ -218,7 +219,7 @@ typedef struct
     int limiteI;
     int limiteD;
     int maxMV;
-    int zeraAcc;
+    bool zeraAcc;
 }
 ConfigPID;
 
@@ -227,7 +228,7 @@ class Eeprom
 public:
     struct sConfiguracao
     {
-        char programa;
+        char programa;  // enum Programas
         char balanco;   // % balanco motor esq / dir
         char velMax;    // %
         char velEscala; // %
@@ -315,7 +316,7 @@ public:
         dados.pid[ PID_CALIBRA ].limiteI = 32000;
         dados.pid[ PID_CALIBRA ].limiteD = 100;
         dados.pid[ PID_CALIBRA ].maxMV = 100;
-        dados.pid[ PID_CALIBRA ].zeraAcc = 1;
+        dados.pid[ PID_CALIBRA ].zeraAcc = true;
 
         dados.pid[ PID_CORRIDA ].Kp = DFT_PID_P;
         dados.pid[ PID_CORRIDA ].Ki = DFT_PID_I;
@@ -324,7 +325,7 @@ public:
         dados.pid[ PID_CORRIDA ].limiteI = DFT_PID_LIM_I;
         dados.pid[ PID_CORRIDA ].limiteD = DFT_PID_LIM_D;
         dados.pid[ PID_CORRIDA ].maxMV = DFT_PID_MAX_MV;
-        dados.pid[ PID_CORRIDA ].zeraAcc = 0;
+        dados.pid[ PID_CORRIDA ].zeraAcc = false;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
@@ -1072,11 +1073,11 @@ public:
 
     void printRodas()
     {
-        SERIALX.print( VAR_RODA_ESQ );
+        SERIALX.print( NOME_RODA_ESQ );
         SERIALX.print(" ");
         SERIALX.println( motorEsq.read() );
 
-        SERIALX.print( VAR_RODA_DIR );
+        SERIALX.print( NOME_RODA_DIR );
         SERIALX.print(" ");
         SERIALX.println( motorDir.read() );
     }
@@ -1732,24 +1733,26 @@ scanner;
 
 typedef enum
 {
-    TIPO_NULO = 0,
-    TIPO_CHAR,
-    TIPO_INT,
-    TIPO_LONG,
-    TIPO_BOOL,
-    TIPO_STRING
+    VAR_NULO = 0,
+    VAR_CHAR,
+    VAR_INT,
+    VAR_LONG,
+    VAR_BOOL,
+    VAR_STRING,
+    VAR_SENSOR,
+    VAR_MOTOR
 }
 TipoVariavel;
 
 class Variavel
 {
 public:
-    char nome[TAM_TOKEN];
+    char nome[TAM_NOME];
     char tipo;
     char tam;
     void *dados;
 
-    Variavel( TipoVariavel tipo_=TIPO_NULO, char *nome_=NULL, void *dados_=NULL, char tam_=0 )
+    Variavel( TipoVariavel tipo_=VAR_NULO, char *nome_=NULL, void *dados_=NULL, char tam_=0 )
     {
         declara( tipo_, nome_, dados_, tam_ );
     }
@@ -1757,7 +1760,7 @@ public:
     void declara( TipoVariavel tipo_, char *nome_, void *dados_, char tam_=0 )
     {
         tipo = tipo_;
-        strncpy( nome, nome_, TAM_TOKEN );
+        strncpy( nome, nome_, TAM_NOME );
         dados = dados_;
         tam = tam_;
     }
@@ -1765,7 +1768,7 @@ public:
 
 int compVar( const void *a, const void *b )
 {
-    return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_TOKEN );
+    return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_NOME );
 }
 
 class Interpretador
@@ -1776,7 +1779,7 @@ public:
 
     Variavel* buscaVar( char *nome )
     {
-        Variavel v( TIPO_NULO, nome );
+        Variavel v( VAR_NULO, nome );
         return buscaVar( &v );
     }
 
@@ -1827,7 +1830,6 @@ public:
 private:
     char *linha;
     char token[TAM_TOKEN];
-    //long vars[NUM_VARS];
 
     enum TipoToken
     {
@@ -1867,16 +1869,16 @@ private:
                 {
                     switch( v->tipo )
                     {
-                    case TIPO_CHAR:
+                    case VAR_CHAR:
                         *( (char*) v->dados ) = *resultado;
                         return SUCESSO;
-                    case TIPO_INT:
+                    case VAR_INT:
                         *( (int*) v->dados ) = *resultado;
                         return SUCESSO;
-                    case TIPO_LONG:
+                    case VAR_LONG:
                         *( (long*) v->dados ) = *resultado;
                         return SUCESSO;
-                    case TIPO_BOOL:
+                    case VAR_BOOL:
                         *( (bool*) v->dados ) = *resultado;
                         return SUCESSO;
                     default:
@@ -1993,16 +1995,16 @@ private:
             {
                 switch( v->tipo )
                 {
-                case TIPO_CHAR:
+                case VAR_CHAR:
                     *resultado = *( (char*) v->dados );
                     break;
-                case TIPO_INT:
+                case VAR_INT:
                     *resultado = *( (int*) v->dados );
                     break;
-                case TIPO_LONG:
+                case VAR_LONG:
                     *resultado = *( (long*) v->dados );
                     break;
-                case TIPO_BOOL:
+                case VAR_BOOL:
                     *resultado = *( (bool*) v->dados );
                     break;
                 default:
@@ -2022,11 +2024,16 @@ private:
         char *tok = token;
         *tok = 0;
 
-        while( *linha == ' ' && *linha != 0 ) linha++;
+        while( *linha == ' ' && *linha ) linha++;
 
         if( *linha )
         {
-            if( strchr("+-*/=()", *linha ) )
+            if( strchr("{}", *linha ) )
+            {
+                tipoToken = BLOCO;
+                *tok++ = *linha++;
+            }
+            else if( strchr("+-*/=()", *linha ) )
             {
                 tipoToken = DELIMIT;
                 *tok++ = *linha++;
@@ -2043,6 +2050,37 @@ private:
             }
         }
         *tok = 0;
+
+        #define TRACE_GET_TOKEN
+        #ifdef TRACE_GET_TOKEN
+        SERIALX.print("getToken ");
+        switch( tipoToken )
+        {
+        case NULO:
+            SERIALX.print("NULO ");
+            break;
+        case NUMERO:
+            SERIALX.print("NUMERO ");
+            break;
+        case NOME:
+            SERIALX.print("NOME ");
+            break;
+        case DELIMIT:
+            SERIALX.print("DELIMIT ");
+            break;
+        case STRING:
+            SERIALX.print("STRING ");
+            break;
+        case CHAVE:
+            SERIALX.print("CHAVE ");
+            break;
+        case BLOCO:
+            SERIALX.print("BLOCO ");
+            break;
+        }
+        SERIALX.println( token );
+        #endif
+
         return tipoToken;
     }
 
@@ -2114,42 +2152,28 @@ public:
                         {
                             int valor = atoi(tok);
 
-                            if(isdigit(dest[0]))                // se destino for um numero entaum eh um pino digital
-                                digitalWrite(atoi(dest), valor ? HIGH : LOW);
-                            else if(strcmp(dest, VAR_RODA_ESQ) == 0)
+                            if(strcmp(dest, NOME_RODA_ESQ) == 0)
                                 drive.motorEsq.move(valor);
-                            else if(strcmp(dest, VAR_RODA_DIR) == 0)
+                            else if(strcmp(dest, NOME_RODA_DIR) == 0)
                                 drive.motorDir.move(valor);
-                            else if(strcmp(dest, VAR_ZERO_ESQ) == 0)
-                                eeprom.dados.motorEsq.centro = valor;
-                            else if(strcmp(dest, VAR_ZERO_DIR) == 0)
-                                eeprom.dados.motorDir.centro = valor;
-                            #ifdef RODAS_PWM_x4
-                            else if(strcmp(dest, VAR_ZERO_ESQ_T) == 0)
-                                eeprom.dados.motorEsqT.centro = valor;
-                            else if(strcmp(dest, VAR_ZERO_DIR_T) == 0)
-                                eeprom.dados.motorDirT.centro = valor;
-                            #endif
-                            else if(strcmp(dest, VAR_PROGRAMA) == 0)
+                            else if(strcmp(dest, NOME_PROGRAMA) == 0)
                             {
                                 drive.parar();
                                 eeprom.dados.programa = valor;
                             }
-                            else if(strcmp(dest, VAR_T_RF) == 0)
-                                eeprom.dados.delays.ES = valor;
                             #ifdef PINO_SERVO_PAN
-                            else if(strcmp(dest, VAR_SERVO_X) == 0)
+                            else if(strcmp(dest, NOME_SERVO_X) == 0)
                                 pan.write(valor);
                             #endif
                             #ifdef PINO_SERVO_TILT
-                            else if(strcmp(dest, VAR_SERVO_Y) == 0)
+                            else if(strcmp(dest, NOME_SERVO_Y) == 0)
                                 tilt.write(valor);
                             #endif
                             #ifdef PINO_SERVO_ROLL
-                            else if(strcmp(dest, VAR_SERVO_Z) == 0)
+                            else if(strcmp(dest, NOME_SERVO_Z) == 0)
                                 roll.write(valor);
                             #endif
-                            else if(strcmp(dest, VAR_PID) == 0)
+                            else if(strcmp(dest, NOME_PID) == 0)
                             {
                                 if((tok = STRTOK(NULL, " ")))	// P
                                 {
@@ -2165,37 +2189,16 @@ public:
                                 }
                             }
 
-                            else if( (strcmp(dest, VAR_PID_LIM_P) == 0) && (tok = STRTOK(NULL, " ")) )
+                            else if( (strcmp(dest, NOME_PID_LIM_P) == 0) && (tok = STRTOK(NULL, " ")) )
                                 eeprom.dados.pid[ valor ].limiteP = atoi(tok);
-                            else if( (strcmp(dest, VAR_PID_LIM_I) == 0) && (tok = STRTOK(NULL, " ")) )
+                            else if( (strcmp(dest, NOME_PID_LIM_I) == 0) && (tok = STRTOK(NULL, " ")) )
                                 eeprom.dados.pid[ valor ].limiteI = atoi(tok);
-                            else if( (strcmp(dest, VAR_PID_LIM_D) == 0) && (tok = STRTOK(NULL, " ")) )
+                            else if( (strcmp(dest, NOME_PID_LIM_D) == 0) && (tok = STRTOK(NULL, " ")) )
                                 eeprom.dados.pid[ valor ].limiteD = atoi(tok);
-                            else if( (strcmp(dest, VAR_PID_ZAC) == 0) && (tok = STRTOK(NULL, " ")) )
+                            else if( (strcmp(dest, NOME_PID_ZAC) == 0) && (tok = STRTOK(NULL, " ")) )
                                 eeprom.dados.pid[ valor ].zeraAcc = atoi(tok);
-                            else if( (strcmp(dest, VAR_PID_MMV) == 0) && (tok = STRTOK(NULL, " ")) )
+                            else if( (strcmp(dest, NOME_PID_MMV) == 0) && (tok = STRTOK(NULL, " ")) )
                                 eeprom.dados.pid[ valor ].maxMV = atoi(tok);
-
-                            else if(strcmp(dest, VAR_PID_DEB) == 0)
-                                eeprom.dados.delays.debounce = valor;
-                            else if(strcmp(dest, VAR_FREIO) == 0)
-                                eeprom.dados.handBrake = valor;
-                            else if(strcmp(dest, VAR_ACEL_ESQ) == 0)
-                                eeprom.dados.motorEsq.aceleracao = valor;
-                            else if(strcmp(dest, VAR_ACEL_DIR) == 0)
-                                eeprom.dados.motorDir.aceleracao = valor;
-                            else if(strcmp(dest, VAR_T_ST) == 0)
-                                eeprom.dados.delays.status = (unsigned short)valor;
-                            else if(strcmp(dest, VAR_T_SE) == 0)
-                                eeprom.dados.delays.sensores = (unsigned short)valor;
-                            else if(strcmp(dest, VAR_VEL_MAX) == 0)
-                                eeprom.dados.velMax = valor;
-                            else if(strcmp(dest, VAR_VEL_ESCALA) == 0)
-                                eeprom.dados.velEscala = valor;
-                            else if(strcmp(dest, VAR_T_MOTOR) == 0)
-                                eeprom.dados.delays.motores = valor;
-                            else if(strcmp(dest, VAR_BALANCO) == 0)
-                                eeprom.dados.balanco = valor;
                         }
                     }
                 }
@@ -2206,35 +2209,25 @@ public:
                         SERIALX.print(tok);          // ecoa nome da variavel
                         SERIALX.print(" ");
 
-                        if(strcmp(tok, VAR_RODA_ESQ) == 0)
+                        if(strcmp(tok, NOME_RODA_ESQ) == 0)
                             SERIALX.println(drive.motorEsq.read());
-                        else if(strcmp(tok, VAR_ZERO_ESQ) == 0)
-                            SERIALX.println(eeprom.dados.motorEsq.centro);
-                        else if(strcmp(tok, VAR_RODA_DIR) == 0)
+                        else if(strcmp(tok, NOME_RODA_DIR) == 0)
                             SERIALX.println(drive.motorDir.read());
-                        else if(strcmp(tok, VAR_ZERO_DIR) == 0)
-                            SERIALX.println(eeprom.dados.motorDir.centro);
-                        else if(strcmp(tok, VAR_PROGRAMA) == 0)
-                            SERIALX.println(eeprom.dados.programa);
-                        else if(strcmp(tok, VAR_T_RF) == 0)
-                            SERIALX.println(eeprom.dados.delays.ES);
                         #ifdef PINO_SERVO_PAN
-                        else if(strcmp(tok, VAR_SERVO_X) == 0)
+                        else if(strcmp(tok, NOME_SERVO_X) == 0)
                             SERIALX.println(pan.read());
                         #endif
                         #ifdef PINO_SERVO_TILT
-                        else if(strcmp(tok, VAR_SERVO_Y) == 0)
+                        else if(strcmp(tok, NOME_SERVO_Y) == 0)
                             SERIALX.println(tilt.read());
                         #endif
                         #ifdef PINO_SERVO_ROLL
-                        else if(strcmp(tok, VAR_SERVO_Z) == 0)
+                        else if(strcmp(tok, NOME_SERVO_Z) == 0)
                             SERIALX.println(roll.read());
                         #endif
-                        else if(strcmp(tok, VAR_FREIO) == 0)
-                            SERIALX.println((int)eeprom.dados.handBrake);
-                        else if(strcmp(tok, VAR_AS) == 0)
+                        else if(strcmp(tok, NOME_AS) == 0)
                             enviaSensores(false);
-                        else if(strcmp(tok, VAR_PID) == 0)
+                        else if(strcmp(tok, NOME_PID) == 0)
                         {
                             SERIALX.print(eeprom.dados.pid[ PID_CORRIDA ].Kp);
                             SERIALX.print(" ");
@@ -2242,34 +2235,16 @@ public:
                             SERIALX.print(" ");
                             SERIALX.println(eeprom.dados.pid[ PID_CORRIDA ].Kd);
                         }
-                        else if(strcmp(tok, VAR_PID_MMV) == 0)
+                        else if(strcmp(tok, NOME_PID_MMV) == 0)
                             SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].maxMV);
-                        else if(strcmp(tok, VAR_PID_DEB) == 0)
-                            SERIALX.println((int)eeprom.dados.delays.debounce);
-                        else if(strcmp(tok, VAR_PID_LIM_P) == 0)
+                        else if(strcmp(tok, NOME_PID_LIM_P) == 0)
                             SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteP);
-                        else if(strcmp(tok, VAR_PID_LIM_I) == 0)
+                        else if(strcmp(tok, NOME_PID_LIM_I) == 0)
                             SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteI);
-                        else if(strcmp(tok, VAR_PID_LIM_D) == 0)
+                        else if(strcmp(tok, NOME_PID_LIM_D) == 0)
                             SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteD);
-                        else if(strcmp(tok, VAR_PID_ZAC) == 0)
+                        else if(strcmp(tok, NOME_PID_ZAC) == 0)
                             SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].zeraAcc);
-                        else if(strcmp(tok, VAR_ACEL_ESQ) == 0)
-                            SERIALX.println((int)eeprom.dados.motorEsq.aceleracao);
-                        else if(strcmp(tok, VAR_ACEL_DIR) == 0)
-                            SERIALX.println((int)eeprom.dados.motorDir.aceleracao);
-                        else if(strcmp(tok, VAR_T_ST) == 0)
-                            SERIALX.println((int)eeprom.dados.delays.status);
-                        else if(strcmp(tok, VAR_T_SE) == 0)
-                            SERIALX.println((int)eeprom.dados.delays.sensores);
-                        else if(strcmp(tok, VAR_VEL_MAX) == 0)
-                            SERIALX.println((int)eeprom.dados.velMax);
-                        else if(strcmp(tok, VAR_VEL_ESCALA) == 0)
-                            SERIALX.println((int)eeprom.dados.velEscala);
-                        else if(strcmp(tok, VAR_T_MOTOR) == 0)
-                            SERIALX.println((int)eeprom.dados.delays.motores);
-                        else if(strcmp(tok, VAR_BALANCO) == 0)
-                            SERIALX.println((int)eeprom.dados.balanco);
                     }
                 }
                 else if(strcmp(tok, CMD_GRAVA) == 0)	// salva temporarios na EEPROM
@@ -2394,7 +2369,7 @@ public:
     {
         if(enviaComando)
         {
-            SERIALX.print( VAR_AS);
+            SERIALX.print( NOME_AS);
             SERIALX.print(" ");
         }
         for (int x = 0; x < NUM_SENSORES; x++)
@@ -2757,24 +2732,30 @@ void setup()
 
 
 /*  Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
-	TIPO_NULO = 0,
-    TIPO_CHAR,
-    TIPO_INT,
-    TIPO_LONG,
-    TIPO_BOOL,
-    TIPO_STRING
+	VAR_NULO = 0,
+    VAR_CHAR,
+    VAR_INT,
+    VAR_LONG,
+    VAR_BOOL,
+    VAR_STRING
 */
 
-    interpretador.declaraVar( TIPO_CHAR, VAR_BALANCO,    &eeprom.dados.balanco );
-    interpretador.declaraVar( TIPO_CHAR, VAR_VEL_MAX,    &eeprom.dados.velMax );
-    interpretador.declaraVar( TIPO_CHAR, VAR_VEL_ESCALA, &eeprom.dados.velEscala );
-    interpretador.declaraVar( TIPO_CHAR, VAR_FREIO,      &eeprom.dados.handBrake );
+    interpretador.declaraVar( VAR_CHAR, NOME_PROGRAMA,   &eeprom.dados.programa );
+    interpretador.declaraVar( VAR_CHAR, NOME_BALANCO,    &eeprom.dados.balanco );
+    interpretador.declaraVar( VAR_CHAR, NOME_VEL_MAX,    &eeprom.dados.velMax );
+    interpretador.declaraVar( VAR_CHAR, NOME_VEL_ESCALA, &eeprom.dados.velEscala );
+    interpretador.declaraVar( VAR_CHAR, NOME_FREIO,      &eeprom.dados.handBrake );
 
-    interpretador.declaraVar( TIPO_INT, VAR_T_SE,    &eeprom.dados.delays.sensores );
-    interpretador.declaraVar( TIPO_INT, VAR_T_ST,    &eeprom.dados.delays.status );
-    interpretador.declaraVar( TIPO_INT, VAR_T_RF,    &eeprom.dados.delays.ES );
-    interpretador.declaraVar( TIPO_INT, VAR_T_MOTOR, &eeprom.dados.delays.motores );
-    interpretador.declaraVar( TIPO_INT, VAR_PID_DEB, &eeprom.dados.delays.debounce );
+    interpretador.declaraVar( VAR_INT, NOME_T_SE,    &eeprom.dados.delays.sensores );
+    interpretador.declaraVar( VAR_INT, NOME_T_ST,    &eeprom.dados.delays.status );
+    interpretador.declaraVar( VAR_INT, NOME_T_RF,    &eeprom.dados.delays.ES );
+    interpretador.declaraVar( VAR_INT, NOME_T_MOTOR, &eeprom.dados.delays.motores );
+    interpretador.declaraVar( VAR_INT, NOME_T_DEB,   &eeprom.dados.delays.debounce );
+
+    interpretador.declaraVar( VAR_INT, NOME_ZERO_ESQ, &eeprom.dados.motorEsq.centro );
+    interpretador.declaraVar( VAR_INT, NOME_ACEL_ESQ, &eeprom.dados.motorEsq.aceleracao );
+    interpretador.declaraVar( VAR_INT, NOME_ZERO_DIR, &eeprom.dados.motorDir.centro );
+    interpretador.declaraVar( VAR_INT, NOME_ACEL_DIR, &eeprom.dados.motorDir.aceleracao );
 }
 
 // ******************************************************************************

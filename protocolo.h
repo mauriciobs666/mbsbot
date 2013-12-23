@@ -35,7 +35,8 @@ Formato geral do pacote:
 #define MAX_CMD 50      // bytes, tamanho maximo de um comando serial
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
-#define NUM_VARS 10      // array de variaveis do interpretador
+#define TAM_NOME 5      // bytes, tamanho max de um nome de variavel
+#define NUM_VARS 20      // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */
@@ -80,7 +81,7 @@ Formato geral do pacote:
 #define CMD_STATUS "s"
 /* CMD_STATUS : pede status
 formato da resposta:
-S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_T VAR_SERVO_X VAR_SERVO_Y VAR_SERVO_Z
+S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA_DIR_T NOME_SERVO_X NOME_SERVO_Y NOME_SERVO_Z
 */
 
 #define CMD_UNAME "uname"
@@ -96,45 +97,45 @@ S VAR_PROGRAMA ERRO FREIO VAR_RODA_ESQ VAR_RODA_DIR VAR_RODA_ESQ_T VAR_RODA_DIR_
 
 /* Lista de <variaveis>
 */
-#define VAR_PROGRAMA "p"    // enum ProgramID sendo executado
+#define NOME_PROGRAMA "p"    // enum Programas sendo executado
 
-#define VAR_AS       "as"	// todas entradas analogicas
-#define VAR_FREIO    "fm"   // freio de mao
+#define NOME_AS       "as"	// todas entradas analogicas
+#define NOME_FREIO    "fm"   // freio de mao
 
-#define VAR_RODA_ESQ "e"    // motor da roda esquerda
-#define VAR_RODA_DIR "d"    // motor da roda direita
+#define NOME_RODA_ESQ "me"    // motor da roda esquerda
+#define NOME_RODA_DIR "md"    // motor da roda direita
 
-#define VAR_ZERO_ESQ "ce"
-#define VAR_ZERO_DIR "cd"
+#define NOME_ZERO_ESQ "mec"
+#define NOME_ZERO_DIR "mdc"
 
-#define VAR_ZERO_ESQ_T "cet"
-#define VAR_ZERO_DIR_T "cdt"
+#define NOME_ZERO_ESQ_T "metc"
+#define NOME_ZERO_DIR_T "mdtc"
 
-#define VAR_ACEL_ESQ "ae"   // aceleracao do motor da roda esquerda
-#define VAR_ACEL_DIR "ad"   // aceleracao do motor da roda direita
+#define NOME_ACEL_ESQ "mea"   // aceleracao do motor da roda esquerda
+#define NOME_ACEL_DIR "mda"   // aceleracao do motor da roda direita
 
-#define VAR_SERVO_X  "sx"   // servo "X" (pan)
-#define VAR_SERVO_Y  "sy"   // servo "Y" (tilt)
-#define VAR_SERVO_Z  "sz"   // servo "Z" (roll)
+#define NOME_SERVO_X  "sx"   // servo "X" (pan)
+#define NOME_SERVO_Y  "sy"   // servo "Y" (tilt)
+#define NOME_SERVO_Z  "sz"   // servo "Z" (roll)
 
-#define VAR_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
-#define VAR_T_SE     "dse"  // tempo minimo entre envio de SEnsores
-#define VAR_T_ST     "dst"  // tempo minimo entre envio de STatus
-#define VAR_T_MOTOR  "dm"   // intervalo de refresh dos motores
-#define VAR_PID_DEB  "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
+#define NOME_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
+#define NOME_T_SE     "dse"  // tempo minimo entre envio de SEnsores
+#define NOME_T_ST     "dst"  // tempo minimo entre envio de STatus
+#define NOME_T_MOTOR  "dm"   // intervalo de refresh dos motores
+#define NOME_T_DEB    "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 
-#define VAR_PID       "pid"  // coeficientes do algoritmo de PID
-#define VAR_PID_LIM_P "lmp"  // limite proporcional
-#define VAR_PID_LIM_I "lmi"  // limite acumulador
-#define VAR_PID_LIM_D "lmd"  // limite derivada
-#define VAR_PID_MMV   "mmv"  // valor maximo MV (100-200)
-#define VAR_PID_ZAC   "zac"  // zera acumulador
+#define NOME_PID       "pid"  // coeficientes do algoritmo de PID
+#define NOME_PID_LIM_P "lmp"  // limite proporcional
+#define NOME_PID_LIM_I "lmi"  // limite acumulador
+#define NOME_PID_LIM_D "lmd"  // limite derivada
+#define NOME_PID_MMV   "mmv"  // valor maximo MV (100-200)
+#define NOME_PID_ZAC   "zac"  // zera acumulador
 
-#define VAR_VEL_MAX     "vm" // limite de velocidade em %
-#define VAR_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
-#define VAR_BALANCO     "bal" // balanco rodas esq/dir
+#define NOME_VEL_MAX     "vm" // limite de velocidade em %
+#define NOME_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
+#define NOME_BALANCO     "bal" // balanco rodas esq/dir
 
-enum ProgramID
+enum Programas
 {
     PRG_RC = 0,	            // Controle remoto
     PRG_RC_SERIAL = 1,      // Controle remoto via porta serial
