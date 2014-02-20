@@ -842,7 +842,7 @@ public:
 
         if( cfg->tipo == ConfigMotor::MOTOR_DC )
         {
-            atual = constrain( atual, -255, 255); // protecao de range
+            atual = constrain( atual, -255, 255 ); // protecao de range
 
             // uma ultima olhada no freio de mao
             if( eeprom.dados.handBrake ) meta = atual = 0;
@@ -1738,7 +1738,7 @@ typedef enum
     VAR_INT,
     VAR_LONG,
     VAR_BOOL,
-    VAR_STRING,
+    VAR_PID,
     VAR_SENSOR,
     VAR_MOTOR
 }
@@ -1752,12 +1752,12 @@ public:
     char tam;
     void *dados;
 
-    Variavel( TipoVariavel tipo_=VAR_NULO, char *nome_=NULL, void *dados_=NULL, char tam_=0 )
+    Variavel( TipoVariavel tipo_=VAR_NULO, char *nome_=NULL, void *dados_=NULL, char tam_=1 )
     {
         declara( tipo_, nome_, dados_, tam_ );
     }
 
-    void declara( TipoVariavel tipo_, char *nome_, void *dados_, char tam_=0 )
+    void declara( TipoVariavel tipo_, char *nome_, void *dados_, char tam_=1 )
     {
         tipo = tipo_;
         strncpy( nome, nome_, TAM_NOME );
@@ -1873,7 +1873,7 @@ private:
                         *( (char*) v->dados ) = *resultado;
                         return SUCESSO;
                     case VAR_INT:
-                        *( (int*) v->dados ) = *resultado;
+                        *( (int* ) v->dados ) = *resultado;
                         return SUCESSO;
                     case VAR_LONG:
                         *( (long*) v->dados ) = *resultado;
@@ -1886,13 +1886,13 @@ private:
                     }
                 }
                 else
-                    return ERRO_INTERPRETADOR;
+                    return ERRO_VAR_INVALIDA;
             }
         }
         else
             return evalExpressao( resultado );
 
-        return SUCESSO;
+        return ERRO_INTERPRETADOR;
     }
 
     Erros evalExpressao( long *resultado )
@@ -1984,9 +1984,6 @@ private:
         }
         else if( tipoToken == NOME )
         {
-            //int slot = toupper( token[0] ) - 'A';
-            //*resultado = vars[ slot ];
-
             Variavel *v = buscaVar( token );
 
             getToken();
@@ -1999,7 +1996,7 @@ private:
                     *resultado = *( (char*) v->dados );
                     break;
                 case VAR_INT:
-                    *resultado = *( (int*) v->dados );
+                    *resultado = *( (int* ) v->dados );
                     break;
                 case VAR_LONG:
                     *resultado = *( (long*) v->dados );
@@ -2011,7 +2008,6 @@ private:
                     break;
                 }
                 return SUCESSO;
-
             }
         }
         return ERRO_INTERPRETADOR;
@@ -2731,7 +2727,7 @@ void setup()
 */
 
 
-/*  Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
+/*  Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=1 )
 	VAR_NULO = 0,
     VAR_CHAR,
     VAR_INT,
