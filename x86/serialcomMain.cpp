@@ -709,7 +709,7 @@ void serialcomFrame::OnButton3Click(wxCommandEvent& event)
 
 void serialcomFrame::OnButton4Click(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->pedeVar(VAR_AS);  // todas entradas analogicas An
+    MbsBot::getInstance()->pedeVar(NOME_AS);  // todas entradas analogicas An
 }
 
 void serialcomFrame::OnButton5Click(wxCommandEvent& event)
@@ -740,7 +740,7 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         if(CheckBoxPoll->IsChecked())
             mbsbot->status();
         if(CheckBoxAutoRefreshSensors->IsChecked())
-            mbsbot->pedeVar(VAR_AS);
+            mbsbot->pedeVar(NOME_AS);
         conta1s = 10;
     }
 
@@ -872,13 +872,13 @@ void serialcomFrame::OnChoiceDCServo(wxCommandEvent& event)
         SliderRodaEsquerda->SetRange(-255,255);
         SliderRodaDireita->SetRange(-255,255);
     }
-    MbsBot::getInstance()->pedeVar(VAR_RODA_ESQ);
-    MbsBot::getInstance()->pedeVar(VAR_RODA_DIR);
+    MbsBot::getInstance()->pedeVar(NOME_RODA_ESQ);
+    MbsBot::getInstance()->pedeVar(NOME_RODA_DIR);
 }
 
 void serialcomFrame::OnChoiceProgram(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->setPrograma((enum ProgramID)(ChoicePrg->GetCurrentSelection()));
+    MbsBot::getInstance()->setPrograma((enum Programas)(ChoicePrg->GetCurrentSelection()));
 }
 
 void serialcomFrame::OnCheckBoxJoystick(wxCommandEvent& event)
@@ -957,7 +957,7 @@ void serialcomFrame::OnButton10Click(wxCommandEvent& event)
 
 void serialcomFrame::OnCheckBoxHandBrakeClick(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->enviaVar(VAR_FREIO, CheckBoxHandBrake->IsChecked() ? 1 : 0);
+    MbsBot::getInstance()->enviaVar(NOME_FREIO, CheckBoxHandBrake->IsChecked() ? 1 : 0);
 }
 
 void serialcomFrame::OnGridJoyCellLeftClick(wxGridEvent& event)

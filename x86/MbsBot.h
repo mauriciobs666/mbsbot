@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -62,17 +62,17 @@ class MbsBot
         {
             // TODO (mbs#1#): pede todas vars
 
-            pedeVar(VAR_PROGRAMA);
-            pedeVar(VAR_T_RF);
-            pedeVar(VAR_PID);
+            pedeVar(NOME_PROGRAMA);
+            pedeVar(NOME_T_RF);
+            pedeVar(NOME_PID);
 
-            pedeVar(VAR_RODA_ESQ);
-            pedeVar(VAR_RODA_DIR);
-            pedeVar(VAR_SERVO_X);
-            pedeVar(VAR_SERVO_Y);
-            pedeVar(VAR_SERVO_Z);
+            pedeVar(NOME_RODA_ESQ);
+            pedeVar(NOME_RODA_DIR);
+            pedeVar(NOME_SERVO_X);
+            pedeVar(NOME_SERVO_Y);
+            pedeVar(NOME_SERVO_Z);
 
-            pedeVar(VAR_AS);
+            pedeVar(NOME_AS);
 
             status();
         }
@@ -86,22 +86,22 @@ class MbsBot
         int status()
             { return envia("%s%c", CMD_STATUS, CMD_EOL); }
 
-        int setPrograma(enum ProgramID val)
-            { return enviaVar(VAR_PROGRAMA, val); }
+        int setPrograma(enum Programas val)
+            { return enviaVar(NOME_PROGRAMA, val); }
 		int setRodaEsquerda(int val)
-            { return enviaVar(VAR_RODA_ESQ, val); }
+            { return enviaVar(NOME_RODA_ESQ, val); }
 		int setRodaDireita(int val)
-            { return enviaVar(VAR_RODA_DIR, val); }
+            { return enviaVar(NOME_RODA_DIR, val); }
 		int setPan(int val)
-            { return enviaVar(VAR_SERVO_X, val); }
+            { return enviaVar(NOME_SERVO_X, val); }
         int setTilt(int val)
-            { return enviaVar(VAR_SERVO_Y, val); }
+            { return enviaVar(NOME_SERVO_Y, val); }
 		int setRoll(int val)
-            { return enviaVar(VAR_SERVO_Z, val); }
+            { return enviaVar(NOME_SERVO_Z, val); }
 		int setCentroRodaEsquerda(int val)
-            { return enviaVar(VAR_ZERO_ESQ, val); }
+            { return enviaVar(NOME_ZERO_ESQ, val); }
 		int setCentroRodaDireita(int val)
-            { return enviaVar(VAR_ZERO_DIR, val); }
+            { return enviaVar(NOME_ZERO_DIR, val); }
         int stop()
             { return envia("%s%c", CMD_MV_PARAR, CMD_EOL); }
 

@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -122,32 +122,32 @@ char * MbsBot::recebe()
         char * tok = strtok(temp, " ");
         if (tok)
         {
-            if(strcmp(tok, VAR_RODA_ESQ) == 0)
+            if(strcmp(tok, NOME_RODA_ESQ) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     rodaEsquerda = atoi(tok);
             }
-            else if(strcmp(tok, VAR_RODA_DIR) == 0)
+            else if(strcmp(tok, NOME_RODA_DIR) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     rodaDireita = atoi(tok);
             }
-            else if(strcmp(tok, VAR_SERVO_X) == 0)
+            else if(strcmp(tok, NOME_SERVO_X) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     servoPan = atoi(tok);
             }
-            else if(strcmp(tok, VAR_SERVO_Y) == 0)
+            else if(strcmp(tok, NOME_SERVO_Y) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     servoTilt = atoi(tok);
             }
-            else if(strcmp(tok, VAR_SERVO_Z) == 0)
+            else if(strcmp(tok, NOME_SERVO_Z) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     servoRoll = atoi(tok);
             }
-            else if(strcmp(tok, VAR_AS) == 0)	// todos sensores analogicos
+            else if(strcmp(tok, NOME_AS) == 0)	// todos sensores analogicos
             {
                 int s = 0;
                 while( (tok = strtok(NULL, " ")) )
@@ -199,12 +199,12 @@ char * MbsBot::recebe()
                     }
                 }
             }
-            else if(strcmp(tok, VAR_T_RF) == 0)
+            else if(strcmp(tok, NOME_T_RF) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     tempoRF = atoi(tok);
             }
-            else if(strcmp(tok, VAR_PID) == 0)
+            else if(strcmp(tok, NOME_PID) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     pidKP = atoi(tok);
