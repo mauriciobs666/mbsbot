@@ -1752,12 +1752,12 @@ public:
     char tam;
     void *dados;
 
-    Variavel( TipoVariavel tipo_=VAR_NULO, char *nome_=NULL, void *dados_=NULL, char tam_=1 )
+    Variavel( TipoVariavel tipo_=VAR_NULO, const char *nome_=NULL, void *dados_=NULL, char tam_=1 )
     {
         declara( tipo_, nome_, dados_, tam_ );
     }
 
-    void declara( TipoVariavel tipo_, char *nome_, void *dados_, char tam_=1 )
+    void declara( TipoVariavel tipo_, const char *nome_, void *dados_, char tam_=1 )
     {
         tipo = tipo_;
         strncpy( nome, nome_, TAM_NOME );
@@ -1773,37 +1773,40 @@ int compVar( const void *a, const void *b )
 
 class Interpretador
 {
+    #define TRACE_INTERPRETADOR
 public:
     Variavel var[NUM_VARS];
     char nvars;
 
-    Variavel* buscaVar( char *nome )
+    Variavel* buscaVar( const char *nome )
     {
         Variavel v( VAR_NULO, nome );
         return buscaVar( &v );
     }
 
-    Variavel* buscaVar( Variavel* chave )
+    Variavel* buscaVar( const Variavel* chave )
     {
         return nvars ? ( Variavel* ) bsearch( chave, var, nvars, sizeof( Variavel ), compVar ) : NULL ;
     }
 
-    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=0 )
+    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=1 )
     {
         Variavel nova( tipo, nome, dados, tam );
 
         if( ! buscaVar( nome ) && nvars < NUM_VARS-1 )
         {
-            int elem = nvars-1; // ultimo
-
-            // insere ordenado no array
-            for( nvars++ ; elem > 0 ; elem-- )
-                if( compVar( &nova, &var[elem-1] ) < 0 )
-                    var[elem] = var[elem-1];
-                else
-                    break;
-
+            int elem = 0;
+            if( nvars )
+            {
+                // insere ordenado no array
+                for( elem = nvars-1; elem > 0 ; elem-- )
+                    if( compVar( &nova, &var[elem-1] ) < 0 )
+                        var[elem] = var[elem-1];
+                    else
+                        break;
+            }
             var[elem] = nova;
+            nvars++;
             return &var[elem];
         }
         return NULL;
@@ -1817,15 +1820,27 @@ public:
 
     void eval( char *lnh )
     {
-        long resultado = 0;
+        #ifdef TRACE_INTERPRETADOR
+        SERIALX.print( "eval( " );
+        SERIALX.print( lnh );
+        SERIALX.println( " )" );
+        #endif // TRACE_INTERPRETADOR
 
         linha = lnh;
         getToken();
 
-        evalAtribuicao( &resultado );
+        if( tipoToken == NOME && ( 0 == strncmp( token, CMD_GET, TAM_TOKEN) || 0 == strncmp( token, CMD_SET, TAM_TOKEN ) ) )
+            getToken();
 
+        long resultado = 0;
+        enum Erros rc = evalAtribuicao( &resultado );
+
+        #ifdef TRACE_INTERPRETADOR
+        SERIALX.print(" <- ");
+        SERIALX.print( (int) rc );
         SERIALX.print(" = ");
         SERIALX.println( resultado );
+        #endif // TRACE_INTERPRETADOR
     }
 private:
     char *linha;
@@ -1844,6 +1859,12 @@ private:
 
     Erros evalAtribuicao( long *resultado )
     {
+        enum Erros rc = SUCESSO;
+
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "evalAtribuicao" );
+        #endif // TRACE_INTERPRETADOR
+
         if( tipoToken == NOME )
         {
             char bkpToken[TAM_TOKEN];
@@ -1853,17 +1874,35 @@ private:
 
             getToken();
 
-            if( token[0] != '=' )
+            if( v && tipoToken == NULO )  // imprime valor da variavel
             {
-                devolve();
-                strncpy( token, bkpToken, TAM_TOKEN );
-                tipoToken = NOME;
-                return evalExpressao( resultado );
+                SERIALX.print( bkpToken );
+                SERIALX.print( " " );
+
+                switch( v->tipo )
+                {
+                case VAR_CHAR:
+                    SERIALX.println( (int) *( (char*) v->dados ) );
+                    return SUCESSO;
+                case VAR_INT:
+                    SERIALX.println( (int) *( (int* ) v->dados ) );
+                    return SUCESSO;
+                case VAR_LONG:
+                    SERIALX.println( (long) *( (long*) v->dados ) );
+                    return SUCESSO;
+                case VAR_BOOL:
+                    SERIALX.println( (bool) *( (bool*) v->dados ) );
+                    return SUCESSO;
+                default:
+                    return ERRO_INTERPRETADOR;
+                }
             }
-            else
+            else if( token[0] == '=' )  // atribuicao
             {
                 getToken();
-                evalExpressao( resultado );
+                rc = evalExpressao( resultado );
+                if( rc )
+                    return rc;
 
                 if( v )
                 {
@@ -1888,6 +1927,13 @@ private:
                 else
                     return ERRO_VAR_INVALIDA;
             }
+            else
+            {
+                devolve();
+                strncpy( token, bkpToken, TAM_TOKEN );
+                tipoToken = NOME;
+                return evalExpressao( resultado );
+            }
         }
         else
             return evalExpressao( resultado );
@@ -1897,15 +1943,20 @@ private:
 
     Erros evalExpressao( long *resultado )
     {
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "evalExpressao" );
+        #endif // TRACE_INTERPRETADOR
+
         long temp;
         char op;
+        enum Erros rc = SUCESSO;
 
-        evalTermo( resultado );
+        rc = evalTermo( resultado );
 
-        while( ( op = token[0] ) == '+' || op == '-' )
+        while( rc == SUCESSO && ( ( op = token[0] ) == '+' || op == '-' ) )
         {
             getToken();
-            evalTermo( &temp );
+            rc = evalTermo( &temp );
             switch( op )
             {
             case '-':
@@ -1916,7 +1967,7 @@ private:
                 break;
             }
         }
-        return SUCESSO;
+        return rc;
     }
 
     Erros evalTermo( long *resultado )
@@ -1925,13 +1976,18 @@ private:
 
         long temp;
         char op;
+        enum Erros rc = SUCESSO;
 
-        evalFator( resultado );
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "evalTermo" );
+        #endif // TRACE_INTERPRETADOR
 
-        while( ( op = token[0] ) == '*' || op == '/' )
+        rc = evalFator( resultado );
+
+        while( rc == SUCESSO && ( ( op = token[0] ) == '*' || op == '/' ) )
         {
             getToken();
-            evalFator( &temp );
+            rc = evalFator( &temp );
             switch( op )
             {
             case '*':
@@ -1942,13 +1998,18 @@ private:
                 break;
             }
         }
-        return SUCESSO;
+        return rc;
     }
 
     Erros evalFator( long *resultado )
     {
 // Nome, Numero,
         char op = 0;
+        enum Erros rc = SUCESSO;
+
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "evalFator" );
+        #endif // TRACE_INTERPRETADOR
 
         if( tipoToken == DELIMIT && token[0] == '+' || token[0] == '-' )
         {
@@ -1960,22 +2021,26 @@ private:
         if( token[0] == '(' )
         {
             getToken();
-            evalAtribuicao( resultado );
+            rc = evalAtribuicao( resultado );
             if( token[0] != ')' )
                 return ERRO_INTERPRETADOR;
             getToken();
         }
         else
-            evalAtomo( resultado );
+            rc = evalAtomo( resultado );
 
         if( op == '-' )
             *resultado = -( *resultado );
 
-        return SUCESSO;
+        return rc;
     }
 
     Erros evalAtomo( long *resultado )
     {
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "evalAtomo" );
+        #endif // TRACE_INTERPRETADOR
+
         if( tipoToken == NUMERO )
         {
             *resultado = atol( token );
@@ -2015,6 +2080,10 @@ private:
 
     TipoToken getToken()
     {
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.print( "getToken " );
+        #endif // TRACE_INTERPRETADOR
+
         tipoToken = NULO;
 
         char *tok = token;
@@ -2047,34 +2116,32 @@ private:
         }
         *tok = 0;
 
-        #define TRACE_GET_TOKEN
-        #ifdef TRACE_GET_TOKEN
-        SERIALX.print("getToken ");
-        switch( tipoToken )
-        {
-        case NULO:
-            SERIALX.print("NULO ");
-            break;
-        case NUMERO:
-            SERIALX.print("NUMERO ");
-            break;
-        case NOME:
-            SERIALX.print("NOME ");
-            break;
-        case DELIMIT:
-            SERIALX.print("DELIMIT ");
-            break;
-        case STRING:
-            SERIALX.print("STRING ");
-            break;
-        case CHAVE:
-            SERIALX.print("CHAVE ");
-            break;
-        case BLOCO:
-            SERIALX.print("BLOCO ");
-            break;
-        }
-        SERIALX.println( token );
+        #ifdef TRACE_INTERPRETADOR
+            switch( tipoToken )
+            {
+            case NULO:
+                SERIALX.print("NULO ");
+                break;
+            case NUMERO:
+                SERIALX.print("NUMERO ");
+                break;
+            case NOME:
+                SERIALX.print("NOME ");
+                break;
+            case DELIMIT:
+                SERIALX.print("DELIMIT ");
+                break;
+            case STRING:
+                SERIALX.print("STRING ");
+                break;
+            case CHAVE:
+                SERIALX.print("CHAVE ");
+                break;
+            case BLOCO:
+                SERIALX.print("BLOCO ");
+                break;
+            }
+            SERIALX.println( token );
         #endif
 
         return tipoToken;
@@ -2082,6 +2149,9 @@ private:
 
     void devolve()
     {
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "devolve" );
+        #endif // TRACE_INTERPRETADOR
         for( char *t = token ; *t ; t++ )
             linha--;
     }
@@ -2541,7 +2611,7 @@ void isrRadio()
                 if(inicioPulsoSW1)
                 {
                     unsigned long duracao = micros() - inicioPulsoSW1;
-                    gamepad.refreshBotoes((duracao < 1500) ? BT_RT : 0);
+                    gamepad.refreshBotoes((duracao < 1500) ? BT_RB : 0);
                     inicioPulsoSW1 = 0;
                 }
             }

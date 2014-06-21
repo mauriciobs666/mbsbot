@@ -244,16 +244,16 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer12->Add(TextCtrlDelayInch, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText7 = new wxStaticText(Panel3, ID_STATICTEXT8, _("Vel Escala % (ve)"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT8"));
     FlexGridSizer12->Add(StaticText7, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrlDelayTurn = new wxTextCtrl(Panel3, ID_TEXTCTRL10, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY, wxDefaultValidator, _T("ID_TEXTCTRL10"));
-    FlexGridSizer12->Add(TextCtrlDelayTurn, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrlVelEscalaTurn = new wxTextCtrl(Panel3, ID_TEXTCTRL10, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL10"));
+    FlexGridSizer12->Add(TextCtrlVelEscalaTurn, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText4 = new wxStaticText(Panel3, ID_STATICTEXT4, _("Balanco -esq / +dir (bal):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT4"));
     FlexGridSizer12->Add(StaticText4, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrl1 = new wxTextCtrl(Panel3, ID_TEXTCTRL15, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY, wxDefaultValidator, _T("ID_TEXTCTRL15"));
     FlexGridSizer12->Add(TextCtrl1, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText12 = new wxStaticText(Panel3, ID_STATICTEXT5, _("Delay motores (dm):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT5"));
     FlexGridSizer12->Add(StaticText12, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    TextCtrlDealyMotor = new wxTextCtrl(Panel3, ID_TEXTCTRL16, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY, wxDefaultValidator, _T("ID_TEXTCTRL16"));
-    FlexGridSizer12->Add(TextCtrlDealyMotor, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    TextCtrlDelayMotor = new wxTextCtrl(Panel3, ID_TEXTCTRL16, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY, wxDefaultValidator, _T("ID_TEXTCTRL16"));
+    FlexGridSizer12->Add(TextCtrlDelayMotor, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText8 = new wxStaticText(Panel3, ID_STATICTEXT9, _("Delay E/S (drf):"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT9"));
     FlexGridSizer12->Add(StaticText8, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     TextCtrlDelayRead = new wxTextCtrl(Panel3, ID_TEXTCTRL11, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY, wxDefaultValidator, _T("ID_TEXTCTRL11"));
@@ -479,6 +479,8 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON9,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton9Click);
     Connect(ID_GRID2,wxEVT_GRID_CELL_LEFT_CLICK,(wxObjectEventFunction)&serialcomFrame::OnGridJoyCellLeftClick);
     Connect(ID_CHOICE3,wxEVT_COMMAND_CHOICE_SELECTED,(wxObjectEventFunction)&serialcomFrame::OnChoiceProgram);
+    Connect(ID_TEXTCTRL10,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&serialcomFrame::OnTextCtrVelEscalaText);
+    Connect(ID_TEXTCTRL10,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&serialcomFrame::OnTextCtrlVelEscalaTurnTextEnter);
     Connect(ID_BUTTON6,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton6Click);
     Connect(ID_BUTTON7,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton7Click);
     Connect(ID_BUTTON8,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&serialcomFrame::OnButton8Click);
@@ -970,4 +972,14 @@ void serialcomFrame::OnNotebook1PageChanged(wxNotebookEvent& event)
 
 void serialcomFrame::OnTextCtrl4TextEnter(wxCommandEvent& event)
 {
+}
+
+void serialcomFrame::OnTextCtrVelEscalaText(wxCommandEvent& event)
+{
+}
+
+void serialcomFrame::OnTextCtrlVelEscalaTurnTextEnter(wxCommandEvent& event)
+{
+    Log->AppendText(TextCtrlVelEscalaTurn->GetValue());
+    MbsBot::getInstance()->enviaVar(NOME_VEL_ESCALA, atoi(TextCtrlVelEscalaTurn->GetValue().mb_str(wxConvUTF8)));
 }

@@ -1,4 +1,5 @@
-/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
+
+/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -18,12 +19,37 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
+#include "protocolo.h"
+
 #define VERSAO_PLACA 22
+
+#define SERIALX Serial
+
+#define DFT_PROGRAMA PRG_RC_SERIAL
+#define DFT_DELAY_ES  1
+#define DFT_FREIO_MAO 0
+
+#define MOTOR_ACEL      255
+#define MOTOR_CENTRO      0
+
+#define DFT_VEL_MAX     100
+#define DFT_VEL_ESCALA  100
+#define DFT_VEL_REFRESH   1
+#define DFT_BALANCO       0
+
+#define DFT_PID_P             10
+#define DFT_PID_I            300
+#define DFT_PID_D           1500
+#define DFT_PID_DEBOUNCE      30
+#define DFT_PID_MAX_MV       200
+#define DFT_PID_LIM_P       NUM_IR_TRACK
+#define DFT_PID_LIM_I      10000
+#define DFT_PID_LIM_D       1000
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
 
-// inverte direcao de giro dos motores
+// inverte sentido dos motores
 #define MOTOR_ESQ_INV 0
 #define MOTOR_DIR_INV 0
 #define MOTOR_E_T_INV 0
@@ -53,12 +79,9 @@
 #define NUM_SENSORES    6
 
 //#define LINE_FOLLOWER
-
-#ifdef LINE_FOLLOWER
-    #define NUM_IR_TRACK		5
-    #define PINO_TRACK_0 1
+#define NUM_IR_TRACK		5
+#define PINO_TRACK_0 1
     // ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
-#endif
 
 // http://arduino.cc/en/Reference/Tone
 // Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).

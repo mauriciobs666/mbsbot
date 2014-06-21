@@ -98,6 +98,8 @@ private:
     void OnGridJoyCellLeftClick(wxGridEvent& event);
     void OnNotebook1PageChanged(wxNotebookEvent& event);
     void OnTextCtrl4TextEnter(wxCommandEvent& event);
+    void OnTextCtrVelEscalaText(wxCommandEvent& event);
+    void OnTextCtrlVelEscalaTurnTextEnter(wxCommandEvent& event);
     //*)
 
     //(*Identifiers(serialcomFrame)
@@ -201,6 +203,7 @@ private:
     wxChoice* ChoicePrg;
     wxTextCtrl* TextCtrlPan;
     wxButton* Button14;
+    wxTextCtrl* TextCtrlDelayMotor;
     wxStaticText* StaticText8;
     wxStaticText* StaticText11;
     wxTextCtrl* TextCtrlKp;
@@ -209,12 +212,12 @@ private:
     wxStaticText* StaticText3;
     wxGrid* Grid1;
     wxTextCtrl* TextCtrlDelayInch;
-    wxTextCtrl* TextCtrlDealyMotor;
     wxButton* Button2;
     wxPanel* Panel6;
     wxPanel* Panel3;
     wxTextCtrl* TextCtrlKd;
     wxButton* Button6;
+    wxTextCtrl* TextCtrlVelEscalaTurn;
     wxButton* Button10;
     wxToolBarToolBase* ToolBarItem1;
     wxTextCtrl* TextCtrlDelayRead;
@@ -231,7 +234,6 @@ private:
     wxSlider* SliderRodaEsquerda;
     wxTextCtrl* TextCtrl1;
     wxStaticText* StaticText12;
-    wxTextCtrl* TextCtrlDelayTurn;
     wxPanel* Panel2;
     wxSlider* SliderPan;
     wxTextCtrl* TextCtrlRodaDireita;

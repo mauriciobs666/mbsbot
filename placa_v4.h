@@ -1,5 +1,5 @@
 
-/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -30,20 +30,20 @@
 #define DFT_FREIO_MAO 0
 
 #define MOTOR_ACEL      255
-#define MOTOR_CENTRO    0
+#define MOTOR_CENTRO      0
 
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA  100
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
 
-#define DFT_PID_P           10
-#define DFT_PID_I           300
+#define DFT_PID_P             10
+#define DFT_PID_I            300
 #define DFT_PID_D           1500
-#define DFT_PID_DEBOUNCE    30
-#define DFT_PID_MAX_MV      200
+#define DFT_PID_DEBOUNCE      30
+#define DFT_PID_MAX_MV       200
 #define DFT_PID_LIM_P       NUM_IR_TRACK
-#define DFT_PID_LIM_I       10000
+#define DFT_PID_LIM_I      10000
 #define DFT_PID_LIM_D       1000
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
@@ -55,10 +55,12 @@
 #define MOTOR_E_T_INV 0
 #define MOTOR_D_T_INV 0
 
+// canal 1
 #define PINO_MOTOR_ESQ  	7
 #define PINO_MOTOR_ESQ_N	8
 #define PINO_MOTOR_ESQ_PWM	6
 
+// canal 2
 #define PINO_MOTOR_DIR      9
 #define PINO_MOTOR_DIR_N    12
 #define PINO_MOTOR_DIR_PWM	5

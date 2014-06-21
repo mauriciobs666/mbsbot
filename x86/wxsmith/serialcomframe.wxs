@@ -279,8 +279,9 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL10" variable="TextCtrlDelayTurn" member="yes">
-														<style>wxTE_READONLY</style>
+													<object class="wxTextCtrl" name="ID_TEXTCTRL10" variable="TextCtrlVelEscalaTurn" member="yes">
+														<handler function="OnTextCtrVelEscalaText" entry="EVT_TEXT" />
+														<handler function="OnTextCtrlVelEscalaTurnTextEnter" entry="EVT_TEXT_ENTER" />
 													</object>
 													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
@@ -311,7 +312,7 @@
 													<option>1</option>
 												</object>
 												<object class="sizeritem">
-													<object class="wxTextCtrl" name="ID_TEXTCTRL16" variable="TextCtrlDealyMotor" member="yes">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL16" variable="TextCtrlDelayMotor" member="yes">
 														<style>wxTE_READONLY</style>
 													</object>
 													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
