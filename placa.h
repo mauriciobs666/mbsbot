@@ -23,7 +23,7 @@
 
 #define VERSAO_PLACA 4
 
-#define SERIALX Serial
+#define SERIALX Serial1
 
 #define DFT_PROGRAMA PRG_RC_SERIAL
 #define DFT_DELAY_ES  1
@@ -93,10 +93,10 @@
 //#define WIICHUCK_POWER
 
 // RADIO CONTROLE
-//#define PINO_JOY_X      2
-//#define PINO_JOY_Y      3
+#define PINO_JOY_X      2
+#define PINO_JOY_Y      3
 //#define PINO_JOY_Z      17
 //#define PINO_JOY_R      18
-//#define PINO_JOY_SW1    4
+#define PINO_JOY_SW1    4
 
 #endif // BOARD_H_INCLUDED
