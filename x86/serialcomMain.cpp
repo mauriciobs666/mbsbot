@@ -140,7 +140,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     wxFlexGridSizer* FlexGridSizer11;
     wxStaticBoxSizer* StaticBoxSizer5;
 
-    Create(parent, wxID_ANY, _("MBSBOT - (c) 2010-2013 GPL - Mauricio Bieze Stefani"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+    Create(parent, wxID_ANY, _("MBSBOT - (c) 2010-2014 GPL - Mauricio Bieze Stefani"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     SetClientSize(wxSize(800,600));
     wxFont thisFont = wxSystemSettings::GetFont(wxSYS_SYSTEM_FONT);
     if ( !thisFont.Ok() ) thisFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);

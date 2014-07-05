@@ -18,8 +18,8 @@
 /*
 ATMEGA1280 - placa_v4.h
 
-Sketch uses 25.786 bytes (20%) of program storage space. Maximum is 126.976 bytes.
-Global variables use 2.361 bytes (28%) of dynamic memory, leaving 5.831 bytes for local variables. Maximum is 8.192 bytes.
+O sketch usa 26.788 bytes (21%) de espaco de armazenamento para programas. O maximo sao 126.976 bytes.
+Variaveis globais usam 2.010 bytes (24%) de memoria dinamica, deixando 6.182 bytes para variaveis locais. O maximo sao 8.192 bytes.
 
 ATMEGA328 - placa_v942.h
 
@@ -1264,8 +1264,7 @@ public:
         pid.zera();
 
         nGrupos = 0;
-        //tamMaior = 0;
-        inicioCorrida = fimDaVolta = debounce = 0;
+        tInicio = tFim = debounce = 0;
         rodaEsq = rodaDir = 0;
         marcaEsq = marcaDir = estadoLed = false;
         estadoLed = buscaInicioVolta = true;
@@ -1282,7 +1281,10 @@ public:
         {
             calibrar();
             if( ! calibrado() )
+            {
+                SERIALX.println("Erro, nao foi possivel calibrar");
                 return;
+            }
         }
 
         pid.cfg = &eeprom.dados.pid[ PID_CORRIDA ];
@@ -1292,8 +1294,8 @@ public:
     PID pid;
     int rodaEsq;
     int rodaDir;
-    unsigned long inicioCorrida;
-    unsigned long fimDaVolta;
+    unsigned long tInicio;
+    unsigned long tFim;
     unsigned long debounce;
     bool sensoresBool[ NUM_IR_TRACK ];
     bool debounceArray[ NUM_IR_TRACK ];
@@ -1303,7 +1305,6 @@ public:
     bool estadoLed;
 
     int nGrupos;
-    //int tamMaior;
 
     class Grupo
     {
@@ -1314,10 +1315,22 @@ public:
         int tamanho;
         Grupo()
         {}
+        bool intersecciona( Grupo &b )
+        {
+            // expande um sensor ( 2*s+1 ) pra cada lado
+            int pmin = pontoMin > 1 ? pontoMin - 2 : pontoMin;
+            int pmax = pontoMax < 2 * NUM_IR_TRACK - 1 ? pontoMax + 2 : pontoMax;
+
+            // se minimo ou maximo de b estiverem dentro do range
+            if( ( b.pontoMin >= pmin && b.pontoMin <= pmax ) || ( b.pontoMax >= pmin && b.pontoMax <= pmax ) )
+                return true;
+
+            return false;
+        }
         void print()
         {
             #ifdef TRACE_LF
-                SERIALX.print(" m ");
+                SERIALX.print("grp m ");
                 SERIALX.print((int)pontoMedio);
                 SERIALX.print(" i ");
                 SERIALX.print((int)pontoMin);
@@ -1334,7 +1347,6 @@ public:
     void refresh()
     {
         nGrupos = 0;
-        //tamMaior = 0;
 
         for(int sb = 0; sb < NUM_IR_TRACK; sb++)
             sensoresBool[sb] = sensores[ PINO_TRACK_0 + sb ].refresh().getBool();
@@ -1343,28 +1355,23 @@ public:
         {
             if( sensoresBool[s] )
             {
-                int peso = 2*s + 1;
+                Grupo grp;
 
-                grupos[ nGrupos ].pontoMin = peso;
-                grupos[ nGrupos ].pontoMedio = peso;
-                grupos[ nGrupos ].pontoMax = peso;
-                grupos[ nGrupos ].tamanho = 1;
+                // e.g. os pesos p/ 6 sensores seriam { 1, 3, 5, 7, 9, 11 }
+                grp.pontoMin = grp.pontoMax = 2*s + 1;
+                grp.tamanho = 1;
 
-                // agrupa enquanto o proximo for "trilho"
+                // agrupa enquanto o proximo for true
                 while( ( s < NUM_IR_TRACK-1 ) && sensoresBool[ s + 1 ] )
                 {
                     s++;
-                    peso = 2*s + 1;
-                    grupos[ nGrupos ].pontoMax = peso;
-                    grupos[ nGrupos ].pontoMedio += peso;
-                    grupos[ nGrupos ].tamanho++;
+                    grp.pontoMax = 2*s + 1;
+                    grp.tamanho++;
                 }
 
-                grupos[ nGrupos ].pontoMedio /= grupos[ nGrupos ].tamanho;
+                grp.pontoMedio = ( grp.pontoMin + grp.pontoMax ) / 2;
 
-                //if( grupos[ nGrupos ].tamanho > tamMaior )
-                //    tamMaior = grupos[ nGrupos ].tamanho;
-
+                grupos[ nGrupos ] = grp;
                 nGrupos++;
             }
         }
@@ -1394,16 +1401,17 @@ void LineFollower::loop()
 {
     bool traceLF = false;
 
-    if( fimDaVolta && agora > fimDaVolta )
+    if( tFim && agora > tFim )
     {
-        fimDaVolta = 0;
+        tFim = 0;
         drive.parar();
         drive.refresh( true );
 
-        SERIALX.print("Lap:");
-        SERIALX.print(int((agora-inicioCorrida)/1000));
+        SERIALX.print("Lap: ");
+        SERIALX.print(int((agora-tInicio)/1000));
         SERIALX.println("s");
 
+        // pisca LED por 2,25s
         for( int l = 0; l < 15; l ++ )
         {
             delay(50);
@@ -1422,30 +1430,38 @@ void LineFollower::loop()
 
         for( int ig = 0 ; ig < nGrupos ; ig++ )
         {
-            if( grupos[ig].tamanho < (NUM_IR_TRACK/3) )
+            if( grupos[ig].tamanho < (NUM_IR_TRACK/3) ) // ignora cruzamentos e marcacoes
             {
-                int distancia = abs( grupos[ig].pontoMedio - trilho.pontoMedio );
-
-                if( distancia < distEleito )
+                if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
                 {
-                    eleito = ig;
-                    distEleito = distancia;
+                    int distancia = abs( grupos[ig].pontoMedio - trilho.pontoMedio );
+
+                    if( distancia < distEleito )
+                    {
+                        // close enough :-)
+                        eleito = ig;
+                        distEleito = distancia;
+                    }
                 }
             }
         }
 
         if( eleito >= 0 )
+        {
+
             trilho = grupos[ eleito ];
 
-        for( int ig = 0 ; ig < nGrupos ; ig++ )
-        {
-            if( ig != eleito )
+            for( int ig = 0 ; ig < nGrupos ; ig++ )
             {
-                if( ( grupos[ig].pontoMax + 2 ) < trilho.pontoMin )
-                    marcaEsq = true;
+                if( ig != eleito )
+                {
+                    // minimo de 2 sensores de distancia i.e 2 * peso
+                    if( ( grupos[ig].pontoMax + 2*2 ) < trilho.pontoMin )
+                        marcaEsq = true;
 
-                if( ( trilho.pontoMax + 2 ) < grupos[ig].pontoMin )
-                    marcaDir = true;
+                    if( ( trilho.pontoMax + 2*2 ) < grupos[ig].pontoMin )
+                        marcaDir = true;
+                }
             }
         }
 
@@ -1484,12 +1500,12 @@ void LineFollower::loop()
                     #endif
                     if( buscaInicioVolta )
                     {
-                        inicioCorrida = agora;
+                        tInicio = agora;
                         buscaInicioVolta = false;
                     }
                     else
                     {
-                        fimDaVolta = agora; // + 500;
+                        tFim = agora; // + 500;
                     }
                 }
                 marcaEsq = marcaDir = false;

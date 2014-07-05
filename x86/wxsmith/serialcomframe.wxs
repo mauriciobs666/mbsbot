@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <wxsmith>
 	<object class="wxFrame" name="serialcomFrame">
-		<title>MBSBOT - (c) 2010-2013 GPL - Mauricio Bieze Stefani</title>
+		<title>MBSBOT - (c) 2010-2014 GPL - Mauricio Bieze Stefani</title>
 		<size>800,600</size>
 		<font>
 			<sysfont>wxSYS_SYSTEM_FONT</sysfont>
