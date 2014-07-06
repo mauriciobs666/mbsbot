@@ -1787,9 +1787,9 @@ int compVar( const void *a, const void *b )
     return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_NOME );
 }
 
+//#define TRACE_INTERPRETADOR
 class Interpretador
 {
-    #define TRACE_INTERPRETADOR
 public:
     Variavel var[NUM_VARS];
     char nvars;
@@ -1809,29 +1809,52 @@ public:
     {
         Variavel nova( tipo, nome, dados, tam );
 
-        if( ! buscaVar( nome ) && nvars < NUM_VARS-1 )
+        #ifdef TRACE_INTERPRETADOR
+        SERIALX.print( "declaraVar: " );
+        SERIALX.print( nome );
+        #endif // TRACE_INTERPRETADOR
+
+        if( buscaVar( nome ) )
         {
-            int elem = 0;
-            if( nvars )
-            {
-                // insere ordenado no array
-                for( elem = nvars-1; elem > 0 ; elem-- )
-                    if( compVar( &nova, &var[elem-1] ) < 0 )
-                        var[elem] = var[elem-1];
-                    else
-                        break;
-            }
-            var[elem] = nova;
-            nvars++;
-            return &var[elem];
+            #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "ja existe" );
+            #endif // TRACE_INTERPRETADOR
+
+            return NULL;
         }
-        return NULL;
+
+        if( ! ( nvars < NUM_VARS-1 ) )
+        {
+            #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "array cheio" );
+            #endif // TRACE_INTERPRETADOR
+
+            return NULL;
+        }
+
+        int elem = 0;
+        if( nvars )
+        {
+            // insere ordenado no array
+            for( elem = nvars; elem > 0 ; elem-- )
+                if( compVar( &nova, &var[elem-1] ) < 0 )
+                    var[elem] = var[elem-1];
+                else
+                    break;
+        }
+        var[elem] = nova;
+        nvars++;
+
+        #ifdef TRACE_INTERPRETADOR
+        SERIALX.print( "criada pos " );
+        SERIALX.println( elem );
+        #endif // TRACE_INTERPRETADOR
+
+        return &var[elem];
     }
 
     Interpretador() : nvars(0), linha(NULL)
     {
-//        for( int cx = 0; cx < NUM_VARS; cx++ )
-//            vars[cx] = 0;
     }
 
     void eval( char *lnh )
@@ -1878,7 +1901,7 @@ private:
         enum Erros rc = SUCESSO;
 
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "evalAtribuicao" );
+        SERIALX.println( "evalAtribuicao" );
         #endif // TRACE_INTERPRETADOR
 
         if( tipoToken == NOME )
@@ -1960,7 +1983,7 @@ private:
     Erros evalExpressao( long *resultado )
     {
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "evalExpressao" );
+        SERIALX.println( "evalExpressao" );
         #endif // TRACE_INTERPRETADOR
 
         long temp;

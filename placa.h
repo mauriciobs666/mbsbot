@@ -23,7 +23,7 @@
 
 #define VERSAO_PLACA 4
 
-#define SERIALX Serial
+#define SERIALX Serial1
 
 #define DFT_PROGRAMA  1 /* PRG_RC_SERIAL = 1 */
 #define DFT_DELAY_ES  1
