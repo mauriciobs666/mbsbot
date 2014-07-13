@@ -100,6 +100,7 @@ private:
     void OnTextCtrl4TextEnter(wxCommandEvent& event);
     void OnTextCtrVelEscalaText(wxCommandEvent& event);
     void OnTextCtrlVelEscalaTurnTextEnter(wxCommandEvent& event);
+    void OnButton13Click(wxCommandEvent& event);
     //*)
 
     //(*Identifiers(serialcomFrame)
@@ -129,6 +130,8 @@ private:
     static const long ID_TEXTCTRL16;
     static const long ID_STATICTEXT9;
     static const long ID_TEXTCTRL11;
+    static const long ID_STATICTEXT13;
+    static const long ID_TEXTCTRL17;
     static const long ID_STATICTEXT10;
     static const long ID_TEXTCTRL12;
     static const long ID_STATICTEXT11;
@@ -140,6 +143,11 @@ private:
     static const long ID_BUTTON8;
     static const long ID_BUTTON12;
     static const long ID_PANEL3;
+    static const long ID_STATICTEXT14;
+    static const long ID_BUTTON13;
+    static const long ID_BUTTON15;
+    static const long ID_BUTTON16;
+    static const long ID_PANEL7;
     static const long ID_SLIDER1;
     static const long ID_SLIDER2;
     static const long ID_TEXTCTRL3;
@@ -192,9 +200,11 @@ private:
     wxNotebook* Notebook1;
     wxToolBarToolBase* ToolBarItem3;
     wxTextCtrl* TextCtrlTilt;
+    wxStaticText* StaticText13;
     wxStaticText* StaticText2;
     wxPanel* Panel4;
     wxCheckBox* CheckBoxRXdata;
+    wxStaticText* StaticText14;
     wxSlider* SliderTilt;
     wxButton* Button1;
     wxCheckBox* CheckBoxAutoRefresh;
@@ -223,12 +233,14 @@ private:
     wxTextCtrl* TextCtrlDelayRead;
     wxButton* Button11;
     wxButton* Button5;
+    wxTextCtrl* TextCtrlDelayDeb;
     wxCheckBox* CheckBoxHandBrake;
     wxTextCtrl* TextCtrlRoll;
     wxButton* Button3;
     wxStaticText* StaticText5;
     wxButton* Button7;
     wxStaticText* StaticText7;
+    wxPanel* Panel7;
     wxStatusBar* StatusBar1;
     wxButton* Button9;
     wxSlider* SliderRodaEsquerda;
@@ -237,8 +249,11 @@ private:
     wxPanel* Panel2;
     wxSlider* SliderPan;
     wxTextCtrl* TextCtrlRodaDireita;
+    wxButton* Button15;
     wxTextCtrl* TextCtrlKi;
+    wxButton* Button13;
     wxStaticText* StaticText4;
+    wxButton* Button16;
     wxChoice* Choice1;
     wxToolBarToolBase* ToolBarItem2;
     wxSlider* SliderRodaDireita;

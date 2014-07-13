@@ -45,6 +45,7 @@
 #define DFT_PID_LIM_P       NUM_IR_TRACK
 #define DFT_PID_LIM_I      10000
 #define DFT_PID_LIM_D       1000
+#define DFT_PID_ZACC       false
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1

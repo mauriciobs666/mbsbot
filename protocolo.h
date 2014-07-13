@@ -99,7 +99,7 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 */
 #define NOME_PROGRAMA "p"    // enum Programas sendo executado
 
-#define NOME_AS       "as"	// todas entradas analogicas
+#define NOME_AS       "as"   // todas entradas analogicas
 #define NOME_FREIO    "fm"   // freio de mao
 
 #define NOME_RODA_ESQ "me"    // motor da roda esquerda

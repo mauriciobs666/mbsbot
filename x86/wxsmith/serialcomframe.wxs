@@ -280,6 +280,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxTextCtrl" name="ID_TEXTCTRL10" variable="TextCtrlVelEscalaTurn" member="yes">
+														<style>wxTE_PROCESS_ENTER</style>
 														<handler function="OnTextCtrVelEscalaText" entry="EVT_TEXT" />
 														<handler function="OnTextCtrlVelEscalaTurnTextEnter" entry="EVT_TEXT_ENTER" />
 													</object>
@@ -331,6 +332,20 @@
 													<object class="wxTextCtrl" name="ID_TEXTCTRL11" variable="TextCtrlDelayRead" member="yes">
 														<style>wxTE_READONLY</style>
 													</object>
+													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT13" variable="StaticText13" member="yes">
+														<label>Delay debounce (deb):</label>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL17" variable="TextCtrlDelayDeb" member="yes" />
 													<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 													<border>5</border>
 													<option>1</option>
@@ -410,16 +425,16 @@
 												<label>Salvar</label>
 												<handler function="OnButton6Click" entry="EVT_BUTTON" />
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON7" variable="Button7" member="yes">
-												<label>Carregar</label>
+												<label>Desfazer</label>
 												<handler function="OnButton7Click" entry="EVT_BUTTON" />
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -428,7 +443,7 @@
 												<label>Default</label>
 												<handler function="OnButton8Click" entry="EVT_BUTTON" />
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -437,7 +452,7 @@
 												<label>Refresh</label>
 												<handler function="OnButton12Click" entry="EVT_BUTTON" />
 											</object>
-											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 											<border>5</border>
 											<option>1</option>
 										</object>
@@ -449,6 +464,74 @@
 							</object>
 						</object>
 						<label>EEPROM</label>
+					</object>
+					<object class="notebookpage">
+						<object class="wxPanel" name="ID_PANEL7" variable="Panel7" member="yes">
+							<object class="wxFlexGridSizer" variable="FlexGridSizer9" member="no">
+								<cols>3</cols>
+								<object class="sizeritem">
+									<object class="wxStaticBoxSizer" variable="StaticBoxSizer2" member="no">
+										<label>Line follower</label>
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer3" member="no">
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT14" variable="StaticText14" member="yes">
+														<label>P = constrain( erro * Kp, +/- limP ) &#x0A;I = constrain( acc, +/- limI ) / Ki&#x0A;D =&#x0A;MV = constrain( P + I + D, +/- maxMV )</label>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+									</object>
+									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
+								<object class="sizeritem">
+									<object class="wxStaticBoxSizer" variable="StaticBoxSizer15" member="no">
+										<label>Controles</label>
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxButton" name="ID_BUTTON13" variable="Button13" member="yes">
+												<label>Salvar</label>
+												<handler function="OnButton6Click" entry="EVT_BUTTON" />
+											</object>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxButton" name="ID_BUTTON15" variable="Button15" member="yes">
+												<label>Desfazer</label>
+												<handler function="OnButton7Click" entry="EVT_BUTTON" />
+											</object>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxButton" name="ID_BUTTON16" variable="Button16" member="yes">
+												<label>Refresh</label>
+												<handler function="OnButton12Click" entry="EVT_BUTTON" />
+											</object>
+											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+									</object>
+									<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<option>1</option>
+								</object>
+							</object>
+						</object>
+						<label>PID</label>
 					</object>
 					<object class="notebookpage">
 						<object class="wxPanel" name="ID_PANEL2" variable="Panel2" member="yes">
@@ -541,6 +624,7 @@
 										<object class="sizeritem">
 											<object class="wxButton" name="ID_BUTTON2" variable="Button2" member="yes">
 												<label>Refresh</label>
+												<size>110,27</size>
 												<handler function="OnButton2Click" entry="EVT_BUTTON" />
 											</object>
 											<flag>wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -843,7 +927,7 @@
 								</object>
 								<object class="sizeritem">
 									<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
-										<label>&#x0A;Copyright (C) 2010-2013 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</label>
+										<label>&#x0A;Copyright (C) 2010-2014 - Mauricio Bieze Stefani&#x0A;&#x0A;MBSBOT is free software: you can redistribute it and/or modify&#x0A;it under the terms of the GNU General Public License as published by&#x0A;the Free Software Foundation, either version 3 of the License, or&#x0A;(at your option) any later version.&#x0A;&#x0A;MBSBOT is distributed in the hope that it will be useful,&#x0A;but WITHOUT ANY WARRANTY; without even the implied warranty of&#x0A;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#x0A;GNU General Public License for more details.&#x0A;&#x0A;You should have received a copy of the GNU General Public License&#x0A;along with MBSBOT.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#x0A;</label>
 									</object>
 									<flag>wxALL|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 									<border>5</border>

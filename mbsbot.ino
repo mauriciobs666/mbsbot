@@ -18,8 +18,8 @@
 /*
 ATMEGA1280 - placa_v4.h
 
-O sketch usa 26.788 bytes (21%) de espaco de armazenamento para programas. O maximo sao 126.976 bytes.
-Variaveis globais usam 2.010 bytes (24%) de memoria dinamica, deixando 6.182 bytes para variaveis locais. O maximo sao 8.192 bytes.
+Sketch uses 24,804 bytes (19%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 1,878 bytes (22%) of dynamic memory, leaving 6,314 bytes for local variables. Maximum is 8,192 bytes.
 
 ATMEGA328 - placa_v942.h
 
@@ -78,19 +78,29 @@ Servo roll;
 
 unsigned long agora = 0;
 
+// timeout de envios pela serial de status e sensores
+unsigned long ultimoSensores = 0;
+int delaySensores = -1;
+
+unsigned long ultimoStatus = 0;
+int delayStatus = -1;
+
 enum Erros primeiroErro = SUCESSO;
 
-char strBuffer[30];
-
-PROGMEM prog_char ErroSucesso[]     = "SUCESSO";
-PROGMEM prog_char ErroTamMaxCmd[]   = "ERRO_TAM_MAX_CMD";
-PROGMEM prog_char ErroPrgInval[]    = "ERRO_PRG_INVALIDO";
+char strBuffer[20];
+PROGMEM prog_char ErroSucesso[]    = "SUCESSO";
+PROGMEM prog_char ErroTamMaxCmd[]  = "ERRO_TAM_MAX_CMD";
+PROGMEM prog_char ErroPrgInval[]   = "ERRO_PRG_INVALIDO";
+PROGMEM prog_char ErroVarInval[]   = "ERRO_VAR_INVALIDA";
+PROGMEM prog_char ErroInpretador[] = "ERRO_INTERPRETADOR";
 
 PROGMEM const char *tabErros[] =
 {
     ErroSucesso,
     ErroTamMaxCmd,
-    ErroPrgInval
+    ErroPrgInval,
+    ErroVarInval,
+    ErroInpretador
 };
 
 void printErro( enum Erros err )
@@ -244,14 +254,10 @@ public:
 
         struct sDelays  // duracao (ms) de movimentos pra animacao
         {
-            // timeout de envios pela serial de status e sensores
-            int sensores;
-            int status;
-
             int ES; // intervalo de entrada/saida, leitura de sensores etc
             int motores; // intervalo de execucao entre os refresh de motores
 
-            int debounce; // debounce de cruzamento / marcaEs / marcaDir
+            int debounce; // debounce de cruzamento / marcaEsq / marcaDir
         } delays;
 
         ConfigPID pid[PID_N];
@@ -303,29 +309,27 @@ public:
             #endif
         #endif
 
-        dados.delays.sensores = -1;
-        dados.delays.status = -1;
         dados.delays.ES = DFT_DELAY_ES;
         dados.delays.motores = DFT_VEL_REFRESH;
         dados.delays.debounce = DFT_PID_DEBOUNCE;
 
-        dados.pid[ PID_CALIBRA ].Kp = 5;
-        dados.pid[ PID_CALIBRA ].Ki = 100;
-        dados.pid[ PID_CALIBRA ].Kd = 300;
-        dados.pid[ PID_CALIBRA ].limiteP = 200;
+        dados.pid[ PID_CALIBRA ].Kp      =     5;
+        dados.pid[ PID_CALIBRA ].Ki      =   100;
+        dados.pid[ PID_CALIBRA ].Kd      =   300;
+        dados.pid[ PID_CALIBRA ].limiteP =   200;
         dados.pid[ PID_CALIBRA ].limiteI = 32000;
-        dados.pid[ PID_CALIBRA ].limiteD = 100;
-        dados.pid[ PID_CALIBRA ].maxMV = 100;
-        dados.pid[ PID_CALIBRA ].zeraAcc = true;
+        dados.pid[ PID_CALIBRA ].limiteD =   100;
+        dados.pid[ PID_CALIBRA ].maxMV   =   100;
+        dados.pid[ PID_CALIBRA ].zeraAcc =  true;
 
-        dados.pid[ PID_CORRIDA ].Kp = DFT_PID_P;
-        dados.pid[ PID_CORRIDA ].Ki = DFT_PID_I;
-        dados.pid[ PID_CORRIDA ].Kd = DFT_PID_D;
+        dados.pid[ PID_CORRIDA ].Kp      = DFT_PID_P;
+        dados.pid[ PID_CORRIDA ].Ki      = DFT_PID_I;
+        dados.pid[ PID_CORRIDA ].Kd      = DFT_PID_D;
         dados.pid[ PID_CORRIDA ].limiteP = DFT_PID_LIM_P;
         dados.pid[ PID_CORRIDA ].limiteI = DFT_PID_LIM_I;
         dados.pid[ PID_CORRIDA ].limiteD = DFT_PID_LIM_D;
-        dados.pid[ PID_CORRIDA ].maxMV = DFT_PID_MAX_MV;
-        dados.pid[ PID_CORRIDA ].zeraAcc = false;
+        dados.pid[ PID_CORRIDA ].maxMV   = DFT_PID_MAX_MV;
+        dados.pid[ PID_CORRIDA ].zeraAcc = DFT_PID_ZACC;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
@@ -1109,25 +1113,8 @@ drive;
 #endif
 
 // ******************************************************************************
-//		FOTOVORO
+//   LINE FOLLOWER
 // ******************************************************************************
-void fotovoro()
-{
-    const int threshold = 25;
-
-    int ldrEsq = analogRead(0);
-    int ldrDir = analogRead(1);
-
-    // numeros menores significam mais luz
-
-    if ( (ldrDir - ldrEsq) > threshold )		// vira pra esq
-        drive.giraEsq();
-    else if ( (ldrEsq - ldrDir) > threshold )	// vira pra direita
-        drive.giraDir();
-    else
-        drive.praFrente();
-}
-
 
 class PID
 {
@@ -1186,15 +1173,14 @@ public:
 
         // D
 
-        bool erroMudou = false;
+        bool erroMudou = ( erro != erroAnterior );
 
-        if( erro != erroAnterior )
+        if( erroMudou )
         {
             tEanterior = tEatual;
             tEatual = agora;
             delta = erro - erroAnterior;
             erroAnterior = erro;
-            erroMudou = true;
         }
 
         int intervalo = tEatual - tEanterior;
@@ -1230,10 +1216,6 @@ public:
         SERIALX.println( MV );
     }
 };
-
-// ******************************************************************************
-//   LINE FOLLOWER
-// ******************************************************************************
 
 //#ifdef LINE_FOLLOWER
 #define TRACE_LF
@@ -1448,7 +1430,6 @@ void LineFollower::loop()
 
         if( eleito >= 0 )
         {
-
             trilho = grupos[ eleito ];
 
             for( int ig = 0 ; ig < nGrupos ; ig++ )
@@ -1465,7 +1446,8 @@ void LineFollower::loop()
             }
         }
 
-        if( nGrupos == 1 && grupos[0].tamanho < (NUM_IR_TRACK/3) )
+//        if( nGrupos == 1 && grupos[0].tamanho < (NUM_IR_TRACK/3) )
+        if( nGrupos == 1 && eleito >= 0 )
         {
             if( debounce && agora > debounce )
             {
@@ -1816,18 +1798,18 @@ public:
 
         if( buscaVar( nome ) )
         {
-            #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "ja existe" );
-            #endif // TRACE_INTERPRETADOR
-
+            //#ifdef TRACE_INTERPRETADOR
+            SERIALX.print( "declaraVar: ja existe " );
+            SERIALX.println( nome );
+            //#endif // TRACE_INTERPRETADOR
             return NULL;
         }
 
         if( ! ( nvars < NUM_VARS-1 ) )
         {
-            #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "array cheio" );
-            #endif // TRACE_INTERPRETADOR
+            //#ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "declaraVar: array cheio" );
+            //#endif // TRACE_INTERPRETADOR
 
             return NULL;
         }
@@ -1846,7 +1828,9 @@ public:
         nvars++;
 
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print( "criada pos " );
+        SERIALX.print( "declaraVar: " );
+        SERIALX.println( nome );
+        SERIALX.print( " criada pos " );
         SERIALX.println( elem );
         #endif // TRACE_INTERPRETADOR
 
@@ -1874,10 +1858,11 @@ public:
         long resultado = 0;
         enum Erros rc = evalAtribuicao( &resultado );
 
+        if( rc )
+            printErro( rc );
+
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print(" <- ");
-        SERIALX.print( (int) rc );
-        SERIALX.print(" = ");
+        SERIALX.print("resultado = ");
         SERIALX.println( resultado );
         #endif // TRACE_INTERPRETADOR
     }
@@ -2851,8 +2836,9 @@ void setup()
     interpretador.declaraVar( VAR_CHAR, NOME_VEL_ESCALA, &eeprom.dados.velEscala );
     interpretador.declaraVar( VAR_CHAR, NOME_FREIO,      &eeprom.dados.handBrake );
 
-    interpretador.declaraVar( VAR_INT, NOME_T_SE,    &eeprom.dados.delays.sensores );
-    interpretador.declaraVar( VAR_INT, NOME_T_ST,    &eeprom.dados.delays.status );
+    interpretador.declaraVar( VAR_INT, NOME_T_SE,    &delaySensores );
+    interpretador.declaraVar( VAR_INT, NOME_T_ST,    &delayStatus );
+
     interpretador.declaraVar( VAR_INT, NOME_T_RF,    &eeprom.dados.delays.ES );
     interpretador.declaraVar( VAR_INT, NOME_T_MOTOR, &eeprom.dados.delays.motores );
     interpretador.declaraVar( VAR_INT, NOME_T_DEB,   &eeprom.dados.delays.debounce );
@@ -2909,18 +2895,14 @@ void loop()
         }
     }
 
-    static unsigned long ultimoStatus = 0;
-    if( delaySemBlock(&ultimoStatus, eeprom.dados.delays.status) )
+    if( delaySemBlock(&ultimoStatus, delayStatus) )
     {
-        //SERIALX.println(agora);
         telnet.enviaStatus();
         //digitalWrite(PINO_LED, !digitalRead(PINO_LED));
     }
 
-    static unsigned long ultimoSensores = 0;
-    if( delaySemBlock(&ultimoSensores, eeprom.dados.delays.sensores) )
+    if( delaySemBlock(&ultimoSensores, delaySensores) )
     {
-        //SERIALX.println(agora);
         //telnet.enviaJoystick();
         telnet.enviaSensores();
         #ifdef WIICHUCK
@@ -2983,7 +2965,21 @@ void loop()
         break;
 
         case PRG_FOTOVORO:
-            fotovoro();
+        {
+            const int threshold = 25;
+
+            int ldrEsq = analogRead(0);
+            int ldrDir = analogRead(1);
+
+            // numeros menores significam mais luz
+
+            if ( (ldrDir - ldrEsq) > threshold )		// vira pra esq
+                drive.giraEsq();
+            else if ( (ldrEsq - ldrDir) > threshold )	// vira pra direita
+                drive.giraDir();
+            else
+                drive.praFrente();
+        }
         msExec = eeprom.dados.delays.ES;
         break;
 
@@ -3112,8 +3108,6 @@ void loop()
             SERIALX.write((analogRead(0) >> 2) & 0xFF);
         }
         msExec = eeprom.dados.delays.ES;
-        eeprom.dados.delays.sensores = 0;
-        eeprom.dados.delays.status = 0;
         break;
 
         case PRG_KNOB:
