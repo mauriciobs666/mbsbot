@@ -1859,7 +1859,12 @@ public:
         enum Erros rc = evalAtribuicao( &resultado );
 
         if( rc )
+        {
+            SERIALX.print( "eval( " );
+            SERIALX.print( lnh );
+            SERIALX.print( " ) => " );
             printErro( rc );
+        }
 
         #ifdef TRACE_INTERPRETADOR
         SERIALX.print("resultado = ");
@@ -1898,65 +1903,71 @@ private:
 
             getToken();
 
-            if( v && tipoToken == NULO )  // imprime valor da variavel
+            if( v )
             {
-                SERIALX.print( bkpToken );
-                SERIALX.print( " " );
-
-                switch( v->tipo )
+                if( tipoToken == NULO )  // imprime valor da variavel
                 {
-                case VAR_CHAR:
-                    SERIALX.println( (int) *( (char*) v->dados ) );
-                    return SUCESSO;
-                case VAR_INT:
-                    SERIALX.println( (int) *( (int* ) v->dados ) );
-                    return SUCESSO;
-                case VAR_LONG:
-                    SERIALX.println( (long) *( (long*) v->dados ) );
-                    return SUCESSO;
-                case VAR_BOOL:
-                    SERIALX.println( (bool) *( (bool*) v->dados ) );
-                    return SUCESSO;
-                default:
-                    return ERRO_INTERPRETADOR;
-                }
-            }
-            else if( token[0] == '=' )  // atribuicao
-            {
-                getToken();
-                rc = evalExpressao( resultado );
-                if( rc )
-                    return rc;
+                    SERIALX.print( bkpToken );
+                    SERIALX.print( " " );
 
-                if( v )
-                {
                     switch( v->tipo )
                     {
                     case VAR_CHAR:
-                        *( (char*) v->dados ) = *resultado;
+                        SERIALX.println( (int) *( (char*) v->dados ) );
                         return SUCESSO;
                     case VAR_INT:
-                        *( (int* ) v->dados ) = *resultado;
+                        SERIALX.println( (int) *( (int* ) v->dados ) );
                         return SUCESSO;
                     case VAR_LONG:
-                        *( (long*) v->dados ) = *resultado;
+                        SERIALX.println( (long) *( (long*) v->dados ) );
                         return SUCESSO;
                     case VAR_BOOL:
-                        *( (bool*) v->dados ) = *resultado;
+                        SERIALX.println( (bool) *( (bool*) v->dados ) );
                         return SUCESSO;
                     default:
                         return ERRO_INTERPRETADOR;
                     }
                 }
-                else
-                    return ERRO_VAR_INVALIDA;
+                else if( token[0] == '=' )  // atribuicao
+                {
+                    getToken();
+                    rc = evalExpressao( resultado );
+                    if( rc )
+                        return rc;
+
+                    if( v )
+                    {
+                        switch( v->tipo )
+                        {
+                        case VAR_CHAR:
+                            *( (char*) v->dados ) = *resultado;
+                            return SUCESSO;
+                        case VAR_INT:
+                            *( (int* ) v->dados ) = *resultado;
+                            return SUCESSO;
+                        case VAR_LONG:
+                            *( (long*) v->dados ) = *resultado;
+                            return SUCESSO;
+                        case VAR_BOOL:
+                            *( (bool*) v->dados ) = *resultado;
+                            return SUCESSO;
+                        default:
+                            return ERRO_INTERPRETADOR;
+                        }
+                    }
+                    else
+                        return ERRO_VAR_INVALIDA;
+                }
             }
             else
             {
+                /*
                 devolve();
                 strncpy( token, bkpToken, TAM_TOKEN );
                 tipoToken = NOME;
                 return evalExpressao( resultado );
+                */
+                return ERRO_VAR_INVALIDA;
             }
         }
         else
@@ -2263,32 +2274,6 @@ public:
                             else if(strcmp(dest, NOME_SERVO_Z) == 0)
                                 roll.write(valor);
                             #endif
-                            else if(strcmp(dest, NOME_PID) == 0)
-                            {
-                                if((tok = STRTOK(NULL, " ")))	// P
-                                {
-                                    eeprom.dados.pid[ valor ].Kp = atoi(tok);
-
-                                    if((tok = STRTOK(NULL, " ")))	// I
-                                    {
-                                        eeprom.dados.pid[ valor ].Ki = atoi(tok);
-
-                                        if((tok = STRTOK(NULL, " ")))	// D
-                                            eeprom.dados.pid[ valor ].Kd = atoi(tok);
-                                    }
-                                }
-                            }
-
-                            else if( (strcmp(dest, NOME_PID_LIM_P) == 0) && (tok = STRTOK(NULL, " ")) )
-                                eeprom.dados.pid[ valor ].limiteP = atoi(tok);
-                            else if( (strcmp(dest, NOME_PID_LIM_I) == 0) && (tok = STRTOK(NULL, " ")) )
-                                eeprom.dados.pid[ valor ].limiteI = atoi(tok);
-                            else if( (strcmp(dest, NOME_PID_LIM_D) == 0) && (tok = STRTOK(NULL, " ")) )
-                                eeprom.dados.pid[ valor ].limiteD = atoi(tok);
-                            else if( (strcmp(dest, NOME_PID_ZAC) == 0) && (tok = STRTOK(NULL, " ")) )
-                                eeprom.dados.pid[ valor ].zeraAcc = atoi(tok);
-                            else if( (strcmp(dest, NOME_PID_MMV) == 0) && (tok = STRTOK(NULL, " ")) )
-                                eeprom.dados.pid[ valor ].maxMV = atoi(tok);
                         }
                     }
                 }
@@ -2296,45 +2281,44 @@ public:
                 {
                     if((tok = STRTOK(NULL, " ")))	// segundo token eh o nome da variavel a ser lida
                     {
-                        SERIALX.print(tok);          // ecoa nome da variavel
-                        SERIALX.print(" ");
-
                         if(strcmp(tok, NOME_RODA_ESQ) == 0)
+                        {
+                            SERIALX.print(tok);          // ecoa nome da variavel
+                            SERIALX.print(" ");
                             SERIALX.println(drive.motorEsq.read());
+                        }
                         else if(strcmp(tok, NOME_RODA_DIR) == 0)
+                        {
+                            SERIALX.print(tok);          // ecoa nome da variavel
+                            SERIALX.print(" ");
                             SERIALX.println(drive.motorDir.read());
+                        }
                         #ifdef PINO_SERVO_PAN
                         else if(strcmp(tok, NOME_SERVO_X) == 0)
+                        {
+                            SERIALX.print(tok);          // ecoa nome da variavel
+                            SERIALX.print(" ");
                             SERIALX.println(pan.read());
+                        }
                         #endif
                         #ifdef PINO_SERVO_TILT
                         else if(strcmp(tok, NOME_SERVO_Y) == 0)
+                        {
+                            SERIALX.print(tok);          // ecoa nome da variavel
+                            SERIALX.print(" ");
                             SERIALX.println(tilt.read());
+                        }
                         #endif
                         #ifdef PINO_SERVO_ROLL
                         else if(strcmp(tok, NOME_SERVO_Z) == 0)
+                        {
+                            SERIALX.print(tok);          // ecoa nome da variavel
+                            SERIALX.print(" ");
                             SERIALX.println(roll.read());
+                        }
                         #endif
                         else if(strcmp(tok, NOME_AS) == 0)
-                            enviaSensores(false);
-                        else if(strcmp(tok, NOME_PID) == 0)
-                        {
-                            SERIALX.print(eeprom.dados.pid[ PID_CORRIDA ].Kp);
-                            SERIALX.print(" ");
-                            SERIALX.print(eeprom.dados.pid[ PID_CORRIDA ].Ki);
-                            SERIALX.print(" ");
-                            SERIALX.println(eeprom.dados.pid[ PID_CORRIDA ].Kd);
-                        }
-                        else if(strcmp(tok, NOME_PID_MMV) == 0)
-                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].maxMV);
-                        else if(strcmp(tok, NOME_PID_LIM_P) == 0)
-                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteP);
-                        else if(strcmp(tok, NOME_PID_LIM_I) == 0)
-                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteI);
-                        else if(strcmp(tok, NOME_PID_LIM_D) == 0)
-                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].limiteD);
-                        else if(strcmp(tok, NOME_PID_ZAC) == 0)
-                            SERIALX.println((int)eeprom.dados.pid[ PID_CORRIDA ].zeraAcc);
+                            enviaSensores(true);
                     }
                 }
                 else if(strcmp(tok, CMD_GRAVA) == 0)	// salva temporarios na EEPROM
@@ -2459,19 +2443,20 @@ public:
     {
         if(enviaComando)
         {
-            SERIALX.print( NOME_AS);
-            SERIALX.print(" ");
+            SERIALX.print( NOME_AS );
+            SERIALX.print( " " );
         }
         for (int x = 0; x < NUM_SENSORES; x++)
         {
             SERIALX.print( sensores[x].refresh().getValor() );
-            SERIALX.print(" ");
+            SERIALX.print( " " );
         }
-        SERIALX.println("");
-
+        SERIALX.println( "" );
+/*
         for( int x = 0; x < NUM_IR_TRACK; x++ )
             SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "|" : "_" );
         SERIALX.println("");
+*/
     }
 
     void enviaStatus(bool enviaComando = true)
@@ -2490,23 +2475,23 @@ public:
         SERIALX.print(drive.motorEsq.read());
         SERIALX.print(" ");
         SERIALX.print(drive.motorDir.read());
-        SERIALX.print(" ");
 		#ifdef RODAS_PWM_x4
-        SERIALX.print(drive2.motorEsq.read());
-        SERIALX.print(" ");
-        SERIALX.print(drive2.motorDir.read());
-        SERIALX.print(" ");
+            SERIALX.print(" ");
+            SERIALX.print(drive2.motorEsq.read());
+            SERIALX.print(" ");
+            SERIALX.print(drive2.motorDir.read());
 		#endif
         #ifdef PINO_SERVO_PAN
-            SERIALX.print(pan.read());
             SERIALX.print(" ");
+            SERIALX.print(pan.read());
         #endif
         #ifdef PINO_SERVO_TILT
-            SERIALX.print(tilt.read());
             SERIALX.print(" ");
+            SERIALX.print(tilt.read());
         #endif
         #ifdef PINO_SERVO_ROLL
-        SERIALX.print(roll.read());
+            SERIALX.print(" ");
+            SERIALX.print(roll.read());
         #endif
         SERIALX.println("");
     }
@@ -2847,6 +2832,17 @@ void setup()
     interpretador.declaraVar( VAR_INT, NOME_ACEL_ESQ, &eeprom.dados.motorEsq.aceleracao );
     interpretador.declaraVar( VAR_INT, NOME_ZERO_DIR, &eeprom.dados.motorDir.centro );
     interpretador.declaraVar( VAR_INT, NOME_ACEL_DIR, &eeprom.dados.motorDir.aceleracao );
+
+    interpretador.declaraVar( VAR_INT, NOME_PID_KP, &eeprom.dados.pid[ PID_CORRIDA ].Kp );
+    interpretador.declaraVar( VAR_INT, NOME_PID_KI, &eeprom.dados.pid[ PID_CORRIDA ].Ki );
+    interpretador.declaraVar( VAR_INT, NOME_PID_KD, &eeprom.dados.pid[ PID_CORRIDA ].Kd );
+
+    interpretador.declaraVar( VAR_INT, NOME_PID_LIM_P, &eeprom.dados.pid[ PID_CORRIDA ].limiteP );
+    interpretador.declaraVar( VAR_INT, NOME_PID_LIM_I, &eeprom.dados.pid[ PID_CORRIDA ].limiteI );
+    interpretador.declaraVar( VAR_INT, NOME_PID_LIM_D, &eeprom.dados.pid[ PID_CORRIDA ].limiteD );
+
+    interpretador.declaraVar( VAR_INT,  NOME_PID_MMV, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
+    interpretador.declaraVar( VAR_BOOL, NOME_PID_ZAC, &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
 }
 
 // ******************************************************************************

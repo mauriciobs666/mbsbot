@@ -36,7 +36,7 @@ Formato geral do pacote:
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
 #define TAM_NOME 5      // bytes, tamanho max de um nome de variavel
-#define NUM_VARS 20      // array de variaveis do interpretador
+#define NUM_VARS 25     // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */
@@ -125,6 +125,9 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_T_DEB    "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 
 #define NOME_PID       "pid"  // coeficientes do algoritmo de PID
+#define NOME_PID_KP    "kp"   //
+#define NOME_PID_KI    "ki"   //
+#define NOME_PID_KD    "kd"   //
 #define NOME_PID_LIM_P "lmp"  // limite proporcional
 #define NOME_PID_LIM_I "lmi"  // limite acumulador
 #define NOME_PID_LIM_D "lmd"  // limite derivada
