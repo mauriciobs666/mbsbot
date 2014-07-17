@@ -17,12 +17,38 @@
 
 #include "MbsBot.h"
 
+#define NUM_SENSORES 16
+
 MbsBot *MbsBot::instancia = 0;
 
 MbsBot::MbsBot()
 {
 	memset(serialPortDevice, 0, sizeof(serialPortDevice));
-	sensores = std::vector<int>(16);
+	sensores = std::vector<int>(NUM_SENSORES);
+    programa = 0;
+    erro = 0;
+    freioMao = 0;
+    rodaEsquerda = 0;
+    rodaDireita = 0;
+    rodaEsquerdaTraseira = 0;
+    rodaDireitaTraseira = 0;
+    servoPan = 0;
+    servoTilt = 0;
+    servoRoll = 0;
+    velMax = 0;
+    velEscala = 0;
+    balanco = 0;
+    delayRF = 0;
+    delayM = 0;
+    delayDeb = 0;
+    pidKP = 0;
+    pidKI = 0;
+    pidKD = 0;
+    pidLmp = 0;
+    pidLmi = 0;
+    pidLmd = 0;
+    pidMmv = 0;
+    pidZac = 0;
 }
 
 int MbsBot::init(const char *port, int baud)
@@ -150,7 +176,7 @@ char * MbsBot::recebe()
             else if(strcmp(tok, NOME_AS) == 0)	// todos sensores analogicos
             {
                 int s = 0;
-                while( (tok = strtok(NULL, " ")) )
+                while( (tok = strtok(NULL, " ")) && s < NUM_SENSORES )
                 {
                     sensores[s] = atoi(tok);
                     s++;
@@ -199,19 +225,75 @@ char * MbsBot::recebe()
                     }
                 }
             }
+            else if(strcmp(tok, NOME_VEL_MAX) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    velMax = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_VEL_ESCALA) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    velEscala = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_BALANCO) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    balanco = atoi(tok);
+            }
             else if(strcmp(tok, NOME_T_RF) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
-                    tempoRF = atoi(tok);
+                    delayRF = atoi(tok);
             }
-            else if(strcmp(tok, NOME_PID) == 0)
+            else if(strcmp(tok, NOME_T_MOTOR) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    delayM = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_T_DEB) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    delayDeb = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_KP) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
                     pidKP = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_KI) == 0)
+            {
                 if ( (tok = strtok(NULL, " ")) )
                     pidKI = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_KD) == 0)
+            {
                 if ( (tok = strtok(NULL, " ")) )
                     pidKD = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_LIM_P) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    pidLmp = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_LIM_I) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    pidLmi = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_LIM_D) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    pidLmd = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_MMV) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    pidMmv = atoi(tok);
+            }
+            else if(strcmp(tok, NOME_PID_ZAC) == 0)
+            {
+                if ( (tok = strtok(NULL, " ")) )
+                    pidZac = atoi(tok);
             }
         }
         return resposta;

@@ -124,10 +124,9 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_T_MOTOR  "dm"   // intervalo de refresh dos motores
 #define NOME_T_DEB    "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 
-#define NOME_PID       "pid"  // coeficientes do algoritmo de PID
-#define NOME_PID_KP    "kp"   //
-#define NOME_PID_KI    "ki"   //
-#define NOME_PID_KD    "kd"   //
+#define NOME_PID_KP    "kp"   // coeficientes do algoritmo de PID
+#define NOME_PID_KI    "ki"   //  "
+#define NOME_PID_KD    "kd"   //  "
 #define NOME_PID_LIM_P "lmp"  // limite proporcional
 #define NOME_PID_LIM_I "lmi"  // limite acumulador
 #define NOME_PID_LIM_D "lmd"  // limite derivada

@@ -63,15 +63,30 @@ class MbsBot
             // TODO (mbs#1#): pede todas vars
 
             pedeVar(NOME_PROGRAMA);
-            pedeVar(NOME_T_RF);
-            pedeVar(NOME_PID);
 
+            pedeVar(NOME_VEL_MAX);
+            pedeVar(NOME_VEL_ESCALA);
+            pedeVar(NOME_BALANCO);
+
+            pedeVar(NOME_T_MOTOR);
+            pedeVar(NOME_T_RF);
+            pedeVar(NOME_T_DEB);
+
+            pedeVar(NOME_PID_KP);
+            pedeVar(NOME_PID_KI);
+            pedeVar(NOME_PID_KD);
+            pedeVar(NOME_PID_LIM_P);
+            pedeVar(NOME_PID_LIM_I);
+            pedeVar(NOME_PID_LIM_D);
+            pedeVar(NOME_PID_MMV);
+            pedeVar(NOME_PID_ZAC);
+/*
             pedeVar(NOME_RODA_ESQ);
             pedeVar(NOME_RODA_DIR);
             pedeVar(NOME_SERVO_X);
             pedeVar(NOME_SERVO_Y);
             pedeVar(NOME_SERVO_Z);
-
+*/
             pedeVar(NOME_AS);
 
             status();
@@ -118,10 +133,20 @@ class MbsBot
 		int getServoTilt() { return servoTilt; }
 		int getServoRoll() { return servoRoll; }
 		int getSensor(int i) { return sensores[i]; }
-		int getTempoRF() { return tempoRF; }
+		int getVelMax() { return velMax; }
+		int getVelEscala() { return velEscala; }
+		int getBalanco() { return balanco; }
+		int getDelayRF() { return delayRF; }
+		int getDelayM() { return delayM; }
+		int getDelayDeb() { return delayDeb; }
 		int getPidKP() { return pidKP; }
 		int getPidKI() { return pidKI; }
 		int getPidKD() { return pidKD; }
+		int getPidLmp() { return pidLmp; }
+		int getPidLmi() { return pidLmi; }
+		int getPidLmd() { return pidLmd; }
+		int getPidMmv() { return pidMmv; }
+		int getPidZac() { return pidZac; }
 	private:
         int send(const char *command, int len=-1);
         char* receive();
@@ -132,6 +157,7 @@ class MbsBot
 		char resposta[SERIAL_BUFFER_SIZE];
 
 		//variaveis remotas
+		std::vector<int> sensores;
 		int programa;
 		int erro;
 		int freioMao;
@@ -142,11 +168,20 @@ class MbsBot
 		int servoPan;
 		int servoTilt;
 		int servoRoll;
-		std::vector<int> sensores;
-		int tempoRF;
+		int velMax;
+		int velEscala;
+		int balanco;
+		int delayRF;
+		int delayM;
+		int delayDeb;
 		int pidKP;
 		int pidKI;
 		int pidKD;
+		int pidLmp;
+		int pidLmi;
+		int pidLmd;
+		int pidMmv;
+		int pidZac;
 };
 
 #endif // MBSBOT_H

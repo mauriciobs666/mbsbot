@@ -1188,11 +1188,13 @@ public:
         if( (int) ( agora - tEatual ) > intervalo )
             intervalo = agora - tEatual;
 
-        if( intervalo > cfg->limiteD )
-            intervalo = cfg->limiteD;
-
         if( intervalo )
-            Derivada = ( cfg->Kd * delta ) / intervalo;
+        {
+            Derivada = constrain( ( cfg->Kd * delta ), -cfg->limiteD, cfg->limiteD );
+            Derivada /= intervalo;
+        }
+        else
+            Derivada = 0;
 
         MV = constrain( ( Proporcional + Integral + Derivada ), -cfg->maxMV , cfg->maxMV );
 
@@ -2493,7 +2495,7 @@ public:
             SERIALX.print(" ");
             SERIALX.print(roll.read());
         #endif
-        SERIALX.println("");
+        SERIALX.println(" ");
     }
 
     void enviaJoystick()
