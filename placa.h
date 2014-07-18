@@ -59,12 +59,12 @@
 // canal 1
 #define PINO_MOTOR_ESQ  	7
 #define PINO_MOTOR_ESQ_N	8
-#define PINO_MOTOR_ESQ_PWM	6
+#define PINO_MOTOR_ESQ_PWM	5
 
 // canal 2
 #define PINO_MOTOR_DIR      9
 #define PINO_MOTOR_DIR_N    12
-#define PINO_MOTOR_DIR_PWM	5
+#define PINO_MOTOR_DIR_PWM	6
 
 // economia de energia
 #define PINO_UNUSED_CNT 0

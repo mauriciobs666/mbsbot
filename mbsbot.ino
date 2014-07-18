@@ -316,8 +316,8 @@ public:
         dados.pid[ PID_CALIBRA ].Kp      =     5;
         dados.pid[ PID_CALIBRA ].Ki      =   100;
         dados.pid[ PID_CALIBRA ].Kd      =   300;
-        dados.pid[ PID_CALIBRA ].limiteP =   200;
-        dados.pid[ PID_CALIBRA ].limiteI = 32000;
+        dados.pid[ PID_CALIBRA ].limiteP =    50;
+        dados.pid[ PID_CALIBRA ].limiteI =   500;
         dados.pid[ PID_CALIBRA ].limiteD =   100;
         dados.pid[ PID_CALIBRA ].maxMV   =   100;
         dados.pid[ PID_CALIBRA ].zeraAcc =  true;
@@ -1271,8 +1271,19 @@ public:
             }
         }
 
-        pid.cfg = &eeprom.dados.pid[ PID_CORRIDA ];
-        eeprom.dados.programa = PRG_LINE_FOLLOW;
+        refresh();
+
+        if( nGrupos )
+        {
+            trilho = grupos[0];
+            pid.cfg = &eeprom.dados.pid[ PID_CORRIDA ];
+            eeprom.dados.programa = PRG_LINE_FOLLOW;
+        }
+        else
+        {
+                SERIALX.println("Erro, trilho nao encontrado");
+                return;
+        }
     }
 
     PID pid;
@@ -1860,6 +1871,7 @@ public:
         long resultado = 0;
         enum Erros rc = evalAtribuicao( &resultado );
 
+        #ifdef TRACE_INTERPRETADOR
         if( rc )
         {
             SERIALX.print( "eval( " );
@@ -1867,8 +1879,6 @@ public:
             SERIALX.print( " ) => " );
             printErro( rc );
         }
-
-        #ifdef TRACE_INTERPRETADOR
         SERIALX.print("resultado = ");
         SERIALX.println( resultado );
         #endif // TRACE_INTERPRETADOR
