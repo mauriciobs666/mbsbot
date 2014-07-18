@@ -1220,7 +1220,7 @@ public:
 };
 
 //#ifdef LINE_FOLLOWER
-#define TRACE_LF
+//#define TRACE_LF
 class LineFollower
 {
 public:
@@ -2667,7 +2667,7 @@ void trataJoystick()
 
         // poe no modo RC
         eeprom.dados.programa = PRG_RC_SERIAL;
-        eeprom.dados.velEscala = 60;
+        //eeprom.dados.velEscala = 60;
     }
 
     if(gamepad.botoesEdgeF & BT_X)

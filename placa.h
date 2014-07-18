@@ -33,19 +33,19 @@
 #define MOTOR_CENTRO      0
 
 #define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA  100
+#define DFT_VEL_ESCALA   80
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
 
 #define DFT_PID_P             10
-#define DFT_PID_I            300
-#define DFT_PID_D           1500
+#define DFT_PID_I          15000
+#define DFT_PID_D           3000
 #define DFT_PID_DEBOUNCE      30
 #define DFT_PID_MAX_MV       200
-#define DFT_PID_LIM_P       NUM_IR_TRACK
-#define DFT_PID_LIM_I      10000
-#define DFT_PID_LIM_D       1000
-#define DFT_PID_ZACC       false
+#define DFT_PID_LIM_P        200
+#define DFT_PID_LIM_I      32000
+#define DFT_PID_LIM_D      15000
+#define DFT_PID_ZACC        true
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
