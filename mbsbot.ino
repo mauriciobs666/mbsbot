@@ -229,6 +229,7 @@ typedef struct
     int limiteI;
     int limiteD;
     int maxMV;
+    int maxDT;
     bool zeraAcc;
 }
 ConfigPID;
@@ -320,6 +321,7 @@ public:
         dados.pid[ PID_CALIBRA ].limiteI =   500;
         dados.pid[ PID_CALIBRA ].limiteD =   100;
         dados.pid[ PID_CALIBRA ].maxMV   =   100;
+        dados.pid[ PID_CALIBRA ].maxDT   =    30;
         dados.pid[ PID_CALIBRA ].zeraAcc =  true;
 
         dados.pid[ PID_CORRIDA ].Kp      = DFT_PID_P;
@@ -329,6 +331,7 @@ public:
         dados.pid[ PID_CORRIDA ].limiteI = DFT_PID_LIM_I;
         dados.pid[ PID_CORRIDA ].limiteD = DFT_PID_LIM_D;
         dados.pid[ PID_CORRIDA ].maxMV   = DFT_PID_MAX_MV;
+        dados.pid[ PID_CORRIDA ].maxDT   = DFT_PID_MAX_DT;
         dados.pid[ PID_CORRIDA ].zeraAcc = DFT_PID_ZACC;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
@@ -1200,9 +1203,11 @@ public:
 
         long dT = tEatual - tEanterior;
 
-        if( ( agora - tEatual ) > dT )
-            dT = agora - tEanterior;
-            //dT = agora - tEatual;
+        if( ( agora - tEatual ) > cfg->maxDT )
+            dT = 0;
+
+        //if( ( agora - tEatual ) > dT )
+        //    dT = agora - tEanterior;  // = agora - tEatual;
 
         if( dT )
         {
@@ -2893,6 +2898,7 @@ void setup()
     interpretador.declaraVar( VAR_INT, NOME_PID_LIM_D, &eeprom.dados.pid[ PID_CORRIDA ].limiteD );
 
     interpretador.declaraVar( VAR_INT,  NOME_PID_MMV, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_MDT, &eeprom.dados.pid[ PID_CORRIDA ].maxDT );
     interpretador.declaraVar( VAR_BOOL, NOME_PID_ZAC, &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
 }
 

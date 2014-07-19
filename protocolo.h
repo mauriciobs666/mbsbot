@@ -131,6 +131,7 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_PID_LIM_I "lmi"  // limite acumulador
 #define NOME_PID_LIM_D "lmd"  // limite derivada
 #define NOME_PID_MMV   "mmv"  // valor maximo MV (100-200)
+#define NOME_PID_MDT   "mdt"  // delta T maximo pra calculo do componente D
 #define NOME_PID_ZAC   "zac"  // zera acumulador
 
 #define NOME_VEL_MAX     "vm" // limite de velocidade em %

@@ -299,7 +299,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer9 = new wxFlexGridSizer(0, 3, 0, 0);
     StaticBoxSizer2 = new wxStaticBoxSizer(wxVERTICAL, Panel7, _("Line Follower"));
     BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
-    StaticText14 = new wxStaticText(Panel7, ID_STATICTEXT14, _("P = constrain( erro * Kp, +/- limP ) \nI = constrain( acc, +/- limI ) / Ki\nD = constrain( dE * Kd, +/- limD ) / dT\nMV = constrain( P + I + D, +/- maxMV )"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
+    StaticText14 = new wxStaticText(Panel7, ID_STATICTEXT14, _("P = constrain( erro * Kp, +/- limP ) \nI = constrain( acc / Ki, +/- limI )\nD = constrain( dE * Kd / dT, +/- limD )\nMV = constrain( P + I + D, +/- maxMV )"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT14"));
     BoxSizer3->Add(StaticText14, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticBoxSizer2->Add(BoxSizer3, 1, wxALL|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     FlexGridSizer14 = new wxFlexGridSizer(0, 4, 0, 0);
