@@ -1116,6 +1116,9 @@ drive;
 //   LINE FOLLOWER
 // ******************************************************************************
 
+//#ifdef LINE_FOLLOWER
+#define TRACE_LF
+
 class PID
 {
 public:
@@ -1127,9 +1130,8 @@ public:
     int MV;
     int erro;
     int erroAnterior;
-    int delta;
     int acumulador;
-
+    int delta;
     unsigned long tEanterior;
     unsigned long tEatual;
     unsigned long ultimoLoop;
@@ -1137,7 +1139,7 @@ public:
     void zera()
     {
         Proporcional = Integral = Derivada = 0;
-        MV = erro = acumulador = erroAnterior = delta = 0;
+        MV = erro = erroAnterior = acumulador = delta = 0;
         tEanterior = tEatual = ultimoLoop = 0;
     }
 
@@ -1145,12 +1147,18 @@ public:
     {
         // P
 
+        Proporcional = constrain( ( erro * cfg->Kp ), -cfg->limiteP, cfg->limiteP );
+
+        /*
+        Dia 1: Kp = 10, limiteP = 200
+
         Proporcional = erro * cfg->Kp;
 
         if( Proporcional > cfg->limiteP )
             Proporcional = cfg->limiteP;
         else if( Proporcional < -cfg->limiteP )
             Proporcional = -cfg->limiteP;
+        */
 
         // I
 
@@ -1169,6 +1177,11 @@ public:
                 acumulador = -cfg->limiteI;
 
             Integral = acumulador / cfg->Ki;
+        }
+        else
+        {
+            Integral = 0;
+            acumulador = 0;
         }
 
         // D
@@ -1206,21 +1219,21 @@ public:
 
     void print()
     {
-        SERIALX.print( "E " );
-        SERIALX.print( erro );
-        SERIALX.print( " P " );
-        SERIALX.print( Proporcional );
-        SERIALX.print( " I " );
-        SERIALX.print( Integral );
-        SERIALX.print( " D " );
-        SERIALX.print( Derivada );
-        SERIALX.print( " MV " );
-        SERIALX.println( MV );
+        #ifdef TRACE_LF
+            SERIALX.print( "E " );
+            SERIALX.print( erro );
+            SERIALX.print( " P " );
+            SERIALX.print( Proporcional );
+            SERIALX.print( " I " );
+            SERIALX.print( Integral );
+            SERIALX.print( " D " );
+            SERIALX.print( Derivada );
+            SERIALX.print( " MV " );
+            SERIALX.println( MV );
+        #endif // TRACE_LF
     }
 };
 
-//#ifdef LINE_FOLLOWER
-//#define TRACE_LF
 class LineFollower
 {
 public:
@@ -1251,7 +1264,7 @@ public:
         tInicio = tFim = debounce = 0;
         rodaEsq = rodaDir = 0;
         marcaEsq = marcaDir = estadoLed = false;
-        estadoLed = buscaInicioVolta = true;
+        buscaInicioVolta = true;
 
         for(int sb = 0; sb < NUM_IR_TRACK; sb++)
             sensoresBool[sb] = debounceArray[sb] = false;
@@ -1271,18 +1284,19 @@ public:
             }
         }
 
+        pid.cfg = &eeprom.dados.pid[ PID_CORRIDA ];
+
         refresh();
 
         if( nGrupos )
         {
             trilho = grupos[0];
-            pid.cfg = &eeprom.dados.pid[ PID_CORRIDA ];
             eeprom.dados.programa = PRG_LINE_FOLLOW;
         }
         else
         {
-                SERIALX.println("Erro, trilho nao encontrado");
-                return;
+            SERIALX.println("Erro, trilho nao encontrado");
+            eeprom.dados.programa = DFT_PROGRAMA;
         }
     }
 
@@ -1298,6 +1312,20 @@ public:
     bool marcaDir;
     bool buscaInicioVolta;
     bool estadoLed;
+
+    void print()
+    {
+        #ifdef TRACE_LF
+            for( int x = 0; x < NUM_IR_TRACK; x++ )
+                SERIALX.print( sensoresBool[x] ? "|" : "_" );
+            SERIALX.println();
+
+            for( int ig = 0 ; ig < nGrupos ; ig++ )
+                grupos[ig].print();
+
+            pid.print();
+        #endif // TRACE_LF
+    }
 
     int nGrupos;
 
@@ -1414,6 +1442,10 @@ void LineFollower::loop()
             delay(100);
             digitalWrite( PINO_LED, true );
         }
+
+        // enganei um bobo da casca do ovo :-P
+        iniciarCorrida();
+        buscaInicioVolta = false;
     }
 
     refresh();
@@ -1500,7 +1532,7 @@ void LineFollower::loop()
                     }
                     else
                     {
-                        tFim = agora; // + 500;
+                        tFim = agora + 500;
                     }
                 }
                 marcaEsq = marcaDir = false;
@@ -1541,19 +1573,11 @@ void LineFollower::loop()
     digitalWrite( PINO_LED, estadoLed );
 
     #ifdef TRACE_LF
-    if( traceLF )
-    {
-        traceLF = false;
-
-        for( int x = 0; x < NUM_IR_TRACK; x++ )
-            SERIALX.print( sensoresBool[x] ? "|" : "_" );
-        SERIALX.println();
-
-        for( int ig = 0 ; ig < nGrupos ; ig++ )
-            grupos[ig].print();
-
-        pid.print();
-    }
+        if( traceLF )
+        {
+            traceLF = false;
+            print();
+        }
     #endif
 }
 
