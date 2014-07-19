@@ -43,8 +43,8 @@
 #define DFT_PID_DEBOUNCE      30
 #define DFT_PID_MAX_MV       200
 #define DFT_PID_LIM_P        200
-#define DFT_PID_LIM_I      32000
-#define DFT_PID_LIM_D      15000
+#define DFT_PID_LIM_I        200
+#define DFT_PID_LIM_D        200
 #define DFT_PID_ZACC        true
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)

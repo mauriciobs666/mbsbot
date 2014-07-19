@@ -1124,23 +1124,23 @@ class PID
 public:
     ConfigPID *cfg;
 
-    int Proporcional;
-    int Integral;
-    int Derivada;
-    int MV;
-    int erro;
-    int erroAnterior;
-    int acumulador;
-    int delta;
+    long Proporcional;
+    long Integral;
+    long Derivada;
+    long MV;
+    long erro;
+    long erroAnterior;
+    long acumulador;
+    long dE;
     unsigned long tEanterior;
     unsigned long tEatual;
-    unsigned long ultimoLoop;
+    unsigned long tUltimoLoop;
 
     void zera()
     {
         Proporcional = Integral = Derivada = 0;
-        MV = erro = erroAnterior = acumulador = delta = 0;
-        tEanterior = tEatual = ultimoLoop = 0;
+        MV = erro = erroAnterior = acumulador = dE = 0;
+        tEanterior = tEatual = tUltimoLoop = 0;
     }
 
     int executa()
@@ -1149,8 +1149,7 @@ public:
 
         Proporcional = constrain( ( erro * cfg->Kp ), -cfg->limiteP, cfg->limiteP );
 
-        /*
-        Dia 1: Kp = 10, limiteP = 200
+        /* Dia 1: Kp = 10, limiteP = 200
 
         Proporcional = erro * cfg->Kp;
 
@@ -1164,12 +1163,12 @@ public:
 
         if( cfg->Ki ) // zero desativa
         {
-            if( erro && ultimoLoop )
-                acumulador += erro * (agora - ultimoLoop);
+            if( erro && tUltimoLoop )
+                acumulador += erro * (agora - tUltimoLoop);
             else if( cfg->zeraAcc )
                 acumulador = 0;
 
-            ultimoLoop = agora;
+            /* Dia 1: Ki = 15000, limiteI = 32000
 
             if( acumulador > cfg->limiteI )
                 acumulador = cfg->limiteI;
@@ -1177,6 +1176,9 @@ public:
                 acumulador = -cfg->limiteI;
 
             Integral = acumulador / cfg->Ki;
+            */
+
+            Integral = constrain( ( acumulador / cfg->Ki ), -cfg->limiteI, cfg->limiteI );
         }
         else
         {
@@ -1192,19 +1194,24 @@ public:
         {
             tEanterior = tEatual;
             tEatual = agora;
-            delta = erro - erroAnterior;
+            dE = erro - erroAnterior;
             erroAnterior = erro;
         }
 
-        int intervalo = tEatual - tEanterior;
+        long dT = tEatual - tEanterior;
 
-        if( (int) ( agora - tEatual ) > intervalo )
-            intervalo = agora - tEatual;
+        if( ( agora - tEatual ) > dT )
+            dT = agora - tEanterior;
+            //dT = agora - tEatual;
 
-        if( intervalo )
+        if( dT )
         {
-            Derivada = constrain( ( cfg->Kd * delta ), -cfg->limiteD, cfg->limiteD );
-            Derivada /= intervalo;
+            /* Dia 1: Kd = 3000 limiteD = 15000
+
+            Derivada = constrain( ( cfg->Kd * dE ), -cfg->limiteD, cfg->limiteD );
+            Derivada /= dT;
+            */
+            Derivada = constrain( ( ( cfg->Kd * dE ) / dT ), -cfg->limiteD, cfg->limiteD );
         }
         else
             Derivada = 0;
@@ -1214,6 +1221,7 @@ public:
         if( erroMudou )
             print();
 
+        tUltimoLoop = agora;
         return MV;
     }
 
@@ -1390,6 +1398,13 @@ public:
                     s++;
                     grp.pontoMax = 2*s + 1;
                     grp.tamanho++;
+                }
+
+                // suaviza centro barra sensores
+                if( grp.pontoMin >= 15 && grp.pontoMax <= 17 )
+                {
+                    grp.pontoMin = 15;
+                    grp.pontoMax = 17;
                 }
 
                 grp.pontoMedio = ( grp.pontoMin + grp.pontoMax ) / 2;
