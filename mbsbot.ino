@@ -1120,7 +1120,7 @@ drive;
 // ******************************************************************************
 
 //#ifdef LINE_FOLLOWER
-#define TRACE_LF
+//#define TRACE_LF
 
 class PID
 {
@@ -1135,6 +1135,7 @@ public:
     long erroAnterior;
     long acumulador;
     long dE;
+    long dT;
     unsigned long tEanterior;
     unsigned long tEatual;
     unsigned long tUltimoLoop;
@@ -1142,7 +1143,7 @@ public:
     void zera()
     {
         Proporcional = Integral = Derivada = 0;
-        MV = erro = erroAnterior = acumulador = dE = 0;
+        MV = erro = erroAnterior = acumulador = dE = dT = 0;
         tEanterior = tEatual = tUltimoLoop = 0;
     }
 
@@ -1201,13 +1202,15 @@ public:
             erroAnterior = erro;
         }
 
-        long dT = tEatual - tEanterior;
+        dT = tEatual - tEanterior;
 
         if( ( agora - tEatual ) > cfg->maxDT )
             dT = 0;
 
         //if( ( agora - tEatual ) > dT )
         //    dT = agora - tEanterior;  // = agora - tEatual;
+
+        long derivadaAntigo = Derivada;
 
         if( dT )
         {
@@ -1221,9 +1224,12 @@ public:
         else
             Derivada = 0;
 
+        long MVantigo = MV;
+
         MV = constrain( ( Proporcional + Integral + Derivada ), -cfg->maxMV , cfg->maxMV );
 
-        if( erroMudou )
+        //if( MV != MVantigo )
+        if( erroMudou || derivadaAntigo != Derivada )
             print();
 
         tUltimoLoop = agora;
@@ -1241,6 +1247,8 @@ public:
             SERIALX.print( Integral );
             SERIALX.print( " D " );
             SERIALX.print( Derivada );
+            SERIALX.print( " dT " );
+            SERIALX.print( dT );
             SERIALX.print( " MV " );
             SERIALX.println( MV );
         #endif // TRACE_LF

@@ -30,19 +30,19 @@
 #define DFT_FREIO_MAO 0
 
 #define MOTOR_ACEL      255
-#define MOTOR_CENTRO      0
+#define MOTOR_CENTRO     42
 
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA   80
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
 
-#define DFT_PID_P             10
-#define DFT_PID_I          15000
-#define DFT_PID_D           3000
-#define DFT_PID_DEBOUNCE      30
+#define DFT_PID_P             12
+#define DFT_PID_I            500
+#define DFT_PID_D           5000
+#define DFT_PID_DEBOUNCE      35
 #define DFT_PID_MAX_MV       200
-#define DFT_PID_MAX_DT        30
+#define DFT_PID_MAX_DT        50
 #define DFT_PID_LIM_P        200
 #define DFT_PID_LIM_I        200
 #define DFT_PID_LIM_D        200
