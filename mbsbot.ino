@@ -85,16 +85,19 @@ int delaySensores = -1;
 unsigned long ultimoStatus = 0;
 int delayStatus = -1;
 
+bool trc = false;
+
 enum Erros primeiroErro = SUCESSO;
 
 char strBuffer[20];
-PROGMEM prog_char ErroSucesso[]    = "SUCESSO";
-PROGMEM prog_char ErroTamMaxCmd[]  = "ERRO_TAM_MAX_CMD";
-PROGMEM prog_char ErroPrgInval[]   = "ERRO_PRG_INVALIDO";
-PROGMEM prog_char ErroVarInval[]   = "ERRO_VAR_INVALIDA";
-PROGMEM prog_char ErroInpretador[] = "ERRO_INTERPRETADOR";
 
-PROGMEM const char *tabErros[] =
+const char ErroSucesso[]    PROGMEM = "SUCESSO";
+const char ErroTamMaxCmd[]  PROGMEM = "ERRO_TAM_MAX_CMD";
+const char ErroPrgInval[]   PROGMEM = "ERRO_PRG_INVALIDO";
+const char ErroVarInval[]   PROGMEM = "ERRO_VAR_INVALIDA";
+const char ErroInpretador[] PROGMEM = "ERRO_INTERPRETADOR";
+
+const char* const tabErros[] PROGMEM =
 {
     ErroSucesso,
     ErroTamMaxCmd,
@@ -1120,7 +1123,7 @@ drive;
 // ******************************************************************************
 
 //#ifdef LINE_FOLLOWER
-//#define TRACE_LF
+#define TRACE_LF
 
 class PID
 {
@@ -1239,6 +1242,8 @@ public:
     void print()
     {
         #ifdef TRACE_LF
+        if( trc )
+        {
             SERIALX.print( "E " );
             SERIALX.print( erro );
             SERIALX.print( " P " );
@@ -1251,6 +1256,7 @@ public:
             SERIALX.print( dT );
             SERIALX.print( " MV " );
             SERIALX.println( MV );
+        }
         #endif // TRACE_LF
     }
 };
@@ -1337,14 +1343,17 @@ public:
     void print()
     {
         #ifdef TRACE_LF
+        if( trc )
+        {
             for( int x = 0; x < NUM_IR_TRACK; x++ )
-                SERIALX.print( sensoresBool[x] ? "|" : "_" );
+                SERIALX.print( sensoresBool[x] ? "A" : "_" );
             SERIALX.println();
 
             for( int ig = 0 ; ig < nGrupos ; ig++ )
                 grupos[ig].print();
 
             pid.print();
+        }
         #endif // TRACE_LF
     }
 
@@ -1374,6 +1383,8 @@ public:
         void print()
         {
             #ifdef TRACE_LF
+            if( trc )
+            {
                 SERIALX.print("grp m ");
                 SERIALX.print((int)pontoMedio);
                 SERIALX.print(" i ");
@@ -1383,6 +1394,7 @@ public:
                 SERIALX.print(" t ");
                 SERIALX.print((int)tamanho);
                 SERIALX.println("");
+            }
             #endif
         }
     }
@@ -1412,14 +1424,14 @@ public:
                     grp.pontoMax = 2*s + 1;
                     grp.tamanho++;
                 }
-
+/*
                 // suaviza centro barra sensores
                 if( grp.pontoMin >= 15 && grp.pontoMax <= 17 )
                 {
                     grp.pontoMin = 15;
                     grp.pontoMax = 17;
                 }
-
+*/
                 grp.pontoMedio = ( grp.pontoMin + grp.pontoMax ) / 2;
 
                 grupos[ nGrupos ] = grp;
@@ -1539,18 +1551,21 @@ void LineFollower::loop()
                 if( ( marcaEsq && marcaDir ) || ( conta1s > ( ( NUM_IR_TRACK * 7 ) / 10 ) ) )
                 {
                     #ifdef TRACE_LF
+                    if( trc )
                         SERIALX.println("C");
                     #endif
                 }
                 else if( marcaEsq )
                 {
                     #ifdef TRACE_LF
+                    if( trc )
                         SERIALX.println("E");
                     #endif
                 }
                 else if( marcaDir )
                 {
                     #ifdef TRACE_LF
+                    if( trc )
                         SERIALX.println("D");
                     #endif
                     if( buscaInicioVolta )
@@ -1601,11 +1616,14 @@ void LineFollower::loop()
     digitalWrite( PINO_LED, estadoLed );
 
     #ifdef TRACE_LF
+    if( trc )
+    {
         if( traceLF )
         {
             traceLF = false;
             print();
         }
+    }
     #endif
 }
 
@@ -2885,8 +2903,9 @@ void setup()
     interpretador.declaraVar( VAR_CHAR, NOME_VEL_ESCALA, &eeprom.dados.velEscala );
     interpretador.declaraVar( VAR_CHAR, NOME_FREIO,      &eeprom.dados.handBrake );
 
-    interpretador.declaraVar( VAR_INT, NOME_T_SE,    &delaySensores );
-    interpretador.declaraVar( VAR_INT, NOME_T_ST,    &delayStatus );
+    interpretador.declaraVar( VAR_INT,  NOME_T_SE,    &delaySensores );
+    interpretador.declaraVar( VAR_INT,  NOME_T_ST,    &delayStatus );
+    interpretador.declaraVar( VAR_BOOL, NOME_TRACE,   &trc );
 
     interpretador.declaraVar( VAR_INT, NOME_T_RF,    &eeprom.dados.delays.ES );
     interpretador.declaraVar( VAR_INT, NOME_T_MOTOR, &eeprom.dados.delays.motores );
@@ -2908,6 +2927,7 @@ void setup()
     interpretador.declaraVar( VAR_INT,  NOME_PID_MMV, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MDT, &eeprom.dados.pid[ PID_CORRIDA ].maxDT );
     interpretador.declaraVar( VAR_BOOL, NOME_PID_ZAC, &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
+
 }
 
 // ******************************************************************************

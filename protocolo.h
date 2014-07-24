@@ -138,6 +138,8 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
 #define NOME_BALANCO     "bal" // balanco rodas esq/dir
 
+#define NOME_TRACE       "trc"
+
 enum Programas
 {
     PRG_RC = 0,	            // Controle remoto
