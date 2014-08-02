@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -42,13 +42,6 @@ Global variables use 1.412 bytes (68%) of dynamic memory, leaving 636 bytes for 
 // AVR / Arduino
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
-#include <Servo.h>
-
-// I2C / wiichuck
-#ifdef WIICHUCK
-    #include <Wire.h>
-    #include "nunchuck_funcs.h"
-#endif
 
 // Pin Change interrupt ( http://code.google.com/p/arduino-pinchangeint/ )
 #include "PinChangeInt.h"
@@ -63,8 +56,6 @@ Global variables use 1.412 bytes (68%) of dynamic memory, leaving 636 bytes for 
 // ******************************************************************************
 //		Plin-plin
 // ******************************************************************************
-
-bool traceLF = false;
 
 #ifdef PINO_SERVO_PAN
 Servo pan;
@@ -86,6 +77,7 @@ unsigned long ultimoStatus = 0;
 int delayStatus = -1;
 
 bool trc = false;
+bool traceLF = false;
 
 enum Erros primeiroErro = SUCESSO;
 
@@ -96,6 +88,8 @@ const char ErroTamMaxCmd[]  PROGMEM = "ERRO_TAM_MAX_CMD";
 const char ErroPrgInval[]   PROGMEM = "ERRO_PRG_INVALIDO";
 const char ErroVarInval[]   PROGMEM = "ERRO_VAR_INVALIDA";
 const char ErroInpretador[] PROGMEM = "ERRO_INTERPRETADOR";
+const char ErroLFCalibra[]  PROGMEM = "ERRO_LF_CALIBRA";
+const char ErroLFTrilho[]   PROGMEM = "ERRO_LF_TRILHO";
 
 const char* const tabErros[] PROGMEM =
 {
@@ -103,7 +97,9 @@ const char* const tabErros[] PROGMEM =
     ErroTamMaxCmd,
     ErroPrgInval,
     ErroVarInval,
-    ErroInpretador
+    ErroInpretador,
+    ErroLFCalibra,
+    ErroLFTrilho
 };
 
 void printErro( enum Erros err )
@@ -260,13 +256,16 @@ public:
         {
             int ES; // intervalo de entrada/saida, leitura de sensores etc
             int motores; // intervalo de execucao entre os refresh de motores
-
             int debounce; // debounce de cruzamento / marcaEsq / marcaDir
         } delays;
 
         ConfigPID pid[PID_N];
 
-        ConfigGamepad joyRC, joyPC;
+        ConfigGamepad joyPC;
+
+        #ifdef PINO_JOY_X
+            ConfigGamepad joyRC;
+        #endif
 
         ConfigSensor sensores[NUM_SENSORES];
     }
@@ -1080,7 +1079,7 @@ public:
         #endif
         //#undef TRACE
     }
-
+/*
     void printRodas()
     {
         SERIALX.print( NOME_RODA_ESQ );
@@ -1091,7 +1090,7 @@ public:
         SERIALX.print(" ");
         SERIALX.println( motorDir.read() );
     }
-
+*/
     void gira( char porc = 0 )
     {
         move( porc, -porc );
@@ -1306,7 +1305,7 @@ public:
             calibrar();
             if( ! calibrado() )
             {
-                SERIALX.println("Erro, nao foi possivel calibrar");
+                printErro(ERRO_LF_CALIBRA);
                 return;
             }
         }
@@ -1322,7 +1321,7 @@ public:
         }
         else
         {
-            SERIALX.println("Erro, trilho nao encontrado");
+            printErro(ERRO_LF_TRILHO);
             eeprom.dados.programa = DFT_PROGRAMA;
         }
     }
@@ -2836,13 +2835,6 @@ void setup()
     digitalWrite(PINO_ARMA, LOW);
 #endif
 
-#ifdef WIICHUCK
-    #ifdef WIICHUCK_POWER
-        nunchuck_setpowerpins();
-    #endif
-    nunchuck_init();
-#endif
-
     for(int s=0; s<NUM_SENSORES; s++)
         sensores[s].setConfig(&eeprom.dados.sensores[s]);
 
@@ -2850,10 +2842,12 @@ void setup()
     drive.sensorDir = &sensores[2];
     drive.sensorFre = &sensores[3];
 
-    gamepad.setConfig( &eeprom.dados.joyRC );
 
 #ifdef PINO_JOY_X
+    gamepad.setConfig( &eeprom.dados.joyRC );
     PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
+#else
+    gamepad.setConfig( &eeprom.dados.joyPC );
 #endif
 
 #ifdef PINO_JOY_Y
@@ -2927,7 +2921,6 @@ void setup()
     interpretador.declaraVar( VAR_INT,  NOME_PID_MMV, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MDT, &eeprom.dados.pid[ PID_CORRIDA ].maxDT );
     interpretador.declaraVar( VAR_BOOL, NOME_PID_ZAC, &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
-
 }
 
 // ******************************************************************************
@@ -2986,9 +2979,6 @@ void loop()
     {
         //telnet.enviaJoystick();
         telnet.enviaSensores();
-        #ifdef WIICHUCK
-            nunchuck_print_data();
-        #endif
     }
 
     //#define TESTE_PERFORMANCE
@@ -3109,78 +3099,6 @@ void loop()
         }
         msExec = eeprom.dados.delays.ES;
         break;
-
-        #ifdef WIICHUCK
-        case PRG_WIICHUCK:
-        {
-            // TODO (mbs#1#): limpar essa merda e usar nova classe joystick p wiichuck tb
-
-            Vetor2i joyCenter(174,174);
-
-            if(nunchuck_get_data() == 0)
-                break;
-
-            // nunchuck_print_data();
-
-            if( ! nunchuck_zbutton())
-            {
-                int x = nunchuck_joyx() - joyCenter.x;
-                int y = nunchuck_joyy() - joyCenter.y;
-
-                // TODO: mapear 0-100 direito
-                x *= 10; // joga x lah pra pqp
-                y *= 10;
-
-                drive.vetorial(x, y);
-            }
-            else
-            {
-                drive.parar();
-
-                const int VELOCIDADE_SERVO = 2;
-
-                #ifdef PINO_SERVO_PAN
-                if( nunchuck_joyx() < joyCenter.x )
-                {
-                    int angle = pan.read() + VELOCIDADE_SERVO;
-                    if(angle > 170) angle = 170;
-                    pan.write(angle);
-                }
-                else if( nunchuck_joyx() > joyCenter.x )
-                {
-                    int angle = pan.read() - VELOCIDADE_SERVO;
-                    if(angle < 10) angle = 10;
-                    pan.write(angle);
-                }
-                #endif
-
-                #ifdef PINO_SERVO_TILT
-                if( nunchuck_joyy() > joyCenter.y )
-                {
-                    int angle = tilt.read() + VELOCIDADE_SERVO;
-                    if(angle > 170) angle = 170;
-                    tilt.write(angle);
-                }
-                else if( nunchuck_joyy() < joyCenter.y )
-                {
-                    int angle = tilt.read() - VELOCIDADE_SERVO;
-                    if(angle < 10) angle = 10;
-                    tilt.write(angle);
-                }
-                #endif
-            }
-
-            if(nunchuck_cbutton())
-            {
-                eeprom.dados.handBrake = 0;
-                digitalWrite(PINO_ARMA,HIGH);
-            }
-            else
-                digitalWrite(PINO_ARMA,LOW);
-        }
-        msExec = 100;
-        break;
-        #endif
 
         case PRG_SCOPE:
         {

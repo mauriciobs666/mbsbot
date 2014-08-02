@@ -163,7 +163,9 @@ enum Erros
     ERRO_TAM_MAX_CMD,
     ERRO_PRG_INVALIDO,
     ERRO_VAR_INVALIDA,
-    ERRO_INTERPRETADOR
+    ERRO_INTERPRETADOR,
+    ERRO_LF_CALIBRA,
+    ERRO_LF_TRILHO
 };
 
 // Mapeamento dos botoes de Joypad (API antiga)

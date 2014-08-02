@@ -1,4 +1,5 @@
-/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
+
+/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -18,13 +19,13 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#include "protocolo.h"
+//#include "protocolo.h"
 
 #define VERSAO_PLACA 942
 
 #define SERIALX Serial
 
-#define DFT_PROGRAMA PRG_RC_SERIAL
+#define DFT_PROGRAMA  1 /* PRG_RC_SERIAL = 1 */
 #define DFT_DELAY_ES  1
 #define DFT_FREIO_MAO 0
 
@@ -36,14 +37,16 @@
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
 
-#define DFT_PID_P           10
-#define DFT_PID_I           300
-#define DFT_PID_D           1500
-#define DFT_PID_DEBOUNCE    30
-#define DFT_PID_MAX_MV      200
-#define DFT_PID_LIM_P       NUM_IR_TRACK
-#define DFT_PID_LIM_I       10000
-#define DFT_PID_LIM_D       1000
+#define DFT_PID_P             12
+#define DFT_PID_I            500
+#define DFT_PID_D           5000
+#define DFT_PID_DEBOUNCE      35
+#define DFT_PID_MAX_MV       200
+#define DFT_PID_MAX_DT        50
+#define DFT_PID_LIM_P        200
+#define DFT_PID_LIM_I        200
+#define DFT_PID_LIM_D        200
+#define DFT_PID_ZACC        true
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
@@ -54,13 +57,15 @@
 #define MOTOR_E_T_INV 0
 #define MOTOR_D_T_INV 0
 
+// canal 1
 #define PINO_MOTOR_ESQ  	7
 #define PINO_MOTOR_ESQ_N	8
-#define PINO_MOTOR_ESQ_PWM	6
+#define PINO_MOTOR_ESQ_PWM	5
 
+// canal 2
 #define PINO_MOTOR_DIR      9
 #define PINO_MOTOR_DIR_N    12
-#define PINO_MOTOR_DIR_PWM	5
+#define PINO_MOTOR_DIR_PWM	6
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
@@ -73,12 +78,9 @@
 #define NUM_SENSORES    5
 
 #define LINE_FOLLOWER
-
-#ifdef LINE_FOLLOWER
-    #define NUM_IR_TRACK    5
-    #define PINO_TRACK_0    0
-    // ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
-#endif
+#define NUM_IR_TRACK    NUM_SENSORES
+#define PINO_TRACK_0    0
+// ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 
 // http://arduino.cc/en/Reference/Tone
 // Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
