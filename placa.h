@@ -1,5 +1,5 @@
 
-/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -19,22 +19,21 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-//#include <Servo.h>
 //#include "protocolo.h"
 
-#define VERSAO_PLACA 942
+#define VERSAO_PLACA 4
 
-#define SERIALX Serial
+#define SERIALX Serial1
 
 #define DFT_PROGRAMA  1 /* PRG_RC_SERIAL = 1 */
 #define DFT_DELAY_ES  1
 #define DFT_FREIO_MAO 0
 
 #define MOTOR_ACEL      255
-#define MOTOR_CENTRO    0
+#define MOTOR_CENTRO     42
 
 #define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA  100
+#define DFT_VEL_ESCALA   80
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
 
@@ -76,7 +75,7 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-#define NUM_SENSORES    5
+#define NUM_SENSORES    16
 
 #define LINE_FOLLOWER
 #define NUM_IR_TRACK    NUM_SENSORES

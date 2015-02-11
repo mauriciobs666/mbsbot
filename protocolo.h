@@ -148,7 +148,7 @@ enum Programas
     PRG_LINE_FOLLOW = 3,    //
     PRG_SCANNER = 4,        // Scanner com rangefinder
     PRG_CHASE = 5,          //
-    PRG_COLISAO = 6,      //
+    PRG_COLISAO = 6,        //
     PRG_SENTINELA = 7,      //
     PRG_WIICHUCK = 8,       //
     PRG_SCOPE = 9,          //
@@ -200,8 +200,10 @@ enum Erros
 
 enum Pids
 {
-    PID_CALIBRA = 0,
-    PID_CORRIDA = 1,
+    PID_CALIBRA  = 0,
+    PID_CORRIDA  = 1,
+    PID_RETA     = 2,
+    PID_COTOVELO = 3,
     PID_N
 };
 

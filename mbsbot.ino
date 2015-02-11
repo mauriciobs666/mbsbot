@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -189,6 +189,20 @@ ConfigGamepad;
 
 typedef struct
 {
+    int Kp;
+    int Ki;
+    int Kd;
+    int limiteP;
+    int limiteI;
+    int limiteD;
+    int maxMV;
+    int maxDT;
+    bool zeraAcc;
+}
+ConfigPID;
+
+typedef struct
+{
     enum eTipoMotor { MOTOR_SERVO, MOTOR_DC };
     char tipo;
     char pino;
@@ -197,6 +211,8 @@ typedef struct
     char pinoDirN;
     int centro;      // zero
     int aceleracao;  // variacao abs de potencia aplicada => dp / eeprom.delays.motores
+
+    ConfigPID pid;
 
     void initServo( char pino_, int centro_=1500, bool inverso=false )
     {
@@ -218,20 +234,6 @@ typedef struct
     }
 }
 ConfigMotor;
-
-typedef struct
-{
-    int Kp;
-    int Ki;
-    int Kd;
-    int limiteP;
-    int limiteI;
-    int limiteD;
-    int maxMV;
-    int maxDT;
-    bool zeraAcc;
-}
-ConfigPID;
 
 class Eeprom
 {
@@ -1129,6 +1131,7 @@ class PID
 public:
     ConfigPID *cfg;
 
+    long setPoint;
     long Proporcional;
     long Integral;
     long Derivada;
@@ -1138,13 +1141,13 @@ public:
     long acumulador;
     long dE;
     long dT;
-    unsigned long tEanterior;
-    unsigned long tEatual;
-    unsigned long tUltimoLoop;
+    unsigned long tEanterior;   // timestamp penultima mudanca em erro
+    unsigned long tEatual;      // timestamp ultima mudanca em erro (valor atual)
+    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
 
     void zera()
     {
-        Proporcional = Integral = Derivada = 0;
+        setPoint = Proporcional = Integral = Derivada = 0;
         MV = erro = erroAnterior = acumulador = dE = dT = 0;
         tEanterior = tEatual = tUltimoLoop = 0;
     }
@@ -1155,16 +1158,6 @@ public:
 
         Proporcional = constrain( ( erro * cfg->Kp ), -cfg->limiteP, cfg->limiteP );
 
-        /* Dia 1: Kp = 10, limiteP = 200
-
-        Proporcional = erro * cfg->Kp;
-
-        if( Proporcional > cfg->limiteP )
-            Proporcional = cfg->limiteP;
-        else if( Proporcional < -cfg->limiteP )
-            Proporcional = -cfg->limiteP;
-        */
-
         // I
 
         if( cfg->Ki ) // zero desativa
@@ -1174,22 +1167,13 @@ public:
             else if( cfg->zeraAcc )
                 acumulador = 0;
 
-            /* Dia 1: Ki = 15000, limiteI = 32000
-
-            if( acumulador > cfg->limiteI )
-                acumulador = cfg->limiteI;
-            else if( acumulador < -cfg->limiteI )
-                acumulador = -cfg->limiteI;
-
-            Integral = acumulador / cfg->Ki;
-            */
-
             Integral = constrain( ( acumulador / cfg->Ki ), -cfg->limiteI, cfg->limiteI );
         }
         else
         {
-            Integral = 0;
             acumulador = 0;
+
+            Integral = 0;
         }
 
         // D
@@ -1214,17 +1198,9 @@ public:
 
         long derivadaAntigo = Derivada;
 
-        if( dT )
-        {
-            /* Dia 1: Kd = 3000 limiteD = 15000
-
-            Derivada = constrain( ( cfg->Kd * dE ), -cfg->limiteD, cfg->limiteD );
-            Derivada /= dT;
-            */
-            Derivada = constrain( ( ( cfg->Kd * dE ) / dT ), -cfg->limiteD, cfg->limiteD );
-        }
-        else
-            Derivada = 0;
+        Derivada = ( dT )
+                    ? constrain( ( ( cfg->Kd * dE ) / dT ), -cfg->limiteD, cfg->limiteD )
+                    : 0;
 
         long MVantigo = MV;
 
@@ -2842,6 +2818,8 @@ void setup()
     drive.sensorDir = &sensores[2];
     drive.sensorFre = &sensores[3];
 
+
+// TODO (Mauricio#1#): suporte simultaneo a R/C e gamepad PC
 
 #ifdef PINO_JOY_X
     gamepad.setConfig( &eeprom.dados.joyRC );
