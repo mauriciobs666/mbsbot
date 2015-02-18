@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2011 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
 
-// inverte direcao de giro dos motores
+// inverte sentido dos motores
 #define MOTOR_ESQ_INV 0
 #define MOTOR_DIR_INV 0
 #define MOTOR_E_T_INV 0

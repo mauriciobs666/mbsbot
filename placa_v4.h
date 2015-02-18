@@ -1,4 +1,3 @@
-
 /**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
@@ -19,8 +18,6 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-//#include "protocolo.h"
-
 #define VERSAO_PLACA 4
 
 #define SERIALX Serial1
@@ -36,16 +33,13 @@
 #define DFT_VEL_ESCALA   80
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
+#define DFT_PID_DEBOUNCE      35
 
 #define DFT_PID_P             12
 #define DFT_PID_I            500
 #define DFT_PID_D           5000
-#define DFT_PID_DEBOUNCE      35
-#define DFT_PID_MAX_MV       200
-#define DFT_PID_MAX_DT        50
-#define DFT_PID_LIM_P        200
-#define DFT_PID_LIM_I        200
-#define DFT_PID_LIM_D        200
+#define DFT_PID_MAX_MV       100
+#define DFT_PID_MIN_MV      -100
 #define DFT_PID_ZACC        true
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)

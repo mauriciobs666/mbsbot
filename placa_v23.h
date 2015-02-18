@@ -18,9 +18,9 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 3
+#define VERSAO_PLACA 5
 
-#define SERIALX Serial1
+#define SERIALX Serial
 
 #define DFT_PROGRAMA  1 /* PRG_RC_SERIAL = 1 */
 #define DFT_DELAY_ES  1
@@ -30,7 +30,7 @@
 #define MOTOR_CENTRO     42
 
 #define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA   80
+#define DFT_VEL_ESCALA  100
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
 #define DFT_PID_DEBOUNCE      35
@@ -45,27 +45,21 @@
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
 
-// 4 rodas mechanum
-#define RODAS_PWM_x4 1
-
-// inverte direcao de giro dos motores
-#define MOTOR_ESQ_INV 1
-#define MOTOR_DIR_INV 1
+// inverte sentido dos motores
+#define MOTOR_ESQ_INV 0
+#define MOTOR_DIR_INV 0
 #define MOTOR_E_T_INV 0
 #define MOTOR_D_T_INV 0
 
-// canal 1 - roda esquerda traseira
-#define PINO_MOTOR_ESQ_T        23
-#define PINO_MOTOR_ESQ_T_PWM    5
-// canal 2 - roda direita traseira
-#define PINO_MOTOR_DIR_T        24
-#define PINO_MOTOR_DIR_T_PWM    4
-// canal 3 - roda esquerda dianteira
-#define PINO_MOTOR_ESQ          25
-#define PINO_MOTOR_ESQ_PWM      3
-// canal 4 - roda direita dianteira
-#define PINO_MOTOR_DIR          26
-#define PINO_MOTOR_DIR_PWM      2
+// canal 1
+#define PINO_MOTOR_ESQ  	7
+#define PINO_MOTOR_ESQ_N	8
+#define PINO_MOTOR_ESQ_PWM	6
+
+// canal 2
+#define PINO_MOTOR_DIR      9
+#define PINO_MOTOR_DIR_N    12
+#define PINO_MOTOR_DIR_PWM	5
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
@@ -75,43 +69,30 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-// LINE FOLLOWER (pinos analogicos!)
-#define NUM_IR_TRACK		5
-#define PINO_TRACK_0 1
-// onde NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
+#define NUM_SENSORES    8
 
-#define PINO_BIP 			12
+#define LINE_FOLLOWER
+#define NUM_IR_TRACK    NUM_SENSORES
+#define PINO_TRACK_0    0
+// ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 
-#define PINO_ARMA           6
+// http://arduino.cc/en/Reference/Tone
+// Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
+//#define PINO_BIP 			11
 
-#define PINO_LED             13
+//#define PINO_ARMA           10
 
-// habilita wiichuck
+#define PINO_LED            13
+
+// habilita wiichuck / energia nas I2C/analogicas
 //#define WIICHUCK
 //#define WIICHUCK_POWER
 
-#ifdef WIICHUCK
-    #ifdef WIICHUCK_POWER
-        #define PINO_ANALOG_CNT 2
-    #else
-        #define PINO_ANALOG_CNT 4
-    #endif
-#else
-    #define PINO_ANALOG_CNT 6
-#endif
-
 // RADIO CONTROLE
-#define PINO_JOY_X      18
-#define PINO_JOY_Y      19
-#define PINO_JOY_Z      20
-//#define PINO_JOY_R
-#define PINO_JOY_SW1    21
-
-// int de hardware externa (so 0 e 1 no 328 e 2, 3, 4 e 5 no 1280)
-#define INT_JOY_X      2
-#define INT_JOY_Y      3
-#define INT_JOY_Z      4
-//#define INT_JOY_R
-#define INT_JOY_SW1    5
+//#define PINO_JOY_X      2
+//#define PINO_JOY_Y      3
+//#define PINO_JOY_Z      17
+//#define PINO_JOY_R      18
+//#define PINO_JOY_SW1    4
 
 #endif // BOARD_H_INCLUDED

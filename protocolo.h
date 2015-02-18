@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2013 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -127,12 +127,9 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_PID_KP    "kp"   // coeficientes do algoritmo de PID
 #define NOME_PID_KI    "ki"   //  "
 #define NOME_PID_KD    "kd"   //  "
-#define NOME_PID_LIM_P "lmp"  // limite proporcional
-#define NOME_PID_LIM_I "lmi"  // limite acumulador
-#define NOME_PID_LIM_D "lmd"  // limite derivada
-#define NOME_PID_MMV   "mmv"  // valor maximo MV (100-200)
-#define NOME_PID_MDT   "mdt"  // delta T maximo pra calculo do componente D
-#define NOME_PID_ZAC   "zac"  // zera acumulador
+#define NOME_PID_MVX   "mvx"  // valor maximo MV
+#define NOME_PID_MVN   "mvn"  // valor minimo MV
+#define NOME_PID_ZAC   "zac"  // zera acumulador quando erro for 0
 
 #define NOME_VEL_MAX     "vm" // limite de velocidade em %
 #define NOME_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades

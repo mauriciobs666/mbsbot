@@ -189,15 +189,13 @@ ConfigGamepad;
 
 typedef struct
 {
-    int Kp;
-    int Ki;
-    int Kd;
-    int limiteP;
-    int limiteI;
-    int limiteD;
-    int maxMV;
-    int maxDT;
-    bool zeraAcc;
+    long Kp;
+    long Ki;
+    long Kd;
+    long minMV;
+    long maxMV;
+    bool zeraAcc;  // zera accumulador quando erro = 0
+    bool dEntrada; // deriva entrada(true) ou erro(false)?
 }
 ConfigPID;
 
@@ -321,22 +319,18 @@ public:
         dados.pid[ PID_CALIBRA ].Kp      =     5;
         dados.pid[ PID_CALIBRA ].Ki      =   100;
         dados.pid[ PID_CALIBRA ].Kd      =   300;
-        dados.pid[ PID_CALIBRA ].limiteP =    50;
-        dados.pid[ PID_CALIBRA ].limiteI =   500;
-        dados.pid[ PID_CALIBRA ].limiteD =   100;
         dados.pid[ PID_CALIBRA ].maxMV   =   100;
-        dados.pid[ PID_CALIBRA ].maxDT   =    30;
+        dados.pid[ PID_CALIBRA ].minMV   =  -100;
         dados.pid[ PID_CALIBRA ].zeraAcc =  true;
+        dados.pid[ PID_CORRIDA ].dEntrada = true;
 
-        dados.pid[ PID_CORRIDA ].Kp      = DFT_PID_P;
-        dados.pid[ PID_CORRIDA ].Ki      = DFT_PID_I;
-        dados.pid[ PID_CORRIDA ].Kd      = DFT_PID_D;
-        dados.pid[ PID_CORRIDA ].limiteP = DFT_PID_LIM_P;
-        dados.pid[ PID_CORRIDA ].limiteI = DFT_PID_LIM_I;
-        dados.pid[ PID_CORRIDA ].limiteD = DFT_PID_LIM_D;
-        dados.pid[ PID_CORRIDA ].maxMV   = DFT_PID_MAX_MV;
-        dados.pid[ PID_CORRIDA ].maxDT   = DFT_PID_MAX_DT;
-        dados.pid[ PID_CORRIDA ].zeraAcc = DFT_PID_ZACC;
+        dados.pid[ PID_CORRIDA ].Kp       = DFT_PID_P;
+        dados.pid[ PID_CORRIDA ].Ki       = DFT_PID_I;
+        dados.pid[ PID_CORRIDA ].Kd       = DFT_PID_D;
+        dados.pid[ PID_CORRIDA ].maxMV    = DFT_PID_MAX_MV;
+        dados.pid[ PID_CORRIDA ].minMV    = DFT_PID_MIN_MV;
+        dados.pid[ PID_CORRIDA ].zeraAcc  = DFT_PID_ZACC;
+        dados.pid[ PID_CORRIDA ].dEntrada = true;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
@@ -1122,10 +1116,12 @@ drive;
 // ******************************************************************************
 //   LINE FOLLOWER
 // ******************************************************************************
-
-//#ifdef LINE_FOLLOWER
+#define LINE_FOLLOWER
 #define TRACE_LF
 
+#ifdef LINE_FOLLOWER
+
+// TODO (Mauricio#1#): template <class PidType>
 class PID
 {
 public:
@@ -1137,80 +1133,96 @@ public:
     long Derivada;
     long MV;
     long erro;
-    long erroAnterior;
-    long acumulador;
+    long eAnterior;
     long dE;
     long dT;
-    unsigned long tEanterior;   // timestamp penultima mudanca em erro
+
+    unsigned long tEanterior;   // timestamp penultima mudanca em entrada/erro (dependendo dEntrada)
     unsigned long tEatual;      // timestamp ultima mudanca em erro (valor atual)
     unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
 
-    void zera()
+    void zera( )
     {
         setPoint = Proporcional = Integral = Derivada = 0;
-        MV = erro = erroAnterior = acumulador = dE = dT = 0;
-        tEanterior = tEatual = tUltimoLoop = 0;
+        MV = erro = eAnterior = dE = dT = 0;
+        tEanterior = tEatual = tUltimoLoop = agora;
     }
 
-    int executa()
+    void reinicia( long ultimaMV )
     {
-        // P
+        MV = ultimaMV;
+        Integral = ultimaMV;
+    }
 
-        Proporcional = constrain( ( erro * cfg->Kp ), -cfg->limiteP, cfg->limiteP );
-
-        // I
-
-        if( cfg->Ki ) // zero desativa
+    long executa( long entrada )
+    {
+        if( agora > tUltimoLoop )
         {
-            if( erro && tUltimoLoop )
-                acumulador += erro * (agora - tUltimoLoop);
-            else if( cfg->zeraAcc )
-                acumulador = 0;
+            dT = agora - tUltimoLoop;
 
-            Integral = constrain( ( acumulador / cfg->Ki ), -cfg->limiteI, cfg->limiteI );
+            erro = setPoint - entrada;
+
+            Proporcional = erro * cfg->Kp;
+
+            // I
+
+            if( cfg->Ki ) // zero desativa
+            {
+                if( erro && tUltimoLoop )
+                {
+                    Integral = constrain( ( Integral + ( ( erro * dT ) / cfg->Ki ) ) ,
+                                           cfg->minMV,
+                                           cfg->maxMV );
+                }
+                else if( cfg->zeraAcc )
+                {
+                    Integral = 0 ;
+                }
+            }
+            else
+            {
+                Integral = 0;
+            }
+
+            // D
+
+            if( cfg->dEntrada )
+            {
+                dE = - ( entrada - eAnterior );
+                eAnterior = entrada;
+            }
+            else
+            {
+                dE = erro - eAnterior;
+                eAnterior = erro;
+            }
+
+    /*
+            if( dE )
+            {
+                tEanterior = tEatual;
+                tEatual = agora;
+            }
+
+            //if( ( agora - tEatual ) > dT )
+            //    dT = agora - tEanterior;  // = agora - tEatual;
+            //else
+                dT = tEatual - tEanterior;
+    */
+
+            long derivadaAntigo = Derivada;
+
+            Derivada = ( cfg->Kd * dE ) / dT ;
+
+            MV = constrain( ( Proporcional + Integral + Derivada ),
+                              cfg->minMV,
+                              cfg->maxMV );
+
+            if( dE || derivadaAntigo != Derivada )
+                print();
+
+            tUltimoLoop = agora;
         }
-        else
-        {
-            acumulador = 0;
-
-            Integral = 0;
-        }
-
-        // D
-
-        bool erroMudou = ( erro != erroAnterior );
-
-        if( erroMudou )
-        {
-            tEanterior = tEatual;
-            tEatual = agora;
-            dE = erro - erroAnterior;
-            erroAnterior = erro;
-        }
-
-        dT = tEatual - tEanterior;
-
-        if( ( agora - tEatual ) > cfg->maxDT )
-            dT = 0;
-
-        //if( ( agora - tEatual ) > dT )
-        //    dT = agora - tEanterior;  // = agora - tEatual;
-
-        long derivadaAntigo = Derivada;
-
-        Derivada = ( dT )
-                    ? constrain( ( ( cfg->Kd * dE ) / dT ), -cfg->limiteD, cfg->limiteD )
-                    : 0;
-
-        long MVantigo = MV;
-
-        MV = constrain( ( Proporcional + Integral + Derivada ), -cfg->maxMV , cfg->maxMV );
-
-        //if( MV != MVantigo )
-        if( erroMudou || derivadaAntigo != Derivada )
-            print();
-
-        tUltimoLoop = agora;
         return MV;
     }
 
@@ -1420,13 +1432,17 @@ public:
         refresh();
 
         if( nGrupos )
+        {
             trilho = grupos[0];
+        }
+        else
+        {
+            // TODO (Mauricio#1#): else?
+        }
 
-        pid.erro = trilho.pontoMedio - setPoint;
+        pid.setPoint = setPoint;
 
-        pid.executa();
-
-        drive.gira( constrain( pid.MV, -100 , 100 ) );
+        drive.gira( pid.executa( trilho.pontoMedio ) );
 
         drive.refresh();
 
@@ -1578,9 +1594,8 @@ void LineFollower::loop()
         }
     }
 
-    pid.erro = trilho.pontoMedio - NUM_IR_TRACK;
-
-    pid.executa();
+    pid.setPoint = NUM_IR_TRACK;
+    pid.executa( trilho.pontoMedio );
 
     rodaEsq = (pid.MV < 0) ? (100 + pid.MV) : 100;
     rodaDir = (pid.MV > 0) ? (100 - pid.MV) : 100;
@@ -1693,7 +1708,7 @@ void LineFollower::calibrar()
 
     digitalWrite( PINO_LED, false );
 }
-//#endif
+#endif // LINE_FOLLOWER
 
 // ******************************************************************************
 //		Scanner IR 1D
@@ -2892,12 +2907,8 @@ void setup()
     interpretador.declaraVar( VAR_INT, NOME_PID_KI, &eeprom.dados.pid[ PID_CORRIDA ].Ki );
     interpretador.declaraVar( VAR_INT, NOME_PID_KD, &eeprom.dados.pid[ PID_CORRIDA ].Kd );
 
-    interpretador.declaraVar( VAR_INT, NOME_PID_LIM_P, &eeprom.dados.pid[ PID_CORRIDA ].limiteP );
-    interpretador.declaraVar( VAR_INT, NOME_PID_LIM_I, &eeprom.dados.pid[ PID_CORRIDA ].limiteI );
-    interpretador.declaraVar( VAR_INT, NOME_PID_LIM_D, &eeprom.dados.pid[ PID_CORRIDA ].limiteD );
-
-    interpretador.declaraVar( VAR_INT,  NOME_PID_MMV, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
-    interpretador.declaraVar( VAR_INT,  NOME_PID_MDT, &eeprom.dados.pid[ PID_CORRIDA ].maxDT );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_MVX, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_MVN, &eeprom.dados.pid[ PID_CORRIDA ].minMV );
     interpretador.declaraVar( VAR_BOOL, NOME_PID_ZAC, &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
 }
 
