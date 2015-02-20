@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -75,10 +75,8 @@ class MbsBot
             pedeVar(NOME_PID_KP);
             pedeVar(NOME_PID_KI);
             pedeVar(NOME_PID_KD);
-            pedeVar(NOME_PID_LIM_P);
-            pedeVar(NOME_PID_LIM_I);
-            pedeVar(NOME_PID_LIM_D);
-            pedeVar(NOME_PID_MMV);
+            pedeVar(NOME_PID_MVX);
+            pedeVar(NOME_PID_MVN);
             pedeVar(NOME_PID_ZAC);
 /*
             pedeVar(NOME_RODA_ESQ);
@@ -142,10 +140,8 @@ class MbsBot
 		int getPidKP() { return pidKP; }
 		int getPidKI() { return pidKI; }
 		int getPidKD() { return pidKD; }
-		int getPidLmp() { return pidLmp; }
-		int getPidLmi() { return pidLmi; }
-		int getPidLmd() { return pidLmd; }
-		int getPidMmv() { return pidMmv; }
+		int getPidMvx() { return pidMvx; }
+		int getPidMvn() { return pidMvn; }
 		int getPidZac() { return pidZac; }
 	private:
         int send(const char *command, int len=-1);
@@ -177,10 +173,8 @@ class MbsBot
 		int pidKP;
 		int pidKI;
 		int pidKD;
-		int pidLmp;
-		int pidLmi;
-		int pidLmd;
-		int pidMmv;
+		int pidMvx;
+		int pidMvn;
 		int pidZac;
 };
 

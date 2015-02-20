@@ -112,6 +112,43 @@ void printErro( enum Erros err )
 }
 
 // ******************************************************************************
+//		MATEMATICA DE PONTO FIXO
+// ******************************************************************************
+
+// 16.16
+class fixo
+{
+public:
+    fixo( long roh )
+    {
+        raw = roh;
+    }
+    fixo( int inteiro = 0, int fracao = 0 )
+    {
+        p.inteiro = inteiro;
+        p.fracao = fracao;
+    }
+    fixo( float valor )
+    {
+        raw = valor * 65536;
+    }
+    fixo operator*( int valor )
+    {
+        return raw * valor;
+    }
+private:
+    union
+    {
+        struct
+        {
+            int inteiro;
+            unsigned int fracao;
+        } p; // partes
+        long raw;
+    };
+};
+
+// ******************************************************************************
 //		EEPROM
 // ******************************************************************************
 
@@ -189,11 +226,11 @@ ConfigGamepad;
 
 typedef struct
 {
-    long Kp;
-    long Ki;
-    long Kd;
-    long minMV;
-    long maxMV;
+    fixo Kp;
+    fixo Ki;
+    fixo Kd;
+    short minMV;
+    short maxMV;
     bool zeraAcc;  // zera accumulador quando erro = 0
     bool dEntrada; // deriva entrada(true) ou erro(false)?
 }
@@ -316,17 +353,17 @@ public:
         dados.delays.motores = DFT_VEL_REFRESH;
         dados.delays.debounce = DFT_PID_DEBOUNCE;
 
-        dados.pid[ PID_CALIBRA ].Kp      =     5;
-        dados.pid[ PID_CALIBRA ].Ki      =   100;
-        dados.pid[ PID_CALIBRA ].Kd      =   300;
-        dados.pid[ PID_CALIBRA ].maxMV   =   100;
-        dados.pid[ PID_CALIBRA ].minMV   =  -100;
+        dados.pid[ PID_CALIBRA ].Kp      =  (float)  5;
+        dados.pid[ PID_CALIBRA ].Ki      =  (float)100;
+        dados.pid[ PID_CALIBRA ].Kd      =  (float)300;
+        dados.pid[ PID_CALIBRA ].maxMV   =  100;
+        dados.pid[ PID_CALIBRA ].minMV   = -100;
         dados.pid[ PID_CALIBRA ].zeraAcc =  true;
         dados.pid[ PID_CORRIDA ].dEntrada = true;
 
-        dados.pid[ PID_CORRIDA ].Kp       = DFT_PID_P;
-        dados.pid[ PID_CORRIDA ].Ki       = DFT_PID_I;
-        dados.pid[ PID_CORRIDA ].Kd       = DFT_PID_D;
+        dados.pid[ PID_CORRIDA ].Kp       = (float) DFT_PID_P;
+        dados.pid[ PID_CORRIDA ].Ki       = (float) DFT_PID_I;
+        dados.pid[ PID_CORRIDA ].Kd       = (float) DFT_PID_D;
         dados.pid[ PID_CORRIDA ].maxMV    = DFT_PID_MAX_MV;
         dados.pid[ PID_CORRIDA ].minMV    = DFT_PID_MIN_MV;
         dados.pid[ PID_CORRIDA ].zeraAcc  = DFT_PID_ZACC;
@@ -1127,42 +1164,45 @@ class PID
 public:
     ConfigPID *cfg;
 
-    long setPoint;
-    long Proporcional;
-    long Integral;
-    long Derivada;
-    long MV;
-    long erro;
-    long eAnterior;
-    long dE;
-    long dT;
+    fixo Proporcional;
+    fixo Integral;
+    fixo Derivada;
 
-    unsigned long tEanterior;   // timestamp penultima mudanca em entrada/erro (dependendo dEntrada)
-    unsigned long tEatual;      // timestamp ultima mudanca em erro (valor atual)
+    int setPoint;
+    int MV;
+    int erro;
+    int eAnterior;
+    int dE;
+    int dT;
+
     unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
+
+    //unsigned long tEanterior;   // timestamp penultima mudanca em entrada/erro (dependendo dEntrada)
+    //unsigned long tEatual;      // timestamp ultima mudanca em erro (valor atual)
 
     void zera( )
     {
-        setPoint = Proporcional = Integral = Derivada = 0;
-        MV = erro = eAnterior = dE = dT = 0;
-        tEanterior = tEatual = tUltimoLoop = agora;
+        Proporcional = Integral = Derivada = 0;
+        setPoint = MV = erro = eAnterior = dE = dT = 0;
+        //tEanterior = tEatual =
+        tUltimoLoop = agora;
     }
 
-    void reinicia( long ultimaMV )
+    void reinicia( int ultimaMV )
     {
         MV = ultimaMV;
         Integral = ultimaMV;
     }
 
-    long executa( long entrada )
+    int executa( int entrada )
     {
-        if( agora > tUltimoLoop )
-        {
-            dT = agora - tUltimoLoop;
+        dT = agora - tUltimoLoop;
 
+        if( dT )
+        {
             erro = setPoint - entrada;
 
-            Proporcional = erro * cfg->Kp;
+            Proporcional = cfg->Kp * erro;
 
             // I
 
@@ -1170,13 +1210,13 @@ public:
             {
                 if( erro && tUltimoLoop )
                 {
-                    Integral = constrain( ( Integral + ( ( erro * dT ) / cfg->Ki ) ) ,
+                    Integral = constrain( ( Integral + ( cfg->Ki * ( dT * erro ) ) ),
                                            cfg->minMV,
                                            cfg->maxMV );
                 }
                 else if( cfg->zeraAcc )
                 {
-                    Integral = 0 ;
+                    Integral = 0;
                 }
             }
             else
@@ -1210,7 +1250,7 @@ public:
                 dT = tEatual - tEanterior;
     */
 
-            long derivadaAntigo = Derivada;
+            fixo derivadaAntigo = Derivada;
 
             Derivada = ( cfg->Kd * dE ) / dT ;
 
@@ -1349,7 +1389,7 @@ public:
     class Grupo
     {
     public:
-        int pontoMedio;
+        long pontoMedio;
         int pontoMin;
         int pontoMax;
         int tamanho;
@@ -1411,14 +1451,7 @@ public:
                     grp.pontoMax = 2*s + 1;
                     grp.tamanho++;
                 }
-/*
-                // suaviza centro barra sensores
-                if( grp.pontoMin >= 15 && grp.pontoMax <= 17 )
-                {
-                    grp.pontoMin = 15;
-                    grp.pontoMax = 17;
-                }
-*/
+
                 grp.pontoMedio = ( grp.pontoMin + grp.pontoMax ) / 2;
 
                 grupos[ nGrupos ] = grp;
@@ -1594,7 +1627,7 @@ void LineFollower::loop()
         }
     }
 
-    pid.setPoint = NUM_IR_TRACK;
+    pid.setPoint = NUM_IR_TRACK;  // meio da barra de sensores
     pid.executa( trilho.pontoMedio );
 
     rodaEsq = (pid.MV < 0) ? (100 + pid.MV) : 100;
@@ -2147,6 +2180,26 @@ private:
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalAtomo" );
         #endif // TRACE_INTERPRETADOR
+
+/*
+   // antes conversao fixo
+    // Binary sketch size: 24.046 bytes (of a 126.976 byte maximum)
+
+
+    float fp = 123;
+
+    fixo pf;
+
+    pf.raw = fp * 65536;
+
+    SERIALX.println(pf.raw);
+
+    fp = pf.p.fracao / 65536;
+
+    fp += pf.p.inteiro;
+
+    SERIALX.println( fp );
+*/
 
         if( tipoToken == NUMERO )
         {
@@ -2784,6 +2837,7 @@ void trataJoystick()
 // ******************************************************************************
 //		SETUP
 // ******************************************************************************
+
 void setup()
 {
     SERIALX.begin(115200);
@@ -2910,11 +2964,13 @@ void setup()
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVX, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVN, &eeprom.dados.pid[ PID_CORRIDA ].minMV );
     interpretador.declaraVar( VAR_BOOL, NOME_PID_ZAC, &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
+
 }
 
 // ******************************************************************************
-//		for(;;) ...
+//		for(;;) loop();
 // ******************************************************************************
+
 void loop()
 {
     agora = millis();

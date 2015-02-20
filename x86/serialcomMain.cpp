@@ -877,10 +877,10 @@ void serialcomFrame::OnTimer1Trigger(wxTimerEvent& event)
         TextCtrlKp->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKP()));
         TextCtrlKi->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKI()));
         TextCtrlKd->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidKD()));
-        TextCtrlLmp->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidLmp()));
-        TextCtrlLmi->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidLmi()));
-        TextCtrlLmd->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidLmd()));
-        TextCtrlMmv->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidMmv()));
+//        TextCtrlLmp->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidLmp()));
+//        TextCtrlLmi->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidLmi()));
+//        TextCtrlLmd->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidLmd()));
+//        TextCtrlMmv->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidMmv()));
         TextCtrlZac->SetValue(wxString::Format(wxT("%i"), mbsbot->getPidZac()));
 
         // aba Sensores
@@ -1101,22 +1101,22 @@ void serialcomFrame::OnTextCtrlKdTextEnter(wxCommandEvent& event)
 
 void serialcomFrame::OnTextCtrlLmpTextEnter(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->enviaVar(NOME_PID_LIM_P, atoi(TextCtrlLmp->GetValue().mb_str(wxConvUTF8)));
+    //MbsBot::getInstance()->enviaVar(NOME_PID_LIM_P, atoi(TextCtrlLmp->GetValue().mb_str(wxConvUTF8)));
 }
 
 void serialcomFrame::OnTextCtrlLmiTextEnter(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->enviaVar(NOME_PID_LIM_I, atoi(TextCtrlLmi->GetValue().mb_str(wxConvUTF8)));
+    //MbsBot::getInstance()->enviaVar(NOME_PID_LIM_I, atoi(TextCtrlLmi->GetValue().mb_str(wxConvUTF8)));
 }
 
 void serialcomFrame::OnTextCtrlLmdTextEnter(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->enviaVar(NOME_PID_LIM_D, atoi(TextCtrlLmd->GetValue().mb_str(wxConvUTF8)));
+    //MbsBot::getInstance()->enviaVar(NOME_PID_LIM_D, atoi(TextCtrlLmd->GetValue().mb_str(wxConvUTF8)));
 }
 
 void serialcomFrame::OnTextCtrlMmvTextEnter(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->enviaVar(NOME_PID_MMV, atoi(TextCtrlMmv->GetValue().mb_str(wxConvUTF8)));
+    MbsBot::getInstance()->enviaVar(NOME_PID_MVX, atoi(TextCtrlMmv->GetValue().mb_str(wxConvUTF8)));
 }
 
 void serialcomFrame::OnTextCtrlDelayDebTextEnter(wxCommandEvent& event)

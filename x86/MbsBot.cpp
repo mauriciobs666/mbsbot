@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2014 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify
@@ -44,10 +44,8 @@ MbsBot::MbsBot()
     pidKP = 0;
     pidKI = 0;
     pidKD = 0;
-    pidLmp = 0;
-    pidLmi = 0;
-    pidLmd = 0;
-    pidMmv = 0;
+    pidMvx = 0;
+    pidMvn = 0;
     pidZac = 0;
 }
 
@@ -270,25 +268,15 @@ char * MbsBot::recebe()
                 if ( (tok = strtok(NULL, " ")) )
                     pidKD = atoi(tok);
             }
-            else if(strcmp(tok, NOME_PID_LIM_P) == 0)
+            else if(strcmp(tok, NOME_PID_MVX) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
-                    pidLmp = atoi(tok);
+                    pidMvx = atoi(tok);
             }
-            else if(strcmp(tok, NOME_PID_LIM_I) == 0)
+            else if(strcmp(tok, NOME_PID_MVN) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )
-                    pidLmi = atoi(tok);
-            }
-            else if(strcmp(tok, NOME_PID_LIM_D) == 0)
-            {
-                if ( (tok = strtok(NULL, " ")) )
-                    pidLmd = atoi(tok);
-            }
-            else if(strcmp(tok, NOME_PID_MMV) == 0)
-            {
-                if ( (tok = strtok(NULL, " ")) )
-                    pidMmv = atoi(tok);
+                    pidMvn = atoi(tok);
             }
             else if(strcmp(tok, NOME_PID_ZAC) == 0)
             {
