@@ -87,6 +87,8 @@ const char ErroSucesso[]    PROGMEM = "SUCESSO";
 const char ErroTamMaxCmd[]  PROGMEM = "ERRO_TAM_MAX_CMD";
 const char ErroPrgInval[]   PROGMEM = "ERRO_PRG_INVALIDO";
 const char ErroVarInval[]   PROGMEM = "ERRO_VAR_INVALIDA";
+const char ErroVarExiste[]  PROGMEM = "ERRO_VAR_EXISTE";
+const char ErroVarArray[]   PROGMEM = "ERRO_VAR_ARRAY";
 const char ErroInpretador[] PROGMEM = "ERRO_INTERPRETADOR";
 const char ErroLFCalibra[]  PROGMEM = "ERRO_LF_CALIBRA";
 const char ErroLFTrilho[]   PROGMEM = "ERRO_LF_TRILHO";
@@ -97,6 +99,8 @@ const char* const tabErros[] PROGMEM =
     ErroTamMaxCmd,
     ErroPrgInval,
     ErroVarInval,
+    ErroVarExiste,
+    ErroVarArray,
     ErroInpretador,
     ErroLFCalibra,
     ErroLFTrilho
@@ -136,9 +140,63 @@ public:
     {
         return raw * valor;
     }
+    fixo operator*( fixo& valor )
+    {
+        return ( ( raw >> 8 ) * ( valor.raw >> 8 ) );
+    }
+    fixo operator+( fixo& valor )
+    {
+        return raw + valor.raw;
+    }
+    fixo operator-( fixo& valor )
+    {
+        return raw - valor.raw;
+    }
+    fixo& operator+=( const fixo& valor )
+    {
+        raw += valor.raw;
+        return *this;
+    }
+    fixo& operator-=( const fixo& valor )
+    {
+        raw -= valor.raw;
+        return *this;
+    }
+    operator bool()
+    {
+        return raw;
+    }
+    float toFloat()
+    {
+        float f = (float)p.fracao / 65536;
+
+        if( p.inteiro < 0 )
+            return f *= -1;
+
+        return f + p.inteiro;
+    }
+    int toInt()
+    {
+        return p.inteiro;
+    }
+    fixo& Constrain( int minimo, int maximo )
+    {
+        if( p.inteiro <= minimo )
+        {
+            p.inteiro = minimo;
+            p.fracao = 0;
+        }
+        else if( p.inteiro >= maximo )
+        {
+            p.inteiro = maximo;
+            p.fracao = 0;
+        }
+        return *this;
+    }
 private:
     union
     {
+        // TODO (Mauricio#1#): Dependente plataforma arduino
         struct
         {
             int inteiro;
@@ -229,8 +287,9 @@ typedef struct
     fixo Kp;
     fixo Ki;
     fixo Kd;
-    short minMV;
-    short maxMV;
+    int minMV;
+    int maxMV;
+    int sampleTime;
     bool zeraAcc;  // zera accumulador quando erro = 0
     bool dEntrada; // deriva entrada(true) ou erro(false)?
 }
@@ -1158,7 +1217,6 @@ drive;
 
 #ifdef LINE_FOLLOWER
 
-// TODO (Mauricio#1#): template <class PidType>
 class PID
 {
 public:
@@ -1177,14 +1235,10 @@ public:
 
     unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
 
-    //unsigned long tEanterior;   // timestamp penultima mudanca em entrada/erro (dependendo dEntrada)
-    //unsigned long tEatual;      // timestamp ultima mudanca em erro (valor atual)
-
     void zera( )
     {
         Proporcional = Integral = Derivada = 0;
         setPoint = MV = erro = eAnterior = dE = dT = 0;
-        //tEanterior = tEatual =
         tUltimoLoop = agora;
     }
 
@@ -1196,13 +1250,18 @@ public:
 
     int executa( int entrada )
     {
-        dT = agora - tUltimoLoop;
+        if( ! cfg )
+            return 0;
 
-        if( dT )
+        if( ( dT = agora - tUltimoLoop ) > cfg->sampleTime )
         {
             erro = setPoint - entrada;
 
+            // P
+
             Proporcional = cfg->Kp * erro;
+
+            fixo resultado = Proporcional;
 
             // I
 
@@ -1210,9 +1269,8 @@ public:
             {
                 if( erro && tUltimoLoop )
                 {
-                    Integral = constrain( ( Integral + ( cfg->Ki * ( dT * erro ) ) ),
-                                           cfg->minMV,
-                                           cfg->maxMV );
+                    Integral += ((fixo)( cfg->Ki * (int)( dT * erro ) ));
+                    Integral.Constrain( cfg->minMV, cfg->maxMV );
                 }
                 else if( cfg->zeraAcc )
                 {
@@ -1224,41 +1282,30 @@ public:
                 Integral = 0;
             }
 
+            resultado += Integral;
+
             // D
 
             if( cfg->dEntrada )
             {
+                // deriva entrada pra evitar spike qdo muda setPoint
                 dE = - ( entrada - eAnterior );
                 eAnterior = entrada;
             }
             else
             {
+                // deriva erro ( setPoint - entrada )
                 dE = erro - eAnterior;
                 eAnterior = erro;
             }
 
-    /*
-            if( dE )
-            {
-                tEanterior = tEatual;
-                tEatual = agora;
-            }
-
-            //if( ( agora - tEatual ) > dT )
-            //    dT = agora - tEanterior;  // = agora - tEatual;
-            //else
-                dT = tEatual - tEanterior;
-    */
-
-            fixo derivadaAntigo = Derivada;
-
             Derivada = ( cfg->Kd * dE ) / dT ;
 
-            MV = constrain( ( Proporcional + Integral + Derivada ),
-                              cfg->minMV,
-                              cfg->maxMV );
+            resultado += Derivada;
 
-            if( dE || derivadaAntigo != Derivada )
+            MV = resultado.Constrain( cfg->minMV, cfg->maxMV ).toInt();
+
+            if( dE )
                 print();
 
             tUltimoLoop = agora;
@@ -1839,12 +1886,13 @@ typedef enum
 {
     VAR_NULO = 0,
     VAR_CHAR,
-    VAR_INT,
-    VAR_LONG,
+    VAR_INT,    // signed 16
+    VAR_LONG,   // signed 32
+    VAR_FIXO,   // 16.16
     VAR_BOOL,
-    VAR_PID,
-    VAR_SENSOR,
-    VAR_MOTOR
+    VAR_PID,    // ConfigPID
+    VAR_SENSOR, // ConfigSensor
+    VAR_MOTOR   // ConfigMotor
 }
 TipoVariavel;
 
@@ -1853,7 +1901,7 @@ class Variavel
 public:
     char nome[TAM_NOME];
     char tipo;
-    char tam;
+    char tam; // TODO (Mauricio#1#): array
     void *dados;
 
     Variavel( TipoVariavel tipo_=VAR_NULO, const char *nome_=NULL, void *dados_=NULL, char tam_=1 )
@@ -1868,6 +1916,23 @@ public:
         dados = dados_;
         tam = tam_;
     }
+
+    void print()
+    {
+        switch( tipo )
+        {
+        case VAR_CHAR:
+            SERIALX.print( (int) *( (char*) dados ) );
+        case VAR_INT:
+            SERIALX.print( (int) *( (int* ) dados ) );
+        case VAR_LONG:
+            SERIALX.print( (long) *( (long*) dados ) );
+        case VAR_BOOL:
+            SERIALX.print( (bool) *( (bool*) dados ) );
+        default:
+            break;
+        }
+    }
 };
 
 int compVar( const void *a, const void *b )
@@ -1875,7 +1940,7 @@ int compVar( const void *a, const void *b )
     return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_NOME );
 }
 
-//#define TRACE_INTERPRETADOR
+#define TRACE_INTERPRETADOR
 class Interpretador
 {
 public:
@@ -1890,7 +1955,9 @@ public:
 
     Variavel* buscaVar( const Variavel* chave )
     {
-        return nvars ? ( Variavel* ) bsearch( chave, var, nvars, sizeof( Variavel ), compVar ) : NULL ;
+        return nvars
+                ? ( Variavel* ) bsearch( chave, var, nvars, sizeof( Variavel ), compVar )
+                : NULL ;
     }
 
     Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=1 )
@@ -1898,25 +1965,20 @@ public:
         Variavel nova( tipo, nome, dados, tam );
 
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print( "declaraVar: " );
+        SERIALX.print( "declara " );
         SERIALX.print( nome );
         #endif // TRACE_INTERPRETADOR
 
         if( buscaVar( nome ) )
         {
-            //#ifdef TRACE_INTERPRETADOR
-            SERIALX.print( "declaraVar: ja existe " );
-            SERIALX.println( nome );
-            //#endif // TRACE_INTERPRETADOR
+            SERIALX.print( nome );
+            printErro( ERRO_VAR_EXISTE );
             return NULL;
         }
 
         if( ! ( nvars < NUM_VARS-1 ) )
         {
-            //#ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "declaraVar: array cheio" );
-            //#endif // TRACE_INTERPRETADOR
-
+            printErro( ERRO_VAR_ARRAY );
             return NULL;
         }
 
@@ -1934,9 +1996,7 @@ public:
         nvars++;
 
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print( "declaraVar: " );
-        SERIALX.println( nome );
-        SERIALX.print( " criada pos " );
+        SERIALX.print( " elem " );
         SERIALX.println( elem );
         #endif // TRACE_INTERPRETADOR
 
@@ -1958,8 +2018,12 @@ public:
         linha = lnh;
         getToken();
 
-        if( tipoToken == NOME && ( 0 == strncmp( token, CMD_GET, TAM_TOKEN) || 0 == strncmp( token, CMD_SET, TAM_TOKEN ) ) )
+        if( tipoToken == NOME
+            && (    0 == strncmp( token, CMD_GET, TAM_TOKEN)
+                 || 0 == strncmp( token, CMD_SET, TAM_TOKEN ) ) )
+        {
             getToken();
+        }
 
         long resultado = 0;
         enum Erros rc = evalAtribuicao( &resultado );
@@ -2014,24 +2078,10 @@ private:
                 {
                     SERIALX.print( bkpToken );
                     SERIALX.print( " " );
+                    v->print();
+                    SERIALX.println();
 
-                    switch( v->tipo )
-                    {
-                    case VAR_CHAR:
-                        SERIALX.println( (int) *( (char*) v->dados ) );
-                        return SUCESSO;
-                    case VAR_INT:
-                        SERIALX.println( (int) *( (int* ) v->dados ) );
-                        return SUCESSO;
-                    case VAR_LONG:
-                        SERIALX.println( (long) *( (long*) v->dados ) );
-                        return SUCESSO;
-                    case VAR_BOOL:
-                        SERIALX.println( (bool) *( (bool*) v->dados ) );
-                        return SUCESSO;
-                    default:
-                        return ERRO_INTERPRETADOR;
-                    }
+                    return SUCESSO;
                 }
                 else if( token[0] == '=' )  // atribuicao
                 {
@@ -2180,26 +2230,6 @@ private:
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalAtomo" );
         #endif // TRACE_INTERPRETADOR
-
-/*
-   // antes conversao fixo
-    // Binary sketch size: 24.046 bytes (of a 126.976 byte maximum)
-
-
-    float fp = 123;
-
-    fixo pf;
-
-    pf.raw = fp * 65536;
-
-    SERIALX.println(pf.raw);
-
-    fp = pf.p.fracao / 65536;
-
-    fp += pf.p.inteiro;
-
-    SERIALX.println( fp );
-*/
 
         if( tipoToken == NUMERO )
         {
@@ -2934,6 +2964,7 @@ void setup()
     VAR_CHAR,
     VAR_INT,
     VAR_LONG,
+    VAR_FIXO,
     VAR_BOOL,
     VAR_STRING
 */
