@@ -2104,8 +2104,8 @@ public:
         Variavel nova( tipo, nome, dados, tam );
 
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print( "declara " );
-        SERIALX.print( nome );
+            SERIALX.print( "declara " );
+            SERIALX.print( nome );
         #endif // TRACE_INTERPRETADOR
 
         if( buscaVar( nome ) )
@@ -2135,8 +2135,8 @@ public:
         nvars++;
 
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print( " elem " );
-        SERIALX.println( elem );
+            SERIALX.print( " elem " );
+            SERIALX.println( elem );
         #endif // TRACE_INTERPRETADOR
 
         return &var[elem];
@@ -2149,9 +2149,9 @@ public:
     void eval( char *lnh )
     {
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print( "eval( " );
-        SERIALX.print( lnh );
-        SERIALX.println( " )" );
+            SERIALX.print( "eval( " );
+            SERIALX.print( lnh );
+            SERIALX.println( " )" );
         #endif // TRACE_INTERPRETADOR
 
         linha = lnh;
@@ -2166,11 +2166,12 @@ public:
         }
 
         Variavel resultado;
+
         enum Erros rc = evalAtribuicao( &resultado );
 
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.print("resultado = ");
-        resultado.print();
+            SERIALX.print("resultado = ");
+            resultado.print();
         #endif // TRACE_INTERPRETADOR
 
         if( rc )
@@ -2362,8 +2363,9 @@ private:
         else
             rc = evalAtomo( resultado );
 
-        if( op == '-' )
-            *resultado = -( *resultado );
+        // TODO (Mauricio#1#): menos unario
+        if( op == '-' );
+            //*resultado = -( *resultado );
 
         return rc;
     }
@@ -2376,7 +2378,8 @@ private:
 
         if( tipoToken == NUMERO )
         {
-            *resultado = atol( token );
+            // TODO (Mauricio#1#): leitura NUMERO
+//            *resultado = atol( token );
             getToken();
             return SUCESSO;
         }
@@ -2388,23 +2391,7 @@ private:
 
             if( v )
             {
-                switch( v->tipo )
-                {
-                case VAR_CHAR:
-                    *resultado = *( (char*) v->dados );
-                    break;
-                case VAR_INT:
-                    *resultado = *( (int* ) v->dados );
-                    break;
-                case VAR_LONG:
-                    *resultado = *( (long*) v->dados );
-                    break;
-                case VAR_BOOL:
-                    *resultado = *( (bool*) v->dados );
-                    break;
-                default:
-                    break;
-                }
+                *resultado = *v;
                 return SUCESSO;
             }
         }
