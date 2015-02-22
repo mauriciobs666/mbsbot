@@ -162,6 +162,18 @@ public:
         raw -= valor.raw;
         return *this;
     }
+    fixo& operator*=( const fixo& valor )
+    {
+        raw >>= 8;
+        raw *= ( valor.raw >> 8 );
+        return *this;
+    }
+    fixo& operator/=( const fixo& valor )
+    {
+        raw << 8;
+        raw /= ( valor.raw << 8 );
+        return *this;
+    }
     operator bool()
     {
         return raw;
@@ -1917,6 +1929,131 @@ public:
         tam = tam_;
     }
 
+    int toInt() const
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            return *((int*)dados);
+        case VAR_LONG:
+            return *((long*)dados);
+        case VAR_FIXO:
+            return ((fixo*)dados)->toInt();
+        case VAR_BOOL:
+        default:
+            break;
+        }
+        return 0;
+    }
+
+    long toLong() const
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            return *((int*)dados);
+        case VAR_LONG:
+            return *((long*)dados);
+        case VAR_FIXO:
+            return ((fixo*)dados)->toInt();
+        default:
+            break;
+        }
+        return 0;
+    }
+
+    fixo toFixo() const
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            return *((int*)dados);
+        case VAR_LONG:
+            return *((long*)dados);
+        case VAR_FIXO:
+            return *((fixo*)dados);
+        default:
+            break;
+        }
+        return 0;
+    }
+
+    Variavel& operator+=( const Variavel& var)
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            *((int*)dados) += var.toInt();
+            break;
+        case VAR_LONG:
+            *((long*)dados) += var.toLong();
+            break;
+        case VAR_FIXO:
+            ((fixo*)dados)->operator+=(var.toFixo());
+            break;
+        default:
+            break;
+        }
+        return *this;
+    }
+
+    Variavel& operator-=( const Variavel& var)
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            *((int*)dados) -= var.toInt();
+            break;
+        case VAR_LONG:
+            *((long*)dados) -= var.toLong();
+            break;
+        case VAR_FIXO:
+            ((fixo*)dados)->operator-=(var.toFixo());
+            break;
+        default:
+            break;
+        }
+        return *this;
+    }
+
+    Variavel& operator*=( const Variavel& var)
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            *((int*)dados) *= var.toInt();
+            break;
+        case VAR_LONG:
+            *((long*)dados) *= var.toLong();
+            break;
+        case VAR_FIXO:
+            ((fixo*)dados)->operator*=(var.toFixo());
+            break;
+        default:
+            break;
+        }
+        return *this;
+    }
+
+    Variavel& operator/=( const Variavel& var)
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            *((int*)dados) /= var.toInt();
+            break;
+        case VAR_LONG:
+            *((long*)dados) /= var.toLong();
+            break;
+        case VAR_FIXO:
+            ((fixo*)dados)->operator/=(var.toFixo());
+            break;
+        default:
+            break;
+        }
+        return *this;
+    }
+
     void print()
     {
         switch( tipo )
@@ -1927,6 +2064,8 @@ public:
             SERIALX.print( (int) *( (int* ) dados ) );
         case VAR_LONG:
             SERIALX.print( (long) *( (long*) dados ) );
+        case VAR_FIXO:
+            SERIALX.print( ((fixo*)dados)->toFloat() );
         case VAR_BOOL:
             SERIALX.print( (bool) *( (bool*) dados ) );
         default:
@@ -2018,6 +2157,7 @@ public:
         linha = lnh;
         getToken();
 
+        // descarta comandos GET e SET (gambi)
         if( tipoToken == NOME
             && (    0 == strncmp( token, CMD_GET, TAM_TOKEN)
                  || 0 == strncmp( token, CMD_SET, TAM_TOKEN ) ) )
@@ -2025,20 +2165,19 @@ public:
             getToken();
         }
 
-        long resultado = 0;
+        Variavel resultado;
         enum Erros rc = evalAtribuicao( &resultado );
 
         #ifdef TRACE_INTERPRETADOR
+        SERIALX.print("resultado = ");
+        resultado.print();
+        #endif // TRACE_INTERPRETADOR
+
         if( rc )
         {
-            SERIALX.print( "eval( " );
-            SERIALX.print( lnh );
-            SERIALX.print( " ) => " );
+            SERIALX.print( "eval() => " );
             printErro( rc );
         }
-        SERIALX.print("resultado = ");
-        SERIALX.println( resultado );
-        #endif // TRACE_INTERPRETADOR
     }
 private:
     char *linha;
@@ -2055,12 +2194,12 @@ private:
         BLOCO
     } tipoToken;
 
-    Erros evalAtribuicao( long *resultado )
+    Erros evalAtribuicao( Variavel* resultado )
     {
         enum Erros rc = SUCESSO;
 
         #ifdef TRACE_INTERPRETADOR
-        SERIALX.println( "evalAtribuicao" );
+            SERIALX.println( "evalAtribuicao" );
         #endif // TRACE_INTERPRETADOR
 
         if( tipoToken == NOME )
@@ -2095,16 +2234,19 @@ private:
                         switch( v->tipo )
                         {
                         case VAR_CHAR:
-                            *( (char*) v->dados ) = *resultado;
+                            *( (char*) v->dados ) = *( (char*)resultado->dados );
                             return SUCESSO;
                         case VAR_INT:
-                            *( (int* ) v->dados ) = *resultado;
+                            *( (int* ) v->dados ) = *( (int* )resultado->dados );
                             return SUCESSO;
                         case VAR_LONG:
-                            *( (long*) v->dados ) = *resultado;
+                            *( (long*) v->dados ) = *( (long*)resultado->dados );
+                            return SUCESSO;
+                        case VAR_FIXO:
+                            *( (fixo*) v->dados ) = *( (fixo*)resultado->dados );
                             return SUCESSO;
                         case VAR_BOOL:
-                            *( (bool*) v->dados ) = *resultado;
+                            *( (bool*) v->dados ) = *( (bool*)resultado->dados );
                             return SUCESSO;
                         default:
                             return ERRO_INTERPRETADOR;
@@ -2131,20 +2273,20 @@ private:
         return ERRO_INTERPRETADOR;
     }
 
-    Erros evalExpressao( long *resultado )
+    Erros evalExpressao( Variavel* resultado )
     {
-        #ifdef TRACE_INTERPRETADOR
-        SERIALX.println( "evalExpressao" );
-        #endif // TRACE_INTERPRETADOR
-
-        long temp;
-        char op;
         enum Erros rc = SUCESSO;
+
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "evalExpressao" );
+        #endif // TRACE_INTERPRETADOR
 
         rc = evalTermo( resultado );
 
+        char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '+' || op == '-' ) )
         {
+            Variavel temp;
             getToken();
             rc = evalTermo( &temp );
             switch( op )
@@ -2160,13 +2302,11 @@ private:
         return rc;
     }
 
-    Erros evalTermo( long *resultado )
+    Erros evalTermo( Variavel* resultado )
     {
-        // Termo -> Fator [ * Fator ] [ / Fator ]
-
-        long temp;
-        char op;
         enum Erros rc = SUCESSO;
+
+        // Termo -> Fator [ * Fator ] [ / Fator ]
 
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalTermo" );
@@ -2174,8 +2314,10 @@ private:
 
         rc = evalFator( resultado );
 
+        char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '*' || op == '/' ) )
         {
+            Variavel temp;
             getToken();
             rc = evalFator( &temp );
             switch( op )
@@ -2191,9 +2333,10 @@ private:
         return rc;
     }
 
-    Erros evalFator( long *resultado )
+    Erros evalFator( Variavel* resultado )
     {
-// Nome, Numero,
+
+        // Nome, Numero,
         char op = 0;
         enum Erros rc = SUCESSO;
 
@@ -2225,7 +2368,7 @@ private:
         return rc;
     }
 
-    Erros evalAtomo( long *resultado )
+    Erros evalAtomo( Variavel* resultado )
     {
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalAtomo" );
@@ -2988,9 +3131,9 @@ void setup()
     interpretador.declaraVar( VAR_INT, NOME_ZERO_DIR, &eeprom.dados.motorDir.centro );
     interpretador.declaraVar( VAR_INT, NOME_ACEL_DIR, &eeprom.dados.motorDir.aceleracao );
 
-    interpretador.declaraVar( VAR_INT, NOME_PID_KP, &eeprom.dados.pid[ PID_CORRIDA ].Kp );
-    interpretador.declaraVar( VAR_INT, NOME_PID_KI, &eeprom.dados.pid[ PID_CORRIDA ].Ki );
-    interpretador.declaraVar( VAR_INT, NOME_PID_KD, &eeprom.dados.pid[ PID_CORRIDA ].Kd );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_KP, &eeprom.dados.pid[ PID_CORRIDA ].Kp );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_KI, &eeprom.dados.pid[ PID_CORRIDA ].Ki );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_KD, &eeprom.dados.pid[ PID_CORRIDA ].Kd );
 
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVX, &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVN, &eeprom.dados.pid[ PID_CORRIDA ].minMV );
