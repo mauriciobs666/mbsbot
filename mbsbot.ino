@@ -81,9 +81,9 @@ bool traceLF = false;
 
 enum Erros primeiroErro = SUCESSO;
 
-char strBuffer[20];
-
+#define MAX_STR_ERRO 20            // "01234567890123456789"
 const char ErroSucesso[]    PROGMEM = "SUCESSO";
+const char ErroTodo[]       PROGMEM = "TODO";
 const char ErroTamMaxCmd[]  PROGMEM = "ERRO_TAM_MAX_CMD";
 const char ErroPrgInval[]   PROGMEM = "ERRO_PRG_INVALIDO";
 const char ErroVarInval[]   PROGMEM = "ERRO_VAR_INVALIDA";
@@ -96,6 +96,7 @@ const char ErroLFTrilho[]   PROGMEM = "ERRO_LF_TRILHO";
 const char* const tabErros[] PROGMEM =
 {
     ErroSucesso,
+    ErroTodo,
     ErroTamMaxCmd,
     ErroPrgInval,
     ErroVarInval,
@@ -106,10 +107,20 @@ const char* const tabErros[] PROGMEM =
     ErroLFTrilho
 };
 
-void printErro( enum Erros err )
+void printErro( enum Erros err, char* detalhes = NULL )
 {
-    strcpy_P( strBuffer, (char*) pgm_read_word( &tabErros[err] ) );
-    SERIALX.println( strBuffer );
+    char temp[MAX_STR_ERRO+1];
+    strcpy_P( temp, (char*) pgm_read_word( &tabErros[err] ) );
+    temp[MAX_STR_ERRO] = 0;
+    SERIALX.print( temp );
+
+    if( detalhes )
+    {
+        SERIALX.print( ": " );
+        SERIALX.print( detalhes );
+    }
+
+    SERIALX.println( "!" );
 
     if( ! primeiroErro )
         primeiroErro = err;
@@ -123,18 +134,26 @@ void printErro( enum Erros err )
 class fixo
 {
 public:
-    fixo( long roh )
-    {
-        raw = roh;
-    }
-    fixo( int inteiro = 0, int fracao = 0 )
+    fixo( int inteiro = 0, unsigned int fracao = 0 )
     {
         p.inteiro = inteiro;
         p.fracao = fracao;
     }
-    fixo( float valor )
+    fixo( long raww )
     {
-        raw = valor * 65536;
+        raw = raww;
+    }
+    fixo( char* str )
+    {
+        parse( str );
+    }
+    fixo& parse( char* str )
+    {
+        int len = strlen( str );
+        p.inteiro = len ? atoi( str ) : 0;
+        char* pos = strchr( str, '.' );
+        p.fracao = pos ? atol( pos+1 ) : 0;
+        return *this;
     }
     fixo operator*( int valor )
     {
@@ -178,14 +197,11 @@ public:
     {
         return raw;
     }
-    float toFloat()
+    void print()
     {
-        float f = (float)p.fracao / 65536;
-
-        if( p.inteiro < 0 )
-            return f *= -1;
-
-        return f + p.inteiro;
+        SERIALX.print( p.inteiro );
+        SERIALX.print( "." );
+        SERIALX.print( p.fracao );
     }
     int toInt()
     {
@@ -258,6 +274,20 @@ typedef struct
             maximo = 65535;
         }
         autoMinMax = false;
+    }
+    void print()
+    {
+        SERIALX.print((int)pino);
+        SERIALX.print(",");
+        SERIALX.print((int)tipo);
+        SERIALX.print(",");
+        SERIALX.print((int)invertido);
+        SERIALX.print(",");
+        SERIALX.print(minimo);
+        SERIALX.print(",");
+        SERIALX.print(maximo);
+        SERIALX.print(",");
+        SERIALX.print(centro);
     }
 }
 ConfigSensor;
@@ -424,17 +454,17 @@ public:
         dados.delays.motores = DFT_VEL_REFRESH;
         dados.delays.debounce = DFT_PID_DEBOUNCE;
 
-        dados.pid[ PID_CALIBRA ].Kp      =  (float)  5;
-        dados.pid[ PID_CALIBRA ].Ki      =  (float)100;
-        dados.pid[ PID_CALIBRA ].Kd      =  (float)300;
+        dados.pid[ PID_CALIBRA ].Kp      =    5;
+        dados.pid[ PID_CALIBRA ].Ki      =  100;
+        dados.pid[ PID_CALIBRA ].Kd      =  300;
         dados.pid[ PID_CALIBRA ].maxMV   =  100;
         dados.pid[ PID_CALIBRA ].minMV   = -100;
         dados.pid[ PID_CALIBRA ].zeraAcc =  true;
         dados.pid[ PID_CORRIDA ].dEntrada = true;
 
-        dados.pid[ PID_CORRIDA ].Kp       = (float) DFT_PID_P;
-        dados.pid[ PID_CORRIDA ].Ki       = (float) DFT_PID_I;
-        dados.pid[ PID_CORRIDA ].Kd       = (float) DFT_PID_D;
+        dados.pid[ PID_CORRIDA ].Kp       = DFT_PID_P;
+        dados.pid[ PID_CORRIDA ].Ki       = DFT_PID_I;
+        dados.pid[ PID_CORRIDA ].Kd       = DFT_PID_D;
         dados.pid[ PID_CORRIDA ].maxMV    = DFT_PID_MAX_MV;
         dados.pid[ PID_CORRIDA ].minMV    = DFT_PID_MIN_MV;
         dados.pid[ PID_CORRIDA ].zeraAcc  = DFT_PID_ZACC;
@@ -609,41 +639,38 @@ public:
     volatile unsigned short valor, anterior;
     ConfigSensor *cfg;
 
-    Sensor() : valor(0), anterior(0), cfg(NULL)
-        {}
+    Sensor() : valor(0), anterior(0), cfg(NULL) {}
+
+    unsigned short getValor()
+        { return valor; }
+    void centrar()
+        { if( cfg ) cfg->centro = valor; }
+    int delta()
+        { return valor - anterior; }
+    bool ehMinimo(unsigned short margem = 0)
+        { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
+    bool ehMaximo(unsigned short margem = 0)
+        { return ( cfg->invertido ? (valor - cfg->minimo) <= margem : (cfg->maximo - valor) <= margem ); }
+    bool calibrado( int threshold = 200 ) // TODO (Mauricio#1#): threshold configuravel de calibrado()
+        { return ( (cfg->maximo - cfg->minimo ) > threshold ); }
+
     void setConfig(ConfigSensor *c)
     {
         cfg=c;
         valor = anterior = cfg->centro;
     }
-    void print()
-    {
-        SERIALX.print((int)cfg->pino);
-        SERIALX.print(" ");
-        SERIALX.print((int)cfg->tipo);
-        SERIALX.print(" ");
-        SERIALX.print((int)cfg->invertido);
-        SERIALX.print(" ");
-        SERIALX.print(cfg->minimo);
-        SERIALX.print(" ");
-        SERIALX.print(cfg->maximo);
-        SERIALX.print(" ");
-        SERIALX.print(cfg->centro);
-        SERIALX.println("");
-    }
-    unsigned short getValor()
-        { return valor; }
+
     void setValor(unsigned short v)
     {
         if( cfg )
         {
-            anterior = valor;
             if( cfg->autoMinMax )
             {
                 if (v < cfg->minimo) cfg->minimo = v;
                 if (v > cfg->maximo) cfg->maximo = v;
             }
         }
+        anterior = valor;
         valor = v;
     }
     unsigned short calibrar()
@@ -656,10 +683,6 @@ public:
         }
         return valor;
     }
-    bool calibrado()
-        { return ( (cfg->maximo - cfg->minimo ) > 200 ); }
-    void centrar()
-        { if( cfg ) cfg->centro = valor; }
     Sensor& refresh()
     {
         if( cfg )
@@ -691,11 +714,13 @@ public:
         }
         return *this;
     }
-    bool ehMinimo(unsigned short margem = 0)
-        { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
-    bool ehMaximo(unsigned short margem = 0)
-        { return ( cfg->invertido ? (valor - cfg->minimo) <= margem : (cfg->maximo - valor) <= margem ); }
-    int getPorcentoAprox(int grude=10)
+    int getPorcento()
+    {
+        return ( cfg->maximo != cfg->minimo )
+                ? constrain( (((long)(valor - cfg->minimo) * 100) / ( cfg->maximo - cfg->minimo ) ), 0, 100 )
+                : 0;
+    }
+    int getPorcentoCentro(int grude=10)
     {
         long x = (long)valor - (long)cfg->centro;
 
@@ -715,25 +740,17 @@ public:
 
         return x;
     }
-    int delta()
-        { return valor - anterior; }
     bool getBool()
     {
         switch( cfg->tipo )
         {
-            case ConfigSensor::SENSOR_ANALOGICO:
-                if( calibrado() )
-                {
-                    unsigned short meio = ( ( cfg->maximo - cfg->minimo ) >> 1 ) + cfg->minimo;
-                    return ( ( valor > meio ) ^ cfg->invertido );
-                }
-            break;
+        case ConfigSensor::SENSOR_ANALOGICO:
+            return ( ( getPorcento() > 50 ) ^ cfg->invertido );
 
-            case ConfigSensor::SENSOR_DIGITAL:
-                return ( valor ^ cfg->invertido );
-            break;
+        case ConfigSensor::SENSOR_DIGITAL:
+            return ( valor ^ cfg->invertido );
 
-            default:
+        default:
             break;
         }
         return false;
@@ -1103,10 +1120,13 @@ public:
 
             // pra evitar interferencias, atualiza um sensor de cada vez
             static char turno = 0;
-            ( turno ^= 1 ) ? sensorEsq->refresh() : sensorDir->refresh() ;
 
-            int s_esq = sensorEsq->getPorcentoAprox();
-            int s_dir = sensorDir->getPorcentoAprox();;
+            ( turno ^= 1 )
+                ? sensorEsq->refresh()
+                : sensorDir->refresh();
+
+            int s_esq = sensorEsq->getPorcentoCentro();
+            int s_dir = sensorDir->getPorcentoCentro();
 
             #ifdef TRACE
                 SERIALX.print(" se=");
@@ -2065,7 +2085,7 @@ public:
         case VAR_LONG:
             SERIALX.print( (long) *( (long*) dados ) );
         case VAR_FIXO:
-            SERIALX.print( ((fixo*)dados)->toFloat() );
+            ((fixo*)dados)->print();
         case VAR_BOOL:
             SERIALX.print( (bool) *( (bool*) dados ) );
         default:
@@ -2085,6 +2105,8 @@ class Interpretador
 public:
     Variavel var[NUM_VARS];
     char nvars;
+
+    Interpretador() : nvars(0), linha(NULL) {}
 
     Variavel* buscaVar( const char *nome )
     {
@@ -2106,7 +2128,7 @@ public:
         #ifdef TRACE_INTERPRETADOR
             SERIALX.print( "declara " );
             SERIALX.print( nome );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         if( buscaVar( nome ) )
         {
@@ -2137,13 +2159,9 @@ public:
         #ifdef TRACE_INTERPRETADOR
             SERIALX.print( " elem " );
             SERIALX.println( elem );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         return &var[elem];
-    }
-
-    Interpretador() : nvars(0), linha(NULL)
-    {
     }
 
     void eval( char *lnh )
@@ -2152,7 +2170,7 @@ public:
             SERIALX.print( "eval( " );
             SERIALX.print( lnh );
             SERIALX.println( " )" );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         linha = lnh;
         getToken();
@@ -2172,7 +2190,7 @@ public:
         #ifdef TRACE_INTERPRETADOR
             SERIALX.print("resultado = ");
             resultado.print();
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         if( rc )
         {
@@ -2201,7 +2219,7 @@ private:
 
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalAtribuicao" );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         if( tipoToken == NOME )
         {
@@ -2280,7 +2298,7 @@ private:
 
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalExpressao" );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         rc = evalTermo( resultado );
 
@@ -2311,7 +2329,7 @@ private:
 
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalTermo" );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         rc = evalFator( resultado );
 
@@ -2343,7 +2361,7 @@ private:
 
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalFator" );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         if( tipoToken == DELIMIT && token[0] == '+' || token[0] == '-' )
         {
@@ -2364,7 +2382,8 @@ private:
             rc = evalAtomo( resultado );
 
         // TODO (Mauricio#1#): menos unario
-        if( op == '-' );
+        if( op == '-' )
+            printErro( TODO );
             //*resultado = -( *resultado );
 
         return rc;
@@ -2374,12 +2393,13 @@ private:
     {
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalAtomo" );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         if( tipoToken == NUMERO )
         {
             // TODO (Mauricio#1#): leitura NUMERO
 //            *resultado = atol( token );
+            printErro( TODO );
             getToken();
             return SUCESSO;
         }
@@ -2402,7 +2422,7 @@ private:
     {
         #ifdef TRACE_INTERPRETADOR
             SERIALX.print( "getToken " );
-        #endif // TRACE_INTERPRETADOR
+        #endif
 
         tipoToken = NULO;
 
@@ -2471,16 +2491,14 @@ private:
     {
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "devolve" );
-        #endif // TRACE_INTERPRETADOR
+        #endif
         for( char *t = token ; *t ; t++ )
             linha--;
     }
 
     bool isdelim( char c )
     {
-        if( strchr("+-*/=()", c ) || c == 0 || c == ' ' )
-            return true;
-        return false;
+        return ( strchr("+-*/=()", c ) || c == 0 || c == ' ' );
     }
 }
 interpretador;
@@ -2785,9 +2803,9 @@ public:
     {
         SERIALX.print(CMD_JOYPAD);
         SERIALX.print(" X ");
-        SERIALX.print(gamepad.x.getPorcentoAprox(0));
+        SERIALX.print(gamepad.x.getPorcentoCentro(0));
         SERIALX.print(" ~ ");
-        SERIALX.print(gamepad.x.getPorcentoAprox());
+        SERIALX.print(gamepad.x.getPorcentoCentro());
 
         SERIALX.print(" (");
         SERIALX.print(gamepad.x.cfg->minimo);
@@ -2800,9 +2818,9 @@ public:
 
         SERIALX.print(CMD_JOYPAD);
         SERIALX.print(" Y ");
-        SERIALX.print(gamepad.y.getPorcentoAprox(0));
+        SERIALX.print(gamepad.y.getPorcentoCentro(0));
         SERIALX.print(" ~ ");
-        SERIALX.print(gamepad.y.getPorcentoAprox());
+        SERIALX.print(gamepad.y.getPorcentoCentro());
 
         SERIALX.print(" (");
         SERIALX.print(gamepad.y.cfg->minimo);
@@ -2814,9 +2832,9 @@ public:
         SERIALX.println(gamepad.y.valor);
     /*
         SERIALX.print(" Z ");
-        SERIALX.print(gamepad.z.getPorcentoAprox(0));
+        SERIALX.print(gamepad.z.getPorcentoCentro(0));
         SERIALX.print(" R ");
-        SERIALX.println(gamepad.r.getPorcentoAprox(0));
+        SERIALX.println(gamepad.r.getPorcentoCentro(0));
     */
     }
 
@@ -3047,7 +3065,6 @@ void setup()
     drive.sensorDir = &sensores[2];
     drive.sensorFre = &sensores[3];
 
-
 // TODO (Mauricio#1#): suporte simultaneo a R/C e gamepad PC
 
 #ifdef PINO_JOY_X
@@ -3090,6 +3107,7 @@ void setup()
 
 
 /*  Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=1 )
+
 	VAR_NULO = 0,
     VAR_CHAR,
     VAR_INT,
@@ -3098,7 +3116,6 @@ void setup()
     VAR_BOOL,
     VAR_STRING
 */
-
     interpretador.declaraVar( VAR_CHAR, NOME_PROGRAMA,   &eeprom.dados.programa );
     interpretador.declaraVar( VAR_CHAR, NOME_BALANCO,    &eeprom.dados.balanco );
     interpretador.declaraVar( VAR_CHAR, NOME_VEL_MAX,    &eeprom.dados.velMax );
@@ -3228,10 +3245,10 @@ void loop()
                 }
             }
             #ifdef RODAS_PWM_x4
-                drive.vetorial(gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
-                drive2.vetorial(-gamepad.x.getPorcentoAprox() + gamepad.z.getPorcentoAprox(), -gamepad.y.getPorcentoAprox());
+                drive.vetorial(gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
+                drive2.vetorial(-gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
             #else
-                Vetor2i direcao( gamepad.x.getPorcentoAprox(), -gamepad.y.getPorcentoAprox() );
+                Vetor2i direcao( gamepad.x.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
 //                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
                     drive.vetorial( direcao );
 //                else
@@ -3363,7 +3380,7 @@ void loop()
         case PRG_ALARME:
         {
             digitalWrite(PINO_LED, HIGH);
-            SERIALX.println("ALARM");
+            SERIALX.println("ALARME");
 
             #define SIRENE_TOM_MIN  1000
             #define SIRENE_TOM_MAX  3000

@@ -143,7 +143,7 @@ enum Programas
     PRG_RC_SERIAL = 1,      // Controle remoto via porta serial
     PRG_FOTOVORO = 2,       //
     PRG_LINE_FOLLOW = 3,    //
-    PRG_SCANNER = 4,        // Scanner com rangefinder
+    PRG_SCANNER = 4,        // Scanner com rangefinder e servo
     PRG_CHASE = 5,          //
     PRG_COLISAO = 6,        //
     PRG_SENTINELA = 7,      //
@@ -157,6 +157,7 @@ enum Programas
 enum Erros
 {
     SUCESSO = 0,
+    TODO,
     ERRO_TAM_MAX_CMD,
     ERRO_PRG_INVALIDO,
     ERRO_VAR_INVALIDA,
