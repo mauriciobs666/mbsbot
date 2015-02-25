@@ -139,10 +139,6 @@ public:
         p.inteiro = inteiro;
         p.fracao = fracao;
     }
-    fixo( long raww )
-    {
-        raw = raww;
-    }
     fixo( char* str )
     {
         parse( str );
@@ -207,6 +203,14 @@ public:
     {
         return p.inteiro;
     }
+    long toLong()
+    {
+        return raw;
+    }
+    fixo& fromLong( long raww )
+    {
+        raw = raww;
+    }
     fixo& Constrain( int minimo, int maximo )
     {
         if( p.inteiro <= minimo )
@@ -222,6 +226,10 @@ public:
         return *this;
     }
 private:
+    fixo( long raww )
+    {
+        raw = raww;
+    }
     union
     {
         // TODO (Mauricio#1#): Dependente plataforma arduino
@@ -1203,7 +1211,7 @@ public:
         #endif
         //#undef TRACE
     }
-/*
+
     void printRodas()
     {
         SERIALX.print( NOME_RODA_ESQ );
@@ -1214,7 +1222,7 @@ public:
         SERIALX.print(" ");
         SERIALX.println( motorDir.read() );
     }
-*/
+
     void gira( char porc = 0 )
     {
         move( porc, -porc );
@@ -1975,7 +1983,7 @@ public:
         case VAR_LONG:
             return *((long*)dados);
         case VAR_FIXO:
-            return ((fixo*)dados)->toInt();
+            return ((fixo*)dados)->toLong();
         default:
             break;
         }
@@ -1989,7 +1997,7 @@ public:
         case VAR_INT:
             return *((int*)dados);
         case VAR_LONG:
-            return *((long*)dados);
+            return (int)*((long*)dados);
         case VAR_FIXO:
             return *((fixo*)dados);
         default:
@@ -2074,20 +2082,47 @@ public:
         return *this;
     }
 
+    Variavel& inv()
+    {
+        switch( tipo )
+        {
+        case VAR_INT:
+            *((int*)dados) = - (*((int*)dados));
+            break;
+        case VAR_LONG:
+            *((long*)dados) = - (*((long*)dados));
+            break;
+        case VAR_BOOL:
+            *((bool*)dados) = ! (*((bool*)dados));
+            break;
+        case VAR_FIXO:
+            ((fixo*)dados)->fromLong( - ((fixo*)dados)->toLong() );
+            break;
+        default:
+            break;
+        }
+        return *this;
+    }
+
     void print()
     {
         switch( tipo )
         {
         case VAR_CHAR:
             SERIALX.print( (int) *( (char*) dados ) );
+            break;
         case VAR_INT:
             SERIALX.print( (int) *( (int* ) dados ) );
+            break;
         case VAR_LONG:
             SERIALX.print( (long) *( (long*) dados ) );
+            break;
         case VAR_FIXO:
             ((fixo*)dados)->print();
+            break;
         case VAR_BOOL:
             SERIALX.print( (bool) *( (bool*) dados ) );
+            break;
         default:
             break;
         }
@@ -2183,7 +2218,8 @@ public:
             getToken();
         }
 
-        Variavel resultado;
+        fixo res;
+        Variavel resultado( VAR_FIXO, "TMP", (void*) &res );
 
         enum Erros rc = evalAtribuicao( &resultado );
 
@@ -2213,13 +2249,15 @@ private:
         BLOCO
     } tipoToken;
 
+    // [ LValue ] [ = ] [ Expressao ]
+
     Erros evalAtribuicao( Variavel* resultado )
     {
-        enum Erros rc = SUCESSO;
-
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalAtribuicao" );
         #endif
+
+        enum Erros rc = SUCESSO;
 
         if( tipoToken == NOME )
         {
@@ -2230,7 +2268,7 @@ private:
 
             getToken();
 
-            if( v )
+            if( v ) // LValue
             {
                 if( tipoToken == NULO )  // imprime valor da variavel
                 {
@@ -2253,19 +2291,19 @@ private:
                         switch( v->tipo )
                         {
                         case VAR_CHAR:
-                            *( (char*) v->dados ) = *( (char*)resultado->dados );
+                            *( (char*) v->dados ) = resultado->toInt();
                             return SUCESSO;
                         case VAR_INT:
-                            *( (int* ) v->dados ) = *( (int* )resultado->dados );
+                            *( (int* ) v->dados ) = resultado->toInt();
                             return SUCESSO;
                         case VAR_LONG:
-                            *( (long*) v->dados ) = *( (long*)resultado->dados );
+                            *( (long*) v->dados ) = resultado->toLong();
                             return SUCESSO;
                         case VAR_FIXO:
-                            *( (fixo*) v->dados ) = *( (fixo*)resultado->dados );
+                            *( (fixo*) v->dados ) = resultado->toFixo();
                             return SUCESSO;
                         case VAR_BOOL:
-                            *( (bool*) v->dados ) = *( (bool*)resultado->dados );
+                            *( (bool*) v->dados ) = resultado->toInt();
                             return SUCESSO;
                         default:
                             return ERRO_INTERPRETADOR;
@@ -2292,6 +2330,8 @@ private:
         return ERRO_INTERPRETADOR;
     }
 
+    // Expressao -> Termo [ + Termo ] [ - Termo ]
+
     Erros evalExpressao( Variavel* resultado )
     {
         enum Erros rc = SUCESSO;
@@ -2305,7 +2345,8 @@ private:
         char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '+' || op == '-' ) )
         {
-            Variavel temp;
+            fixo res;
+            Variavel temp( VAR_FIXO, "TMP", &res );
             getToken();
             rc = evalTermo( &temp );
             switch( op )
@@ -2321,22 +2362,25 @@ private:
         return rc;
     }
 
+    // Termo -> Fator [ * Fator ] [ / Fator ]
+
     Erros evalTermo( Variavel* resultado )
     {
-        enum Erros rc = SUCESSO;
-
-        // Termo -> Fator [ * Fator ] [ / Fator ]
-
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalTermo" );
         #endif
+
+        enum Erros rc = SUCESSO;
+
 
         rc = evalFator( resultado );
 
         char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '*' || op == '/' ) )
         {
-            Variavel temp;
+            fixo res;
+            Variavel temp( VAR_FIXO, "TMP", &res );
+
             getToken();
             rc = evalFator( &temp );
             switch( op )
@@ -2352,16 +2396,19 @@ private:
         return rc;
     }
 
+    // Fator -> [ - ][ + ] Atomo
+
     Erros evalFator( Variavel* resultado )
     {
-
-        // Nome, Numero,
-        char op = 0;
-        enum Erros rc = SUCESSO;
 
         #ifdef TRACE_INTERPRETADOR
             SERIALX.println( "evalFator" );
         #endif
+
+        enum Erros rc = SUCESSO;
+
+        // +/- unario
+        char op = 0;
 
         if( tipoToken == DELIMIT && token[0] == '+' || token[0] == '-' )
         {
@@ -2381,14 +2428,13 @@ private:
         else
             rc = evalAtomo( resultado );
 
-        // TODO (Mauricio#1#): menos unario
         if( op == '-' )
-            printErro( TODO );
-            //*resultado = -( *resultado );
+            resultado->inv();
 
         return rc;
     }
 
+    // NOME ou NUMERO
     Erros evalAtomo( Variavel* resultado )
     {
         #ifdef TRACE_INTERPRETADOR
@@ -2397,9 +2443,40 @@ private:
 
         if( tipoToken == NUMERO )
         {
-            // TODO (Mauricio#1#): leitura NUMERO
-//            *resultado = atol( token );
-            printErro( TODO );
+            long l = atol( token );
+
+            switch( resultado->tipo )
+            {
+            case VAR_CHAR:
+                *( (char*) resultado->dados ) = l;
+                break;
+            case VAR_INT:
+                *( (int* ) resultado->dados ) = l;
+                break;
+            case VAR_LONG:
+                *( (long*) resultado->dados ) = l;
+                break;
+            case VAR_FIXO:
+                {
+                    int i = l;
+                    if( i != l ) // overflow -> VAR_LONG !!!
+                    {
+                        // TODO (Mauricio#1#): gambi pra guardar long em fixo
+                        printErro( TODO, "range fixo" );
+                    }
+                    else
+                    {
+                        ((fixo*)resultado->dados)->parse( token );
+                    }
+                }
+                break;
+            case VAR_BOOL:
+                *( (bool*) resultado->dados ) = l;
+                break;
+            default:
+                return ERRO_INTERPRETADOR;
+            }
+
             getToken();
             return SUCESSO;
         }
