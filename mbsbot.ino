@@ -136,20 +136,11 @@ class fixo
 public:
     fixo( int inteiro = 0, unsigned int fracao = 0 )
     {
-        p.inteiro = inteiro;
-        p.fracao = fracao;
+        fromInt( inteiro, fracao );
     }
     fixo( char* str )
     {
         parse( str );
-    }
-    fixo& parse( char* str )
-    {
-        int len = strlen( str );
-        p.inteiro = len ? atoi( str ) : 0;
-        char* pos = strchr( str, '.' );
-        p.fracao = pos ? atol( pos+1 ) : 0;
-        return *this;
     }
     fixo operator*( int valor )
     {
@@ -193,6 +184,14 @@ public:
     {
         return raw;
     }
+    fixo& parse( char* str )
+    {
+        int len = strlen( str );
+        p.inteiro = len ? atoi( str ) : 0;
+        char* pos = strchr( str, '.' );
+        p.fracao = pos ? atol( pos+1 ) : 0;
+        return *this;
+    }
     void print()
     {
         SERIALX.print( p.inteiro );
@@ -202,6 +201,11 @@ public:
     int toInt()
     {
         return p.inteiro;
+    }
+    int fromInt( int inteiro = 0, unsigned int fracao = 0 )
+    {
+        p.inteiro = inteiro;
+        p.fracao = fracao;
     }
     long toLong()
     {
@@ -468,7 +472,8 @@ public:
         dados.pid[ PID_CALIBRA ].maxMV   =  100;
         dados.pid[ PID_CALIBRA ].minMV   = -100;
         dados.pid[ PID_CALIBRA ].zeraAcc =  true;
-        dados.pid[ PID_CORRIDA ].dEntrada = true;
+        dados.pid[ PID_CALIBRA ].dEntrada   = DFT_PID_DENTRADA;
+        dados.pid[ PID_CALIBRA ].sampleTime = DFT_PID_SAMPLE;
 
         dados.pid[ PID_CORRIDA ].Kp       = DFT_PID_P;
         dados.pid[ PID_CORRIDA ].Ki       = DFT_PID_I;
@@ -476,7 +481,8 @@ public:
         dados.pid[ PID_CORRIDA ].maxMV    = DFT_PID_MAX_MV;
         dados.pid[ PID_CORRIDA ].minMV    = DFT_PID_MIN_MV;
         dados.pid[ PID_CORRIDA ].zeraAcc  = DFT_PID_ZACC;
-        dados.pid[ PID_CORRIDA ].dEntrada = true;
+        dados.pid[ PID_CORRIDA ].dEntrada   = DFT_PID_DENTRADA;
+        dados.pid[ PID_CORRIDA ].sampleTime = DFT_PID_SAMPLE;
 
         // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
 
@@ -779,7 +785,7 @@ public:
         cfg.init( ConfigSensor::SENSOR_DIGITAL, pino, invertido );
         s.setConfig( &cfg );
     }
-    bool refresh()
+    Botao& refresh()
     {
         s.refresh();
 
@@ -797,7 +803,7 @@ public:
             }
         }
         antes = atual;
-        return estado;
+        return *this;
     }
     bool getEstado()
     {
@@ -1531,15 +1537,24 @@ public:
                 grp.pontoMin = grp.pontoMax = 2*s + 1;
                 grp.tamanho = 1;
 
+                // https://www.pololu.com/docs/0J18/16
+                unsigned short sensor = sensores[ PINO_TRACK_0 + s ].getPorcento();
+                long num = s * 100 * sensor;
+                long den = sensor;
+
                 // agrupa enquanto o proximo for true
                 while( ( s < NUM_IR_TRACK-1 ) && sensoresBool[ s + 1 ] )
                 {
                     s++;
                     grp.pontoMax = 2*s + 1;
                     grp.tamanho++;
+
+                    sensor = sensores[ PINO_TRACK_0 + s ].getPorcento();
+                    num += s * 100 * sensor;
+                    den += sensor;
                 }
 
-                grp.pontoMedio = ( grp.pontoMin + grp.pontoMax ) / 2;
+                grp.pontoMedio = num / den;
 
                 grupos[ nGrupos ] = grp;
                 nGrupos++;
@@ -1555,10 +1570,12 @@ public:
         {
             trilho = grupos[0];
         }
+        /*
         else
         {
             // TODO (Mauricio#1#): else?
         }
+        */
 
         pid.setPoint = setPoint;
 
@@ -3188,7 +3205,7 @@ void setup()
 	VAR_NULO = 0,
     VAR_CHAR,
     VAR_INT,
-    VAR_LONG,
+    VAR_LONG,  -> nao permite temporario !!!
     VAR_FIXO,
     VAR_BOOL,
     VAR_STRING
@@ -3234,28 +3251,18 @@ void loop()
 
     trataJoystick();
 
-    botaoCal.refresh();
-    if( botaoCal.trocouEstado() )
+    if( botaoCal.refresh().trocouEstado() )
     {
-        if( botaoCal.getEstado() )
+        // soltar o botao => false
+        if( false == botaoCal.getEstado() )
         {
-//            SERIALX. println("[CAL] apertado");
-        }
-        else
-        {
-//            SERIALX. println("[CAL] solto");
             lineFollower.calibrar();
         }
     }
 
-    botaoPrg.refresh();
-    if( botaoPrg.trocouEstado() )
+    if( botaoPrg.refresh().trocouEstado() )
     {
-        if( botaoPrg.getEstado() )
-        {
-//            SERIALX. println("[PRG] apertado");
-        }
-        else
+        if( false == botaoPrg.getEstado() )
         {
             if( eeprom.dados.programa == PRG_LINE_FOLLOW )
             {
@@ -3264,15 +3271,12 @@ void loop()
             }
             else
                 lineFollower.iniciarCorrida();
-
-//            SERIALX. println("[PRG] solto");
         }
     }
 
     if( delaySemBlock(&ultimoStatus, delayStatus) )
     {
         telnet.enviaStatus();
-        //digitalWrite(PINO_LED, !digitalRead(PINO_LED));
     }
 
     if( delaySemBlock(&ultimoSensores, delaySensores) )
@@ -3282,6 +3286,7 @@ void loop()
     }
 
     //#define TESTE_PERFORMANCE
+
     #ifdef TESTE_PERFORMANCE
     static unsigned long passagensLoop = 0;
     static unsigned long ultimoLoop = 0;

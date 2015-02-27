@@ -41,6 +41,8 @@
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
 #define DFT_PID_ZACC        true
+#define DFT_PID_DENTRADA    true
+#define DFT_PID_SAMPLE         5
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
