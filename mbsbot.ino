@@ -2121,6 +2121,31 @@ public:
         return *this;
     }
 
+    Erros converteAtribui( const Variavel& v )
+    {
+        switch( tipo )
+        {
+        case VAR_CHAR:
+            *( (char*) dados ) = v.toInt();
+            return SUCESSO;
+        case VAR_INT:
+            *( (int* ) dados ) = v.toInt();
+            return SUCESSO;
+        case VAR_LONG:
+            *( (long*) dados ) = v.toLong();
+            return SUCESSO;
+        case VAR_FIXO:
+            *( (fixo*) dados ) = v.toFixo();
+            return SUCESSO;
+        case VAR_BOOL:
+            *( (bool*) dados ) = v.toInt();
+            return SUCESSO;
+        default:
+            break;
+        }
+        return ERRO_INTERPRETADOR;
+    }
+
     void print()
     {
         switch( tipo )
@@ -2243,12 +2268,14 @@ public:
         #ifdef TRACE_INTERPRETADOR
             SERIALX.print("resultado = ");
             resultado.print();
+            SERIALX.println("");
         #endif
 
         if( rc )
         {
             SERIALX.print( "eval() => " );
             printErro( rc );
+            SERIALX.println("");
         }
     }
 private:
@@ -2294,6 +2321,8 @@ private:
                     v->print();
                     SERIALX.println();
 
+                    *resultado = *v;
+
                     return SUCESSO;
                 }
                 else if( token[0] == '=' )  // atribuicao
@@ -2303,41 +2332,19 @@ private:
                     if( rc )
                         return rc;
 
-                    if( v )
-                    {
-                        switch( v->tipo )
-                        {
-                        case VAR_CHAR:
-                            *( (char*) v->dados ) = resultado->toInt();
-                            return SUCESSO;
-                        case VAR_INT:
-                            *( (int* ) v->dados ) = resultado->toInt();
-                            return SUCESSO;
-                        case VAR_LONG:
-                            *( (long*) v->dados ) = resultado->toLong();
-                            return SUCESSO;
-                        case VAR_FIXO:
-                            *( (fixo*) v->dados ) = resultado->toFixo();
-                            return SUCESSO;
-                        case VAR_BOOL:
-                            *( (bool*) v->dados ) = resultado->toInt();
-                            return SUCESSO;
-                        default:
-                            return ERRO_INTERPRETADOR;
-                        }
-                    }
-                    else
-                        return ERRO_VAR_INVALIDA;
+                    return v->converteAtribui( *resultado );
+                }
+                else
+                {
+                    devolve();
+                    strncpy( token, bkpToken, TAM_TOKEN );
+                    tipoToken = NOME;
+
+                    return evalExpressao( resultado );
                 }
             }
             else
             {
-                /*
-                devolve();
-                strncpy( token, bkpToken, TAM_TOKEN );
-                tipoToken = NOME;
-                return evalExpressao( resultado );
-                */
                 return ERRO_VAR_INVALIDA;
             }
         }
