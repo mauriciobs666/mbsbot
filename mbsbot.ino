@@ -133,15 +133,60 @@ void printErro( enum Erros err, char* detalhes = NULL )
 // 16.16
 class fixo
 {
+    long raw;
+
+    fixo( long raww )
+    {
+        raw = raww;
+    }
 public:
     fixo( int inteiro = 0, unsigned int fracao = 0 )
     {
-        fromInt( inteiro, fracao );
+        setInt( inteiro, fracao );
     }
-    fixo( char* str )
+    int getInt()
     {
-        parse( str );
+        return (int)( raw >> 16 );
     }
+    unsigned int getFrac()
+    {
+        return ( raw & 0xFFFF );
+    }
+    void setInt( int inteiro = 0, unsigned int fracao = 0 )
+    {
+        raw = ( (long)inteiro << 16 ) + fracao;
+    }
+    long getLong()
+    {
+        return raw;
+    }
+    void setLong( long raww )
+    {
+        raw = raww;
+    }
+    float getFloat()
+    {
+        return raw / 65536.0;
+    }
+    void setFloat( float f )
+    {
+        raw = f * 65536;
+    }
+    int Constrain( int minimo, int maximo )
+    {
+        int i = getInt();
+        if( i <= minimo )
+        {
+            setInt( i = minimo );
+        }
+        else if( i >= maximo )
+        {
+            setInt( i = maximo );
+        }
+        return i;
+    }
+
+
     fixo operator*( int valor )
     {
         return raw * valor;
@@ -170,83 +215,27 @@ public:
     }
     fixo& operator*=( const fixo& valor )
     {
-        SERIALX.println("bein");
-        raw *= valor.raw;
-//        raw = raw >> 8;
-//        raw *= ( valor.raw >> 8 );
+        raw >>= 8;
+        raw *= ( valor.raw >> 8 );
         return *this;
     }
     fixo& operator/=( const fixo& valor )
     {
-        raw << 8;
-        raw /= ( valor.raw << 8 );
+        raw <<= 8;
+        raw /= ( valor.raw >> 8 );
         return *this;
     }
     operator bool()
     {
         return raw;
     }
-    fixo& parse( char* str )
-    {
-        int len = strlen( str );
-        p.inteiro = len ? atoi( str ) : 0;
-        char* pos = strchr( str, '.' );
-        p.fracao = pos ? atol( pos+1 ) : 0;
-        return *this;
-    }
+
     void print()
     {
-        SERIALX.print(  )
-        SERIALX.print( p.inteiro );
+        SERIALX.print( getInt() );
         SERIALX.print( "." );
-        SERIALX.print( p.fracao );
+        SERIALX.print( (long)getFrac() );
     }
-    int toInt()
-    {
-        return p.inteiro;
-    }
-    int fromInt( int inteiro = 0, unsigned int fracao = 0 )
-    {
-        p.inteiro = inteiro;
-        p.fracao = fracao;
-    }
-    long toLong()
-    {
-        return raw;
-    }
-    fixo& fromLong( long raww )
-    {
-        raw = raww;
-    }
-    fixo& Constrain( int minimo, int maximo )
-    {
-        if( p.inteiro <= minimo )
-        {
-            p.inteiro = minimo;
-            p.fracao = 0;
-        }
-        else if( p.inteiro >= maximo )
-        {
-            p.inteiro = maximo;
-            p.fracao = 0;
-        }
-        return *this;
-    }
-private:
-    fixo( long raww )
-    {
-        raw = raww;
-    }
-    union
-    {
-        // TODO (Mauricio#1#): Dependente plataforma arduino
-        struct
-        {
-            unsigned int fracao;
-            int inteiro;
-        } p; // partes
-        long raw;
-    };
 };
 
 // ******************************************************************************
@@ -1352,7 +1341,7 @@ public:
 
             resultado += Derivada;
 
-            MV = resultado.Constrain( cfg->minMV, cfg->maxMV ).toInt();
+            MV = resultado.Constrain( cfg->minMV, cfg->maxMV );
 
             if( dE )
                 print();
@@ -1945,7 +1934,7 @@ scanner;
 typedef enum
 {
     VAR_NULO = 0,
-    VAR_CHAR,
+    VAR_CHAR,   // signed  8
     VAR_INT,    // signed 16
     VAR_LONG,   // signed 32
     VAR_FIXO,   // 16.16
@@ -1977,7 +1966,7 @@ public:
         tam = tam_;
     }
 
-    int toInt() const
+    int getInt() const
     {
         switch( tipo )
         {
@@ -1986,7 +1975,7 @@ public:
         case VAR_LONG:
             return *((long*)dados);
         case VAR_FIXO:
-            return ((fixo*)dados)->toInt();
+            return ((fixo*)dados)->getInt();
         case VAR_BOOL:
         default:
             break;
@@ -1994,7 +1983,7 @@ public:
         return 0;
     }
 
-    long toLong() const
+    long getLong() const
     {
         switch( tipo )
         {
@@ -2003,14 +1992,14 @@ public:
         case VAR_LONG:
             return *((long*)dados);
         case VAR_FIXO:
-            return ((fixo*)dados)->toLong();
+            return ((fixo*)dados)->getLong();
         default:
             break;
         }
         return 0;
     }
 
-    fixo toFixo() const
+    fixo getFixo() const
     {
         switch( tipo )
         {
@@ -2031,13 +2020,13 @@ public:
         switch( tipo )
         {
         case VAR_INT:
-            *((int*)dados) += var.toInt();
+            *((int*)dados) += var.getInt();
             break;
         case VAR_LONG:
-            *((long*)dados) += var.toLong();
+            *((long*)dados) += var.getLong();
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->operator+=(var.toFixo());
+            ((fixo*)dados)->operator+=(var.getFixo());
             break;
         default:
             break;
@@ -2050,13 +2039,13 @@ public:
         switch( tipo )
         {
         case VAR_INT:
-            *((int*)dados) -= var.toInt();
+            *((int*)dados) -= var.getInt();
             break;
         case VAR_LONG:
-            *((long*)dados) -= var.toLong();
+            *((long*)dados) -= var.getLong();
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->operator-=(var.toFixo());
+            ((fixo*)dados)->operator-=(var.getFixo());
             break;
         default:
             break;
@@ -2069,21 +2058,13 @@ public:
         switch( tipo )
         {
         case VAR_INT:
-            *((int*)dados) *= var.toInt();
+            *((int*)dados) *= var.getInt();
             break;
         case VAR_LONG:
-            *((long*)dados) *= var.toLong();
+            *((long*)dados) *= var.getLong();
             break;
         case VAR_FIXO:
-                ((fixo*)dados)->print();
-                SERIALX.print(" * ");
-                var.toFixo().print();
-                SERIALX.print( " = ");
-
-
-            ((fixo*)dados)->operator*=(var.toFixo());
-                ((fixo*)dados)->print();
-                SERIALX.println();
+            ((fixo*)dados)->operator*=(var.getFixo());
             break;
         default:
             break;
@@ -2096,13 +2077,13 @@ public:
         switch( tipo )
         {
         case VAR_INT:
-            *((int*)dados) /= var.toInt();
+            *((int*)dados) /= var.getInt();
             break;
         case VAR_LONG:
-            *((long*)dados) /= var.toLong();
+            *((long*)dados) /= var.getLong();
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->operator/=(var.toFixo());
+            ((fixo*)dados)->operator/=(var.getFixo());
             break;
         default:
             break;
@@ -2124,7 +2105,7 @@ public:
             *((bool*)dados) = ! (*((bool*)dados));
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->fromLong( - ((fixo*)dados)->toLong() );
+            ((fixo*)dados)->setLong( - ((fixo*)dados)->getLong() );
             break;
         default:
             break;
@@ -2137,19 +2118,19 @@ public:
         switch( tipo )
         {
         case VAR_CHAR:
-            *( (char*) dados ) = v.toInt();
+            *( (char*) dados ) = v.getInt();
             return SUCESSO;
         case VAR_INT:
-            *( (int* ) dados ) = v.toInt();
+            *( (int* ) dados ) = v.getInt();
             return SUCESSO;
         case VAR_LONG:
-            *( (long*) dados ) = v.toLong();
+            *( (long*) dados ) = v.getLong();
             return SUCESSO;
         case VAR_FIXO:
-            *( (fixo*) dados ) = v.toFixo();
+            *( (fixo*) dados ) = v.getFixo();
             return SUCESSO;
         case VAR_BOOL:
-            *( (bool*) dados ) = v.toInt();
+            *( (bool*) dados ) = v.getInt();
             return SUCESSO;
         default:
             break;
@@ -2187,7 +2168,7 @@ int compVar( const void *a, const void *b )
     return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_NOME );
 }
 
-#define TRACE_INTERPRETADOR
+//#define TRACE_INTERPRETADOR
 class Interpretador
 {
 public:
@@ -2272,7 +2253,7 @@ public:
         }
 
         fixo res;
-        Variavel resultado( VAR_FIXO, "TMP", (void*) &res );
+        Variavel resultado( VAR_FIXO, "=", (void*) &res );
 
         enum Erros rc = SUCESSO;
 
@@ -2289,13 +2270,9 @@ public:
 
             if( v ) // LValue
             {
-                if( tipoToken == NULO )  // imprime valor da variavel
+                if( tipoToken == NULO )
                 {
-                    SERIALX.print( bkpToken );
-                    SERIALX.print( " " );
-                    v->print();
-                    SERIALX.println();
-
+                    // imprime valor da variavel
                     resultado = *v;
                 }
                 else if( token[0] == '=' )  // atribuicao
@@ -2305,6 +2282,8 @@ public:
 
                     if( ! rc )
                         rc = v->converteAtribui( resultado );
+
+                    resultado = *v;
                 }
                 else
                 {
@@ -2322,17 +2301,15 @@ public:
         else
             rc = evalExpressao( &resultado );
 
-        #ifdef TRACE_INTERPRETADOR
-            SERIALX.print("resultado = ");
-            resultado.print();
-            SERIALX.println("");
-        #endif
+        SERIALX.print( resultado.nome );
+        SERIALX.print( " " );
+        resultado.print();
+        SERIALX.println();
 
         if( rc )
         {
-            SERIALX.print( "rc " );
             printErro( rc );
-            SERIALX.println("");
+            SERIALX.println();
         }
     }
 private:
@@ -2369,7 +2346,7 @@ private:
         while( rc == SUCESSO && ( ( op = token[0] ) == '+' || op == '-' ) )
         {
             fixo res;
-            Variavel temp( VAR_FIXO, "TMP", &res );
+            Variavel temp( VAR_FIXO, "tmp", &res );
 
             getToken();
 
@@ -2407,7 +2384,7 @@ private:
         while( rc == SUCESSO && ( ( op = token[0] ) == '*' || op == '/' ) )
         {
             fixo res;
-            Variavel temp( VAR_FIXO, "TMP", &res );
+            Variavel temp( VAR_FIXO, "tmp", &res );
 
             getToken();
 
@@ -2505,7 +2482,8 @@ private:
                     }
                     else
                     {
-                        ((fixo*)resultado->dados)->parse( token );
+                        char* pos = strchr( token, '.' );
+                        ((fixo*)resultado->dados)->setInt( i, pos ? atol( pos+1 ) : 0 );
                     }
                 }
                 break;
