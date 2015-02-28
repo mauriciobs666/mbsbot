@@ -170,8 +170,10 @@ public:
     }
     fixo& operator*=( const fixo& valor )
     {
-        raw >>= 8;
-        raw *= ( valor.raw >> 8 );
+        SERIALX.println("bein");
+        raw *= valor.raw;
+//        raw = raw >> 8;
+//        raw *= ( valor.raw >> 8 );
         return *this;
     }
     fixo& operator/=( const fixo& valor )
@@ -194,6 +196,7 @@ public:
     }
     void print()
     {
+        SERIALX.print(  )
         SERIALX.print( p.inteiro );
         SERIALX.print( "." );
         SERIALX.print( p.fracao );
@@ -239,8 +242,8 @@ private:
         // TODO (Mauricio#1#): Dependente plataforma arduino
         struct
         {
-            int inteiro;
             unsigned int fracao;
+            int inteiro;
         } p; // partes
         long raw;
     };
@@ -2072,7 +2075,15 @@ public:
             *((long*)dados) *= var.toLong();
             break;
         case VAR_FIXO:
+                ((fixo*)dados)->print();
+                SERIALX.print(" * ");
+                var.toFixo().print();
+                SERIALX.print( " = ");
+
+
             ((fixo*)dados)->operator*=(var.toFixo());
+                ((fixo*)dados)->print();
+                SERIALX.println();
             break;
         default:
             break;
@@ -2263,45 +2274,9 @@ public:
         fixo res;
         Variavel resultado( VAR_FIXO, "TMP", (void*) &res );
 
-        enum Erros rc = evalAtribuicao( &resultado );
-
-        #ifdef TRACE_INTERPRETADOR
-            SERIALX.print("resultado = ");
-            resultado.print();
-            SERIALX.println("");
-        #endif
-
-        if( rc )
-        {
-            SERIALX.print( "eval() => " );
-            printErro( rc );
-            SERIALX.println("");
-        }
-    }
-private:
-    char *linha;
-    char token[TAM_TOKEN];
-
-    enum TipoToken
-    {
-        NULO=0,
-        NUMERO,
-        NOME,
-        DELIMIT,
-        STRING,
-        CHAVE,
-        BLOCO
-    } tipoToken;
-
-    // [ LValue ] [ = ] [ Expressao ]
-
-    Erros evalAtribuicao( Variavel* resultado )
-    {
-        #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "evalAtribuicao" );
-        #endif
-
         enum Erros rc = SUCESSO;
+
+        // [ LValue ] [ = ] [ Expressao ]
 
         if( tipoToken == NOME )
         {
@@ -2321,38 +2296,59 @@ private:
                     v->print();
                     SERIALX.println();
 
-                    *resultado = *v;
-
-                    return SUCESSO;
+                    resultado = *v;
                 }
                 else if( token[0] == '=' )  // atribuicao
                 {
                     getToken();
-                    rc = evalExpressao( resultado );
-                    if( rc )
-                        return rc;
+                    rc = evalExpressao( &resultado );
 
-                    return v->converteAtribui( *resultado );
+                    if( ! rc )
+                        rc = v->converteAtribui( resultado );
                 }
                 else
                 {
                     devolve();
+
                     strncpy( token, bkpToken, TAM_TOKEN );
                     tipoToken = NOME;
 
-                    return evalExpressao( resultado );
+                    rc = evalExpressao( &resultado );
                 }
             }
             else
-            {
-                return ERRO_VAR_INVALIDA;
-            }
+                rc = ERRO_VAR_INVALIDA;
         }
         else
-            return evalExpressao( resultado );
+            rc = evalExpressao( &resultado );
 
-        return ERRO_INTERPRETADOR;
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.print("resultado = ");
+            resultado.print();
+            SERIALX.println("");
+        #endif
+
+        if( rc )
+        {
+            SERIALX.print( "rc " );
+            printErro( rc );
+            SERIALX.println("");
+        }
     }
+private:
+    char *linha;
+    char token[TAM_TOKEN];
+
+    enum TipoToken
+    {
+        NULO=0,
+        NUMERO,
+        NOME,
+        DELIMIT,
+        STRING,
+        CHAVE,
+        BLOCO
+    } tipoToken;
 
     // Expressao -> Termo [ + Termo ] [ - Termo ]
 
@@ -2361,7 +2357,10 @@ private:
         enum Erros rc = SUCESSO;
 
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "evalExpressao" );
+            SERIALX.print( "evalExpressao: " );
+            SERIALX.print( token );
+            SERIALX.print( " _ " );
+            SERIALX.println( linha );
         #endif
 
         rc = evalTermo( resultado );
@@ -2371,8 +2370,11 @@ private:
         {
             fixo res;
             Variavel temp( VAR_FIXO, "TMP", &res );
+
             getToken();
+
             rc = evalTermo( &temp );
+
             switch( op )
             {
             case '-':
@@ -2391,11 +2393,13 @@ private:
     Erros evalTermo( Variavel* resultado )
     {
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "evalTermo" );
+            SERIALX.print( "evalTermo: " );
+            SERIALX.print( token );
+            SERIALX.print( " _ " );
+            SERIALX.println( linha );
         #endif
 
         enum Erros rc = SUCESSO;
-
 
         rc = evalFator( resultado );
 
@@ -2406,7 +2410,9 @@ private:
             Variavel temp( VAR_FIXO, "TMP", &res );
 
             getToken();
+
             rc = evalFator( &temp );
+
             switch( op )
             {
             case '*':
@@ -2426,7 +2432,10 @@ private:
     {
 
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "evalFator" );
+            SERIALX.print( "evalFator: " );
+            SERIALX.print( token );
+            SERIALX.print( " _ " );
+            SERIALX.println( linha );
         #endif
 
         enum Erros rc = SUCESSO;
@@ -2444,7 +2453,7 @@ private:
         if( token[0] == '(' )
         {
             getToken();
-            rc = evalAtribuicao( resultado );
+            rc = evalExpressao( resultado );
             if( token[0] != ')' )
                 return ERRO_INTERPRETADOR;
             getToken();
@@ -2462,8 +2471,14 @@ private:
     Erros evalAtomo( Variavel* resultado )
     {
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "evalAtomo" );
+            SERIALX.print( "evalAtomo token: " );
+            SERIALX.print( token );
+            SERIALX.print( " _ " );
+            SERIALX.print( linha );
+            SERIALX.print( " = " );
         #endif
+
+        Erros rc = SUCESSO;
 
         if( tipoToken == NUMERO )
         {
@@ -2498,25 +2513,33 @@ private:
                 *( (bool*) resultado->dados ) = l;
                 break;
             default:
-                return ERRO_INTERPRETADOR;
+                rc = ERRO_INTERPRETADOR;
             }
-
-            getToken();
-            return SUCESSO;
+            //getToken();
         }
         else if( tipoToken == NOME )
         {
             Variavel *v = buscaVar( token );
 
-            getToken();
+            //getToken();
 
             if( v )
             {
-                *resultado = *v;
-                return SUCESSO;
+                resultado->converteAtribui( *v );
+                //getToken();
             }
+            else
+                rc = ERRO_VAR_INVALIDA;
         }
-        return ERRO_INTERPRETADOR;
+
+        #ifdef TRACE_INTERPRETADOR
+            resultado->print();
+            SERIALX.println( "" );
+        #endif
+
+        getToken();
+
+        return rc;
     }
 
     TipoToken getToken()
@@ -2591,10 +2614,20 @@ private:
     void devolve()
     {
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.println( "devolve" );
+            SERIALX.print( "devolve: " );
         #endif
+
         for( char *t = token ; *t ; t++ )
+        {
+            #ifdef TRACE_INTERPRETADOR
+                SERIALX.print( *t );
+            #endif
             linha--;
+        }
+
+        #ifdef TRACE_INTERPRETADOR
+            SERIALX.println( "" );
+        #endif
     }
 
     bool isdelim( char c )
