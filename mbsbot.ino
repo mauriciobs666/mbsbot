@@ -643,10 +643,11 @@ class Sensor
 {
 public:
     volatile unsigned short valor, anterior;
+
     ConfigSensor *cfg;
 
-    Sensor() : valor(0), anterior(0), cfg(NULL) {}
-
+    Sensor() : valor(0), anterior(0), cfg(NULL)
+        {}
     unsigned short getValor()
         { return valor; }
     void centrar()
@@ -668,6 +669,7 @@ public:
 
     void setValor(unsigned short v)
     {
+
         if( cfg )
         {
             if( cfg->autoMinMax )
@@ -722,15 +724,35 @@ public:
     }
     int getPorcento()
     {
+        /*
+            distancia da borda inferior ( min ou max de acordo com invertido )
+            /
+            range min/max
+            *
+            100%
+        */
         return ( cfg->maximo != cfg->minimo )
-                ? constrain( (((long)(valor - cfg->minimo) * 100) / ( cfg->maximo - cfg->minimo ) ), 0, 100 )
-                : 0;
+                    ? cfg->invertido
+                        ? constrain( (((long)(cfg->maximo - valor) * 100) / ( cfg->maximo - cfg->minimo ) ), 0, 100 )
+                        : constrain( (((long)(valor - cfg->minimo) * 100) / ( cfg->maximo - cfg->minimo ) ), 0, 100 )
+                    : 0;
     }
-    int getPorcentoCentro(int grude=10)
+    int getPorcento( int arredonda )
+    {
+        int x = getPorcento();
+
+            // arredonda no centro e pontas
+        if( 100 + x < arredonda) return -100;
+        if(  abs(x) < arredonda) return 0;
+        if( 100 - x < arredonda) return 100;
+
+        return x;
+    }
+    int getPorcentoCentro( int arredonda=10 )
     {
         long x = (long)valor - (long)cfg->centro;
 
-        // calcula o range de 0 a +/-extremo
+        // calcula o range de 0 a min/max
         long r = ( x > 0 ) ? (cfg->maximo - cfg->centro) : (cfg->centro - cfg->minimo);
 
         // x%
@@ -740,26 +762,15 @@ public:
             x = 0;
 
         // arredonda no centro e pontas
-        if( 100 + x < grude) x = -100;
-        if(  abs(x) < grude) x = 0;
-        if( 100 - x < grude) x = 100;
+        if( 100 + x < arredonda) return -100;
+        if(  abs(x) < arredonda) return 0;
+        if( 100 - x < arredonda) return 100;
 
         return x;
     }
     bool getBool()
     {
-        switch( cfg->tipo )
-        {
-        case ConfigSensor::SENSOR_ANALOGICO:
-            return ( ( getPorcento() > 50 ) ^ cfg->invertido );
-
-        case ConfigSensor::SENSOR_DIGITAL:
-            return ( valor ^ cfg->invertido );
-
-        default:
-            break;
-        }
-        return false;
+        return ( getPorcento() > 50 );
     }
 }
 sensores[NUM_SENSORES];
@@ -1266,17 +1277,27 @@ public:
 
     int setPoint;
     int MV;
+
     int erro;
     int eAnterior;
-    int dE;
-    int dT;
 
     unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
+
+    PID()
+    {
+        cfg = NULL;
+        zera();
+    }
+
+    void setConfig( ConfigPID *config )
+    {
+        cfg = config;
+    }
 
     void zera( )
     {
         Proporcional = Integral = Derivada = 0;
-        setPoint = MV = erro = eAnterior = dE = dT = 0;
+        setPoint = MV = erro = eAnterior = 0;
         tUltimoLoop = agora;
     }
 
@@ -1291,7 +1312,7 @@ public:
         if( ! cfg )
             return 0;
 
-        if( ( dT = agora - tUltimoLoop ) > cfg->sampleTime )
+        if( ( agora - tUltimoLoop ) > cfg->sampleTime )
         {
             erro = setPoint - entrada;
 
@@ -1303,19 +1324,12 @@ public:
 
             // I
 
-            if( cfg->Ki ) // zero desativa
+            if( erro )
             {
-                if( erro && tUltimoLoop )
-                {
-                    Integral += ((fixo)( cfg->Ki * (int)( dT * erro ) ));
-                    Integral.Constrain( cfg->minMV, cfg->maxMV );
-                }
-                else if( cfg->zeraAcc )
-                {
-                    Integral = 0;
-                }
+                Integral += cfg->Ki * erro ;
+                Integral.Constrain( cfg->minMV, cfg->maxMV );
             }
-            else
+            else if( cfg->zeraAcc )
             {
                 Integral = 0;
             }
@@ -1327,24 +1341,19 @@ public:
             if( cfg->dEntrada )
             {
                 // deriva entrada pra evitar spike qdo muda setPoint
-                dE = - ( entrada - eAnterior );
+                Derivada = cfg->Kd * ( - ( entrada - eAnterior ) );
                 eAnterior = entrada;
             }
             else
             {
                 // deriva erro ( setPoint - entrada )
-                dE = erro - eAnterior;
+                Derivada = cfg->Kd * ( erro - eAnterior );
                 eAnterior = erro;
             }
-
-            Derivada = ( cfg->Kd * dE ) / dT ;
 
             resultado += Derivada;
 
             MV = resultado.Constrain( cfg->minMV, cfg->maxMV );
-
-            if( dE )
-                print();
 
             tUltimoLoop = agora;
         }
@@ -1364,8 +1373,6 @@ public:
             SERIALX.print( Integral );
             SERIALX.print( " D " );
             SERIALX.print( Derivada );
-            SERIALX.print( " dT " );
-            SERIALX.print( dT );
             SERIALX.print( " MV " );
             SERIALX.println( MV );
         }
@@ -1379,7 +1386,6 @@ public:
 
     LineFollower()
     {
-        pid.cfg = NULL;
         zeraTudo();
     }
 
@@ -1423,7 +1429,7 @@ public:
             }
         }
 
-        pid.cfg = &eeprom.dados.pid[ PID_CORRIDA ];
+        pid.setConfig( &eeprom.dados.pid[ PID_CORRIDA ] );
 
         refresh();
 
@@ -2301,15 +2307,19 @@ public:
         else
             rc = evalExpressao( &resultado );
 
-        SERIALX.print( resultado.nome );
-        SERIALX.print( " " );
-        resultado.print();
-        SERIALX.println();
-
-        if( rc )
+        // TODO (Mauricio#1#): rc != ERRO_VAR_INVALIDA gambi enquanto termina de portar todos os comands pro Interpretador
+        if( rc != ERRO_VAR_INVALIDA )
         {
-            printErro( rc );
+            SERIALX.print( resultado.nome );
+            SERIALX.print( " " );
+            resultado.print();
             SERIALX.println();
+
+            if( rc )
+            {
+                printErro( rc );
+                SERIALX.println();
+            }
         }
     }
 private:
@@ -2867,11 +2877,11 @@ public:
             SERIALX.print( " " );
         }
         SERIALX.println( "" );
-/*
+
         for( int x = 0; x < NUM_IR_TRACK; x++ )
             SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "|" : "_" );
         SERIALX.println("");
-*/
+
     }
 
     void enviaStatus(bool enviaComando = true)

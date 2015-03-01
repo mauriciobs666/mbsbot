@@ -152,16 +152,10 @@ private:
     static const long ID_STATICTEXT14;
     static const long ID_STATICTEXT15;
     static const long ID_TEXTCTRL18;
-    static const long ID_STATICTEXT16;
-    static const long ID_TEXTCTRL19;
     static const long ID_STATICTEXT17;
     static const long ID_TEXTCTRL20;
-    static const long ID_STATICTEXT18;
-    static const long ID_TEXTCTRL21;
     static const long ID_STATICTEXT19;
     static const long ID_TEXTCTRL22;
-    static const long ID_STATICTEXT20;
-    static const long ID_TEXTCTRL23;
     static const long ID_STATICTEXT10;
     static const long ID_TEXTCTRL12;
     static const long ID_STATICTEXT11;
@@ -216,7 +210,6 @@ private:
     wxStaticText* StaticText9;
     wxGrid* GridJoy;
     wxCheckBox* CheckBoxEnJoystick;
-    wxStaticText* StaticText20;
     wxTextCtrl* TextCtrlVelMax;
     wxTextCtrl* TextCtrl4;
     wxPanel* Panel5;
@@ -246,10 +239,8 @@ private:
     wxStaticText* StaticText8;
     wxStaticText* StaticText11;
     wxTextCtrl* TextCtrlKp;
-    wxStaticText* StaticText18;
     wxPanel* Panel1;
     wxStaticText* StaticText1;
-    wxTextCtrl* TextCtrlLmp;
     wxStaticText* StaticText3;
     wxGrid* Grid1;
     wxButton* Button2;
@@ -257,7 +248,6 @@ private:
     wxPanel* Panel3;
     wxTextCtrl* TextCtrlKd;
     wxButton* Button6;
-    wxTextCtrl* TextCtrlLmi;
     wxButton* Button10;
     wxToolBarToolBase* ToolBarItem1;
     wxTextCtrl* TextCtrlDelayRead;
@@ -289,14 +279,12 @@ private:
     wxChoice* Choice1;
     wxToolBarToolBase* ToolBarItem2;
     wxSlider* SliderRodaDireita;
-    wxStaticText* StaticText16;
     wxChoice* Choice2;
     wxButton* Button8;
     wxTimer Timer1;
     wxButton* Button12;
     wxTextCtrl* SendCommandText;
     wxCheckBox* CheckBoxPoll;
-    wxTextCtrl* TextCtrlLmd;
     //*)
 
     DECLARE_EVENT_TABLE()
