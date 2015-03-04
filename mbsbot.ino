@@ -16,15 +16,15 @@
  */
 
 /*
-ATMEGA1280 - placa_v4.h
+3/3/15 - Arduino 1.6.0 - ATMEGA1280 - placa_v4.h
 
-Sketch uses 24,804 bytes (19%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 1,878 bytes (22%) of dynamic memory, leaving 6,314 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 21,588 bytes (17%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 1,539 bytes (18%) of dynamic memory, leaving 6,653 bytes for local variables. Maximum is 8,192 bytes.
 
-ATMEGA328 - placa_v942.h
+3/3/15 - Arduino 1.6.0 - ATMEGA328 - placa_v2.h
 
-Sketch uses 23.490 bytes (72%) of program storage space. Maximum is 32.256 bytes.
-Global variables use 1.412 bytes (68%) of dynamic memory, leaving 636 bytes for local variables. Maximum is 2.048 bytes.
+Sketch uses 20,618 bytes (63%) of program storage space. Maximum is 32,256 bytes.
+Global variables use 1,309 bytes (63%) of dynamic memory, leaving 739 bytes for local variables. Maximum is 2,048 bytes.
 */
 
 // ******************************************************************************
@@ -1271,9 +1271,9 @@ class PID
 public:
     ConfigPID *cfg;
 
-    fixo Proporcional;
-    fixo Integral;
-    fixo Derivada;
+    int proporcional;
+    int integral;
+    int derivada;
 
     int setPoint;
     int MV;
@@ -1296,15 +1296,14 @@ public:
 
     void zera( )
     {
-        Proporcional = Integral = Derivada = 0;
+        proporcional = integral = derivada = 0;
         setPoint = MV = erro = eAnterior = 0;
         tUltimoLoop = agora;
     }
 
     void reinicia( int ultimaMV )
     {
-        MV = ultimaMV;
-        Integral = ultimaMV;
+        MV = integral = ultimaMV;
     }
 
     int executa( int entrada )
@@ -1318,42 +1317,39 @@ public:
 
             // P
 
-            Proporcional = cfg->Kp * erro;
-
-            fixo resultado = Proporcional;
+            proporcional = cfg->Kp * erro;
 
             // I
 
             if( erro )
             {
-                Integral += cfg->Ki * erro ;
-                Integral.Constrain( cfg->minMV, cfg->maxMV );
+                integral = constrain( ( integral + cfg->Ki * erro ),
+                                        cfg->minMV,
+                                        cfg->maxMV );
             }
             else if( cfg->zeraAcc )
             {
-                Integral = 0;
+                integral = 0;
             }
-
-            resultado += Integral;
 
             // D
 
             if( cfg->dEntrada )
             {
                 // deriva entrada pra evitar spike qdo muda setPoint
-                Derivada = cfg->Kd * ( - ( entrada - eAnterior ) );
+                derivada = cfg->Kd * ( - ( entrada - eAnterior ) );
                 eAnterior = entrada;
             }
             else
             {
                 // deriva erro ( setPoint - entrada )
-                Derivada = cfg->Kd * ( erro - eAnterior );
+                derivada = cfg->Kd * ( erro - eAnterior );
                 eAnterior = erro;
             }
 
-            resultado += Derivada;
-
-            MV = resultado.Constrain( cfg->minMV, cfg->maxMV );
+            MV = constrain( proporcional + integral + derivada,
+                            cfg->minMV,
+                            cfg->maxMV );
 
             tUltimoLoop = agora;
         }
@@ -1368,11 +1364,11 @@ public:
             SERIALX.print( "E " );
             SERIALX.print( erro );
             SERIALX.print( " P " );
-            SERIALX.print( Proporcional );
+            SERIALX.print( proporcional );
             SERIALX.print( " I " );
-            SERIALX.print( Integral );
+            SERIALX.print( integral );
             SERIALX.print( " D " );
-            SERIALX.print( Derivada );
+            SERIALX.print( derivada );
             SERIALX.print( " MV " );
             SERIALX.println( MV );
         }
@@ -1407,7 +1403,6 @@ public:
 
         nGrupos = 0;
         tInicio = tFim = debounce = 0;
-        rodaEsq = rodaDir = 0;
         marcaEsq = marcaDir = estadoLed = false;
         buscaInicioVolta = true;
 
@@ -1446,13 +1441,11 @@ public:
     }
 
     PID pid;
-    int rodaEsq;
-    int rodaDir;
     unsigned long tInicio;
     unsigned long tFim;
     unsigned long debounce;
-    bool sensoresBool[ NUM_IR_TRACK ];
-    bool debounceArray[ NUM_IR_TRACK ];
+    bool sensoresBool[ NUM_IR_TRACK ];   // retorno do getBool()
+    bool debounceArray[ NUM_IR_TRACK ];  // debounce pra determinar se uma marca esq/dir eh na verdade um cruzamneto
     bool marcaEsq;
     bool marcaDir;
     bool buscaInicioVolta;
@@ -1732,10 +1725,9 @@ void LineFollower::loop()
     pid.setPoint = NUM_IR_TRACK;  // meio da barra de sensores
     pid.executa( trilho.pontoMedio );
 
-    rodaEsq = (pid.MV < 0) ? (100 + pid.MV) : 100;
-    rodaDir = (pid.MV > 0) ? (100 - pid.MV) : 100;
+    drive.move( (pid.MV < 0) ? (100 + pid.MV) : 100,
+                (pid.MV > 0) ? (100 - pid.MV) : 100 );
 
-    drive.move( rodaEsq , rodaDir );
     drive.refresh();
 
     digitalWrite( PINO_LED, estadoLed );
