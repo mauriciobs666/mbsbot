@@ -33,6 +33,7 @@ Global variables use 1,309 bytes (63%) of dynamic memory, leaving 739 bytes for 
 
 #include "protocolo.h"
 #include "placa.h"
+#include "matematica.h"
 
 // ANSI
 #include <stdio.h>
@@ -65,6 +66,9 @@ Servo tilt;
 #endif
 #ifdef PINO_SERVO_ROLL
 Servo roll;
+#endif
+#ifdef SCANNER
+Scanner scanner;
 #endif
 
 unsigned long agora = 0;
@@ -126,121 +130,27 @@ void printErro( enum Erros err, char* detalhes = NULL )
         primeiroErro = err;
 }
 
-// ******************************************************************************
-//		MATEMATICA DE PONTO FIXO
-// ******************************************************************************
-
-// 16.16
-class fixo
+void printFixo( Fixo* f )
 {
-    long raw;
+    SERIALX.print( f->getInt() );
+    SERIALX.print( "." );
+    SERIALX.print( (long)f->getFrac() );
+}
 
-    fixo( long raww )
-    {
-        raw = raww;
-    }
-public:
-    fixo( int inteiro = 0, unsigned int fracao = 0 )
-    {
-        setInt( inteiro, fracao );
-    }
-    int getInt()
-    {
-        return (int)( raw >> 16 );
-    }
-    unsigned int getFrac()
-    {
-        return ( raw & 0xFFFF );
-    }
-    void setInt( int inteiro = 0, unsigned int fracao = 0 )
-    {
-        raw = ( (long)inteiro << 16 ) + fracao;
-    }
-    long getLong()
-    {
-        return raw;
-    }
-    void setLong( long raww )
-    {
-        raw = raww;
-    }
-    float getFloat()
-    {
-        return raw / 65536.0;
-    }
-    void setFloat( float f )
-    {
-        raw = f * 65536;
-    }
-    int Constrain( int minimo, int maximo )
-    {
-        int i = getInt();
-        if( i <= minimo )
-        {
-            setInt( i = minimo );
-        }
-        else if( i >= maximo )
-        {
-            setInt( i = maximo );
-        }
-        return i;
-    }
-
-
-    fixo operator*( int valor )
-    {
-        return raw * valor;
-    }
-    fixo operator*( fixo& valor )
-    {
-        return ( ( raw >> 8 ) * ( valor.raw >> 8 ) );
-    }
-    fixo operator+( fixo& valor )
-    {
-        return raw + valor.raw;
-    }
-    fixo operator-( fixo& valor )
-    {
-        return raw - valor.raw;
-    }
-    fixo& operator+=( const fixo& valor )
-    {
-        raw += valor.raw;
-        return *this;
-    }
-    fixo& operator-=( const fixo& valor )
-    {
-        raw -= valor.raw;
-        return *this;
-    }
-    fixo& operator*=( const fixo& valor )
-    {
-        raw >>= 8;
-        raw *= ( valor.raw >> 8 );
-        return *this;
-    }
-    fixo& operator/=( const fixo& valor )
-    {
-        raw <<= 8;
-        raw /= ( valor.raw >> 8 );
-        return *this;
-    }
-    operator bool()
-    {
-        return raw;
-    }
-
-    void print()
-    {
-        SERIALX.print( getInt() );
-        SERIALX.print( "." );
-        SERIALX.print( (long)getFrac() );
-    }
-};
+void printVetor2i( Vetor2i* v )
+{
+    SERIALX.print( "(" );
+    SERIALX.print( v->x );
+    SERIALX.print( "," );
+    SERIALX.print( v->y );
+    SERIALX.print( ")" );
+}
 
 // ******************************************************************************
-//		EEPROM
+//		EEPROM - persistencia via CMD_GRAVA / CMD_CARREGA / CMD_DEFAULT
 // ******************************************************************************
+
+// configuracao sensores
 
 typedef struct
 {
@@ -330,9 +240,9 @@ ConfigGamepad;
 
 typedef struct
 {
-    fixo Kp;
-    fixo Ki;
-    fixo Kd;
+    Fixo Kp;
+    Fixo Ki;
+    Fixo Kd;
     int minMV;
     int maxMV;
     int sampleTime;
@@ -382,8 +292,8 @@ public:
     {
         char programa;  // enum Programas
         char balanco;   // % balanco motor esq / dir
-        char velMax;    // %
-        char velEscala; // %
+        char velMax;    // trunca motores em +/- velMax %
+        char velEscala; // tb %, multiplica
         char handBrake;
 
         ConfigMotor motorEsq;
@@ -397,7 +307,7 @@ public:
         struct sDelays  // duracao (ms) de movimentos pra animacao
         {
             int ES; // intervalo de entrada/saida, leitura de sensores etc
-            int motores; // intervalo de execucao entre os refresh de motores
+            int motores;  // intervalo de execucao entre os refresh de motores
             int debounce; // debounce de cruzamento / marcaEsq / marcaDir
         } delays;
 
@@ -540,101 +450,6 @@ bool delaySemBlock(unsigned long *ultimaVez, long ms)
     }
     return false;
 }
-
-// ******************************************************************************
-//      Vetor 2D int
-// ******************************************************************************
-class Vetor2i
-{
-public:
-	int x, y;
-	Vetor2i( int xx=0, int yy=0 ) : x(xx), y(yy)
-        {}
-
-	bool operator==(const Vetor2i& v) const
-        { return ( ( x == v.x ) && ( y == v.y ) ); }
-	bool operator!=(const Vetor2i& v) const
-        { return ( ( x != v.x ) || ( y != v.y ) ); }
-
-	void Constrain(int min_xy = -100, int max_xy = 100)
-	{
-	    x = constrain( x, min_xy, max_xy );
-	    y = constrain( y, min_xy, max_xy );
-	}
-	int norma()
-    {
-        return (int) sqrt( x*x + y*y );
-    }
-    void normalizar()
-    {
-        int n = norma();
-        *this *= 100;
-        *this /= n;
-    }
-
-    Vetor2i operator+(const Vetor2i& v) const
-    {
-        Vetor2i n=*this;
-        n.x+=v.x;
-        n.y+=v.y;
-        return n;
-    }
-    Vetor2i operator-(const Vetor2i& v) const
-    {
-        Vetor2i n=*this;
-        n.x-=v.x;
-        n.y-=v.y;
-        return n;
-    }
-    Vetor2i operator*(int i) const
-    {
-        Vetor2i n=*this;
-        n.x*=i;
-        n.y*=i;
-        return n;
-    }
-    Vetor2i operator/(int i) const
-    {
-        Vetor2i n=*this;
-        n.x/=i;
-        n.y/=i;
-        return n;
-    }
-
-    Vetor2i& operator+=(const Vetor2i& v)
-    {
-        x+=v.x;
-        y+=v.y;
-        return *this;
-    }
-    Vetor2i& operator-=(const Vetor2i& v)
-    {
-        x-=v.x;
-        y-=v.y;
-        return *this;
-    }
-    Vetor2i& operator*=(int i)
-    {
-        x*=i;
-        y*=i;
-        return *this;
-    }
-    Vetor2i& operator/=(int i)
-    {
-        x/=i;
-        y/=i;
-        return *this;
-    }
-
-    void print( )
-    {
-        SERIALX.print( "(" );
-        SERIALX.print( x );
-        SERIALX.print( "," );
-        SERIALX.print( y );
-        SERIALX.print( ")" );
-    }
-};
 
 // ******************************************************************************
 //		SENSOR UNIVERSAL
@@ -828,6 +643,7 @@ private:
     bool antes, estado, trocou;
 }
 botaoCal(37), botaoPrg(39);
+// TODO (Mauricio#1#): porting mega328
 
 // ******************************************************************************
 //		GAMEPAD E R/C
@@ -1259,6 +1075,37 @@ drive;
 #endif
 
 // ******************************************************************************
+//   INTERFACE CONTROLADOR - ABSTRATA
+// ******************************************************************************
+class Controlador
+{
+public:
+    int setPoint;   // leitura de entrada desejada / meta
+    int MV;         // variavel manipulada / valor de saida
+    int sampleTime; // ms entre as amostras
+
+    int executaSample( int entrada )
+    {
+        if( ( agora - tUltimoLoop ) > sampleTime )
+        {
+            MV = executa( entrada );
+            tUltimoLoop = agora;
+        }
+        return MV;
+    }
+
+    int executa( int entrada )
+    {
+        return 0;
+    }
+
+    void print();
+
+protected:
+    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
+};
+
+// ******************************************************************************
 //   LINE FOLLOWER
 // ******************************************************************************
 #define LINE_FOLLOWER
@@ -1266,7 +1113,7 @@ drive;
 
 #ifdef LINE_FOLLOWER
 
-class PID
+class PID : public Controlador
 {
 public:
     ConfigPID *cfg;
@@ -1275,13 +1122,8 @@ public:
     int integral;
     int derivada;
 
-    int setPoint;
-    int MV;
-
     int erro;
     int eAnterior;
-
-    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
 
     PID()
     {
@@ -1311,49 +1153,41 @@ public:
         if( ! cfg )
             return 0;
 
-        if( ( agora - tUltimoLoop ) > cfg->sampleTime )
+        erro = setPoint - entrada;
+
+        // P
+        proporcional = cfg->Kp * erro;
+
+        // I
+        if( erro )
         {
-            erro = setPoint - entrada;
-
-            // P
-
-            proporcional = cfg->Kp * erro;
-
-            // I
-
-            if( erro )
-            {
-                integral = constrain( ( integral + cfg->Ki * erro ),
-                                        cfg->minMV,
-                                        cfg->maxMV );
-            }
-            else if( cfg->zeraAcc )
-            {
-                integral = 0;
-            }
-
-            // D
-
-            if( cfg->dEntrada )
-            {
-                // deriva entrada pra evitar spike qdo muda setPoint
-                derivada = cfg->Kd * ( - ( entrada - eAnterior ) );
-                eAnterior = entrada;
-            }
-            else
-            {
-                // deriva erro ( setPoint - entrada )
-                derivada = cfg->Kd * ( erro - eAnterior );
-                eAnterior = erro;
-            }
-
-            MV = constrain( proporcional + integral + derivada,
-                            cfg->minMV,
-                            cfg->maxMV );
-
-            tUltimoLoop = agora;
+            integral = constrain( ( integral + cfg->Ki * erro ),
+                                    cfg->minMV,
+                                    cfg->maxMV );
         }
-        return MV;
+        else if( cfg->zeraAcc )
+        {
+            integral = 0;
+        }
+
+        // D
+
+        if( cfg->dEntrada )
+        {
+            // deriva entrada pra evitar spike qdo muda setPoint
+            derivada = cfg->Kd * ( - ( entrada - eAnterior ) );
+            eAnterior = entrada;
+        }
+        else
+        {
+            // deriva erro ( setPoint - entrada )
+            derivada = cfg->Kd * ( erro - eAnterior );
+            eAnterior = erro;
+        }
+
+        return constrain( proporcional + integral + derivada,
+                          cfg->minMV,
+                          cfg->maxMV );
     }
 
     void print()
@@ -1570,7 +1404,7 @@ public:
 
         pid.setPoint = setPoint;
 
-        drive.gira( pid.executa( trilho.pontoMedio ) );
+        drive.gira( pid.executaSample( trilho.pontoMedio ) );
 
         drive.refresh();
 
@@ -1722,8 +1556,8 @@ void LineFollower::loop()
         }
     }
 
-    pid.setPoint = NUM_IR_TRACK;  // meio da barra de sensores
-    pid.executa( trilho.pontoMedio );
+    pid.setPoint = NUM_IR_TRACK * 100;  // meio da barra de sensores
+    pid.executaSample( trilho.pontoMedio );
 
     drive.move( (pid.MV < 0) ? (100 + pid.MV) : 100,
                 (pid.MV > 0) ? (100 - pid.MV) : 100 );
@@ -1838,94 +1672,6 @@ void LineFollower::calibrar()
 #endif // LINE_FOLLOWER
 
 // ******************************************************************************
-//		Scanner IR 1D
-// ******************************************************************************
-#ifdef SCANNER
-class Scanner
-{
-    #define SCANNER_STEPS 30
-    #define SCANNER_ANG ( 180 / SCANNER_STEPS )
-public:
-    Scanner() : stepAtual(0), stepDir(1)
-        {}
-    bool stepUp()
-    {
-        if(upperBound())
-            stepAtual = (SCANNER_STEPS-1);
-        else
-            stepAtual++;
-        return upperBound();
-    }
-    bool stepDown()
-    {
-        if(lowerBound())
-            stepAtual = 0;
-        else
-            stepAtual--;
-        return lowerBound();
-    }
-    void refreshServo()
-        {
-            #ifdef PINO_SERVO_PAN
-            pan.write( (SCANNER_ANG/2) + stepAtual * SCANNER_ANG );
-            #endif
-        }
-    void chase()
-    {
-        if( s->refresh() > 300 ) // threshold
-        {
-            if(stepDir < 0)
-                stepDown();
-            else
-                stepUp();
-        }
-        else // nada a vista, apenas continua na mesma direcao
-            step();
-
-        if(upperBound() || lowerBound())
-            reverseDir();
-
-        refreshServo();
-    }
-    void fillArray()
-    {
-        dataArray[stepAtual] = s->refresh(); // le sensor
-
-        if( step() ) // calcula proxima posicao, retorna true se encheu array
-        {
-            reverseDir();
-            /*
-            SERIALX.print("RFA ");
-            for(int x = 0; x < SCANNER_STEPS; x++)
-            {
-                SERIALX.print(dataArray[x]);
-                SERIALX.print(" ");
-            }
-            SERIALX.println("");
-            */
-        }
-        refreshServo();
-    }
-    bool step()
-        { return (stepDir < 0) ? stepDown() : stepUp(); }
-    void reverseDir()
-        { stepDir = -stepDir; }
-    bool lowerBound()
-        { return stepAtual <= 0; }
-    bool upperBound()
-        { return stepAtual >= (SCANNER_STEPS-1); }
-    void setSensor(Sensor *ss)
-        { s = ss; }
-private:
-    Sensor *s;
-    short stepAtual;
-    char stepDir;
-    unsigned short dataArray[SCANNER_STEPS];
-}
-scanner;
-#endif
-
-// ******************************************************************************
 //		SERVIDOR SERIAL
 // ******************************************************************************
 
@@ -1973,7 +1719,7 @@ public:
         case VAR_LONG:
             return *((long*)dados);
         case VAR_FIXO:
-            return ((fixo*)dados)->getInt();
+            return ((Fixo*)dados)->getInt();
         case VAR_BOOL:
         default:
             break;
@@ -1990,14 +1736,14 @@ public:
         case VAR_LONG:
             return *((long*)dados);
         case VAR_FIXO:
-            return ((fixo*)dados)->getLong();
+            return ((Fixo*)dados)->getLong();
         default:
             break;
         }
         return 0;
     }
 
-    fixo getFixo() const
+    Fixo getFixo() const
     {
         switch( tipo )
         {
@@ -2006,7 +1752,7 @@ public:
         case VAR_LONG:
             return (int)*((long*)dados);
         case VAR_FIXO:
-            return *((fixo*)dados);
+            return *((Fixo*)dados);
         default:
             break;
         }
@@ -2024,7 +1770,7 @@ public:
             *((long*)dados) += var.getLong();
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->operator+=(var.getFixo());
+            ((Fixo*)dados)->operator+=(var.getFixo());
             break;
         default:
             break;
@@ -2043,7 +1789,7 @@ public:
             *((long*)dados) -= var.getLong();
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->operator-=(var.getFixo());
+            ((Fixo*)dados)->operator-=(var.getFixo());
             break;
         default:
             break;
@@ -2062,7 +1808,7 @@ public:
             *((long*)dados) *= var.getLong();
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->operator*=(var.getFixo());
+            ((Fixo*)dados)->operator*=(var.getFixo());
             break;
         default:
             break;
@@ -2081,7 +1827,7 @@ public:
             *((long*)dados) /= var.getLong();
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->operator/=(var.getFixo());
+            ((Fixo*)dados)->operator/=(var.getFixo());
             break;
         default:
             break;
@@ -2103,7 +1849,7 @@ public:
             *((bool*)dados) = ! (*((bool*)dados));
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->setLong( - ((fixo*)dados)->getLong() );
+            ((Fixo*)dados)->setLong( - ((Fixo*)dados)->getLong() );
             break;
         default:
             break;
@@ -2125,7 +1871,7 @@ public:
             *( (long*) dados ) = v.getLong();
             return SUCESSO;
         case VAR_FIXO:
-            *( (fixo*) dados ) = v.getFixo();
+            *( (Fixo*) dados ) = v.getFixo();
             return SUCESSO;
         case VAR_BOOL:
             *( (bool*) dados ) = v.getInt();
@@ -2150,7 +1896,7 @@ public:
             SERIALX.print( (long) *( (long*) dados ) );
             break;
         case VAR_FIXO:
-            ((fixo*)dados)->print();
+            printFixo( (Fixo*) dados );
             break;
         case VAR_BOOL:
             SERIALX.print( (bool) *( (bool*) dados ) );
@@ -2250,7 +1996,7 @@ public:
             getToken();
         }
 
-        fixo res;
+        Fixo res;
         Variavel resultado( VAR_FIXO, "=", (void*) &res );
 
         enum Erros rc = SUCESSO;
@@ -2347,7 +2093,7 @@ private:
         char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '+' || op == '-' ) )
         {
-            fixo res;
+            Fixo res;
             Variavel temp( VAR_FIXO, "tmp", &res );
 
             getToken();
@@ -2385,7 +2131,7 @@ private:
         char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '*' || op == '/' ) )
         {
-            fixo res;
+            Fixo res;
             Variavel temp( VAR_FIXO, "tmp", &res );
 
             getToken();
@@ -2479,13 +2225,13 @@ private:
                     int i = l;
                     if( i != l ) // overflow -> VAR_LONG !!!
                     {
-                        // TODO (Mauricio#1#): gambi pra guardar long em fixo
-                        printErro( TODO, "range fixo" );
+                        // TODO (Mauricio#1#): gambi pra guardar long em Fixo
+                        printErro( TODO, "range Fixo" );
                     }
                     else
                     {
                         char* pos = strchr( token, '.' );
-                        ((fixo*)resultado->dados)->setInt( i, pos ? atol( pos+1 ) : 0 );
+                        ((Fixo*)resultado->dados)->setInt( i, pos ? atol( pos+1 ) : 0 );
                     }
                 }
                 break;
