@@ -90,7 +90,9 @@
 			<Add directory="$(#mbsutil.lib)" />
 			<Add directory="$(#wx.lib)/gcc_dll" />
 		</Linker>
+		<Unit filename="../Scanner1D.cpp" />
 		<Unit filename="../dimensoes.txt" />
+		<Unit filename="../matematica.h" />
 		<Unit filename="../mbsbot.ino" />
 		<Unit filename="../placa.h" />
 		<Unit filename="../placa_v1.h" />
@@ -104,6 +106,9 @@
 		<Unit filename="../reflash.sh" />
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
+		<Unit filename="matematica.hpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="resource.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>

@@ -16,10 +16,10 @@
  */
 
 /*
-3/3/15 - Arduino 1.6.0 - ATMEGA1280 - placa_v4.h
+5/3/15 - Arduino 1.6.0 - ATMEGA1280 - placa_v4.h
 
-Sketch uses 21,588 bytes (17%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 1,539 bytes (18%) of dynamic memory, leaving 6,653 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 21,252 bytes (16%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 1,543 bytes (18%) of dynamic memory, leaving 6,649 bytes for local variables. Maximum is 8,192 bytes.
 
 3/3/15 - Arduino 1.6.0 - ATMEGA328 - placa_v2.h
 
@@ -1075,7 +1075,7 @@ drive;
 #endif
 
 // ******************************************************************************
-//   INTERFACE CONTROLADOR - ABSTRATA
+//   INTERFACE CONTROLADOR
 // ******************************************************************************
 class Controlador
 {
@@ -1093,6 +1093,47 @@ public:
         }
         return MV;
     }
+
+/*
+    Consumo de memoria com/sem polimorfismo:
+
+    // primeiro teste - overwrite (nenhuma funcao virtual)
+
+    int executa( int entrada )
+    {
+        return 0;
+    }
+
+    int PID::executa( int ) { ... }
+
+    Sketch uses 21,240 bytes (16%) of program storage space. Maximum is 126,976 bytes.
+    Global variables use 1,541 bytes (18%) of dynamic memory, leaving 6,651 bytes for local variables. Maximum is 8,192 bytes.
+
+    // segundo teste -  primeira funcao virtual do projeto mas ainda com overwrite
+    //                      += 422 bytes flash
+                            +=   8 bytes ram
+
+    virtual int executa( int entrada ) = 0;
+
+    int PID::executa( int ) { ... }
+
+    Sketch uses 21,642 bytes (17%) of program storage space. Maximum is 126,976 bytes.
+    Global variables use 1,549 bytes (18%) of dynamic memory, leaving 6,643 bytes for local variables. Maximum is 8,192 bytes.
+
+    // terceiro teste = teste 2 + outra funcao virtual
+    //                    += 8 bytes flash
+    //                    += 2 bytes ram
+
+    virtual int executa2( int entrada ) = 0;
+
+    virtual int PID::executa2( int )
+    {
+        return 0;
+    }
+
+    Sketch uses 21,650 bytes (17%) of program storage space. Maximum is 126,976 bytes.
+    Global variables use 1,551 bytes (18%) of dynamic memory, leaving 6,641 bytes for local variables. Maximum is 8,192 bytes.
+*/
 
     int executa( int entrada )
     {
@@ -1123,7 +1164,8 @@ public:
     int derivada;
 
     int erro;
-    int eAnterior;
+    int erroAnterior;
+    int entAnterior;
 
     PID()
     {
@@ -1139,16 +1181,11 @@ public:
     void zera( )
     {
         proporcional = integral = derivada = 0;
-        setPoint = MV = erro = eAnterior = 0;
+        setPoint = MV = erro = erroAnterior = entAnterior = 0;
         tUltimoLoop = agora;
     }
 
-    void reinicia( int ultimaMV )
-    {
-        MV = integral = ultimaMV;
-    }
-
-    int executa( int entrada )
+    int executa( int entrada, bool reinicia = false )
     {
         if( ! cfg )
             return 0;
@@ -1159,31 +1196,41 @@ public:
         proporcional = cfg->Kp * erro;
 
         // I
-        if( erro )
+        if( reinicia )
+        {
+            // apenas mantem curso, ignora acumulador anterior
+            integral = MV;
+        }
+        else if( erro > cfg->zeraAcc || erro < -cfg->zeraAcc )
         {
             integral = constrain( ( integral + cfg->Ki * erro ),
                                     cfg->minMV,
                                     cfg->maxMV );
         }
-        else if( cfg->zeraAcc )
+        else
         {
             integral = 0;
         }
 
         // D
-
-        if( cfg->dEntrada )
+        if( reinicia )
+        {
+            // anterior nao eh confiavel
+            derivada = 0;
+        }
+        else if( cfg->dEntrada )
         {
             // deriva entrada pra evitar spike qdo muda setPoint
-            derivada = cfg->Kd * ( - ( entrada - eAnterior ) );
-            eAnterior = entrada;
+            derivada = cfg->Kd * ( - ( entrada - entAnterior ) );
         }
         else
         {
             // deriva erro ( setPoint - entrada )
-            derivada = cfg->Kd * ( erro - eAnterior );
-            eAnterior = erro;
+            derivada = cfg->Kd * ( erro - erroAnterior );
         }
+
+        entAnterior = entrada;
+        erroAnterior = erro;
 
         return constrain( proporcional + integral + derivada,
                           cfg->minMV,
