@@ -76,6 +76,7 @@
 #define LINE_FOLLOWER
 #define NUM_IR_TRACK    NUM_SENSORES
 #define PINO_TRACK_0    0
+#define LF_SETPOINT     ( NUM_SENSORES * 100 / 2 )
 // ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
 
 // http://arduino.cc/en/Reference/Tone

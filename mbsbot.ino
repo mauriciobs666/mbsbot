@@ -1424,7 +1424,7 @@ public:
         }
     }
 
-    int giraP( int setPoint = NUM_IR_TRACK )
+    int giraP( int setPoint = LF_SETPOINT )
     {
         refresh();
 
@@ -1483,7 +1483,7 @@ void LineFollower::loop()
     if( nGrupos )
     {
         int eleito = -1;
-        int distEleito = 3; // distancia maxima do trilho anterior
+        int distEleito = 300; // distancia maxima do trilho anterior
 
         for( int ig = 0 ; ig < nGrupos ; ig++ )
         {
@@ -1593,7 +1593,7 @@ void LineFollower::loop()
         }
     }
 
-    pid.setPoint = NUM_IR_TRACK * 100;  // meio da barra de sensores
+    pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
     pid.executaSample( trilho.pontoMedio );
 
     drive.move( (pid.MV < 0) ? (100 + pid.MV) : 100,
@@ -2536,6 +2536,8 @@ public:
                 #ifdef LINE_FOLLOWER
                 else if(strcmp(tok, CMD_LF_CAL) == 0)	// re-calibra sensores do line follower
                     lineFollower.calibrar();
+                else if(strcmp(tok, CMD_LF) == 0 )
+                    lineFollower.iniciarCorrida();
                 #endif
                 else if(strcmp(tok, CMD_MV_PARAR) == 0)
                 {
@@ -2771,7 +2773,7 @@ void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
 
 void isrRadio()
 {
-    if( eeprom.dados.programa == PRG_RC )
+    if( eeprom.dados.programa == PRG_RC_SERIAL )
     switch(PCintPort::arduinoPin)
     {
         #ifdef PINO_JOY_X
@@ -3097,8 +3099,11 @@ void loop()
     static unsigned long ultimoLoop = 0;
     if( delaySemBlock(&ultimoLoop, 10000) )
     {
-        SERIALX.print( passagensLoop / 10 );
-        SERIALX.println(" fps");
+        if( trc )
+        {
+            SERIALX.print( passagensLoop / 10 );
+            SERIALX.println(" fps");
+        }
         passagensLoop = 0;
     }
     #endif
@@ -3112,8 +3117,20 @@ void loop()
         #endif
         switch(eeprom.dados.programa)
         {
-        case PRG_RC:
         case PRG_RC_SERIAL:
+        {
+            #ifdef RODAS_PWM_x4
+                drive.vetorial(gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
+                drive2.vetorial(-gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
+            #else
+                Vetor2i direcao( gamepad.x.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
+//                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
+                    drive.vetorial( direcao );
+//                else
+//                    drive.vetorialSensor( direcao );
+            #endif
+        }
+        case PRG_IDLE:
         {
             static unsigned long piscaLed = 0;
             static int intervalo = 100;
@@ -3131,16 +3148,6 @@ void loop()
                     intervalo = 100;
                 }
             }
-            #ifdef RODAS_PWM_x4
-                drive.vetorial(gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
-                drive2.vetorial(-gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
-            #else
-                Vetor2i direcao( gamepad.x.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
-//                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
-                    drive.vetorial( direcao );
-//                else
-//                    drive.vetorialSensor( direcao );
-            #endif
         }
         msExec = eeprom.dados.delays.ES;
         break;
@@ -3295,7 +3302,7 @@ void loop()
             digitalWrite(PINO_LED, LOW);
             //delay(1000);
         }
-        eeprom.dados.programa = PRG_RC;
+        eeprom.dados.programa = DFT_PROGRAMA;
         break;
 
         default:

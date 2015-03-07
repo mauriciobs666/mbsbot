@@ -65,6 +65,9 @@ Formato geral do pacote:
 #define CMD_LF_CAL	"lfcal"
 /* CMD_LF_CAL : auto calibra sensores do line-follower */
 
+#define CMD_LF "lf"
+/* CMD_LF : inicia corrida */
+
 #define CMD_MV_PARAR "p"
 /* CMD_MV_PARAR : para imediatamente */
 
@@ -139,13 +142,13 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 
 enum Programas
 {
-    PRG_RC = 0,	            // Controle remoto
-    PRG_RC_SERIAL = 1,      // Controle remoto via porta serial
+    PRG_IDLE = 0,	        //
+    PRG_RC_SERIAL = 1,      // Controle remoto via porta serial / gamepad / hobby rc
     PRG_FOTOVORO = 2,       //
     PRG_LINE_FOLLOW = 3,    //
-    PRG_SCANNER = 4,        // Scanner com rangefinder e servo
-    PRG_CHASE = 5,          //
-    PRG_COLISAO = 6,        //
+    PRG_SCANNER = 4,        // Obsoleto: scanner com rangefinder e servo
+    PRG_CHASE = 5,          // Persegue um alvo
+    PRG_COLISAO = 6,        // Detecta tempo para colisao em s
     PRG_SENTINELA = 7,      //
     PRG_WIICHUCK = 8,       //
     PRG_SCOPE = 9,          //
