@@ -1239,21 +1239,18 @@ public:
 
     void print()
     {
-        #ifdef TRACE_LF
-        if( trc )
-        {
-            SERIALX.print( "E " );
-            SERIALX.print( erro );
-            SERIALX.print( " P " );
-            SERIALX.print( proporcional );
-            SERIALX.print( " I " );
-            SERIALX.print( integral );
-            SERIALX.print( " D " );
-            SERIALX.print( derivada );
-            SERIALX.print( " MV " );
-            SERIALX.println( MV );
-        }
-        #endif // TRACE_LF
+        SERIALX.print( "PID en " );
+        SERIALX.print( entAnterior );
+        SERIALX.print( " er " );
+        SERIALX.print( erro );
+        SERIALX.print( " p " );
+        SERIALX.print( proporcional );
+        SERIALX.print( " i " );
+        SERIALX.print( integral );
+        SERIALX.print( " d " );
+        SERIALX.print( derivada );
+        SERIALX.print( " MV " );
+        SERIALX.println( MV );
     }
 };
 
@@ -1332,29 +1329,12 @@ public:
     bool buscaInicioVolta;
     bool estadoLed;
 
-    void print()
-    {
-        #ifdef TRACE_LF
-        if( trc )
-        {
-            for( int x = 0; x < NUM_IR_TRACK; x++ )
-                SERIALX.print( sensoresBool[x] ? "A" : "_" );
-            SERIALX.println();
-
-            for( int ig = 0 ; ig < nGrupos ; ig++ )
-                grupos[ig].print();
-
-            pid.print();
-        }
-        #endif // TRACE_LF
-    }
-
     int nGrupos;
 
     class Grupo
     {
     public:
-        long pontoMedio;
+        int pontoMedio;
         int pontoMin;
         int pontoMax;
         int tamanho;
@@ -1374,23 +1354,33 @@ public:
         }
         void print()
         {
-            #ifdef TRACE_LF
-            if( trc )
-            {
-                SERIALX.print("grp m ");
-                SERIALX.print((int)pontoMedio);
-                SERIALX.print(" i ");
-                SERIALX.print((int)pontoMin);
-                SERIALX.print(" x ");
-                SERIALX.print((int)pontoMax);
-                SERIALX.print(" t ");
-                SERIALX.print((int)tamanho);
-                SERIALX.println("");
-            }
-            #endif
+            SERIALX.print("(");
+            SERIALX.print((int)pontoMin);
+            SERIALX.print(",");
+            SERIALX.print((int)pontoMedio);
+            SERIALX.print(",");
+            SERIALX.print((int)pontoMax);
+            SERIALX.print(")");
         }
     }
     grupos[NUM_IR_TRACK/2], trilho;
+
+    void print()
+    {
+        for( int x = 0; x < NUM_IR_TRACK; x++ )
+            SERIALX.print( sensoresBool[x] ? "A" : "_" );
+//            SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "|" : "_" );
+        SERIALX.println();
+
+        for( int ig = 0 ; ig < nGrupos ; ig++ )
+        {
+            grupos[ig].print();
+            SERIALX.println();
+        }
+
+        pid.print();
+
+    }
 
     void refresh()
     {
@@ -1426,7 +1416,7 @@ public:
                     den += sensor;
                 }
 
-                grp.pontoMedio = num / den;
+                grp.pontoMedio = (int) ( num / den );
 
                 grupos[ nGrupos ] = grp;
                 nGrupos++;
@@ -1691,6 +1681,7 @@ void LineFollower::calibrar()
     delay( 100 );
 
     trilho.print();
+    SERIALX.println();
 
     // gira tudo pra direita
     do
@@ -1702,6 +1693,7 @@ void LineFollower::calibrar()
     delay( 100 );
 
     trilho.print();
+    SERIALX.println();
 
     // centra
     do
@@ -2662,11 +2654,6 @@ public:
             SERIALX.print( " " );
         }
         SERIALX.println( "" );
-
-        for( int x = 0; x < NUM_IR_TRACK; x++ )
-            SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "|" : "_" );
-        SERIALX.println("");
-
     }
 
     void enviaStatus(bool enviaComando = true)
@@ -3085,6 +3072,10 @@ void loop()
             else
                 lineFollower.iniciarCorrida();
         }
+        else
+        {
+            digitalWrite( PINO_LED, HIGH );
+        }
     }
 
     if( delaySemBlock(&ultimoStatus, delayStatus) )
@@ -3096,9 +3087,10 @@ void loop()
     {
         //telnet.enviaJoystick();
         telnet.enviaSensores();
+        lineFollower.print();
     }
 
-    //#define TESTE_PERFORMANCE
+    #define TESTE_PERFORMANCE
 
     #ifdef TESTE_PERFORMANCE
     static unsigned long passagensLoop = 0;
