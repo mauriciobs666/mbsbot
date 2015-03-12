@@ -33,7 +33,7 @@
 #define DFT_VEL_ESCALA   80
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
-#define DFT_PID_DEBOUNCE      35
+#define DFT_PID_DEBOUNCE 35
 
 #define DFT_PID_P             12
 #define DFT_PID_I            500
@@ -41,6 +41,8 @@
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
 #define DFT_PID_ZACC        true
+#define DFT_PID_DENTRADA    true
+#define DFT_PID_SAMPLE         5
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
@@ -48,7 +50,7 @@
 // 4 rodas mechanum
 #define RODAS_PWM_x4 1
 
-// inverte direcao de giro dos motores
+// inverte sentido dos motores
 #define MOTOR_ESQ_INV 1
 #define MOTOR_DIR_INV 1
 #define MOTOR_E_T_INV 0
@@ -75,30 +77,27 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-// LINE FOLLOWER (pinos analogicos!)
-#define NUM_IR_TRACK		5
-#define PINO_TRACK_0 1
-// onde NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
+#define NUM_SENSORES    16
 
-#define PINO_BIP 			12
+//#define LINE_FOLLOWER
+
+#define LF_NUM_SENSORES NUM_SENSORES
+#define LF_PINO_0       0
+#define LF_PINO_N       ( LF_PINO_0 + LF_NUM_SENSORES )
+#define LF_FATOR_S      100
+#define LF_RANGE        ( NUM_SENSORES * LF_FATOR_S )
+#define LF_SETPOINT     ( LF_RANGE / 2 )
+#define LF_TIMEOUT      1000
+#define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )
+// ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
+
+// http://arduino.cc/en/Reference/Tone
+// Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
+//#define PINO_BIP 			12
 
 #define PINO_ARMA           6
 
-#define PINO_LED             13
-
-// habilita wiichuck
-//#define WIICHUCK
-//#define WIICHUCK_POWER
-
-#ifdef WIICHUCK
-    #ifdef WIICHUCK_POWER
-        #define PINO_ANALOG_CNT 2
-    #else
-        #define PINO_ANALOG_CNT 4
-    #endif
-#else
-    #define PINO_ANALOG_CNT 6
-#endif
+#define PINO_LED            13
 
 // RADIO CONTROLE
 #define PINO_JOY_X      18
@@ -106,12 +105,5 @@
 #define PINO_JOY_Z      20
 //#define PINO_JOY_R
 #define PINO_JOY_SW1    21
-
-// int de hardware externa (so 0 e 1 no 328 e 2, 3, 4 e 5 no 1280)
-#define INT_JOY_X      2
-#define INT_JOY_Y      3
-#define INT_JOY_Z      4
-//#define INT_JOY_R
-#define INT_JOY_SW1    5
 
 #endif // BOARD_H_INCLUDED

@@ -16,10 +16,10 @@
  */
 
 /*
-5/3/15 - Arduino 1.6.0 - ATMEGA1280 - placa_v4.h
+11/3/15 - Arduino 1.6.0 - ATMEGA1280 - placa_v4.h
 
-Sketch uses 21,252 bytes (16%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 1,543 bytes (18%) of dynamic memory, leaving 6,649 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 21,592 bytes (17%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 1,555 bytes (18%) of dynamic memory, leaving 6,637 bytes for local variables. Maximum is 8,192 bytes.
 
 3/3/15 - Arduino 1.6.0 - ATMEGA328 - placa_v2.h
 
@@ -124,7 +124,7 @@ void printErro( enum Erros err, char* detalhes = NULL )
         SERIALX.print( detalhes );
     }
 
-    SERIALX.println( "!" );
+    SERIALX.println();
 
     if( ! primeiroErro )
         primeiroErro = err;
@@ -1257,35 +1257,50 @@ public:
 class LineFollower
 {
 public:
+    PID pid;
+
+    unsigned long tInicio;
+    unsigned long tFim;
+    unsigned long timeout;
+    unsigned long debounce;
+    unsigned long tPiscaLed;
+
+    bool sensoresBool[ LF_NUM_SENSORES ];   // retorno do getBool()
+    bool debounceArray[ LF_NUM_SENSORES ];  // debounce pra determinar se uma marca esq/dir eh na verdade um cruzamneto
+    bool marcaEsq;
+    bool marcaDir;
+    bool buscaInicioVolta;
+    bool estadoLed;
+
+    int nGrupos;
+
+    void loop();
+    bool calibrar();
 
     LineFollower()
     {
         zeraTudo();
     }
 
-    void calibrar();
-
-    bool calibrado()
-    {
-        for(int sb = 0; sb < NUM_IR_TRACK; sb++)
-            if( ! sensores[ PINO_TRACK_0 + sb ].calibrado() )
-                return false;
-        return true;
-    }
-
-    void loop();
-
     void zeraTudo()
     {
         pid.zera();
 
         nGrupos = 0;
-        tInicio = tFim = debounce = 0;
+        tInicio = tFim = timeout = tPiscaLed = debounce = 0;
         marcaEsq = marcaDir = estadoLed = false;
         buscaInicioVolta = true;
 
-        for(int sb = 0; sb < NUM_IR_TRACK; sb++)
+        for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
             sensoresBool[sb] = debounceArray[sb] = false;
+    }
+
+    bool calibrado()
+    {
+        for( int pino = LF_PINO_0; pino < LF_PINO_N; pino++ )
+            if( ! sensores[ pino ].calibrado() )
+                return false;
+        return true;
     }
 
     void iniciarCorrida()
@@ -1296,10 +1311,7 @@ public:
         {
             calibrar();
             if( ! calibrado() )
-            {
-                printErro(ERRO_LF_CALIBRA);
                 return;
-            }
         }
 
         pid.setConfig( &eeprom.dados.pid[ PID_CORRIDA ] );
@@ -1318,19 +1330,6 @@ public:
         }
     }
 
-    PID pid;
-    unsigned long tInicio;
-    unsigned long tFim;
-    unsigned long debounce;
-    bool sensoresBool[ NUM_IR_TRACK ];   // retorno do getBool()
-    bool debounceArray[ NUM_IR_TRACK ];  // debounce pra determinar se uma marca esq/dir eh na verdade um cruzamneto
-    bool marcaEsq;
-    bool marcaDir;
-    bool buscaInicioVolta;
-    bool estadoLed;
-
-    int nGrupos;
-
     class Grupo
     {
     public:
@@ -1344,7 +1343,7 @@ public:
         {
             // expande um sensor ( 2*s+1 ) pra cada lado
             int pmin = pontoMin > 1 ? pontoMin - 2 : pontoMin;
-            int pmax = pontoMax < 2 * NUM_IR_TRACK - 1 ? pontoMax + 2 : pontoMax;
+            int pmax = pontoMax < 2 * LF_NUM_SENSORES - 1 ? pontoMax + 2 : pontoMax;
 
             // se minimo ou maximo de b estiverem dentro do range
             if( ( b.pontoMin >= pmin && b.pontoMin <= pmax ) || ( b.pontoMax >= pmin && b.pontoMax <= pmax ) )
@@ -1363,13 +1362,13 @@ public:
             SERIALX.print(")");
         }
     }
-    grupos[NUM_IR_TRACK/2], trilho;
+    grupos[LF_NUM_SENSORES/2], trilho;
 
     void print()
     {
-        for( int x = 0; x < NUM_IR_TRACK; x++ )
+        for( int x = 0; x < LF_NUM_SENSORES; x++ )
             SERIALX.print( sensoresBool[x] ? "A" : "_" );
-//            SERIALX.print( sensores[PINO_TRACK_0 + x].getBool() ? "|" : "_" );
+//            SERIALX.print( sensores[LF_PINO_0 + x].getBool() ? "|" : "_" );
         SERIALX.println();
 
         for( int ig = 0 ; ig < nGrupos ; ig++ )
@@ -1386,10 +1385,10 @@ public:
     {
         nGrupos = 0;
 
-        for(int sb = 0; sb < NUM_IR_TRACK; sb++)
-            sensoresBool[sb] = sensores[ PINO_TRACK_0 + sb ].refresh().getBool();
+        for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
+            sensoresBool[sb] = sensores[ LF_PINO_0 + sb ].refresh().getBool();
 
-        for(int s = 0; s < NUM_IR_TRACK; s++)
+        for(int s = 0; s < LF_NUM_SENSORES; s++)
         {
             if( sensoresBool[s] )
             {
@@ -1400,18 +1399,18 @@ public:
                 grp.tamanho = 1;
 
                 // https://www.pololu.com/docs/0J18/16
-                unsigned short sensor = sensores[ PINO_TRACK_0 + s ].getPorcento();
+                unsigned short sensor = sensores[ LF_PINO_0 + s ].getPorcento();
                 long num = s * 100 * sensor;
                 long den = sensor;
 
                 // agrupa enquanto o proximo for true
-                while( ( s < NUM_IR_TRACK-1 ) && sensoresBool[ s + 1 ] )
+                while( ( s < LF_NUM_SENSORES-1 ) && sensoresBool[ s + 1 ] )
                 {
                     s++;
                     grp.pontoMax = 2*s + 1;
                     grp.tamanho++;
 
-                    sensor = sensores[ PINO_TRACK_0 + s ].getPorcento();
+                    sensor = sensores[ LF_PINO_0 + s ].getPorcento();
                     num += s * 100 * sensor;
                     den += sensor;
                 }
@@ -1432,12 +1431,7 @@ public:
         {
             trilho = grupos[0];
         }
-        /*
-        else
-        {
-            // TODO (Mauricio#1#): else?
-        }
-        */
+        // TODO (Mauricio#1#): else?
 
         pid.setPoint = setPoint;
 
@@ -1446,6 +1440,11 @@ public:
         drive.refresh();
 
         return pid.erro;
+    }
+
+    bool timeouted( unsigned long* pAgora )
+    {
+        return ( timeout < ( *pAgora = millis() ) );
     }
 }
 lineFollower;
@@ -1482,12 +1481,14 @@ void LineFollower::loop()
 
     if( nGrupos )
     {
+        timeout = 0;
+
         int eleito = -1;
         int distEleito = 300; // distancia maxima do trilho anterior
 
         for( int ig = 0 ; ig < nGrupos ; ig++ )
         {
-            if( grupos[ig].tamanho < (NUM_IR_TRACK/3) ) // ignora cruzamentos e marcacoes
+            if( grupos[ig].tamanho < (LF_NUM_SENSORES/3) ) // ignora cruzamentos e marcacoes
             {
                 if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
                 {
@@ -1521,7 +1522,7 @@ void LineFollower::loop()
             }
         }
 
-//        if( nGrupos == 1 && grupos[0].tamanho < (NUM_IR_TRACK/3) )
+//        if( nGrupos == 1 && grupos[0].tamanho < (LF_NUM_SENSORES/3) )
         if( nGrupos == 1 && eleito >= 0 )
         {
             if( debounce && agora > debounce )
@@ -1529,7 +1530,7 @@ void LineFollower::loop()
                 debounce = 0;
 
                 int conta1s = 0;
-                for( int s = 0; s < NUM_IR_TRACK; s++ )
+                for( int s = 0; s < LF_NUM_SENSORES; s++ )
                 {
                     if( debounceArray[s] )
                     {
@@ -1538,7 +1539,7 @@ void LineFollower::loop()
                     }
                 }
 
-                if( ( marcaEsq && marcaDir ) || ( conta1s > ( ( NUM_IR_TRACK * 7 ) / 10 ) ) )
+                if( ( marcaEsq && marcaDir ) || ( conta1s > ( ( LF_NUM_SENSORES * 7 ) / 10 ) ) )
                 {
                     #ifdef TRACE_LF
                     if( trc )
@@ -1573,23 +1574,43 @@ void LineFollower::loop()
                 traceLF = true;
             }
         }
-        else // ( nGrupos > 1 ) || grupos[0].tamanho < (NUM_IR_TRACK/3)
+        else // ( nGrupos > 1 ) || grupos[0].tamanho < (LF_NUM_SENSORES/3)
         {
-            traceLF = ! debounce;
+            traceLF = ( 0 == debounce );
 
             debounce = agora + eeprom.dados.delays.debounce;
 
-            for( int s = 0; s < NUM_IR_TRACK; s++ )
+            for( int s = 0; s < LF_NUM_SENSORES; s++ )
                 debounceArray[s] |= sensoresBool[s];
         }
     }
     else
     {
-        static unsigned long piscaLed=0;
-        if( delaySemBlock( &piscaLed, 500 ) )
+        // perdeu trilho, continua tentando ate timeout
+
+        if( 0 == timeout )
         {
+            timeout = agora + LF_TIMEOUT;
             traceLF = true;
-            estadoLed = ! estadoLed;
+        }
+        else if( agora < timeout )
+        {
+            if( delaySemBlock( &tPiscaLed, 500 ) )
+            {
+                traceLF = true;
+                estadoLed = ! estadoLed;
+            }
+        }
+        else // timeout
+        {
+            eeprom.dados.programa = DFT_PROGRAMA;
+            drive.parar();
+            drive.refresh( true );
+
+            print();
+            printErro( ERRO_LF_TRILHO, "timeout" );
+
+            return;
         }
     }
 
@@ -1603,7 +1624,6 @@ void LineFollower::loop()
 
     digitalWrite( PINO_LED, estadoLed );
 
-    #ifdef TRACE_LF
     if( trc )
     {
         if( traceLF )
@@ -1612,23 +1632,16 @@ void LineFollower::loop()
             print();
         }
     }
-    #endif
 }
 
-void LineFollower::calibrar()
+bool LineFollower::calibrar()
 {
-    unsigned short valores[NUM_IR_TRACK];
-    int num0s = 0;
-    int num1s = 0;
-    unsigned short minimo = 1023;
-    unsigned short maximo = 0;
-
-    pid.cfg = &eeprom.dados.pid[ PID_CALIBRA ];
-
     drive.parar();
     drive.refresh( true );
 
-    // avisa que vai entrar em modo auto
+    pid.cfg = &eeprom.dados.pid[ PID_CALIBRA ];
+
+    // alerta que vai entrar em modo auto
 
     for( int l = 0; l < 15; l ++ )
     {
@@ -1638,75 +1651,79 @@ void LineFollower::calibrar()
         digitalWrite( PINO_LED, true );
     }
 
-    // primeira rodada de leitura
+    // primeira rodada de leitura, estima valores maximo, minimo e medio
 
-    for(int x = 0; x < NUM_IR_TRACK; x++)
+    unsigned short valores[LF_NUM_SENSORES];
+    unsigned short minimo = 1023;
+    unsigned short maximo = 0;
+
+    for(int x = 0; x < LF_NUM_SENSORES; x++)
     {
-        valores[x] = sensores[ PINO_TRACK_0 + x ].calibrar();
+        valores[x] = sensores[ LF_PINO_0 + x ].calibrar();
 
         if( valores[x] < minimo ) minimo = valores[x];
         if( valores[x] > maximo ) maximo = valores[x];
     }
 
-    // chuta threshold medio e classifica
+    unsigned short medio = ( ( maximo - minimo ) >> 1 ) + minimo;
 
-    unsigned short meio = ( ( maximo - minimo ) >> 1 ) + minimo;
+    // usa media como threshold pra tentar classificar em fita/piso
 
-    for( int x = 0; x < NUM_IR_TRACK; x++ )
-    {
-        if( valores[x] > meio )
-            num1s++;
+    int cntPiso = 0;
+    int cntFita = 0;
+
+    for( int x = 0; x < LF_NUM_SENSORES; x++ )
+        if( valores[x] > medio )
+            cntFita++;
         else
-            num0s++;
-    }
+            cntPiso++;
 
-    // se tem mais trilho que brita inverte td
 
-    for( int x = 0; x < NUM_IR_TRACK; x++ )
-        sensores[PINO_TRACK_0 + x].cfg->invertido = ( num1s > num0s );
+    // se tem mais "trilho" que "brita" inverte os sensores
+    if( cntFita > cntPiso )
+        for( int x = LF_PINO_0; x < ( LF_PINO_0 + LF_NUM_SENSORES ); x++ )
+            sensores[x].cfg->invertido ^= true;
 
-    unsigned long timeout = millis() + 3000;
+    timeout = millis() + LF_TIMEOUT_CAL;
 
     zeraTudo();
 
-    trilho.pontoMedio = NUM_IR_TRACK; // supoe que robo ta centrado na linha
+    trilho.pontoMedio = LF_SETPOINT; // supoe que robo ta centrado na linha
 
-    // gira tudo pra esquerda
-    do
-    {
-        agora = millis();
-    }
-    while( agora < timeout && giraP( ( 2 * (NUM_IR_TRACK-1) ) + 1 ) );
+    // gira tudo pro lado alto
+    while( ( ! timeouted( &agora) ) && giraP( LF_RANGE ) );
 
-    delay( 100 );
+    //delay( 100 );
 
     trilho.print();
     SERIALX.println();
 
-    // gira tudo pra direita
-    do
-    {
-        agora = millis();
-    }
-    while( agora < timeout && giraP( 1 ) );
+    // gira tudo pro outro lado
+    while( ( ! timeouted( &agora) ) && giraP( 0 ) );
 
-    delay( 100 );
+    //delay( 100 );
 
     trilho.print();
     SERIALX.println();
 
     // centra
-    do
-    {
-        agora = millis();
-        giraP( NUM_IR_TRACK );
-    }
-    while( agora < timeout );
+    while( ( ! timeouted( &agora) ) && giraP( LF_SETPOINT ) );
 
     drive.parar();
     drive.refresh( true );
 
     digitalWrite( PINO_LED, false );
+
+    if( agora < timeout )
+        printErro( ERRO_LF_CALIBRA, "timeout" );
+
+    if( ! calibrado() )
+    {
+        printErro( ERRO_LF_CALIBRA, "!calibrado()" );
+        return false;
+    }
+
+    return true;
 }
 #endif // LINE_FOLLOWER
 
@@ -2997,7 +3014,8 @@ void setup()
 /*    // plaquinha com 8 leds conectada no canto do mega
     for( int i = 39; i <= 53; i += 2 )
         pinMode(i, OUTPUT);
-    for( int x = 0; x < NUM_IR_TRACK; x++ )
+
+    for( int x = 0; x < LF_NUM_SENSORES; x++ )
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
 */
 

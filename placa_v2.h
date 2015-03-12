@@ -72,10 +72,17 @@
 
 #define NUM_SENSORES    6
 
-#define LINE_FOLLOWER
-#define NUM_IR_TRACK    NUM_SENSORES
-#define PINO_TRACK_0    0
-// ex: NUM_IR_TRACK=3 e PINO_TRACK_0=2 significa que os pinos A2, A3 e A4 estao conectados
+//#define LINE_FOLLOWER
+
+#define LF_NUM_SENSORES NUM_SENSORES
+#define LF_PINO_0       0
+#define LF_PINO_N       ( LF_PINO_0 + LF_NUM_SENSORES )
+#define LF_FATOR_S      100
+#define LF_RANGE        ( NUM_SENSORES * LF_FATOR_S )
+#define LF_SETPOINT     ( LF_RANGE / 2 )
+#define LF_TIMEOUT      1000
+#define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )
+// ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
 // http://arduino.cc/en/Reference/Tone
 // Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
@@ -85,9 +92,6 @@
 
 #define PINO_LED            13
 
-// habilita wiichuck / energia nas I2C/analogicas
-//#define WIICHUCK
-//#define WIICHUCK_POWER
 
 // RADIO CONTROLE
 //#define PINO_JOY_X      2
