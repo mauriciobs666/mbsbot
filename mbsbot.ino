@@ -31,6 +31,8 @@ Global variables use 1,309 bytes (63%) of dynamic memory, leaving 739 bytes for 
 //		INCLUDEs e CONFIGURACAO
 // ******************************************************************************
 
+#include "Arduino.h"
+
 #include "protocolo.h"
 #include "placa.h"
 #include "matematica.h"
@@ -400,21 +402,21 @@ public:
         dados.delays.motores = DFT_VEL_REFRESH;
         dados.delays.debounce = DFT_PID_DEBOUNCE;
 
-        dados.pid[ PID_CALIBRA ].Kp      =    5;
-        dados.pid[ PID_CALIBRA ].Ki      =  100;
-        dados.pid[ PID_CALIBRA ].Kd      =  300;
-        dados.pid[ PID_CALIBRA ].maxMV   =  100;
-        dados.pid[ PID_CALIBRA ].minMV   = -100;
-        dados.pid[ PID_CALIBRA ].zeraAcc =  true;
-        dados.pid[ PID_CALIBRA ].dEntrada   = DFT_PID_DENTRADA;
-        dados.pid[ PID_CALIBRA ].sampleTime = DFT_PID_SAMPLE;
+        dados.pid[ PID_CALIBRA ].Kp         = CAL_PID_P;
+        dados.pid[ PID_CALIBRA ].Ki         = CAL_PID_I;
+        dados.pid[ PID_CALIBRA ].Kd         = CAL_PID_D;
+        dados.pid[ PID_CALIBRA ].maxMV      = CAL_PID_MAX_MV;
+        dados.pid[ PID_CALIBRA ].minMV      = CAL_PID_MIN_MV;
+        dados.pid[ PID_CALIBRA ].zeraAcc    = CAL_PID_ZACC;
+        dados.pid[ PID_CALIBRA ].dEntrada   = CAL_PID_DENTRADA;
+        dados.pid[ PID_CALIBRA ].sampleTime = CAL_PID_SAMPLE;
 
-        dados.pid[ PID_CORRIDA ].Kp       = DFT_PID_P;
-        dados.pid[ PID_CORRIDA ].Ki       = DFT_PID_I;
-        dados.pid[ PID_CORRIDA ].Kd       = DFT_PID_D;
-        dados.pid[ PID_CORRIDA ].maxMV    = DFT_PID_MAX_MV;
-        dados.pid[ PID_CORRIDA ].minMV    = DFT_PID_MIN_MV;
-        dados.pid[ PID_CORRIDA ].zeraAcc  = DFT_PID_ZACC;
+        dados.pid[ PID_CORRIDA ].Kp         = DFT_PID_P;
+        dados.pid[ PID_CORRIDA ].Ki         = DFT_PID_I;
+        dados.pid[ PID_CORRIDA ].Kd         = DFT_PID_D;
+        dados.pid[ PID_CORRIDA ].maxMV      = DFT_PID_MAX_MV;
+        dados.pid[ PID_CORRIDA ].minMV      = DFT_PID_MIN_MV;
+        dados.pid[ PID_CORRIDA ].zeraAcc    = DFT_PID_ZACC;
         dados.pid[ PID_CORRIDA ].dEntrada   = DFT_PID_DENTRADA;
         dados.pid[ PID_CORRIDA ].sampleTime = DFT_PID_SAMPLE;
 
@@ -672,9 +674,15 @@ private:
     ConfigSensor cfg;
     unsigned long debounce;
     bool antes, estado, trocou;
-}
-botaoCal(37), botaoPrg(39);
-// TODO (Mauricio#1#): porting mega328
+};
+
+#ifdef PINO_BOTAO_CAL
+    Botao botaoCal( PINO_BOTAO_CAL );
+#endif
+
+#ifdef PINO_BOTAO_PRG
+    Botao botaoPrg( PINO_BOTAO_PRG );
+#endif
 
 // ******************************************************************************
 //		GAMEPAD E R/C
@@ -1458,6 +1466,24 @@ public:
         }
     }
 
+    bool timedout( unsigned long* pAgora )
+    {
+        *pAgora = millis();
+
+//        SERIALX.print( "timeout = " );
+//        SERIALX.print( timeout );
+//        SERIALX.print( " agora = " );
+//        SERIALX.print( *pAgora );
+
+        if( timeout < *pAgora )
+        {
+//            SERIALX.println( " TIMEDOUT" );
+            return true;
+        }
+//        SERIALX.println();
+        return false;
+    }
+
     int giraP( int setPoint = LF_SETPOINT )
     {
         refresh();
@@ -1477,23 +1503,6 @@ public:
         return pid.erro;
     }
 
-    bool timedout( unsigned long* pAgora )
-    {
-        *pAgora = millis();
-
-//        SERIALX.print( "timeout = " );
-//        SERIALX.print( timeout );
-//        SERIALX.print( " agora = " );
-//        SERIALX.print( *pAgora );
-
-        if( timeout < *pAgora )
-        {
-//            SERIALX.println( " TIMEDOUT" );
-            return true;
-        }
-//        SERIALX.println();
-        return false;
-    }
 }
 lineFollower;
 
@@ -1573,7 +1582,7 @@ bool LineFollower::calibrar()
 
     zeraTudo();
 
-    trilho.pontoMedio = LF_SETPOINT; // supoe que robo ta centrado na linha
+    //trilho.pontoMedio = LF_SETPOINT; // supoe que robo ta centrado na linha
 
     timeout = millis() + LF_TIMEOUT_CAL;
 
@@ -3157,6 +3166,7 @@ void loop()
 
     trataJoystick();
 
+    #ifdef PINO_BOTAO_CAL
     if( botaoCal.refresh().trocouEstado() )
     {
         // soltar o botao => false
@@ -3165,7 +3175,9 @@ void loop()
             lineFollower.calibrar();
         }
     }
+    #endif
 
+    #ifdef PINO_BOTAO_PRG
     if( botaoPrg.refresh().trocouEstado() )
     {
         if( false == botaoPrg.getEstado() )
@@ -3183,6 +3195,7 @@ void loop()
             digitalWrite( PINO_LED, HIGH );
         }
     }
+    #endif
 
     if( delaySemBlock(&ultimoStatus, delayStatus) )
     {

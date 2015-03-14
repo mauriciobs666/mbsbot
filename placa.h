@@ -44,6 +44,15 @@
 #define DFT_PID_DENTRADA    true
 #define DFT_PID_SAMPLE         5
 
+#define CAL_PID_P              1
+#define CAL_PID_I              0
+#define CAL_PID_D              0
+#define CAL_PID_MAX_MV       100
+#define CAL_PID_MIN_MV      -100
+#define CAL_PID_ZACC        true
+#define CAL_PID_DENTRADA    true
+#define CAL_PID_SAMPLE         5
+
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
 
@@ -100,5 +109,8 @@
 //#define PINO_JOY_Z      17
 //#define PINO_JOY_R      18
 //#define PINO_JOY_SW1    4
+
+#define PINO_BOTAO_CAL      37
+#define PINO_BOTAO_PRG      39
 
 #endif // BOARD_H_INCLUDED
