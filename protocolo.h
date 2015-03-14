@@ -140,6 +140,8 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 
 #define NOME_TRACE       "trc"
 
+#define TAM_PILHA_PRG
+
 enum Programas
 {
     PRG_IDLE = 0,	        //

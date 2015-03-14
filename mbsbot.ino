@@ -75,13 +75,12 @@ unsigned long agora = 0;
 
 // timeout de envios pela serial de status e sensores
 unsigned long ultimoSensores = 0;
-int delaySensores = -1;
-
 unsigned long ultimoStatus = 0;
+// intervalo de envio
+int delaySensores = -1;
 int delayStatus = -1;
 
 bool trc = false;
-bool traceLF = false;
 
 enum Erros primeiroErro = SUCESSO;
 
@@ -110,6 +109,10 @@ const char* const tabErros[] PROGMEM =
     ErroLFCalibra,
     ErroLFTrilho
 };
+
+// ******************************************************************************
+//		PRINTERS
+// ******************************************************************************
 
 void printErro( enum Erros err, char* detalhes = NULL )
 {
@@ -189,19 +192,48 @@ typedef struct
         }
         autoMinMax = false;
     }
+
+    bool calibrado( int threshold = THRESHOLD_CAL )
+    {
+        return ( (maximo - minimo ) > threshold );
+    }
+
     void print()
     {
+        SERIALX.print("S");
+
+        switch( (enum eTipoSensor) tipo )
+        {
+        case SENSOR_VIRTUAL:
+            SERIALX.print("V");
+            break;
+        case SENSOR_ANALOGICO:
+            SERIALX.print("A");
+            break;
+        case SENSOR_PING:
+            SERIALX.print("A");
+            break;
+        case SENSOR_RC:
+            SERIALX.print("A");
+            break;
+        case SENSOR_DIGITAL:
+            SERIALX.print("A");
+            break;
+        default:
+            SERIALX.print("?");
+            break;
+        }
         SERIALX.print((int)pino);
-        SERIALX.print(",");
-        SERIALX.print((int)tipo);
-        SERIALX.print(",");
-        SERIALX.print((int)invertido);
-        SERIALX.print(",");
+        if( invertido )
+            SERIALX.print("! ");
+        SERIALX.print("[");
         SERIALX.print(minimo);
         SERIALX.print(",");
         SERIALX.print(maximo);
-        SERIALX.print(",");
+        SERIALX.print("] C");
         SERIALX.print(centro);
+        SERIALX.print( autoMinMax ? " A" : " F" );
+        SERIALX.print( calibrado() ? " C" : " D" );
     }
 }
 ConfigSensor;
@@ -473,8 +505,6 @@ public:
         { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
     bool ehMaximo(unsigned short margem = 0)
         { return ( cfg->invertido ? (valor - cfg->minimo) <= margem : (cfg->maximo - valor) <= margem ); }
-    bool calibrado( int threshold = 200 ) // TODO (Mauricio#1#): threshold configuravel de calibrado()
-        { return ( (cfg->maximo - cfg->minimo ) > threshold ); }
 
     void setConfig(ConfigSensor *c)
     {
@@ -602,6 +632,7 @@ public:
         pinMode( pino, invertido ? INPUT_PULLUP : INPUT );
         cfg.init( ConfigSensor::SENSOR_DIGITAL, pino, invertido );
         s.setConfig( &cfg );
+        s.calibrar();
     }
     Botao& refresh()
     {
@@ -687,6 +718,10 @@ public:
     }
 };
 MbsGamePad gamepad;
+
+#ifdef PINO_JOY_X
+    MbsGamePad rcpad;
+#endif // PINO_JOY_X
 
 // ******************************************************************************
 //		CONTROLADOR DE MOTORES
@@ -1298,7 +1333,7 @@ public:
     bool calibrado()
     {
         for( int pino = LF_PINO_0; pino < LF_PINO_N; pino++ )
-            if( ! sensores[ pino ].calibrado() )
+            if( ! sensores[ pino ].cfg->calibrado() )
                 return false;
         return true;
     }
@@ -1366,19 +1401,21 @@ public:
 
     void print()
     {
-        for( int x = 0; x < LF_NUM_SENSORES; x++ )
-            SERIALX.print( sensoresBool[x] ? "A" : "_" );
-//            SERIALX.print( sensores[LF_PINO_0 + x].getBool() ? "|" : "_" );
-        SERIALX.println();
+        int x;
 
-        for( int ig = 0 ; ig < nGrupos ; ig++ )
+        SERIALX.print("LF ");
+
+        for( x = 0; x < LF_NUM_SENSORES; x++ )
+            SERIALX.print( sensoresBool[x] ? "A" : "_" );
+
+        SERIALX.print(" ");
+
+        for( x= 0 ; x < nGrupos ; x++ )
         {
-            grupos[ig].print();
-            SERIALX.println();
+            grupos[x].print();
         }
 
-        pid.print();
-
+        SERIALX.println();
     }
 
     void refresh()
@@ -1394,31 +1431,29 @@ public:
             {
                 Grupo grp;
 
-                // e.g. os pesos p/ 6 sensores seriam { 1, 3, 5, 7, 9, 11 }
-                grp.pontoMin = grp.pontoMax = 2*s + 1;
+                grp.pontoMin = grp.pontoMax = s;
                 grp.tamanho = 1;
 
                 // https://www.pololu.com/docs/0J18/16
                 unsigned short sensor = sensores[ LF_PINO_0 + s ].getPorcento();
-                long num = s * 100 * sensor;
+                long num = (long)s * (long)sensor * 100;
                 long den = sensor;
 
                 // agrupa enquanto o proximo for true
                 while( ( s < LF_NUM_SENSORES-1 ) && sensoresBool[ s + 1 ] )
                 {
                     s++;
-                    grp.pontoMax = 2*s + 1;
+                    grp.pontoMax = s;
                     grp.tamanho++;
 
                     sensor = sensores[ LF_PINO_0 + s ].getPorcento();
-                    num += s * 100 * sensor;
+                    num += (long)s * (long)sensor * 100;
                     den += sensor;
                 }
 
                 grp.pontoMedio = (int) ( num / den );
 
-                grupos[ nGrupos ] = grp;
-                nGrupos++;
+                grupos[ nGrupos++ ] = grp;
             }
         }
     }
@@ -1442,12 +1477,153 @@ public:
         return pid.erro;
     }
 
-    bool timeouted( unsigned long* pAgora )
+    bool timedout( unsigned long* pAgora )
     {
-        return ( timeout < ( *pAgora = millis() ) );
+        *pAgora = millis();
+
+//        SERIALX.print( "timeout = " );
+//        SERIALX.print( timeout );
+//        SERIALX.print( " agora = " );
+//        SERIALX.print( *pAgora );
+
+        if( timeout < *pAgora )
+        {
+//            SERIALX.println( " TIMEDOUT" );
+            return true;
+        }
+//        SERIALX.println();
+        return false;
     }
 }
 lineFollower;
+
+bool LineFollower::calibrar()
+{
+    drive.parar();
+    drive.refresh( true );
+
+    refresh();
+
+    SERIALX.println( "Calibrando..." );
+
+    // primeira rodada de leitura, estima valores maximo, minimo e medio
+
+    unsigned short valores[LF_NUM_SENSORES];
+    unsigned short minimo = 1023;
+    unsigned short maximo = 0;
+
+    for(int x = 0; x < LF_NUM_SENSORES; x++)
+    {
+        valores[x] = sensores[ LF_PINO_0 + x ].calibrar();
+
+        if( valores[x] < minimo ) minimo = valores[x];
+        if( valores[x] > maximo ) maximo = valores[x];
+    }
+
+    unsigned short medio = ( ( maximo - minimo ) >> 1 ) + minimo;
+
+    for(int x = 0; x < LF_NUM_SENSORES; x++)
+    {
+        valores[x] = sensores[ LF_PINO_0 + x ].calibrar();
+
+        if( valores[x] < minimo ) minimo = valores[x];
+        if( valores[x] > maximo ) maximo = valores[x];
+    }
+
+    // usa media como threshold pra tentar classificar em fita/piso
+
+    int cntPiso = 0;
+    int cntFita = 0;
+
+    for( int x = 0; x < LF_NUM_SENSORES; x++ )
+        if( valores[x] > medio )
+            cntFita++;
+        else
+            cntPiso++;
+
+    // se tem mais "trilho" que "brita" inverte os sensores
+    bool invertido = ( cntFita > cntPiso );
+
+    for( int x = LF_PINO_0; x < ( LF_PINO_0 + LF_NUM_SENSORES ); x++ )
+    {
+        sensores[x].cfg->invertido ^= invertido;
+        sensores[x].cfg->minimo = medio-100;
+        sensores[x].cfg->centro = medio;
+        sensores[x].cfg->maximo = medio+100;
+    }
+
+    SERIALX.print( "minimo = " );
+    SERIALX.print( minimo );
+    SERIALX.print( " maximo = " );
+    SERIALX.print( maximo );
+    SERIALX.print( " medio = " );
+    SERIALX.println( medio );
+
+    // alerta que vai entrar em modo auto
+
+    for( int l = 0; l < 15; l ++ )
+    {
+        delay(50);
+        digitalWrite( PINO_LED, false );
+        delay(100);
+        digitalWrite( PINO_LED, true );
+    }
+
+    pid.cfg = &eeprom.dados.pid[ PID_CALIBRA ];
+
+    zeraTudo();
+
+    trilho.pontoMedio = LF_SETPOINT; // supoe que robo ta centrado na linha
+
+    timeout = millis() + LF_TIMEOUT_CAL;
+
+    // gira tudo pro lado alto
+    while( ( ! timedout( &agora) ) && giraP( LF_RANGE ) );
+
+    //delay( 100 );
+
+    print();
+
+    trilho.print();
+    SERIALX.println();
+
+    // gira tudo pro outro lado
+    while( ( ! timedout( &agora) ) && giraP( 0 ) );
+
+    //delay( 100 );
+
+    trilho.print();
+    SERIALX.println();
+
+    // centra
+    while( ( ! timedout( &agora) ) && giraP( LF_SETPOINT ) );
+
+    drive.parar();
+    drive.refresh( true );
+
+    digitalWrite( PINO_LED, false );
+
+    // imprime sensores
+    for( int x = 0; x < LF_NUM_SENSORES; x++ )
+    {
+        sensores[LF_PINO_0 + x].cfg->print();
+        SERIALX.println();
+    }
+
+    if( agora > timeout )
+        printErro( ERRO_LF_CALIBRA, "timeout" );
+
+    if( ! calibrado() )
+    {
+        printErro( ERRO_LF_CALIBRA, "!calibrado()" );
+        return false;
+    }
+
+    SERIALX.println("Calibragem OK");
+
+    return true;
+}
+
 
 void LineFollower::loop()
 {
@@ -1634,97 +1810,6 @@ void LineFollower::loop()
     }
 }
 
-bool LineFollower::calibrar()
-{
-    drive.parar();
-    drive.refresh( true );
-
-    pid.cfg = &eeprom.dados.pid[ PID_CALIBRA ];
-
-    // alerta que vai entrar em modo auto
-
-    for( int l = 0; l < 15; l ++ )
-    {
-        delay(50);
-        digitalWrite( PINO_LED, false );
-        delay(100);
-        digitalWrite( PINO_LED, true );
-    }
-
-    // primeira rodada de leitura, estima valores maximo, minimo e medio
-
-    unsigned short valores[LF_NUM_SENSORES];
-    unsigned short minimo = 1023;
-    unsigned short maximo = 0;
-
-    for(int x = 0; x < LF_NUM_SENSORES; x++)
-    {
-        valores[x] = sensores[ LF_PINO_0 + x ].calibrar();
-
-        if( valores[x] < minimo ) minimo = valores[x];
-        if( valores[x] > maximo ) maximo = valores[x];
-    }
-
-    unsigned short medio = ( ( maximo - minimo ) >> 1 ) + minimo;
-
-    // usa media como threshold pra tentar classificar em fita/piso
-
-    int cntPiso = 0;
-    int cntFita = 0;
-
-    for( int x = 0; x < LF_NUM_SENSORES; x++ )
-        if( valores[x] > medio )
-            cntFita++;
-        else
-            cntPiso++;
-
-
-    // se tem mais "trilho" que "brita" inverte os sensores
-    if( cntFita > cntPiso )
-        for( int x = LF_PINO_0; x < ( LF_PINO_0 + LF_NUM_SENSORES ); x++ )
-            sensores[x].cfg->invertido ^= true;
-
-    timeout = millis() + LF_TIMEOUT_CAL;
-
-    zeraTudo();
-
-    trilho.pontoMedio = LF_SETPOINT; // supoe que robo ta centrado na linha
-
-    // gira tudo pro lado alto
-    while( ( ! timeouted( &agora) ) && giraP( LF_RANGE ) );
-
-    //delay( 100 );
-
-    trilho.print();
-    SERIALX.println();
-
-    // gira tudo pro outro lado
-    while( ( ! timeouted( &agora) ) && giraP( 0 ) );
-
-    //delay( 100 );
-
-    trilho.print();
-    SERIALX.println();
-
-    // centra
-    while( ( ! timeouted( &agora) ) && giraP( LF_SETPOINT ) );
-
-    drive.parar();
-    drive.refresh( true );
-
-    digitalWrite( PINO_LED, false );
-
-    if( agora < timeout )
-        printErro( ERRO_LF_CALIBRA, "timeout" );
-
-    if( ! calibrado() )
-    {
-        printErro( ERRO_LF_CALIBRA, "!calibrado()" );
-        return false;
-    }
-
-    return true;
-}
 #endif // LINE_FOLLOWER
 
 // ******************************************************************************
@@ -1969,6 +2054,7 @@ int compVar( const void *a, const void *b )
 }
 
 //#define TRACE_INTERPRETADOR
+
 class Interpretador
 {
 public:
@@ -2980,27 +3066,27 @@ void setup()
 
 // TODO (Mauricio#1#): suporte simultaneo a R/C e gamepad PC
 
-#ifdef PINO_JOY_X
-    gamepad.setConfig( &eeprom.dados.joyRC );
-    PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
-#else
     gamepad.setConfig( &eeprom.dados.joyPC );
-#endif
 
-#ifdef PINO_JOY_Y
-    PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
-#endif
+#ifdef PINO_JOY_X
+    rcpad.setConfig( &eeprom.dados.joyRC );
+    PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
 
-#ifdef PINO_JOY_Z
-    PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
-#endif
+    #ifdef PINO_JOY_Y
+        PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
+    #endif
 
-#ifdef PINO_JOY_R
-    PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
-#endif
+    #ifdef PINO_JOY_Z
+        PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
+    #endif
 
-#ifdef PINO_JOY_SW1
-    PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
+    #ifdef PINO_JOY_R
+        PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
+    #endif
+
+    #ifdef PINO_JOY_SW1
+        PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
+    #endif
 #endif
 
     // liga pull-up de pinos livres pra economizar energia
@@ -3101,16 +3187,17 @@ void loop()
     if( delaySemBlock(&ultimoStatus, delayStatus) )
     {
         telnet.enviaStatus();
+        telnet.enviaSensores();
     }
 
     if( delaySemBlock(&ultimoSensores, delaySensores) )
     {
         //telnet.enviaJoystick();
-        telnet.enviaSensores();
+        lineFollower.refresh();
         lineFollower.print();
     }
 
-    #define TESTE_PERFORMANCE
+    //#define TESTE_PERFORMANCE
 
     #ifdef TESTE_PERFORMANCE
     static unsigned long passagensLoop = 0;

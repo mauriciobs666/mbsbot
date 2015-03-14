@@ -17,7 +17,7 @@
 								<object class="sizeritem">
 									<object class="wxTextCtrl" name="ID_TEXTCTRL2" variable="Log" member="yes">
 										<size>500,275</size>
-										<style>wxTE_MULTILINE</style>
+										<style>wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY</style>
 									</object>
 									<flag>wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM</flag>
 									<option>1</option>

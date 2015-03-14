@@ -72,6 +72,7 @@
 //#define PINO_SERVO_ROLL		8
 
 #define NUM_SENSORES    16
+#define THRESHOLD_CAL   200
 
 #define LINE_FOLLOWER
 
@@ -79,7 +80,7 @@
 #define LF_PINO_0       0
 #define LF_PINO_N       ( LF_PINO_0 + LF_NUM_SENSORES )
 #define LF_FATOR_S      100
-#define LF_RANGE        ( NUM_SENSORES * LF_FATOR_S )
+#define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
 #define LF_TIMEOUT      1000
 #define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )

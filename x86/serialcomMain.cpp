@@ -164,7 +164,7 @@ serialcomFrame::serialcomFrame(wxWindow* parent,wxWindowID id)
     Notebook1 = new wxNotebook(this, ID_NOTEBOOK2, wxDefaultPosition, wxDefaultSize, 0, _T("ID_NOTEBOOK2"));
     Panel1 = new wxPanel(Notebook1, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
-    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, wxEmptyString, wxDefaultPosition, wxSize(500,275), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL2"));
+    Log = new wxTextCtrl(Panel1, ID_TEXTCTRL2, wxEmptyString, wxDefaultPosition, wxSize(500,275), wxTE_AUTO_SCROLL|wxTE_MULTILINE|wxTE_READONLY, wxDefaultValidator, _T("ID_TEXTCTRL2"));
     BoxSizer2->Add(Log, 1, wxALL|wxEXPAND|wxALIGN_LEFT|wxALIGN_BOTTOM, 0);
     StaticBoxSizer9 = new wxStaticBoxSizer(wxVERTICAL, Panel1, _("Log"));
     FlexGridSizer8 = new wxFlexGridSizer(0, 1, 0, 0);
