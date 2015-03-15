@@ -81,9 +81,9 @@ public:
     }
 
 
-    Fixo operator*( int valor )
+    int operator*( int valor )
     {
-        return raw * valor;
+        return (  (raw * valor ) >> 16 );
     }
     Fixo operator*( Fixo& valor )
     {

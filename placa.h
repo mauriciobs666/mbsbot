@@ -35,16 +35,16 @@
 #define DFT_BALANCO       0
 #define DFT_PID_DEBOUNCE 35
 
-#define DFT_PID_P             12
-#define DFT_PID_I            500
-#define DFT_PID_D           5000
+#define DFT_PID_P              1
+#define DFT_PID_I              0
+#define DFT_PID_D              0
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
 #define DFT_PID_ZACC        true
 #define DFT_PID_DENTRADA    true
 #define DFT_PID_SAMPLE         5
 
-#define CAL_PID_P              1
+#define CAL_PID_P       (float)1
 #define CAL_PID_I              0
 #define CAL_PID_D              0
 #define CAL_PID_MAX_MV       100

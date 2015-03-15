@@ -16,10 +16,10 @@
  */
 
 /*
-11/3/15 - Arduino 1.6.0 - ATMEGA1280 - placa_v4.h
+15/3/15 - Arduino 1.6.1 - ATMEGA1280 - placa_v4.h
 
-Sketch uses 21,592 bytes (17%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 1,555 bytes (18%) of dynamic memory, leaving 6,637 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 24,704 bytes (19%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 1,661 bytes (20%) of dynamic memory, leaving 6,531 bytes for local variables. Maximum is 8,192 bytes.
 
 3/3/15 - Arduino 1.6.0 - ATMEGA328 - placa_v2.h
 
@@ -137,9 +137,10 @@ void printErro( enum Erros err, char* detalhes = NULL )
 
 void printFixo( Fixo* f )
 {
-    SERIALX.print( f->getInt() );
-    SERIALX.print( "." );
-    SERIALX.print( (long)f->getFrac() );
+//    SERIALX.print( f->getInt() );
+//    SERIALX.print( "." );
+//    SERIALX.print( (long)f->getFrac() );
+    SERIALX.print( f->getFloat() );
 }
 
 void printVetor2i( Vetor2i* v )
@@ -402,18 +403,18 @@ public:
         dados.delays.motores = DFT_VEL_REFRESH;
         dados.delays.debounce = DFT_PID_DEBOUNCE;
 
-        dados.pid[ PID_CALIBRA ].Kp         = CAL_PID_P;
-        dados.pid[ PID_CALIBRA ].Ki         = CAL_PID_I;
-        dados.pid[ PID_CALIBRA ].Kd         = CAL_PID_D;
+        dados.pid[ PID_CALIBRA ].Kp.setFloat( CAL_PID_P );
+        dados.pid[ PID_CALIBRA ].Ki.setFloat( CAL_PID_I );
+        dados.pid[ PID_CALIBRA ].Kd.setFloat( CAL_PID_D );
         dados.pid[ PID_CALIBRA ].maxMV      = CAL_PID_MAX_MV;
         dados.pid[ PID_CALIBRA ].minMV      = CAL_PID_MIN_MV;
         dados.pid[ PID_CALIBRA ].zeraAcc    = CAL_PID_ZACC;
         dados.pid[ PID_CALIBRA ].dEntrada   = CAL_PID_DENTRADA;
         dados.pid[ PID_CALIBRA ].sampleTime = CAL_PID_SAMPLE;
 
-        dados.pid[ PID_CORRIDA ].Kp         = DFT_PID_P;
-        dados.pid[ PID_CORRIDA ].Ki         = DFT_PID_I;
-        dados.pid[ PID_CORRIDA ].Kd         = DFT_PID_D;
+        dados.pid[ PID_CORRIDA ].Kp.setFloat( DFT_PID_P );
+        dados.pid[ PID_CORRIDA ].Ki.setFloat( DFT_PID_I );
+        dados.pid[ PID_CORRIDA ].Kd.setFloat( DFT_PID_D );
         dados.pid[ PID_CORRIDA ].maxMV      = DFT_PID_MAX_MV;
         dados.pid[ PID_CORRIDA ].minMV      = DFT_PID_MIN_MV;
         dados.pid[ PID_CORRIDA ].zeraAcc    = DFT_PID_ZACC;
@@ -1127,75 +1128,24 @@ public:
     int MV;         // variavel manipulada / valor de saida
     int sampleTime; // ms entre as amostras
 
-    int executaSample( int entrada )
+    int executaSample( int entrada, bool reinicia = false )
     {
-        if( ( agora - tUltimoLoop ) > sampleTime )
+        if( ( ( agora - tUltimoLoop ) > sampleTime )
+           || reinicia )
         {
-            MV = executa( entrada );
+            MV = executa( entrada, reinicia );
             tUltimoLoop = agora;
         }
         return MV;
     }
 
-/*
-    Consumo de memoria com/sem polimorfismo:
-
-    // primeiro teste - overwrite (nenhuma funcao virtual)
-
-    int executa( int entrada )
-    {
-        return 0;
-    }
-
-    int PID::executa( int ) { ... }
-
-    Sketch uses 21,240 bytes (16%) of program storage space. Maximum is 126,976 bytes.
-    Global variables use 1,541 bytes (18%) of dynamic memory, leaving 6,651 bytes for local variables. Maximum is 8,192 bytes.
-
-    // segundo teste -  primeira funcao virtual do projeto mas ainda com overwrite
-    //                      += 422 bytes flash
-                            +=   8 bytes ram
-
-    virtual int executa( int entrada ) = 0;
-
-    int PID::executa( int ) { ... }
-
-    Sketch uses 21,642 bytes (17%) of program storage space. Maximum is 126,976 bytes.
-    Global variables use 1,549 bytes (18%) of dynamic memory, leaving 6,643 bytes for local variables. Maximum is 8,192 bytes.
-
-    // terceiro teste = teste 2 + outra funcao virtual
-    //                    += 8 bytes flash
-    //                    += 2 bytes ram
-
-    virtual int executa2( int entrada ) = 0;
-
-    virtual int PID::executa2( int )
-    {
-        return 0;
-    }
-
-    Sketch uses 21,650 bytes (17%) of program storage space. Maximum is 126,976 bytes.
-    Global variables use 1,551 bytes (18%) of dynamic memory, leaving 6,641 bytes for local variables. Maximum is 8,192 bytes.
-*/
-
-    int executa( int entrada )
-    {
-        return 0;
-    }
+    virtual int executa( int entrada, bool reinicia = false );
 
     void print();
 
 protected:
     unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
 };
-
-// ******************************************************************************
-//   LINE FOLLOWER
-// ******************************************************************************
-#define LINE_FOLLOWER
-#define TRACE_LF
-
-#ifdef LINE_FOLLOWER
 
 class PID : public Controlador
 {
@@ -1225,7 +1175,7 @@ public:
     {
         proporcional = integral = derivada = 0;
         setPoint = MV = erro = erroAnterior = entAnterior = 0;
-        tUltimoLoop = agora;
+        tUltimoLoop = 0;
     }
 
     int executa( int entrada, bool reinicia = false )
@@ -1233,10 +1183,18 @@ public:
         if( ! cfg )
             return 0;
 
+        SERIALX.print( "executa( " );
+        SERIALX.print( entrada );
+        SERIALX.println( " )" );
+
         erro = setPoint - entrada;
 
         // P
         proporcional = cfg->Kp * erro;
+
+        SERIALX.print( "p = " );
+        SERIALX.print( proporcional );
+        SERIALX.println( " )" );
 
         // I
         if( reinicia )
@@ -1296,6 +1254,14 @@ public:
         SERIALX.println( MV );
     }
 };
+
+// ******************************************************************************
+//   LINE FOLLOWER
+// ******************************************************************************
+#define LINE_FOLLOWER
+#define TRACE_LF
+
+#ifdef LINE_FOLLOWER
 
 class LineFollower
 {
@@ -1486,7 +1452,13 @@ public:
 
     int giraP( int setPoint = LF_SETPOINT )
     {
+        SERIALX.print( "giraP( " );
+        SERIALX.print( setPoint );
+        SERIALX.println( " )" );
+
         refresh();
+
+        print();
 
         if( nGrupos )
         {
@@ -1496,9 +1468,15 @@ public:
 
         pid.setPoint = setPoint;
 
+        SERIALX.print( "trilho " );
+        trilho.print();
+        SERIALX.println();
+
         drive.gira( pid.executaSample( trilho.pontoMedio ) );
 
         drive.refresh();
+
+        pid.print();
 
         return pid.erro;
     }
@@ -1555,7 +1533,7 @@ bool LineFollower::calibrar()
 
     for( int x = LF_PINO_0; x < ( LF_PINO_0 + LF_NUM_SENSORES ); x++ )
     {
-        sensores[x].cfg->invertido ^= invertido;
+        sensores[x].cfg->invertido = invertido;
         sensores[x].cfg->minimo = medio-100;
         sensores[x].cfg->centro = medio;
         sensores[x].cfg->maximo = medio+100;
@@ -1587,7 +1565,8 @@ bool LineFollower::calibrar()
     timeout = millis() + LF_TIMEOUT_CAL;
 
     // gira tudo pro lado alto
-    while( ( ! timedout( &agora) ) && giraP( LF_RANGE ) );
+    while( ( ! timedout( &agora) ) && giraP( LF_RANGE ) )
+        delay(100);
 
     //delay( 100 );
 
@@ -2373,17 +2352,18 @@ private:
                 break;
             case VAR_FIXO:
                 {
-                    int i = l;
-                    if( i != l ) // overflow -> VAR_LONG !!!
-                    {
-                        // TODO (Mauricio#1#): gambi pra guardar long em Fixo
-                        printErro( TODO, "range Fixo" );
-                    }
-                    else
-                    {
-                        char* pos = strchr( token, '.' );
-                        ((Fixo*)resultado->dados)->setInt( i, pos ? atol( pos+1 ) : 0 );
-                    }
+//                    int i = l;
+//                    if( i != l ) // overflow -> VAR_LONG !!!
+//                    {
+//                        printErro( TODO, "range Fixo" );
+//                    }
+//                    else
+//                    {
+//                        char* pos = strchr( token, '.' );
+//                        ((Fixo*)resultado->dados)->setInt( i, pos ? atol( pos+1 ) : 0 );
+//                    }
+
+                    ((Fixo*)resultado->dados)->setFloat( atof( token ) );
                 }
                 break;
             case VAR_BOOL:
@@ -2811,8 +2791,6 @@ public:
     {
         SERIALX.print(CMD_JOYPAD);
         SERIALX.print(" X ");
-        SERIALX.print(gamepad.x.getPorcentoCentro(0));
-        SERIALX.print(" ~ ");
         SERIALX.print(gamepad.x.getPorcentoCentro());
 
         SERIALX.print(" (");
@@ -2822,12 +2800,11 @@ public:
         SERIALX.print(",");
         SERIALX.print(gamepad.x.cfg->maximo);
         SERIALX.print(") ");
+
         SERIALX.println(gamepad.x.valor);
 
         SERIALX.print(CMD_JOYPAD);
         SERIALX.print(" Y ");
-        SERIALX.print(gamepad.y.getPorcentoCentro(0));
-        SERIALX.print(" ~ ");
         SERIALX.print(gamepad.y.getPorcentoCentro());
 
         SERIALX.print(" (");
@@ -2837,6 +2814,7 @@ public:
         SERIALX.print(",");
         SERIALX.print(gamepad.y.cfg->maximo);
         SERIALX.print(") ");
+
         SERIALX.println(gamepad.y.valor);
     /*
         SERIALX.print(" Z ");
@@ -3200,11 +3178,12 @@ void loop()
     if( delaySemBlock(&ultimoStatus, delayStatus) )
     {
         telnet.enviaStatus();
-        telnet.enviaSensores();
+        lineFollower.pid.print();
     }
 
     if( delaySemBlock(&ultimoSensores, delaySensores) )
     {
+        telnet.enviaSensores();
         //telnet.enviaJoystick();
         lineFollower.refresh();
         lineFollower.print();
