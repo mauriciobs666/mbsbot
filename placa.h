@@ -18,9 +18,9 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 4
+#define VERSAO_PLACA 23
 
-#define SERIALX Serial1
+#define SERIALX Serial
 
 #define DFT_PROGRAMA  1 /* PRG_RC_SERIAL = 1 */
 #define DFT_DELAY_ES  1
@@ -33,7 +33,7 @@
 #define DFT_VEL_ESCALA   80
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
-#define DFT_PID_DEBOUNCE 35
+#define DFT_LF_DEBOUNCE 35
 
 #define DFT_PID_P              1
 #define DFT_PID_I              0
@@ -80,7 +80,7 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-#define NUM_SENSORES    16
+#define NUM_SENSORES    8
 #define THRESHOLD_CAL   200
 
 #define LINE_FOLLOWER
@@ -110,7 +110,7 @@
 //#define PINO_JOY_R      18
 //#define PINO_JOY_SW1    4
 
-#define PINO_BOTAO_CAL      37
-#define PINO_BOTAO_PRG      39
+//#define PINO_BOTAO_CAL      37
+//#define PINO_BOTAO_PRG      39
 
 #endif // BOARD_H_INCLUDED

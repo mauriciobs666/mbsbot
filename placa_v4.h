@@ -33,7 +33,7 @@
 #define DFT_VEL_ESCALA   80
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
-#define DFT_PID_DEBOUNCE 35
+#define DFT_LF_DEBOUNCE 35
 
 #define DFT_PID_P             12
 #define DFT_PID_I            500
@@ -43,6 +43,15 @@
 #define DFT_PID_ZACC        true
 #define DFT_PID_DENTRADA    true
 #define DFT_PID_SAMPLE         5
+
+#define CAL_PID_P       (float)1
+#define CAL_PID_I              0
+#define CAL_PID_D              0
+#define CAL_PID_MAX_MV       100
+#define CAL_PID_MIN_MV      -100
+#define CAL_PID_ZACC        true
+#define CAL_PID_DENTRADA    true
+#define CAL_PID_SAMPLE         5
 
 // Habilita controle PWM (se undef controla por largura de pulso/servo)
 #define RODAS_PWM 1
@@ -72,6 +81,7 @@
 //#define PINO_SERVO_ROLL		8
 
 #define NUM_SENSORES    16
+#define THRESHOLD_CAL   200
 
 #define LINE_FOLLOWER
 
@@ -79,7 +89,7 @@
 #define LF_PINO_0       0
 #define LF_PINO_N       ( LF_PINO_0 + LF_NUM_SENSORES )
 #define LF_FATOR_S      100
-#define LF_RANGE        ( NUM_SENSORES * LF_FATOR_S )
+#define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
 #define LF_TIMEOUT      1000
 #define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )
@@ -99,5 +109,8 @@
 //#define PINO_JOY_Z      17
 //#define PINO_JOY_R      18
 //#define PINO_JOY_SW1    4
+
+#define PINO_BOTAO_CAL      37
+#define PINO_BOTAO_PRG      39
 
 #endif // BOARD_H_INCLUDED

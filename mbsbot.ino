@@ -21,10 +21,10 @@
 Sketch uses 24,704 bytes (19%) of program storage space. Maximum is 126,976 bytes.
 Global variables use 1,661 bytes (20%) of dynamic memory, leaving 6,531 bytes for local variables. Maximum is 8,192 bytes.
 
-3/3/15 - Arduino 1.6.0 - ATMEGA328 - placa_v2.h
+17/3/15 - Arduino 1.6.1 - ATMEGA328 - placa_v23.h
 
-Sketch uses 20,618 bytes (63%) of program storage space. Maximum is 32,256 bytes.
-Global variables use 1,309 bytes (63%) of dynamic memory, leaving 739 bytes for local variables. Maximum is 2,048 bytes.
+Sketch uses 23,524 bytes (76%) of program storage space. Maximum is 30,720 bytes.
+Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for local variables. Maximum is 2,048 bytes.
 */
 
 // ******************************************************************************
@@ -140,6 +140,7 @@ void printFixo( Fixo* f )
 //    SERIALX.print( f->getInt() );
 //    SERIALX.print( "." );
 //    SERIALX.print( (long)f->getFrac() );
+
     SERIALX.print( f->getFloat() );
 }
 
@@ -401,7 +402,7 @@ public:
 
         dados.delays.ES = DFT_DELAY_ES;
         dados.delays.motores = DFT_VEL_REFRESH;
-        dados.delays.debounce = DFT_PID_DEBOUNCE;
+        dados.delays.debounce = DFT_LF_DEBOUNCE;
 
         dados.pid[ PID_CALIBRA ].Kp.setFloat( CAL_PID_P );
         dados.pid[ PID_CALIBRA ].Ki.setFloat( CAL_PID_I );
@@ -421,11 +422,15 @@ public:
         dados.pid[ PID_CORRIDA ].dEntrada   = DFT_PID_DENTRADA;
         dados.pid[ PID_CORRIDA ].sampleTime = DFT_PID_SAMPLE;
 
-        // TODO (mbs#1#): remover config de sensores hard-coded e permitir config serial
+        // TODO (mbs#1#): permitir config dos sensores via serial
 
-#if VERSAO_PLACA == 4
-        for( int p = 0; p < NUM_SENSORES; p++ )
+#ifdef LINE_FOLLOWER
+        for( int p = LF_PINO_0;
+                 p < ( LF_PINO_0 +LF_NUM_SENSORES );
+                 p++ )
+        {
             dados.sensores[p].init( ConfigSensor::SENSOR_ANALOGICO, p );
+        }
 #endif
 
 #if VERSAO_PLACA == 22
@@ -1183,18 +1188,14 @@ public:
         if( ! cfg )
             return 0;
 
-        SERIALX.print( "executa( " );
-        SERIALX.print( entrada );
-        SERIALX.println( " )" );
+//        SERIALX.print( "executa( " );
+//        SERIALX.print( entrada );
+//        SERIALX.println( " )" );
 
         erro = setPoint - entrada;
 
         // P
         proporcional = cfg->Kp * erro;
-
-        SERIALX.print( "p = " );
-        SERIALX.print( proporcional );
-        SERIALX.println( " )" );
 
         // I
         if( reinicia )
@@ -1389,7 +1390,9 @@ public:
             grupos[x].print();
         }
 
-        SERIALX.println();
+        SERIALX.print(" ");
+
+        pid.print();
     }
 
     void refresh()
@@ -1452,13 +1455,15 @@ public:
 
     int giraP( int setPoint = LF_SETPOINT )
     {
-        SERIALX.print( "giraP( " );
-        SERIALX.print( setPoint );
-        SERIALX.println( " )" );
+        #ifdef TRACE_LF
+//        SERIALX.print( "giraP( " );
+//        SERIALX.print( setPoint );
+//        SERIALX.println( " )" );
+        #endif
 
         refresh();
 
-        print();
+
 
         if( nGrupos )
         {
@@ -1468,15 +1473,19 @@ public:
 
         pid.setPoint = setPoint;
 
-        SERIALX.print( "trilho " );
-        trilho.print();
-        SERIALX.println();
+        #ifdef TRACE_LF
+//        SERIALX.print( "trilho " );
+//        trilho.print();
+//        SERIALX.println();
+        #endif
 
         drive.gira( pid.executaSample( trilho.pontoMedio ) );
 
         drive.refresh();
 
-        pid.print();
+        #ifdef TRACE_LF
+            print();
+        #endif
 
         return pid.erro;
     }
@@ -1603,11 +1612,11 @@ bool LineFollower::calibrar()
 
     if( ! calibrado() )
     {
-        printErro( ERRO_LF_CALIBRA, "!calibrado()" );
+        printErro( ERRO_LF_CALIBRA, "NAO calibrado" );
         return false;
     }
 
-    SERIALX.println("Calibragem OK");
+    SERIALX.println( "Calibragem OK" );
 
     return true;
 }
@@ -3189,19 +3198,24 @@ void loop()
         lineFollower.print();
     }
 
-    //#define TESTE_PERFORMANCE
+    #define TESTE_PERFORMANCE
 
     #ifdef TESTE_PERFORMANCE
     static unsigned long passagensLoop = 0;
     static unsigned long ultimoLoop = 0;
+    static unsigned long passagensIdle = 0;
+
     if( delaySemBlock(&ultimoLoop, 10000) )
     {
         if( trc )
         {
             SERIALX.print( passagensLoop / 10 );
-            SERIALX.println(" fps");
+            SERIALX.print(" fps ");
+            SERIALX.print( passagensIdle / 10 );
+            SERIALX.println(" idle");
         }
         passagensLoop = 0;
+        passagensIdle = 0;
     }
     #endif
 
@@ -3210,8 +3224,9 @@ void loop()
     if( delaySemBlock(&ultimaExec, msExec) )
     {
         #ifdef TESTE_PERFORMANCE
-        passagensLoop++;
+            passagensLoop++;
         #endif
+
         switch(eeprom.dados.programa)
         {
         case PRG_RC_SERIAL:
@@ -3409,6 +3424,10 @@ void loop()
         break;
         }
     }
+    #ifdef TESTE_PERFORMANCE
+    else
+        passagensIdle++;
+    #endif
 
     drive.refresh();
     #ifdef RODAS_PWM_x4
