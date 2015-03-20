@@ -18,9 +18,9 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 23
+#define VERSAO_PLACA 4
 
-#define SERIALX Serial
+#define SERIALX Serial1
 
 #define DFT_PROGRAMA  1 /* PRG_RC_SERIAL = 1 */
 #define DFT_DELAY_ES  1
@@ -80,7 +80,7 @@
 //#define PINO_SERVO_TILT		10
 //#define PINO_SERVO_ROLL		8
 
-#define NUM_SENSORES    8
+#define NUM_SENSORES    16
 #define THRESHOLD_CAL   200
 
 #define LINE_FOLLOWER
@@ -91,7 +91,7 @@
 #define LF_FATOR_S      100
 #define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
-#define LF_TIMEOUT      1000
+#define LF_TIMEOUT      3000
 #define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )
 // ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
@@ -110,7 +110,7 @@
 //#define PINO_JOY_R      18
 //#define PINO_JOY_SW1    4
 
-//#define PINO_BOTAO_CAL      37
-//#define PINO_BOTAO_PRG      39
+#define PINO_BOTAO_CAL      37
+#define PINO_BOTAO_PRG      39
 
 #endif // BOARD_H_INCLUDED

@@ -18,7 +18,7 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#define VERSAO_PLACA 5
+#define VERSAO_PLACA 23
 
 #define SERIALX Serial
 

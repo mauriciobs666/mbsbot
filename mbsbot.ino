@@ -1574,8 +1574,7 @@ bool LineFollower::calibrar()
     timeout = millis() + LF_TIMEOUT_CAL;
 
     // gira tudo pro lado alto
-    while( ( ! timedout( &agora) ) && giraP( LF_RANGE ) )
-        delay(100);
+    while( ( ! timedout( &agora) ) && giraP( LF_RANGE ) );
 
     //delay( 100 );
 
@@ -3186,13 +3185,13 @@ void loop()
 
     if( delaySemBlock(&ultimoStatus, delayStatus) )
     {
+        telnet.enviaSensores();
         telnet.enviaStatus();
-        lineFollower.pid.print();
+        //lineFollower.pid.print();
     }
 
     if( delaySemBlock(&ultimoSensores, delaySensores) )
     {
-        telnet.enviaSensores();
         //telnet.enviaJoystick();
         lineFollower.refresh();
         lineFollower.print();
