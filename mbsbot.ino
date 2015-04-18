@@ -1453,7 +1453,7 @@ public:
         return false;
     }
 
-    int giraP( int setPoint = LF_SETPOINT )
+    int giraP( int setPoint = LF_SETPOINT, int aprox = 50 )
     {
         #ifdef TRACE_LF
 //        SERIALX.print( "giraP( " );
@@ -1462,8 +1462,6 @@ public:
         #endif
 
         refresh();
-
-
 
         if( nGrupos )
         {
@@ -1479,7 +1477,7 @@ public:
 //        SERIALX.println();
         #endif
 
-        drive.gira( pid.executaSample( trilho.pontoMedio ) );
+        drive.gira( -pid.executaSample( trilho.pontoMedio ) );
 
         drive.refresh();
 
@@ -1487,9 +1485,11 @@ public:
             print();
         #endif
 
+        if( abs ( pid.erro ) < aprox )
+            return 0;
+
         return pid.erro;
     }
-
 }
 lineFollower;
 
@@ -1516,7 +1516,7 @@ bool LineFollower::calibrar()
         if( valores[x] > maximo ) maximo = valores[x];
     }
 
-    unsigned short medio = ( ( maximo - minimo ) >> 1 ) + minimo;
+    unsigned short medio = ( minimo + maximo ) >> 1;
 
     for(int x = 0; x < LF_NUM_SENSORES; x++)
     {
