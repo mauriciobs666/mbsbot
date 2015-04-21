@@ -35,21 +35,21 @@
 #define DFT_BALANCO       0
 #define DFT_LF_DEBOUNCE 35
 
-#define DFT_PID_P              1
+#define DFT_PID_P     (float)0.1
 #define DFT_PID_I              0
 #define DFT_PID_D              0
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
-#define DFT_PID_ZACC        true
+#define DFT_PID_ZACC          50
 #define DFT_PID_DENTRADA    true
 #define DFT_PID_SAMPLE         5
 
-#define CAL_PID_P       (float)1
+#define CAL_PID_P     (float)0.1
 #define CAL_PID_I              0
 #define CAL_PID_D              0
 #define CAL_PID_MAX_MV       100
 #define CAL_PID_MIN_MV      -100
-#define CAL_PID_ZACC        true
+#define CAL_PID_ZACC          50
 #define CAL_PID_DENTRADA    true
 #define CAL_PID_SAMPLE         5
 
@@ -91,8 +91,8 @@
 #define LF_FATOR_S      100
 #define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
-#define LF_TIMEOUT      3000
-#define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )
+#define LF_TIMEOUT       666
+#define LF_TIMEOUT_CAL  3000
 // ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
 // http://arduino.cc/en/Reference/Tone

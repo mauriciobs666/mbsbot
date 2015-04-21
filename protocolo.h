@@ -36,7 +36,7 @@ Formato geral do pacote:
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
 #define TAM_NOME 5      // bytes, tamanho max de um nome de variavel
-#define NUM_VARS 25     // array de variaveis do interpretador
+#define NUM_VARS 35     // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */
@@ -134,11 +134,20 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_PID_MVN   "mvn"  // valor minimo MV
 #define NOME_PID_ZAC   "zac"  // zera acumulador quando erro for 0
 
+#define NOME_PID_CAL_KP    "ckp"   // coeficientes do algoritmo de PID
+#define NOME_PID_CAL_KI    "cki"   //  "
+#define NOME_PID_CAL_KD    "ckd"   //  "
+#define NOME_PID_CAL_MVX   "cvx"  // valor maximo MV
+#define NOME_PID_CAL_MVN   "cvn"  // valor minimo MV
+#define NOME_PID_CAL_ZAC   "cza"  // zera acumulador quando erro for 0
+
 #define NOME_VEL_MAX     "vm" // limite de velocidade em %
 #define NOME_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
 #define NOME_BALANCO     "bal" // balanco rodas esq/dir
 
 #define NOME_TRACE       "trc"
+
+#define NOME_TIMESTAMP   "t"
 
 #define TAM_PILHA_PRG
 
