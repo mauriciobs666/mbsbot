@@ -30,10 +30,10 @@
 #define MOTOR_CENTRO     42
 
 #define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA   80
+#define DFT_VEL_ESCALA  100
 #define DFT_VEL_REFRESH   1
 #define DFT_BALANCO       0
-#define DFT_LF_DEBOUNCE 35
+#define DFT_LF_DEBOUNCE  35
 
 #define DFT_PID_P     (float)0.1
 #define DFT_PID_I              0

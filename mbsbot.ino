@@ -1789,8 +1789,6 @@ void LineFollower::loop()
     pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
     pid.executaSample( trilho.pontoMedio );
 
-    pid.MV = -pid.MV;
-
     drive.move( (pid.MV < 0) ? (100 + pid.MV) : 100,
                 (pid.MV > 0) ? (100 - pid.MV) : 100 );
 
@@ -1822,6 +1820,7 @@ typedef enum
     VAR_LONG,   // signed 32
     VAR_FIXO,   // 16.16
     VAR_BOOL,
+
     VAR_PID,    // ConfigPID
     VAR_SENSOR, // ConfigSensor
     VAR_MOTOR   // ConfigMotor
@@ -2021,6 +2020,31 @@ public:
         return ERRO_INTERPRETADOR;
     }
 
+    Erros parse( const char *str )
+    {
+        switch( tipo )
+        {
+        case VAR_CHAR:
+            *( (char*) dados ) = atoi( str );
+            break;
+        case VAR_INT:
+            *( (int* ) dados ) = atoi( str );
+            break;
+        case VAR_LONG:
+            *( (long*) dados ) = atol( str );
+            break;
+        case VAR_FIXO:
+             ( (Fixo*) dados )->setFloat( atof( str ) );
+            break;
+        case VAR_BOOL:
+            *( (bool*) dados ) = atoi( str );
+            break;
+        default:
+            return ERRO_INTERPRETADOR;
+        }
+        return SUCESSO;
+    }
+
     void print()
     {
         switch( tipo )
@@ -2051,7 +2075,7 @@ int compVar( const void *a, const void *b )
     return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_NOME );
 }
 
-//#define TRACE_INTERPRETADOR
+#define TRACE_INTERPRETADOR
 
 class Interpretador
 {
@@ -2137,7 +2161,8 @@ public:
         }
 
         Fixo res;
-        Variavel resultado( VAR_FIXO, "=", (void*) &res );
+        Variavel resultado( VAR_FIXO, "ans", (void*) &res );
+        eco = true;
 
         enum Erros rc = SUCESSO;
 
@@ -2185,24 +2210,25 @@ public:
         else
             rc = evalExpressao( &resultado );
 
-        // TODO (Mauricio#1#): rc != ERRO_VAR_INVALIDA gambi enquanto termina de portar todos os comands pro Interpretador
-        if( rc != ERRO_VAR_INVALIDA )
+        if( eco )
         {
             SERIALX.print( resultado.nome );
-            SERIALX.print( " " );
+            SERIALX.print( " = " );
             resultado.print();
             SERIALX.println();
+        }
 
-            if( rc )
-            {
-                printErro( rc );
-                SERIALX.println();
-            }
+        // TODO (Mauricio#1#): rc != ERRO_VAR_INVALIDA gambi enquanto termina de portar todos os comands pro Interpretador
+        if( rc && rc != ERRO_VAR_INVALIDA )
+        {
+            printErro( rc );
+            SERIALX.println();
         }
     }
 private:
     char *linha;
     char token[TAM_TOKEN];
+    bool eco;               // imprime resultado da expressao
 
     enum TipoToken
     {
@@ -2347,53 +2373,15 @@ private:
 
         if( tipoToken == NUMERO )
         {
-            long l = atol( token );
-
-            switch( resultado->tipo )
-            {
-            case VAR_CHAR:
-                *( (char*) resultado->dados ) = l;
-                break;
-            case VAR_INT:
-                *( (int* ) resultado->dados ) = l;
-                break;
-            case VAR_LONG:
-                *( (long*) resultado->dados ) = l;
-                break;
-            case VAR_FIXO:
-                {
-//                    int i = l;
-//                    if( i != l ) // overflow -> VAR_LONG !!!
-//                    {
-//                        printErro( TODO, "range Fixo" );
-//                    }
-//                    else
-//                    {
-//                        char* pos = strchr( token, '.' );
-//                        ((Fixo*)resultado->dados)->setInt( i, pos ? atol( pos+1 ) : 0 );
-//                    }
-
-                    ((Fixo*)resultado->dados)->setFloat( atof( token ) );
-                }
-                break;
-            case VAR_BOOL:
-                *( (bool*) resultado->dados ) = l;
-                break;
-            default:
-                rc = ERRO_INTERPRETADOR;
-            }
-            //getToken();
+            rc = resultado->parse( token );
         }
         else if( tipoToken == NOME )
         {
             Variavel *v = buscaVar( token );
 
-            //getToken();
-
             if( v )
             {
                 resultado->converteAtribui( *v );
-                //getToken();
             }
             else
                 rc = ERRO_VAR_INVALIDA;
@@ -2401,10 +2389,19 @@ private:
 
         #ifdef TRACE_INTERPRETADOR
             resultado->print();
-            SERIALX.println( "" );
+            SERIALX.println();
         #endif
 
         getToken();
+
+        if( tipoToken == DELIMIT && token[0] == ';')
+        {
+            #ifdef TRACE_INTERPRETADOR
+                SERIALX.println("eco off");
+            #endif
+            eco = false;
+            getToken();
+        }
 
         return rc;
     }
@@ -2416,11 +2413,9 @@ private:
         #endif
 
         tipoToken = NULO;
-
         char *tok = token;
-        *tok = 0;
 
-        while( *linha == ' ' && *linha ) linha++;
+        while( ' ' == *linha ) linha++;
 
         if( *linha )
         {
@@ -2429,7 +2424,7 @@ private:
                 tipoToken = BLOCO;
                 *tok++ = *linha++;
             }
-            else if( strchr("+-*/=()", *linha ) )
+            else if( isdelim( *linha ) )
             {
                 tipoToken = DELIMIT;
                 *tok++ = *linha++;
@@ -2445,6 +2440,7 @@ private:
                 while( !isdelim( *linha ) ) *tok++ = *linha++;
             }
         }
+
         *tok = 0;
 
         #ifdef TRACE_INTERPRETADOR
@@ -2499,7 +2495,7 @@ private:
 
     bool isdelim( char c )
     {
-        return ( strchr("+-*/=()", c ) || c == 0 || c == ' ' );
+        return ( strchr("+-*/=();", c ) || c == 0 || c == ' ' );
     }
 }
 interpretador;
