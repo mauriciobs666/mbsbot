@@ -35,7 +35,7 @@
 #define DFT_BALANCO       0
 #define DFT_LF_DEBOUNCE  35
 
-#define DFT_PID_P     (float)0.1
+#define DFT_PID_P       (float)1
 #define DFT_PID_I              0
 #define DFT_PID_D              0
 #define DFT_PID_MAX_MV       100

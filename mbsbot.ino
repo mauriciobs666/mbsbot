@@ -36,6 +36,7 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 #include "protocolo.h"
 #include "placa.h"
 #include "matematica.h"
+#include "dados.h"
 
 // ANSI
 #include <stdio.h>
@@ -59,6 +60,8 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 // ******************************************************************************
 //		Plin-plin
 // ******************************************************************************
+
+Eeprom eeprom;
 
 #ifdef PINO_SERVO_PAN
 Servo pan;
@@ -135,13 +138,18 @@ void printErro( enum Erros err, char* detalhes = NULL )
         primeiroErro = err;
 }
 
-void printFixo( Fixo* f )
+void printFixo( Fixo* f, bool bizarro=false )
 {
-//    SERIALX.print( f->getInt() );
-//    SERIALX.print( "." );
-//    SERIALX.print( (long)f->getFrac() );
-
-    SERIALX.print( f->getFloat() );
+    if( bizarro )
+    {
+        SERIALX.print( f->getInt() );
+        SERIALX.print( "." );
+        SERIALX.print( (long)f->getFrac() );
+    }
+    else
+    {
+        SERIALX.print( f->getFloat() );
+    }
 }
 
 void printVetor2i( Vetor2i* v )
@@ -152,331 +160,6 @@ void printVetor2i( Vetor2i* v )
     SERIALX.print( v->y );
     SERIALX.print( ")" );
 }
-
-// ******************************************************************************
-//		EEPROM - persistencia via CMD_GRAVA / CMD_CARREGA / CMD_DEFAULT
-// ******************************************************************************
-
-// configuracao sensores
-
-typedef struct
-{
-    enum eTipoSensor { SENSOR_VIRTUAL, SENSOR_ANALOGICO, SENSOR_PING, SENSOR_RC, SENSOR_DIGITAL };
-    char tipo;
-    char pino;
-    bool invertido;
-    volatile unsigned short minimo, maximo, centro;
-    volatile bool autoMinMax;
-
-    void init(  eTipoSensor tipo_ = SENSOR_VIRTUAL,
-                char pino_ = -1,
-                bool invertido_ = false )
-    {
-        tipo = tipo_;
-        pino = pino_;
-        invertido = invertido_;
-
-        if(SENSOR_RC == tipo)
-        {
-            minimo = 1200;
-            centro = 1500;
-            maximo = 1800;
-        }
-        else if(SENSOR_ANALOGICO == tipo)
-        {
-            minimo = 0;
-            centro = 512;
-            maximo = 1023;
-        }
-        else
-        {
-            minimo = 0;
-            centro = 32767;
-            maximo = 65535;
-        }
-        autoMinMax = false;
-    }
-
-    bool calibrado( int threshold = THRESHOLD_CAL )
-    {
-        return ( (maximo - minimo ) > threshold );
-    }
-
-    void print()
-    {
-        SERIALX.print("S");
-
-        switch( (enum eTipoSensor) tipo )
-        {
-        case SENSOR_VIRTUAL:
-            SERIALX.print("V");
-            break;
-        case SENSOR_ANALOGICO:
-            SERIALX.print("A");
-            break;
-        case SENSOR_PING:
-            SERIALX.print("A");
-            break;
-        case SENSOR_RC:
-            SERIALX.print("A");
-            break;
-        case SENSOR_DIGITAL:
-            SERIALX.print("A");
-            break;
-        default:
-            SERIALX.print("?");
-            break;
-        }
-        SERIALX.print((int)pino);
-        if( invertido )
-            SERIALX.print("! ");
-        SERIALX.print("[");
-        SERIALX.print(minimo);
-        SERIALX.print(",");
-        SERIALX.print(maximo);
-        SERIALX.print("] C");
-        SERIALX.print(centro);
-        SERIALX.print( autoMinMax ? " A" : " F" );
-        SERIALX.print( calibrado() ? " C" : " D" );
-    }
-}
-ConfigSensor;
-
-typedef struct
-{
-    enum eTipoGamepad { TIPO_RC, TIPO_PC, TIPO_WII };
-    char tipo;
-    ConfigSensor X, Y, Z, R;
-
-    void init(  eTipoGamepad t,
-                char pinoX = -1,
-                char pinoY = -1,
-                char pinoZ = -1,
-                char pinoR = -1 )
-    {
-        tipo = t;
-
-        if( tipo == TIPO_RC )
-        {
-            X.init( ConfigSensor::SENSOR_RC, pinoX );
-            Y.init( ConfigSensor::SENSOR_RC, pinoY );
-            Z.init( ConfigSensor::SENSOR_RC, pinoZ );
-            R.init( ConfigSensor::SENSOR_RC, pinoR );
-        }
-        else
-        {
-            X.init( ConfigSensor::SENSOR_VIRTUAL );
-            Y.init( ConfigSensor::SENSOR_VIRTUAL );
-            Z.init( ConfigSensor::SENSOR_VIRTUAL );
-            R.init( ConfigSensor::SENSOR_VIRTUAL );
-        }
-    }
-}
-ConfigGamepad;
-
-typedef struct
-{
-    Fixo Kp;
-    Fixo Ki;
-    Fixo Kd;
-    int minMV;
-    int maxMV;
-    int sampleTime;
-    int zeraAcc;  // zera accumulador quando abs(erro) < zeraAcc
-    bool dEntrada; // deriva entrada(true) ou erro(false)?
-}
-ConfigPID;
-
-typedef struct
-{
-    enum eTipoMotor { MOTOR_SERVO, MOTOR_DC };
-    char tipo;
-    char pino;
-    bool invertido;
-    char pinoDir;
-    char pinoDirN;
-    int centro;      // zero
-    int aceleracao;  // variacao abs de potencia aplicada => dp / eeprom.delays.motores
-
-    ConfigPID pid;
-
-    void initServo( char pino_, int centro_=1500, bool inverso=false )
-    {
-        tipo = MOTOR_SERVO;
-        pino = pino_;
-        centro = centro_;
-        invertido = inverso;
-    }
-
-    void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, int offsetZero=0, int acel=255, bool inverso=false )
-    {
-        tipo = MOTOR_DC;
-        pino = pinoPWM;
-        pinoDir = pinoDIR;
-        pinoDirN = pinoDIRN;
-        centro = offsetZero;
-        invertido = inverso;
-        aceleracao = acel;
-    }
-}
-ConfigMotor;
-
-class Eeprom
-{
-public:
-    struct sConfiguracao
-    {
-        char programa;  // enum Programas
-        char balanco;   // % balanco motor esq / dir
-        char velMax;    // trunca motores em +/- velMax %
-        char velEscala; // tb %, multiplica
-        char handBrake;
-
-        ConfigMotor motorEsq;
-        ConfigMotor motorDir;
-
-        #ifdef RODAS_PWM_x4
-            ConfigMotor motorEsqT;
-            ConfigMotor motorDirT;
-        #endif
-
-        struct sDelays  // duracao (ms) de movimentos pra animacao
-        {
-            int ES; // intervalo de entrada/saida, leitura de sensores etc
-            int motores;  // intervalo de execucao entre os refresh de motores
-            int debounce; // debounce de cruzamento / marcaEsq / marcaDir
-        } delays;
-
-        ConfigPID pid[PID_N];
-
-        ConfigGamepad joyPC;
-
-        #ifdef PINO_JOY_X
-            ConfigGamepad joyRC;
-        #endif
-
-        ConfigSensor sensores[NUM_SENSORES];
-    }
-    dados;
-    void load()
-    {
-        char * dest = (char*) &dados;
-        for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
-            *dest = eeprom_read_byte(( unsigned char * ) addr );
-    }
-    void save()
-    {
-        char * dest = (char*) &dados;
-        for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
-            eeprom_write_byte(( unsigned char  *) addr, *dest);
-    }
-    void defaults()
-    {
-        dados.programa = DFT_PROGRAMA;
-        dados.handBrake = DFT_FREIO_MAO;
-        dados.velMax = DFT_VEL_MAX;
-        dados.velEscala = DFT_VEL_ESCALA;
-        dados.balanco = DFT_BALANCO;
-
-        #ifndef RODAS_PWM
-            dados.motorEsq.initServo( PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ESQ_INV);
-            dados.motorDir.initServo( PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_DIR_INV);
-        #else
-            #ifdef PINO_MOTOR_ESQ_N
-                dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, PINO_MOTOR_ESQ_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
-            #else
-                dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
-            #endif
-
-            #ifdef PINO_MOTOR_DIR_N
-                dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, PINO_MOTOR_DIR_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
-            #else
-                dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
-            #endif
-
-            #ifdef RODAS_PWM_x4
-                dados.motorEsqT.initDC( PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_E_T_INV );
-                dados.motorDirT.initDC( PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_D_T_INV );
-            #endif
-        #endif
-
-        dados.delays.ES = DFT_DELAY_ES;
-        dados.delays.motores = DFT_VEL_REFRESH;
-        dados.delays.debounce = DFT_LF_DEBOUNCE;
-
-        dados.pid[ PID_CALIBRA ].Kp.setFloat( CAL_PID_P );
-        dados.pid[ PID_CALIBRA ].Ki.setFloat( CAL_PID_I );
-        dados.pid[ PID_CALIBRA ].Kd.setFloat( CAL_PID_D );
-        dados.pid[ PID_CALIBRA ].maxMV      = CAL_PID_MAX_MV;
-        dados.pid[ PID_CALIBRA ].minMV      = CAL_PID_MIN_MV;
-        dados.pid[ PID_CALIBRA ].zeraAcc    = CAL_PID_ZACC;
-        dados.pid[ PID_CALIBRA ].dEntrada   = CAL_PID_DENTRADA;
-        dados.pid[ PID_CALIBRA ].sampleTime = CAL_PID_SAMPLE;
-
-        dados.pid[ PID_CORRIDA ].Kp.setFloat( DFT_PID_P );
-        dados.pid[ PID_CORRIDA ].Ki.setFloat( DFT_PID_I );
-        dados.pid[ PID_CORRIDA ].Kd.setFloat( DFT_PID_D );
-        dados.pid[ PID_CORRIDA ].maxMV      = DFT_PID_MAX_MV;
-        dados.pid[ PID_CORRIDA ].minMV      = DFT_PID_MIN_MV;
-        dados.pid[ PID_CORRIDA ].zeraAcc    = DFT_PID_ZACC;
-        dados.pid[ PID_CORRIDA ].dEntrada   = DFT_PID_DENTRADA;
-        dados.pid[ PID_CORRIDA ].sampleTime = DFT_PID_SAMPLE;
-
-        // TODO (mbs#1#): permitir config dos sensores via serial
-
-#ifdef LINE_FOLLOWER
-        for( int p = LF_PINO_0;
-                 p < ( LF_PINO_0 +LF_NUM_SENSORES );
-                 p++ )
-        {
-            dados.sensores[p].init( ConfigSensor::SENSOR_ANALOGICO, p );
-        }
-#endif
-
-#if VERSAO_PLACA == 22
-        dados.sensores[0].init( ConfigSensor::SENSOR_ANALOGICO, 0 ); // bateria
-
-        dados.sensores[1].init( ConfigSensor::SENSOR_PING, 15 );
-        dados.sensores[1].minimo = 1000;
-        dados.sensores[1].centro = 4000;
-        dados.sensores[1].maximo = 4000;
-
-        dados.sensores[2].init( ConfigSensor::SENSOR_PING, 16 );
-        dados.sensores[2].minimo = 1000;
-        dados.sensores[2].centro = 4000;
-        dados.sensores[2].maximo = 4000;
-#endif
-
-#if VERSAO_PLACA == 2
-        dados.sensores[1].init( ConfigSensor::SENSOR_ANALOGICO, 1, true );
-        dados.sensores[1].minimo = 100;
-        dados.sensores[1].maximo = 630;
-
-        dados.sensores[2].init( ConfigSensor::SENSOR_ANALOGICO, 2, true );
-        dados.sensores[2].minimo = 100;
-        dados.sensores[2].maximo = 630;
-
-        dados.sensores[3].init( ConfigSensor::SENSOR_ANALOGICO, 3, true );
-        dados.sensores[3].minimo = 100;
-        dados.sensores[3].maximo = 630;
-#endif
-
-        dados.joyPC.init( ConfigGamepad::TIPO_PC );
-
-        #ifdef PINO_JOY_X
-            #ifdef PINO_JOY_Y
-                dados.joyRC.init( ConfigGamepad::TIPO_RC, PINO_JOY_X, PINO_JOY_Y );
-                #ifdef PINO_JOY_Z
-                    dados.joyRC.Z.init( ConfigSensor::SENSOR_RC, PINO_JOY_Z );
-                #endif
-                #ifdef PINO_JOY_R
-                    dados.joyRC.R.init( ConfigSensor::SENSOR_RC, PINO_JOY_R );
-                #endif
-            #endif
-        #endif
-    }
-}
-eeprom;
 
 // ******************************************************************************
 //		DELAY SEM BLOCK (nao cumulativo)
@@ -1328,7 +1011,7 @@ public:
 
         refresh();
 
-        if( nGrupos )
+        if( nGrupos == 1 )
         {
             trilho = grupos[0];
             eeprom.dados.programa = PRG_LINE_FOLLOW;
@@ -1453,7 +1136,7 @@ public:
         return false;
     }
 
-    int giraP( int setPoint = LF_SETPOINT, int aprox = 50 )
+    int giraP( int setPoint = LF_SETPOINT, int aprox = 5 )
     {
         #ifdef TRACE_LF
 //        SERIALX.print( "giraP( " );
@@ -1651,14 +1334,14 @@ void LineFollower::loop()
 
     refresh();
 
+    // busca provavel trilho entre os grupos
+    int eleito = -1;
+
     if( nGrupos )
     {
-        timeout = 0;
-
-        int eleito = -1;
         int distEleito = 300; // distancia maxima do trilho anterior
 
-        for( int ig = 0 ; ig < nGrupos ; ig++ )
+        for( int ig = 0; ig < nGrupos; ig++ )
         {
             if( grupos[ig].tamanho < (LF_NUM_SENSORES/3) ) // ignora cruzamentos e marcacoes
             {
@@ -1670,32 +1353,33 @@ void LineFollower::loop()
                     {
                         // close enough :-)
                         eleito = ig;
+                        trilho = grupos[ eleito ];
                         distEleito = distancia;
                     }
                 }
             }
         }
+    }
 
-        if( eleito >= 0 )
+    if( eleito >= 0 )
+    {
+        timeout = 0;
+
+        // busca marcas esquerda/direita
+        for( int ig = 0 ; ig < nGrupos ; ig++ )
         {
-            trilho = grupos[ eleito ];
-
-            for( int ig = 0 ; ig < nGrupos ; ig++ )
+            if( ig != eleito )
             {
-                if( ig != eleito )
-                {
-                    // minimo de 2 sensores de distancia i.e 2 * peso
-                    if( ( grupos[ig].pontoMax + 2*2 ) < trilho.pontoMin )
-                        marcaEsq = true;
+                // minimo de 2 sensores de distancia i.e 2 * peso
+                if( ( grupos[ig].pontoMax + 2*2 ) < trilho.pontoMin )
+                    marcaEsq = true;
 
-                    if( ( trilho.pontoMax + 2*2 ) < grupos[ig].pontoMin )
-                        marcaDir = true;
-                }
+                if( ( trilho.pontoMax + 2*2 ) < grupos[ig].pontoMin )
+                    marcaDir = true;
             }
         }
 
-//        if( nGrupos == 1 && grupos[0].tamanho < (LF_NUM_SENSORES/3) )
-        if( nGrupos == 1 && eleito >= 0 )
+        if( nGrupos == 1 )
         {
             if( debounce && agora > debounce )
             {
@@ -1832,20 +1516,22 @@ class Variavel
 public:
     char nome[TAM_NOME];
     char tipo;
-    char tam; // TODO (Mauricio#1#): array
+    int linhas;
+    int colunas;
     void *dados;
 
-    Variavel( TipoVariavel tipo_=VAR_NULO, const char *nome_=NULL, void *dados_=NULL, char tam_=1 )
+    Variavel( TipoVariavel tipo_=VAR_NULO, const char *nome_=NULL, void *dados_=NULL, int linhas_=1, int colunas_=1 )
     {
-        declara( tipo_, nome_, dados_, tam_ );
+        declara( tipo_, nome_, dados_, linhas_, colunas_ );
     }
 
-    void declara( TipoVariavel tipo_, const char *nome_, void *dados_, char tam_=1 )
+    void declara( TipoVariavel tipo_, const char *nome_, void *dados_, int linhas_=1, int colunas_=1 )
     {
         tipo = tipo_;
         strncpy( nome, nome_, TAM_NOME );
         dados = dados_;
-        tam = tam_;
+        linhas = linhas_;
+        colunas = colunas_;
     }
 
     int getInt() const
@@ -2098,13 +1784,13 @@ public:
                 : NULL ;
     }
 
-    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=1 )
+    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, int linhas=1, int colunas=1 )
     {
-        Variavel nova( tipo, nome, dados, tam );
+        Variavel nova( tipo, nome, dados, linhas, colunas );
 
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.print( "declara " );
-            SERIALX.print( nome );
+            //SERIALX.print( "declara " );
+            //SERIALX.println( nome );
         #endif
 
         if( buscaVar( nome ) )
@@ -2134,8 +1820,8 @@ public:
         nvars++;
 
         #ifdef TRACE_INTERPRETADOR
-            SERIALX.print( " elem " );
-            SERIALX.println( elem );
+            //SERIALX.print( " elem " );
+            //SERIALX.println( elem );
         #endif
 
         return &var[elem];
@@ -2226,9 +1912,9 @@ public:
         }
     }
 private:
+
     char *linha;
     char token[TAM_TOKEN];
-    bool eco;               // imprime resultado da expressao
 
     enum TipoToken
     {
@@ -2240,6 +1926,8 @@ private:
         CHAVE,
         BLOCO
     } tipoToken;
+
+    bool eco;               // imprime resultado da expressao
 
     // Expressao -> Termo [ + Termo ] [ - Termo ]
 
