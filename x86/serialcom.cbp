@@ -91,6 +91,7 @@
 			<Add directory="$(#wx.lib)/gcc_dll" />
 		</Linker>
 		<Unit filename="../Scanner1D.cpp" />
+		<Unit filename="../dados.h" />
 		<Unit filename="../dimensoes.txt" />
 		<Unit filename="../matematica.h" />
 		<Unit filename="../mbsbot.ino" />
