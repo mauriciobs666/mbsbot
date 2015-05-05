@@ -18,6 +18,7 @@
 #ifndef DADOS_H_INCLUDED
 #define DADOS_H_INCLUDED
 
+#include "protocolo.h"
 #include "placa.h"
 #include "matematica.h"
 
@@ -344,5 +345,16 @@ public:
         #endif
     }
 };
+
+void uname()
+{
+    SERIALX.print( "MBSBOT hw " );
+    SERIALX.print( VERSAO_PLACA );
+    SERIALX.print( " sw " );
+    SERIALX.print( VERSAO_PROTOCOLO );
+    SERIALX.print( " e2 " );
+    SERIALX.print( sizeof( Eeprom::dados ) );
+    SERIALX.println( " B" );
+}
 
 #endif // DADOS_H_INCLUDED

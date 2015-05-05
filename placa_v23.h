@@ -15,8 +15,8 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BOARD_H_INCLUDED
-#define BOARD_H_INCLUDED
+#ifndef PLACA_H_INCLUDED
+#define PLACA_H_INCLUDED
 
 #define VERSAO_PLACA 23
 
@@ -113,4 +113,4 @@
 //#define PINO_BOTAO_CAL      37
 //#define PINO_BOTAO_PRG      39
 
-#endif // BOARD_H_INCLUDED
+#endif // PLACA_H_INCLUDED

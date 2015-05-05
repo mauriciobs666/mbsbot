@@ -90,11 +90,11 @@
 			<Add directory="$(#mbsutil.lib)" />
 			<Add directory="$(#wx.lib)/gcc_dll" />
 		</Linker>
-		<Unit filename="../Scanner1D.cpp" />
 		<Unit filename="../dados.h" />
 		<Unit filename="../dimensoes.txt" />
 		<Unit filename="../matematica.h" />
 		<Unit filename="../mbsbot.ino" />
+		<Unit filename="../obsoleto.txt" />
 		<Unit filename="../placa.h" />
 		<Unit filename="../placa_v1.h" />
 		<Unit filename="../placa_v2.h" />

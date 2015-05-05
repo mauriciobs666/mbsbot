@@ -15,14 +15,64 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
+// ******************************************************************************
+//		Servos
+// ******************************************************************************
 
-#include "protocolo.h"
-#include "placa.h"
+                    #ifdef PINO_SERVO_PAN
+                    else if(strcmp(dest, NOME_SERVO_X) == 0)
+                        pan.write(valor);
+                    #endif
+                    #ifdef PINO_SERVO_TILT
+                    else if(strcmp(dest, NOME_SERVO_Y) == 0)
+                        tilt.write(valor);
+                    #endif
+                    #ifdef PINO_SERVO_ROLL
+                    else if(strcmp(dest, NOME_SERVO_Z) == 0)
+                        roll.write(valor);
+                    #endif
+
+
+                #ifdef PINO_SERVO_PAN
+                else if(strcmp(tok, NOME_SERVO_X) == 0)
+                {
+                    SERIALX.print(tok);          // ecoa nome da variavel
+                    SERIALX.print(" ");
+                    SERIALX.println(pan.read());
+                }
+                #endif
+                #ifdef PINO_SERVO_TILT
+                else if(strcmp(tok, NOME_SERVO_Y) == 0)
+                {
+                    SERIALX.print(tok);          // ecoa nome da variavel
+                    SERIALX.print(" ");
+                    SERIALX.println(tilt.read());
+                }
+                #endif
+                #ifdef PINO_SERVO_ROLL
+                else if(strcmp(tok, NOME_SERVO_Z) == 0)
+                {
+                    SERIALX.print(tok);          // ecoa nome da variavel
+                    SERIALX.print(" ");
+                    SERIALX.println(roll.read());
+                }
+                #endif
+
 
 // ******************************************************************************
 //		Scanner IR 1D
 // ******************************************************************************
+
+        #ifdef SCANNER
+        case PRG_SCANNER:
+            scanner.fillArray();
+        msExec = eeprom.dados.delays.ES;
+        break;
+        case PRG_CHASE:
+            scanner.chase();
+        msExec = eeprom.dados.delays.ES;
+        break;
+        #endif
 
 class Scanner
 {
@@ -105,4 +155,3 @@ private:
     char stepDir;
     unsigned short dataArray[SCANNER_STEPS];
 };
-*/

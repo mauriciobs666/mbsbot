@@ -55,9 +55,9 @@ class MbsBot
 		char* recebe();
 
 		int enviaVar(const char *var, int valor)
-            { return envia("%s %s = %d%c", CMD_SET, var, valor, CMD_EOL); }
+            { return envia("%s=%d%c", var, valor, CMD_EOL); }
 		int pedeVar(const char *var)
-            { return envia("%s %s%c", CMD_GET, var, CMD_EOL); }
+            { return envia("%s%c", var, CMD_EOL); }
         void pedeVars()
         {
             // TODO (mbs#1#): pede todas vars

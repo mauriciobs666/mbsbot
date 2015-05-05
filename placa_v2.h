@@ -15,8 +15,8 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BOARD_H_INCLUDED
-#define BOARD_H_INCLUDED
+#ifndef PLACA_H_INCLUDED
+#define PLACA_H_INCLUDED
 
 // M2D2
 
@@ -100,4 +100,4 @@
 //#define PINO_JOY_R
 //#define PINO_JOY_SW1    4
 
-#endif // BOARD_H_INCLUDED
+#endif // PLACA_H_INCLUDED

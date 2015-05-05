@@ -15,8 +15,8 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PROTOCOL_H_INCLUDED
-#define PROTOCOL_H_INCLUDED
+#ifndef PROTOCOLO_H_INCLUDED
+#define PROTOCOLO_H_INCLUDED
 
 #define VERSAO_PROTOCOLO 1
 
@@ -36,16 +36,10 @@ Formato geral do pacote:
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
 #define TAM_NOME 5      // bytes, tamanho max de um nome de variavel
-#define NUM_VARS 35     // array de variaveis do interpretador
+#define NUM_VARS 50     // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */
-
-#define CMD_GET	"get"
-/* CMD_GET <variavel> */
-
-#define CMD_SET	"set"
-/* CMD_SET <variavel> = [int] */
 
 #define CMD_GRAVA	"sv"
 /* CMD_GRAVA : grava sConfigurationData na eeprom */
@@ -68,7 +62,7 @@ Formato geral do pacote:
 #define CMD_LF "lf"
 /* CMD_LF : inicia corrida */
 
-#define CMD_MV_PARAR "p"
+#define CMD_MV_PARAR "x"
 /* CMD_MV_PARAR : para imediatamente */
 
 #define CMD_MV_RODAS "drv"
@@ -92,8 +86,6 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 
 #define CMD_BIP "bip"
 /* CMD_BIP [Hz] [ms] */
-
-#define CMD_LIMPA_ERRO "clerr"
 
 #define CMD_JOYPAD "j"
 /* CMD_JOYPAD BOTOES X Y Z R */
@@ -134,18 +126,19 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_PID_MVN   "mvn"  // valor minimo MV
 #define NOME_PID_ZAC   "zac"  // zera acumulador quando erro for 0
 
-#define NOME_PID_CAL_KP    "ckp"   // coeficientes do algoritmo de PID
-#define NOME_PID_CAL_KI    "cki"   //  "
-#define NOME_PID_CAL_KD    "ckd"   //  "
-#define NOME_PID_CAL_MVX   "cvx"  // valor maximo MV
-#define NOME_PID_CAL_MVN   "cvn"  // valor minimo MV
-#define NOME_PID_CAL_ZAC   "cza"  // zera acumulador quando erro for 0
+#define NOME_PID_CAL_KP    "kpc"   // coeficientes do algoritmo de PID
+#define NOME_PID_CAL_KI    "kic"   //  "
+#define NOME_PID_CAL_KD    "kdc"   //  "
+#define NOME_PID_CAL_MVX   "mvxc"  // valor maximo MV
+#define NOME_PID_CAL_MVN   "mvnc"  // valor minimo MV
+#define NOME_PID_CAL_ZAC   "zacc"  // zera acumulador quando erro for 0
 
 #define NOME_VEL_MAX     "vm" // limite de velocidade em %
 #define NOME_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
 #define NOME_BALANCO     "bal" // balanco rodas esq/dir
 
 #define NOME_TRACE       "trc"
+#define NOME_ERRNO       "err"
 
 #define NOME_TIMESTAMP   "t"
 
@@ -221,4 +214,12 @@ enum Pids
     PID_N
 };
 
-#endif // PROTOCOL_H_INCLUDED
+enum Prioridades
+{
+    PRI_AUTOPRESERVACAO = 0,
+    PRI_SERIAL,
+    PRI_RC,
+    PRI_LINE_FOLLOW
+};
+
+#endif // PROTOCOLO_H_INCLUDED
