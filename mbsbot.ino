@@ -950,6 +950,7 @@ public:
     bool estadoLed;
 
     int nGrupos;
+    int eleito;
 
     void loop();
     bool calibrar();
@@ -967,6 +968,7 @@ public:
         tInicio = tFim = timeout = tPiscaLed = debounce = 0;
         marcaEsq = marcaDir = estadoLed = false;
         buscaInicioVolta = true;
+        eleito = -1;
 
         for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
             sensoresBool[sb] = debounceArray[sb] = false;
@@ -999,11 +1001,27 @@ public:
         {
             trilho = grupos[0];
             eeprom.dados.programa = PRG_LINE_FOLLOW;
+
+            if( trc )
+            {
+                delaySensores = 100;                //delayStatus = 100;
+            }
         }
         else
         {
             printErro(ERRO_LF_TRILHO);
             eeprom.dados.programa = DFT_PROGRAMA;
+        }
+    }
+
+    void finalizarCorrida()
+    {
+        drive.parar();
+        drive.refresh( true );
+
+        if( trc )
+        {
+            delaySensores = -1;            //delayStatus = -1;
         }
     }
 
@@ -1018,9 +1036,9 @@ public:
         {}
         bool intersecciona( Grupo &b )
         {
-            // expande um sensor ( 2*s+1 ) pra cada lado
-            int pmin = pontoMin > 1 ? pontoMin - 2 : pontoMin;
-            int pmax = pontoMax < 2 * LF_NUM_SENSORES - 1 ? pontoMax + 2 : pontoMax;
+            // expande um sensor pra cada lado
+            int pmin = pontoMin > 0 ? pontoMin - 1 : 0;
+            int pmax = pontoMax < LF_NUM_SENSORES - 1 ? pontoMax + 1 : pontoMax;
 
             // se minimo ou maximo de b estiverem dentro do range
             if( ( b.pontoMin >= pmin && b.pontoMin <= pmax ) || ( b.pontoMax >= pmin && b.pontoMax <= pmax ) )
@@ -1043,18 +1061,19 @@ public:
 
     void print()
     {
-        int x;
-
         SERIALX.print("LF ");
 
-        for( x = 0; x < LF_NUM_SENSORES; x++ )
-            SERIALX.print( sensoresBool[x] ? "A" : "_" );
+        //for( x = 0; x < LF_NUM_SENSORES; x++ )
+        //    SERIALX.print( sensoresBool[x] ? "A" : "_" );
+        //SERIALX.print(" ");
 
-        SERIALX.print(" ");
-
-        for( x= 0 ; x < nGrupos ; x++ )
+        for( int x = 0; x < nGrupos; x++ )
         {
-            grupos[x].print();
+            if( x == eleito ) SERIALX.print("[");
+
+            grupos[ x ].print();
+
+            if( x == eleito ) SERIALX.print("]");
         }
 
         SERIALX.print(" ");
@@ -1066,10 +1085,10 @@ public:
     {
         nGrupos = 0;
 
-        for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
+        for( int sb = 0; sb < LF_NUM_SENSORES; sb++ )
             sensoresBool[sb] = sensores[ LF_PINO_0 + sb ].refresh().getBool();
 
-        for(int s = 0; s < LF_NUM_SENSORES; s++)
+        for( int s = 0; s < LF_NUM_SENSORES; s++ )
         {
             if( sensoresBool[s] )
             {
@@ -1129,20 +1148,9 @@ public:
         #endif
 
         refresh();
-
-        if( nGrupos )
-        {
-            trilho = grupos[0];
-        }
-        // TODO (Mauricio#1#): else?
+        elegeTrilho();
 
         pid.setPoint = setPoint;
-
-        #ifdef TRACE_LF
-//        SERIALX.print( "trilho " );
-//        trilho.print();
-//        SERIALX.println();
-        #endif
 
         drive.gira( pid.executaSample( trilho.pontoMedio ) );
 
@@ -1156,6 +1164,43 @@ public:
             return 0;
 
         return pid.erro;
+    }
+
+    void elegeTrilho()
+    {
+        // busca provavel trilho entre os grupos
+
+        if( nGrupos )
+        {
+            int distEleito = 300; // distancia maxima do trilho anterior
+
+            for( int ig = 0; ig < nGrupos; ig++ )
+            {
+                if( grupos[ig].tamanho < (LF_NUM_SENSORES/3) ) // ignora cruzamentos e marcacoes
+                {
+                    if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
+                    {
+                        int distancia = abs( grupos[ig].pontoMedio - trilho.pontoMedio );
+
+                        if( distancia < distEleito )
+                        {
+                            // close enough :-)
+                            eleito = ig;
+                            trilho = grupos[ eleito ];
+                            distEleito = distancia;
+                        }
+                    }
+                }
+            }
+        }
+        else
+            eleito = -1;
+
+        #ifdef TRACE_LF
+//        SERIALX.print( "trilho " );
+//        trilho.print();
+//        SERIALX.println();
+        #endif
     }
 }
 lineFollower;
@@ -1295,8 +1340,8 @@ void LineFollower::loop()
     if( tFim && agora > tFim )
     {
         tFim = 0;
-        drive.parar();
-        drive.refresh( true );
+
+        finalizarCorrida();
 
         SERIALX.print("Lap: ");
         SERIALX.print(int((agora-tInicio)/1000));
@@ -1317,33 +1362,7 @@ void LineFollower::loop()
     }
 
     refresh();
-
-    // busca provavel trilho entre os grupos
-    int eleito = -1;
-
-    if( nGrupos )
-    {
-        int distEleito = 300; // distancia maxima do trilho anterior
-
-        for( int ig = 0; ig < nGrupos; ig++ )
-        {
-            if( grupos[ig].tamanho < (LF_NUM_SENSORES/3) ) // ignora cruzamentos e marcacoes
-            {
-                if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
-                {
-                    int distancia = abs( grupos[ig].pontoMedio - trilho.pontoMedio );
-
-                    if( distancia < distEleito )
-                    {
-                        // close enough :-)
-                        eleito = ig;
-                        trilho = grupos[ eleito ];
-                        distEleito = distancia;
-                    }
-                }
-            }
-        }
-    }
+    elegeTrilho();
 
     if( eleito >= 0 )
     {
@@ -1443,10 +1462,9 @@ void LineFollower::loop()
         }
         else // timeout
         {
-            eeprom.dados.programa = DFT_PROGRAMA;
-            drive.parar();
-            drive.refresh( true );
+            finalizarCorrida();
 
+            eeprom.dados.programa = DFT_PROGRAMA;
             print();
             printErro( ERRO_LF_TRILHO, "timeout" );
 
@@ -2167,6 +2185,13 @@ public:
         else
             rc = ERRO_VAR_INVALIDA;
 
+        #ifdef TRACE_INTERPRETADOR
+        if( SUCESSO == rc )
+            SERIALX.println( " exec ok" );
+        else
+            SERIALX.println( " nope" );
+        #endif
+
         return rc;
     }
 private:
@@ -2841,7 +2866,7 @@ void loop()
         lineFollower.print();
     }
 
-    #define TESTE_PERFORMANCE
+    //#define TESTE_PERFORMANCE
 
     #ifdef TESTE_PERFORMANCE
     static unsigned long passagensLoop = 0;
