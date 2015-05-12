@@ -36,7 +36,7 @@ Formato geral do pacote:
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
 #define TAM_NOME 5      // bytes, tamanho max de um nome de variavel
-#define NUM_VARS 50     // array de variaveis do interpretador
+#define NUM_VARS 40     // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */
@@ -172,7 +172,8 @@ enum Erros
     ERRO_VAR_ARRAY,
     ERRO_INTERPRETADOR,
     ERRO_LF_CALIBRA,
-    ERRO_LF_TRILHO
+    ERRO_LF_TRILHO,
+    SKIP
 };
 
 // Mapeamento dos botoes de Joypad (API antiga)
@@ -219,7 +220,8 @@ enum Prioridades
     PRI_AUTOPRESERVACAO = 0,
     PRI_SERIAL,
     PRI_RC,
-    PRI_LINE_FOLLOW
+    PRI_LINE_FOLLOW,
+    PRI_IDLE
 };
 
 #endif // PROTOCOLO_H_INCLUDED

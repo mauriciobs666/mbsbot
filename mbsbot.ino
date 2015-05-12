@@ -91,15 +91,16 @@ int erro = SUCESSO;
 
 #define MAX_STR_ERRO 20            // "01234567890123456789"
 const char ErroSucesso[]    PROGMEM = "SUCESSO";
-const char ErroTodo[]       PROGMEM = "TODO";
-const char ErroTamMaxCmd[]  PROGMEM = "ERRO_TAM_MAX_CMD";
-const char ErroPrgInval[]   PROGMEM = "ERRO_PRG_INVALIDO";
-const char ErroVarInval[]   PROGMEM = "ERRO_VAR_INVALIDA";
-const char ErroVarExiste[]  PROGMEM = "ERRO_VAR_EXISTE";
-const char ErroVarArray[]   PROGMEM = "ERRO_VAR_ARRAY";
-const char ErroInpretador[] PROGMEM = "ERRO_INTERPRETADOR";
-const char ErroLFCalibra[]  PROGMEM = "ERRO_LF_CALIBRA";
-const char ErroLFTrilho[]   PROGMEM = "ERRO_LF_TRILHO";
+const char ErroTodo[]       PROGMEM = "INFO: TODO";
+const char ErroTamMaxCmd[]  PROGMEM = "ERRO: TAM_MAX_CMD";
+const char ErroPrgInval[]   PROGMEM = "ERRO: PRG_INVALIDO";
+const char ErroVarInval[]   PROGMEM = "ERRO: VAR_INVALIDA";
+const char ErroVarExiste[]  PROGMEM = "ERRO: VAR_EXISTE";
+const char ErroVarArray[]   PROGMEM = "ERRO: VAR_ARRAY";
+const char ErroInpretador[] PROGMEM = "ERRO: INTERPRETADOR";
+const char ErroLFCalibra[]  PROGMEM = "ERRO: LF_CALIBRA";
+const char ErroLFTrilho[]   PROGMEM = "ERRO: LF_TRILHO";
+const char ErroSkip[]       PROGMEM = "INFO: SKIP";
 
 const char* const tabErros[] PROGMEM =
 {
@@ -112,7 +113,8 @@ const char* const tabErros[] PROGMEM =
     ErroVarArray,
     ErroInpretador,
     ErroLFCalibra,
-    ErroLFTrilho
+    ErroLFTrilho,
+    ErroSkip
 };
 
 // ******************************************************************************
@@ -1067,6 +1069,13 @@ public:
         //    SERIALX.print( sensoresBool[x] ? "A" : "_" );
         //SERIALX.print(" ");
 
+        if( eleito < 0 )
+        {
+            SERIALX.print("<");
+            trilho.print();
+            SERIALX.print(">");
+        }
+
         for( int x = 0; x < nGrupos; x++ )
         {
             if( x == eleito ) SERIALX.print("[");
@@ -2007,7 +2016,6 @@ public:
             SERIALX.println();
         }
 
-        // TODO (Mauricio#1#): rc != ERRO_VAR_INVALIDA gambi enquanto termina de portar todos os comands pro Interpretador
         if( rc )
         {
             printErro( rc );
@@ -2153,33 +2161,48 @@ public:
         }
         else if( 0 == strncmp( token, CMD_JOYPAD, TAM_TOKEN ) )
         {
-/*
-            if ((tok = STRTOK(NULL, " ")))			        // segundo token eh o status dos botoes
+            int temp;
+
+            // segundo token eh o status dos botoes
+            getToken();
+            if( getInt( &temp ) )
             {
-                gamepad.refreshBotoes(atoi(tok));
-                if ((tok = STRTOK(NULL, " ")))		        // terceiro token eh o eixo X
+                // mega gambi
+                if( gamepad.tipo != ConfigGamepad::TIPO_PC  )
                 {
-                    if( gamepad.tipo != ConfigGamepad::TIPO_PC  )
+                    gamepad.setConfig( &eeprom.dados.joyPC );
+                }
+
+                gamepad.refreshBotoes( temp );
+
+
+                // terceiro token eh o eixo X
+                getToken();
+                if( getInt( &temp ) )
+                {
+                    gamepad.x.setValor( temp );
+
+                    // quarto token eh o eixo Y
+                    getToken();
+                    if( getInt( &temp ) )
                     {
-                        gamepad.setConfig( &eeprom.dados.joyPC );
-                    }
-                    gamepad.x.setValor(atol(tok));
-                    if ((tok = STRTOK(NULL, " ")))	        // quarto token eh o eixo Y
-                    {
-                        gamepad.y.setValor(atol(tok));
-                        if ((tok = STRTOK(NULL, " ")))		// quinto token eh o eixo Z
+                        gamepad.y.setValor( temp );
+
+                        // quinto token eh o eixo Z
+                        getToken();
+                        if( getInt( &temp ) )
                         {
-                            gamepad.z.setValor(atol(tok));
-                            if ((tok = STRTOK(NULL, " ")))	// sexto token eh o eixo Rudder
-                            {
-                                gamepad.r.setValor(atol(tok));
-                            }
+                            gamepad.z.setValor( temp );
+
+                            // sexto token eh o eixo Rudder
+                            getToken();
+                            if( getInt( &temp ) )
+                                gamepad.r.setValor( temp );
                         }
                     }
                 }
             }
             else
-*/
                 enviaJoystick();
         }
         else
@@ -2337,7 +2360,6 @@ private:
             SERIALX.print( token );
             SERIALX.print( " _ " );
             SERIALX.print( linha );
-            SERIALX.print( " = " );
         #endif
 
         Erros rc = SUCESSO;
@@ -2359,6 +2381,7 @@ private:
         }
 
         #ifdef TRACE_INTERPRETADOR
+            SERIALX.print( " = " );
             resultado->print();
             SERIALX.println();
         #endif
@@ -2367,11 +2390,27 @@ private:
 
         if( tipoToken == DELIMIT && token[0] == ';')
         {
+            eco = false;
+
             #ifdef TRACE_INTERPRETADOR
                 SERIALX.println("eco off");
             #endif
-            eco = false;
+
             getToken();
+        }
+
+        return rc;
+    }
+
+    Erros getInt( int* resultado )
+    {
+        Erros rc = SKIP;
+
+        if( tipoToken == NUMERO )
+        {
+            Variavel temp( VAR_INT, "tmp", resultado );
+
+            rc = evalExpressao( &temp );
         }
 
         return rc;
@@ -2506,9 +2545,7 @@ public:
     void loop()
     {
         while( recebe() )
-        {
             interpretador.eval( command );
-        }
     }
 }
 telnet;
