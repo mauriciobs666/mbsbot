@@ -59,6 +59,23 @@
                 #endif
 
 
+#ifdef PINO_SERVO_PAN
+    pan.attach(PINO_SERVO_PAN);
+    pan.write(90);
+#endif
+
+#ifdef PINO_SERVO_TILT
+    tilt.attach(PINO_SERVO_TILT);
+    tilt.write(90);
+#endif
+
+#ifdef PINO_SERVO_ROLL
+    roll.attach(PINO_SERVO_ROLL);
+    roll.write(90);
+#endif
+
+
+
 // ******************************************************************************
 //		Scanner IR 1D
 // ******************************************************************************
@@ -155,3 +172,109 @@ private:
     char stepDir;
     unsigned short dataArray[SCANNER_STEPS];
 };
+
+// ******************************************************************************
+//		INTS DE R/C - http://code.google.com/p/arduino-pinchangeint/wiki/Usage
+// ******************************************************************************
+
+void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
+{
+    if( !s || !s->cfg || s->cfg->tipo != ConfigSensor::SENSOR_RC )
+        return;
+
+    if(PCintPort::pinState == HIGH)
+        *inicioPulso = micros();
+    else
+    {
+        if(*inicioPulso)
+        {
+            unsigned long duracao = micros() - *inicioPulso;
+            if( duracao > 1000 && duracao < 2000 )
+                s->setValor((unsigned short)duracao);
+            *inicioPulso = 0;
+        }
+    }
+}
+
+void isrRadio()
+{
+    if( eeprom.dados.programa == PRG_RC_SERIAL )
+    switch(PCintPort::arduinoPin)
+    {
+        #ifdef PINO_JOY_X
+        case PINO_JOY_X:
+        {
+            static unsigned long inicioPulsoX = 0;
+            isrRadioEixo(&gamepad.x, &inicioPulsoX);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_Y
+        case PINO_JOY_Y:
+        {
+            static unsigned long inicioPulsoY = 0;
+            isrRadioEixo(&gamepad.y, &inicioPulsoY);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_Z
+        case PINO_JOY_Z:
+        {
+            static unsigned long inicioPulsoZ = 0;
+            isrRadioEixo(&gamepad.z, &inicioPulsoZ);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_R
+        case PINO_JOY_R:
+        {
+            static unsigned long inicioPulsoR = 0;
+            isrRadioEixo(&gamepad.r, &inicioPulsoR);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_SW1
+        case PINO_JOY_SW1:
+        {
+            static unsigned long inicioPulsoSW1 = 0;
+            if(PCintPort::pinState == HIGH)
+                inicioPulsoSW1 = micros();
+            else
+            {
+                if(inicioPulsoSW1)
+                {
+                    unsigned long duracao = micros() - inicioPulsoSW1;
+                    gamepad.refreshBotoes((duracao < 1500) ? BT_RB : 0);
+                    inicioPulsoSW1 = 0;
+                }
+            }
+        }
+        break;
+        #endif
+        default:
+        break;
+    }
+}
+
+
+#ifdef PINO_JOY_X
+    rcpad.setConfig( &eeprom.dados.joyRC );
+    PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
+
+    #ifdef PINO_JOY_Y
+        PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
+    #endif
+
+    #ifdef PINO_JOY_Z
+        PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
+    #endif
+
+    #ifdef PINO_JOY_R
+        PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
+    #endif
+
+    #ifdef PINO_JOY_SW1
+        PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
+    #endif
+#endif
+

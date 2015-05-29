@@ -87,6 +87,8 @@ int delayStatus = -1;
 
 bool trc = false;
 
+bool resetPrg = true;
+
 int erro = SUCESSO;
 
 #define MAX_STR_ERRO 20            // "01234567890123456789"
@@ -912,17 +914,17 @@ public:
 
     void print()
     {
-        SERIALX.print( "PID en " );
-        SERIALX.print( entAnterior );
-        SERIALX.print( " er " );
+        //SERIALX.print( "en " );
+        //SERIALX.print( entAnterior );
+        SERIALX.print( " <" );
         SERIALX.print( erro );
-        SERIALX.print( " p " );
+        SERIALX.print( "> [" );
         SERIALX.print( proporcional );
-        SERIALX.print( " i " );
+        SERIALX.print( " " );
         SERIALX.print( integral );
-        SERIALX.print( " d " );
+        SERIALX.print( " " );
         SERIALX.print( derivada );
-        SERIALX.print( " MV " );
+        SERIALX.print( "] => " );
         SERIALX.println( MV );
     }
 };
@@ -1050,13 +1052,13 @@ public:
         }
         void print()
         {
-            SERIALX.print("(");
+            SERIALX.print("[");
             SERIALX.print((int)pontoMin);
-            SERIALX.print(",");
+            SERIALX.print(" ");
             SERIALX.print((int)pontoMedio);
-            SERIALX.print(",");
+            SERIALX.print(" ");
             SERIALX.print((int)pontoMax);
-            SERIALX.print(")");
+            SERIALX.print("]");
         }
     }
     grupos[LF_NUM_SENSORES/2], trilho;
@@ -1071,21 +1073,20 @@ public:
 
         if( eleito < 0 )
         {
-            SERIALX.print("<");
+            SERIALX.print("?");
             trilho.print();
-            SERIALX.print(">");
+            SERIALX.print("? ");
         }
 
         for( int x = 0; x < nGrupos; x++ )
         {
-            if( x == eleito ) SERIALX.print("[");
+            if( x == eleito ) SERIALX.print("|");
 
             grupos[ x ].print();
 
-            if( x == eleito ) SERIALX.print("]");
+            if( x == eleito ) SERIALX.print("|");
+            SERIALX.print(" ");
         }
-
-        SERIALX.print(" ");
 
         pid.print();
     }
@@ -1527,15 +1528,16 @@ void enviaStatus(bool enviaComando = true)
         SERIALX.print(CMD_STATUS);
         SERIALX.print(" ");
     }
-    SERIALX.print((int)eeprom.dados.programa);
-    SERIALX.print(" ");
-    SERIALX.print((int)erro);
-    SERIALX.print(" ");
-    SERIALX.print((int)eeprom.dados.handBrake);
-    SERIALX.print(" ");
-    SERIALX.print(drive.motorEsq.read());
-    SERIALX.print(" ");
-    SERIALX.print(drive.motorDir.read());
+    SERIALX.print( (int)eeprom.dados.programa );
+    SERIALX.print( " " );
+    SERIALX.print( (int)erro );
+    SERIALX.print( " " );
+    SERIALX.print( (int)eeprom.dados.handBrake );
+    SERIALX.print( " " );
+    SERIALX.print( drive.motorEsq.read() );
+    SERIALX.print( " " );
+    SERIALX.print( drive.motorDir.read() );
+
     #ifdef RODAS_PWM_x4
         SERIALX.print(" ");
         SERIALX.print(drive2.motorEsq.read());
@@ -1874,7 +1876,7 @@ int compVar( const void *a, const void *b )
     return strncmp( ((Variavel*)a)->nome, ((Variavel*)b)->nome, TAM_NOME );
 }
 
-#define TRACE_INTERPRETADOR
+//#define TRACE_INTERPRETADOR
 
 class Interpretador
 {
@@ -2058,11 +2060,13 @@ public:
             enviaSensores(true);
         else if( 0 == strncmp( token, CMD_MV_PARAR, TAM_TOKEN ) )
         {
+            eeprom.dados.programa = DFT_PROGRAMA;
+            resetPrg = true;
+
             drive.parar();
             #ifdef RODAS_PWM_x4
                 drive2.parar();
             #endif
-            eeprom.dados.programa = PRG_RC_SERIAL;
         }
         else if( 0 == strncmp( token, NOME_RODA_ESQ, TAM_TOKEN ) )
         {
@@ -2165,9 +2169,9 @@ public:
 
             // segundo token eh o status dos botoes
             getToken();
-            if( getInt( &temp ) )
+            if( SUCESSO == getInt( &temp ) )
             {
-                // mega gambi
+                // gambi
                 if( gamepad.tipo != ConfigGamepad::TIPO_PC  )
                 {
                     gamepad.setConfig( &eeprom.dados.joyPC );
@@ -2175,28 +2179,23 @@ public:
 
                 gamepad.refreshBotoes( temp );
 
-
                 // terceiro token eh o eixo X
-                getToken();
-                if( getInt( &temp ) )
+                if( SUCESSO == getInt( &temp ) )
                 {
                     gamepad.x.setValor( temp );
 
                     // quarto token eh o eixo Y
-                    getToken();
-                    if( getInt( &temp ) )
+                    if( SUCESSO == getInt( &temp ) )
                     {
                         gamepad.y.setValor( temp );
 
                         // quinto token eh o eixo Z
-                        getToken();
-                        if( getInt( &temp ) )
+                        if( SUCESSO == getInt( &temp ) )
                         {
                             gamepad.z.setValor( temp );
 
                             // sexto token eh o eixo Rudder
-                            getToken();
-                            if( getInt( &temp ) )
+                            if( SUCESSO == getInt( &temp ) )
                                 gamepad.r.setValor( temp );
                         }
                     }
@@ -2206,7 +2205,7 @@ public:
                 enviaJoystick();
         }
         else
-            rc = ERRO_VAR_INVALIDA;
+            rc = SKIP;
 
         #ifdef TRACE_INTERPRETADOR
         if( SUCESSO == rc )
@@ -2550,89 +2549,6 @@ public:
 }
 telnet;
 
-// ******************************************************************************
-//		INTS DE R/C - http://code.google.com/p/arduino-pinchangeint/wiki/Usage
-// ******************************************************************************
-
-void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
-{
-    if( !s || !s->cfg || s->cfg->tipo != ConfigSensor::SENSOR_RC )
-        return;
-
-    if(PCintPort::pinState == HIGH)
-        *inicioPulso = micros();
-    else
-    {
-        if(*inicioPulso)
-        {
-            unsigned long duracao = micros() - *inicioPulso;
-            if( duracao > 1000 && duracao < 2000 )
-                s->setValor((unsigned short)duracao);
-            *inicioPulso = 0;
-        }
-    }
-}
-
-void isrRadio()
-{
-    if( eeprom.dados.programa == PRG_RC_SERIAL )
-    switch(PCintPort::arduinoPin)
-    {
-        #ifdef PINO_JOY_X
-        case PINO_JOY_X:
-        {
-            static unsigned long inicioPulsoX = 0;
-            isrRadioEixo(&gamepad.x, &inicioPulsoX);
-        }
-        break;
-        #endif
-        #ifdef PINO_JOY_Y
-        case PINO_JOY_Y:
-        {
-            static unsigned long inicioPulsoY = 0;
-            isrRadioEixo(&gamepad.y, &inicioPulsoY);
-        }
-        break;
-        #endif
-        #ifdef PINO_JOY_Z
-        case PINO_JOY_Z:
-        {
-            static unsigned long inicioPulsoZ = 0;
-            isrRadioEixo(&gamepad.z, &inicioPulsoZ);
-        }
-        break;
-        #endif
-        #ifdef PINO_JOY_R
-        case PINO_JOY_R:
-        {
-            static unsigned long inicioPulsoR = 0;
-            isrRadioEixo(&gamepad.r, &inicioPulsoR);
-        }
-        break;
-        #endif
-        #ifdef PINO_JOY_SW1
-        case PINO_JOY_SW1:
-        {
-            static unsigned long inicioPulsoSW1 = 0;
-            if(PCintPort::pinState == HIGH)
-                inicioPulsoSW1 = micros();
-            else
-            {
-                if(inicioPulsoSW1)
-                {
-                    unsigned long duracao = micros() - inicioPulsoSW1;
-                    gamepad.refreshBotoes((duracao < 1500) ? BT_RB : 0);
-                    inicioPulsoSW1 = 0;
-                }
-            }
-        }
-        break;
-        #endif
-        default:
-        break;
-    }
-}
-
 void trataJoystick()
 {
     if(gamepad.botoesEdgeR & BT_L3)
@@ -2730,21 +2646,6 @@ void setup()
     drive2.motorDir.init( &eeprom.dados.motorDirT );
 #endif
 
-#ifdef PINO_SERVO_PAN
-    pan.attach(PINO_SERVO_PAN);
-    pan.write(90);
-#endif
-
-#ifdef PINO_SERVO_TILT
-    tilt.attach(PINO_SERVO_TILT);
-    tilt.write(90);
-#endif
-
-#ifdef PINO_SERVO_ROLL
-    roll.attach(PINO_SERVO_ROLL);
-    roll.write(90);
-#endif
-
     pinMode(PINO_LED, OUTPUT);
     digitalWrite(PINO_LED, LOW);
 
@@ -2760,30 +2661,7 @@ void setup()
     drive.sensorDir = &sensores[2];
     drive.sensorFre = &sensores[3];
 
-// TODO (Mauricio#1#): suporte simultaneo a R/C e gamepad PC
-
     gamepad.setConfig( &eeprom.dados.joyPC );
-
-#ifdef PINO_JOY_X
-    rcpad.setConfig( &eeprom.dados.joyRC );
-    PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
-
-    #ifdef PINO_JOY_Y
-        PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
-    #endif
-
-    #ifdef PINO_JOY_Z
-        PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
-    #endif
-
-    #ifdef PINO_JOY_R
-        PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
-    #endif
-
-    #ifdef PINO_JOY_SW1
-        PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
-    #endif
-#endif
 
     // liga pull-up de pinos livres pra economizar energia
     unsigned char unused[] = PINO_UNUSED_ARRAY;
@@ -2946,6 +2824,8 @@ void loop()
 //                else
 //                    drive.vetorialSensor( direcao );
             #endif
+
+            // fall through
         }
         case PRG_IDLE:
         {

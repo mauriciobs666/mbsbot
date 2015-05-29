@@ -73,7 +73,7 @@ typedef struct
 
     void print()
     {
-        SERIALX.print("S");
+        SERIALX.print("{");
 
         switch( (enum eTipoSensor) tipo )
         {
@@ -96,6 +96,7 @@ typedef struct
             SERIALX.print("?");
             break;
         }
+        SERIALX.print(",");
         SERIALX.print((int)pino);
         if( invertido )
             SERIALX.print("! ");
@@ -105,8 +106,11 @@ typedef struct
         SERIALX.print(maximo);
         SERIALX.print("] C");
         SERIALX.print(centro);
-        SERIALX.print( autoMinMax ? " A" : " F" );
-        SERIALX.print( calibrado() ? " C" : " D" );
+        SERIALX.print(",");
+        SERIALX.print( autoMinMax ? 'A' : 'F' );
+        SERIALX.print(",");
+        SERIALX.print( calibrado() ? 'C' : 'D' );
+        SERIALX.print("}");
     }
 }
 ConfigSensor;
