@@ -47,8 +47,8 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 
-// Pin Change interrupt ( http://code.google.com/p/arduino-pinchangeint/ )
-#include "PinChangeInt.h"
+// https://github.com/GreyGnome/EnableInterrupt/
+#include <EnableInterrupt.h>
 
 // speaker
 #ifdef PINO_BIP
@@ -490,6 +490,7 @@ public:
 
     void refresh( bool imediato = false )
     {
+
         // acelerador: v = v0 + at
 
         if( delaySemBlock( &ultimoAcel, eeprom.dados.delays.motores ) || imediato )
@@ -1008,7 +1009,8 @@ public:
 
             if( trc )
             {
-                delaySensores = 100;                //delayStatus = 100;
+                delaySensores = 100;
+                //delayStatus = 100;
             }
         }
         else
@@ -1025,7 +1027,8 @@ public:
 
         if( trc )
         {
-            delaySensores = -1;            //delayStatus = -1;
+            delaySensores = -1;
+            //delayStatus = -1;
         }
     }
 
@@ -2722,6 +2725,17 @@ void setup()
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVX,    &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVN,    &eeprom.dados.pid[ PID_CORRIDA ].minMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_ZAC,    &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
+
+#ifdef ENCODER_RODAS
+    pinMode( 10, INPUT );
+    enableInterruptFast( 10, CHANGE );
+    pinMode( 11, INPUT );
+    enableInterruptFast( 11, CHANGE );
+    pinMode( 14, INPUT );
+    enableInterruptFast( 14, CHANGE );
+    pinMode( 15, INPUT );
+    enableInterruptFast( 15, CHANGE );
+#endif
 }
 
 // ******************************************************************************
@@ -2871,6 +2885,14 @@ void loop()
         case PRG_LINE_FOLLOW:
             lineFollower.loop();
         msExec = eeprom.dados.delays.ES;
+        break;
+
+        case PRG_LF_CAL:
+            SERIALX.println(encoderDir1);
+            SERIALX.println(encoderDir2);
+            SERIALX.println(encoderEsq1);
+            SERIALX.println(encoderEsq2);
+        msExec = 1000;
         break;
 
         case PRG_COLISAO:

@@ -113,4 +113,12 @@
 #define PINO_BOTAO_CAL      37
 #define PINO_BOTAO_PRG      39
 
+#define ENCODER_RODAS
+// https://github.com/GreyGnome/EnableInterrupt/wiki/Usage-HiSpeed
+#define NEEDFORSPEED
+#define INTERRUPT_FLAG_PIN10 encoderDir1
+#define INTERRUPT_FLAG_PIN11 encoderDir2
+#define INTERRUPT_FLAG_PIN14 encoderEsq1
+#define INTERRUPT_FLAG_PIN15 encoderEsq2
+
 #endif // PLACA_H_INCLUDED
