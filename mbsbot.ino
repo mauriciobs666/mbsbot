@@ -418,51 +418,35 @@ class Motor
 public:
     ConfigMotor *cfg;
 
-    Motor() : cfg(NULL), atual(0), ultimoAcel(0), meta(0) { }
+    Motor() : cfg(NULL), atual(0), ultimoAcel(0), meta(0), encoder(0), enc1(NULL), enc2(NULL) { }
 
     void init( ConfigMotor *cfgm )
     {
         cfg = cfgm;
 
-        if( cfg->tipo == ConfigMotor::MOTOR_DC )
-        {
-            pinMode( cfg->pino, OUTPUT );
-            analogWrite( cfg->pino, 0 );
+        pinMode( cfg->pino, OUTPUT );
+        pinMode( cfg->pinoDir, OUTPUT );
 
-            pinMode( cfg->pinoDir, OUTPUT );
-            digitalWrite( cfg->pinoDir, 0 );
+        if ( cfg->pinoDirN >= 0 )
+            pinMode( cfg->pinoDirN, OUTPUT);
 
-            if ( cfg->pinoDirN >= 0 )
-            {
-                pinMode( cfg->pinoDirN, OUTPUT);
-                digitalWrite( cfg->pinoDirN, 0);
-            }
-        }
-        else if( cfg->tipo == ConfigMotor::MOTOR_SERVO )
-        {
-            #ifndef RODAS_PWM
-                servo.attach( cfg->pino );
-            #endif
-        }
         parar();
+        refresh(true);
+    }
+
+    void setEncoder( volatile uint8_t *encoderVar1, volatile uint8_t *encoderVar2 )
+    {
+        enc1 = encoderVar1;
+        enc2 = encoderVar2;
     }
 
     void parar()
     {
-        write( ( cfg->tipo == ConfigMotor::MOTOR_SERVO ) ? cfg->centro : 0 );
+        write(0);
     }
 
     void move( char potencia100 )
     {
-        #ifndef RODAS_PWM
-        if ( cfg->tipo == ConfigMotor::MOTOR_SERVO )
-        {
-            // TODO (mbs#1#): usar aceleracao e escala pro servo tb
-            // servos tipicos aceitam pulsos entre 1000us e 2000us, ou seja, centro(1500us) +/- 500us
-            write( cfg->invertido ? ( cfg->centro - potencia100*5 ) : ( cfg->centro + potencia100*5 ) );
-            return;
-        }
-        #endif
         /* onde:
             potencia100 = +/- 0-100 %
             centro = pwm a partir do qual o motor comeca a se mover
@@ -483,6 +467,11 @@ public:
         return atual;
     }
 
+    short getEncoder()
+    {
+        return encoder;
+    }
+
     void write(int valor)
     {
         meta = atual = valor;
@@ -491,10 +480,21 @@ public:
     void refresh( bool imediato = false )
     {
 
-        // acelerador: v = v0 + at
-
         if( delaySemBlock( &ultimoAcel, eeprom.dados.delays.motores ) || imediato )
         {
+            encoder = 0;
+            if( enc1 )
+            {
+                encoder += *enc1;
+                *enc1 = 0;
+            }
+            if( enc2 )
+            {
+                encoder += *enc2;
+                *enc2 = 0;
+            }
+
+            // acelerador: v = v0 + at
             if ( meta > atual)
             {
                 if( atual == 0 && cfg->centro ) // estava parado
@@ -526,46 +526,37 @@ public:
 
         // I/O
 
-        if( cfg->tipo == ConfigMotor::MOTOR_DC )
+        atual = constrain( atual, -255, 255 ); // protecao de range
+
+        // uma ultima olhada no freio de mao
+        if( eeprom.dados.handBrake )
+            meta = atual = 0;
+
+        digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
+
+        if( cfg->pinoDirN >= 0 ) // pino de direcao invertido
         {
-            atual = constrain( atual, -255, 255 ); // protecao de range
-
-            // uma ultima olhada no freio de mao
-            if( eeprom.dados.handBrake ) meta = atual = 0;
-
-            digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
-
-            if( cfg->pinoDirN >= 0 ) // pino de direcao invertido
-            {
-                if( atual ) // movendo, dirN = !dir
-                    digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
-                else        // freio, dirN = dir
-                    digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
-            }
-
-            if( atual == 0 && cfg->pinoDirN >= 0 )  // conduz 100% pra freiar
-                analogWrite( cfg->pino, 255 );
-            else                                   // operacao normal
-                analogWrite( cfg->pino, abs( atual ) );
+            if( atual ) // movendo, dirN = !dir
+                digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
+            else        // freio, dirN = dir
+                digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
         }
-        #ifndef RODAS_PWM
-        else // tipo == MOTOR_SERVO
-        {
-            if( eeprom.dados.handBrake ) meta = atual = cfg->centro;
 
-            atual = constrain( atual, 1000, 2000 );
-            servo.writeMicroseconds( atual );
-        }
-        #endif
+        if( atual == 0 && cfg->pinoDirN >= 0 )  // conduz 100% pra freiar
+            analogWrite( cfg->pino, 255 );
+        else                                    // operacao normal
+            analogWrite( cfg->pino, abs( atual ) );
     }
 protected:
-    #ifndef RODAS_PWM
-        Servo servo;
-    #endif
-    short atual;
+    short meta;         // saida raw -255 a 255
+    short atual;        // saida raw -255 a 255
+    short encoder;      // leitura encoder, raw
     unsigned long ultimoAcel;
-    short meta;
-    //char prioMeta; // TODO (Mauricio#1#): prioridade de quem setou a meta
+
+    volatile uint8_t *enc1;
+    volatile uint8_t *enc2;
+
+    //char prioMeta;    // TODO (Mauricio#1#): prioridade processo que setou a meta
 };
 
 class Drive
@@ -1540,6 +1531,11 @@ void enviaStatus(bool enviaComando = true)
     SERIALX.print( drive.motorEsq.read() );
     SERIALX.print( " " );
     SERIALX.print( drive.motorDir.read() );
+
+    SERIALX.print( " " );
+    SERIALX.print( drive.motorEsq.getEncoder() );
+    SERIALX.print( " " );
+    SERIALX.print( drive.motorDir.getEncoder() );
 
     #ifdef RODAS_PWM_x4
         SERIALX.print(" ");
@@ -2644,6 +2640,20 @@ void setup()
     drive.motorEsq.init( &eeprom.dados.motorEsq );
     drive.motorDir.init( &eeprom.dados.motorDir );
 
+#ifdef ENCODER_RODAS
+    pinMode( 10, INPUT );
+    enableInterruptFast( 10, CHANGE );
+    pinMode( 11, INPUT );
+    enableInterruptFast( 11, CHANGE );
+    pinMode( 14, INPUT );
+    enableInterruptFast( 14, CHANGE );
+    pinMode( 15, INPUT );
+    enableInterruptFast( 15, CHANGE );
+
+    drive.motorEsq.setEncoder( &encoderEsq1, &encoderEsq2 );
+    drive.motorDir.setEncoder( &encoderDir1, &encoderDir2 );
+#endif
+
 #ifdef RODAS_PWM_x4
     drive2.motorEsq.init( &eeprom.dados.motorEsqT );
     drive2.motorDir.init( &eeprom.dados.motorDirT );
@@ -2725,17 +2735,6 @@ void setup()
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVX,    &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MVN,    &eeprom.dados.pid[ PID_CORRIDA ].minMV );
     interpretador.declaraVar( VAR_INT,  NOME_PID_ZAC,    &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
-
-#ifdef ENCODER_RODAS
-    pinMode( 10, INPUT );
-    enableInterruptFast( 10, CHANGE );
-    pinMode( 11, INPUT );
-    enableInterruptFast( 11, CHANGE );
-    pinMode( 14, INPUT );
-    enableInterruptFast( 14, CHANGE );
-    pinMode( 15, INPUT );
-    enableInterruptFast( 15, CHANGE );
-#endif
 }
 
 // ******************************************************************************

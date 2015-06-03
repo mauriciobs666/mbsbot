@@ -162,7 +162,6 @@ ConfigPID;
 
 typedef struct
 {
-    enum eTipoMotor { MOTOR_SERVO, MOTOR_DC };
     char tipo;
     char pino;
     bool invertido;
@@ -173,17 +172,8 @@ typedef struct
 
     ConfigPID pid;
 
-    void initServo( char pino_, int centro_=1500, bool inverso=false )
-    {
-        tipo = MOTOR_SERVO;
-        pino = pino_;
-        centro = centro_;
-        invertido = inverso;
-    }
-
     void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, int offsetZero=0, int acel=255, bool inverso=false )
     {
-        tipo = MOTOR_DC;
         pino = pinoPWM;
         pinoDir = pinoDIR;
         pinoDirN = pinoDIRN;
@@ -251,26 +241,21 @@ public:
         dados.velEscala = DFT_VEL_ESCALA;
         dados.balanco = DFT_BALANCO;
 
-        #ifndef RODAS_PWM
-            dados.motorEsq.initServo( PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ESQ_INV);
-            dados.motorDir.initServo( PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_DIR_INV);
+        #ifdef PINO_MOTOR_ESQ_N
+            dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, PINO_MOTOR_ESQ_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
         #else
-            #ifdef PINO_MOTOR_ESQ_N
-                dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, PINO_MOTOR_ESQ_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
-            #else
-                dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
-            #endif
+            dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
+        #endif
 
-            #ifdef PINO_MOTOR_DIR_N
-                dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, PINO_MOTOR_DIR_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
-            #else
-                dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
-            #endif
+        #ifdef PINO_MOTOR_DIR_N
+            dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, PINO_MOTOR_DIR_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
+        #else
+            dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
+        #endif
 
-            #ifdef RODAS_PWM_x4
-                dados.motorEsqT.initDC( PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_E_T_INV );
-                dados.motorDirT.initDC( PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_D_T_INV );
-            #endif
+        #ifdef RODAS_PWM_x4
+            dados.motorEsqT.initDC( PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_E_T_INV );
+            dados.motorDirT.initDC( PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_D_T_INV );
         #endif
 
         dados.delays.ES = DFT_DELAY_ES;
@@ -358,7 +343,7 @@ void uname()
     SERIALX.print( VERSAO_PROTOCOLO );
     SERIALX.print( " e2 " );
     SERIALX.print( sizeof( Eeprom::dados ) );
-    SERIALX.println( " B" );
+    SERIALX.println( "b" );
 }
 
 #endif // DADOS_H_INCLUDED
