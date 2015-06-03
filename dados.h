@@ -162,22 +162,21 @@ ConfigPID;
 
 typedef struct
 {
-    char tipo;
     char pino;
     bool invertido;
     char pinoDir;
     char pinoDirN;
-    int centro;      // zero
+    int deadband;
     int aceleracao;  // variacao abs de potencia aplicada => dp / eeprom.delays.motores
 
     ConfigPID pid;
 
-    void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, int offsetZero=0, int acel=255, bool inverso=false )
+    void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, int deadBand=0, int acel=255, bool inverso=false )
     {
         pino = pinoPWM;
         pinoDir = pinoDIR;
         pinoDirN = pinoDIRN;
-        centro = offsetZero;
+        deadband = deadBand;
         invertido = inverso;
         aceleracao = acel;
     }
@@ -259,7 +258,7 @@ public:
         #endif
 
         dados.delays.ES = DFT_DELAY_ES;
-        dados.delays.motores = DFT_VEL_REFRESH;
+        dados.delays.motores = DFT_DELAY_MOTOR;
         dados.delays.debounce = DFT_LF_DEBOUNCE;
 
         dados.pid[ PID_CALIBRA ].Kp.setFloat( CAL_PID_P );

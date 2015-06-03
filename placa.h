@@ -31,7 +31,7 @@
 
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA  100
-#define DFT_VEL_REFRESH   1
+#define DFT_DELAY_MOTOR  10
 #define DFT_BALANCO       0
 #define DFT_LF_DEBOUNCE  35
 
@@ -52,9 +52,6 @@
 #define CAL_PID_ZACC          50
 #define CAL_PID_DENTRADA    true
 #define CAL_PID_SAMPLE         5
-
-// Habilita controle PWM (se undef controla por largura de pulso/servo)
-#define RODAS_PWM 1
 
 // inverte sentido dos motores
 #define MOTOR_ESQ_INV 0
@@ -120,5 +117,7 @@
 #define INTERRUPT_FLAG_PIN11 encoderDir2
 #define INTERRUPT_FLAG_PIN14 encoderEsq1
 #define INTERRUPT_FLAG_PIN15 encoderEsq2
+
+#define ENCODER_MAX 30
 
 #endif // PLACA_H_INCLUDED

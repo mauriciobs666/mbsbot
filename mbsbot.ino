@@ -449,20 +449,20 @@ public:
     {
         /* onde:
             potencia100 = +/- 0-100 %
-            centro = pwm a partir do qual o motor comeca a se mover
+            deadband = pwm a partir do qual o motor comeca a se mover
         */
         if ( potencia100 )
         {
-            short c = potencia100 > 0 ? cfg->centro : -cfg->centro; // c = "centro" com sinal
-            short fator = 255 - cfg->centro;                        // faixa de controle (linear?)
-            meta = c + ( potencia100 * fator ) / 100;               // converte % de potencia pra PWM 8 b
-            meta = constrain( meta, -255, 255 );                    // range de saida: +/- centro ... 255
+            short c = potencia100 > 0 ? cfg->deadband : -cfg->deadband; // c = deadband com sinal
+            short fator = 255 - cfg->deadband;                          // faixa de controle linear
+            meta = c + ( potencia100 * fator ) / 100;                   // converte % de potencia em PWM 8 bits
+            meta = constrain( meta, -255, 255 );                        // range de saida: +/- [deadband ... 255]
         }
         else
             meta = 0;
     }
 
-    short read()
+    short getAtual()
     {
         return atual;
     }
@@ -497,8 +497,8 @@ public:
             // acelerador: v = v0 + at
             if ( meta > atual)
             {
-                if( atual == 0 && cfg->centro ) // estava parado
-                    atual = cfg->centro;
+                if( atual == 0 && cfg->deadband ) // estava parado
+                    atual = cfg->deadband;
                 else if( cfg->aceleracao )
                     atual += cfg->aceleracao;
                 else
@@ -509,8 +509,8 @@ public:
             }
             else if ( meta < atual)
             {
-                if( atual == 0 && cfg->centro ) // estava parado
-                    atual = -cfg->centro;
+                if( atual == 0 && cfg->deadband ) // estava parado
+                    atual = -cfg->deadband;
                 else if( cfg->aceleracao )
                     atual -= cfg->aceleracao;
                 else
@@ -520,7 +520,7 @@ public:
                     atual = meta;
             }
 
-            if ( -cfg->centro < atual && atual < cfg->centro )
+            if ( -cfg->deadband < atual && atual < cfg->deadband )
                 atual = 0;
         }
 
@@ -755,11 +755,11 @@ public:
     {
         SERIALX.print( NOME_RODA_ESQ );
         SERIALX.print(" ");
-        SERIALX.println( motorEsq.read() );
+        SERIALX.println( motorEsq.getAtual() );
 
         SERIALX.print( NOME_RODA_DIR );
         SERIALX.print(" ");
-        SERIALX.println( motorDir.read() );
+        SERIALX.println( motorDir.getAtual() );
     }
 
     void gira( char porc = 0 )
@@ -788,36 +788,7 @@ drive;
 	Drive drive2;
 #endif
 
-// ******************************************************************************
-//   INTERFACE CONTROLADOR
-// ******************************************************************************
-class Controlador
-{
-public:
-    int setPoint;   // leitura de entrada desejada / meta
-    int MV;         // variavel manipulada / valor de saida
-    int sampleTime; // ms entre as amostras
-
-    int executaSample( int entrada, bool reinicia = false )
-    {
-        if( ( ( agora - tUltimoLoop ) > sampleTime )
-           || reinicia )
-        {
-            MV = executa( entrada, reinicia );
-            tUltimoLoop = agora;
-        }
-        return MV;
-    }
-
-    virtual int executa( int entrada, bool reinicia = false );
-
-    void print();
-
-protected:
-    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
-};
-
-class PID : public Controlador
+class PID
 {
 public:
     ConfigPID *cfg;
@@ -830,10 +801,25 @@ public:
     int erroAnterior;
     int entAnterior;
 
+    int setPoint;   // leitura de entrada desejada = meta
+    int MV;         // variavel manipulada = valor de saida
+    int sampleTime; // ms entre as amostras
+
     PID()
     {
         cfg = NULL;
         zera();
+    }
+
+    int executaSample( int entrada, bool reinicia = false )
+    {
+        if( ( ( agora - tUltimoLoop ) > sampleTime )
+           || reinicia )
+        {
+            MV = executa( entrada, reinicia );
+            tUltimoLoop = agora;
+        }
+        return MV;
     }
 
     void setConfig( ConfigPID *config )
@@ -919,6 +905,9 @@ public:
         SERIALX.print( "] => " );
         SERIALX.println( MV );
     }
+
+protected:
+    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
 };
 
 // ******************************************************************************
@@ -1528,9 +1517,9 @@ void enviaStatus(bool enviaComando = true)
     SERIALX.print( " " );
     SERIALX.print( (int)eeprom.dados.handBrake );
     SERIALX.print( " " );
-    SERIALX.print( drive.motorEsq.read() );
+    SERIALX.print( drive.motorEsq.getAtual() );
     SERIALX.print( " " );
-    SERIALX.print( drive.motorDir.read() );
+    SERIALX.print( drive.motorDir.getAtual() );
 
     SERIALX.print( " " );
     SERIALX.print( drive.motorEsq.getEncoder() );
@@ -1539,9 +1528,9 @@ void enviaStatus(bool enviaComando = true)
 
     #ifdef RODAS_PWM_x4
         SERIALX.print(" ");
-        SERIALX.print(drive2.motorEsq.read());
+        SERIALX.print(drive2.motorEsq.getAtual());
         SERIALX.print(" ");
-        SERIALX.print(drive2.motorDir.read());
+        SERIALX.print(drive2.motorDir.getAtual());
     #endif
     #ifdef PINO_SERVO_PAN
         SERIALX.print(" ");
@@ -2011,10 +2000,12 @@ public:
 
         if( eco )
         {
+/*
             SERIALX.print( resultado.nome );
             SERIALX.print( " = " );
             resultado.print();
             SERIALX.println();
+*/
         }
 
         if( rc )
@@ -2082,7 +2073,7 @@ public:
             {
                 SERIALX.print( dest );          // ecoa nome da variavel
                 SERIALX.print(" = ");
-                SERIALX.println(drive.motorEsq.read());
+                SERIALX.println(drive.motorEsq.getAtual());
             }
         }
         else if( 0 == strncmp( token, NOME_RODA_DIR, TAM_TOKEN ) )
@@ -2100,7 +2091,7 @@ public:
             {
                 SERIALX.print( dest );          // ecoa nome da variavel
                 SERIALX.print(" = ");
-                SERIALX.println(drive.motorDir.read());
+                SERIALX.println(drive.motorDir.getAtual());
             }
         }
         else if( 0 == strncmp( token, CMD_MV_RODAS, TAM_TOKEN ) )
@@ -2717,9 +2708,9 @@ void setup()
     interpretador.declaraVar( VAR_INT,  NOME_T_RF,       &eeprom.dados.delays.ES );
     interpretador.declaraVar( VAR_INT,  NOME_T_MOTOR,    &eeprom.dados.delays.motores );
     interpretador.declaraVar( VAR_INT,  NOME_T_DEB,      &eeprom.dados.delays.debounce );
-    interpretador.declaraVar( VAR_INT,  NOME_ZERO_ESQ,   &eeprom.dados.motorEsq.centro );
+    interpretador.declaraVar( VAR_INT,  NOME_ZERO_ESQ,   &eeprom.dados.motorEsq.deadband );
     interpretador.declaraVar( VAR_INT,  NOME_ACEL_ESQ,   &eeprom.dados.motorEsq.aceleracao );
-    interpretador.declaraVar( VAR_INT,  NOME_ZERO_DIR,   &eeprom.dados.motorDir.centro );
+    interpretador.declaraVar( VAR_INT,  NOME_ZERO_DIR,   &eeprom.dados.motorDir.deadband );
     interpretador.declaraVar( VAR_INT,  NOME_ACEL_DIR,   &eeprom.dados.motorDir.aceleracao );
 
     interpretador.declaraVar( VAR_FIXO, NOME_PID_CAL_KP,     &eeprom.dados.pid[ PID_CALIBRA ].Kp );

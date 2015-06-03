@@ -31,7 +31,7 @@
 
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA   80
-#define DFT_VEL_REFRESH   1
+#define DFT_DELAY_MOTOR   1
 #define DFT_BALANCO       0
 #define DFT_LF_DEBOUNCE 35
 
