@@ -35,8 +35,17 @@
 #define DFT_BALANCO       0
 #define DFT_LF_DEBOUNCE  35
 
+#define CAL_PID_P (float)0.01000
+#define CAL_PID_I (float)0.00020
+#define CAL_PID_D (float)      0
+#define CAL_PID_MAX_MV       100
+#define CAL_PID_MIN_MV      -100
+#define CAL_PID_ZACC          50
+#define CAL_PID_DENTRADA    true
+#define CAL_PID_SAMPLE         5
+
 #define DFT_PID_P (float)0.15000
-#define DFT_PID_I              0
+#define DFT_PID_I (float)      0
 #define DFT_PID_D (float)0.00200
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
@@ -44,14 +53,18 @@
 #define DFT_PID_DENTRADA    true
 #define DFT_PID_SAMPLE         5
 
-#define CAL_PID_P (float)0.01000
-#define CAL_PID_I (float)0.00020
-#define CAL_PID_D              0
-#define CAL_PID_MAX_MV       100
-#define CAL_PID_MIN_MV      -100
-#define CAL_PID_ZACC          50
-#define CAL_PID_DENTRADA    true
-#define CAL_PID_SAMPLE         5
+#define DFT_PID_RETA_P           DFT_PID_P
+#define DFT_PID_RETA_I           DFT_PID_I
+#define DFT_PID_RETA_D           DFT_PID_D
+#define DFT_PID_RETA_MAX_MV      DFT_PID_MAX_MV
+#define DFT_PID_RETA_MIN_MV      DFT_PID_MIN_MV
+#define DFT_PID_RETA_ZACC        DFT_PID_ZACC
+#define DFT_PID_RETA_DENTRADA    DFT_PID_DENTRADA
+#define DFT_PID_RETA_SAMPLE      DFT_PID_SAMPLE
+
+#define PID_MOTOR_P  (float) 10
+#define PID_MOTOR_I  (float)  1
+#define PID_MOTOR_D  (float)  0
 
 // inverte sentido dos motores
 #define MOTOR_ESQ_INV 0

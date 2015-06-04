@@ -205,7 +205,6 @@ public:
         struct sDelays  // duracao (ms) de movimentos pra animacao
         {
             int ES; // intervalo de entrada/saida, leitura de sensores etc
-            int motores;  // intervalo de execucao entre os refresh de motores
             int debounce; // debounce de cruzamento / marcaEsq / marcaDir
         } delays;
 
@@ -257,8 +256,25 @@ public:
             dados.motorDirT.initDC( PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_D_T_INV );
         #endif
 
+        dados.pid.motorEsq.Kp.setFloat( PID_MOTOR_P );
+        dados.pid.motorEsq.Ki.setFloat( PID_MOTOR_I );
+        dados.pid.motorEsq.Kd.setFloat( PID_MOTOR_D );
+        dados.pid.motorEsq.maxMV      =  255;
+        dados.pid.motorEsq.minMV      = -255;
+        dados.pid.motorEsq.zeraAcc    = false;
+        dados.pid.motorEsq.dEntrada   = true;
+        dados.pid.motorEsq.sampleTime = DFT_DELAY_MOTOR;
+
+        dados.pid.motorDir.Kp.setFloat( PID_MOTOR_P );
+        dados.pid.motorDir.Ki.setFloat( PID_MOTOR_I );
+        dados.pid.motorDir.Kd.setFloat( PID_MOTOR_D );
+        dados.pid.motorDir.maxMV      =  255;
+        dados.pid.motorDir.minMV      = -255;
+        dados.pid.motorDir.zeraAcc    = false;
+        dados.pid.motorDir.dEntrada   = true;
+        dados.pid.motorDir.sampleTime = DFT_DELAY_MOTOR;
+
         dados.delays.ES = DFT_DELAY_ES;
-        dados.delays.motores = DFT_DELAY_MOTOR;
         dados.delays.debounce = DFT_LF_DEBOUNCE;
 
         dados.pid[ PID_CALIBRA ].Kp.setFloat( CAL_PID_P );
@@ -278,6 +294,15 @@ public:
         dados.pid[ PID_CORRIDA ].zeraAcc    = DFT_PID_ZACC;
         dados.pid[ PID_CORRIDA ].dEntrada   = DFT_PID_DENTRADA;
         dados.pid[ PID_CORRIDA ].sampleTime = DFT_PID_SAMPLE;
+
+        dados.pid[ PID_RETA ].Kp.setFloat( DFT_PID_RETA_P );
+        dados.pid[ PID_RETA ].Ki.setFloat( DFT_PID_RETA_I );
+        dados.pid[ PID_RETA ].Kd.setFloat( DFT_PID_RETA_D );
+        dados.pid[ PID_RETA ].maxMV      = DFT_PID_RETA_MAX_MV;
+        dados.pid[ PID_RETA ].minMV      = DFT_PID_RETA_MIN_MV;
+        dados.pid[ PID_RETA ].zeraAcc    = DFT_PID_RETA_ZACC;
+        dados.pid[ PID_RETA ].dEntrada   = DFT_PID_RETA_DENTRADA;
+        dados.pid[ PID_RETA ].sampleTime = DFT_PID_RETA_SAMPLE;
 
         // TODO (mbs#1#): permitir config dos sensores via serial
 

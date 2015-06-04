@@ -115,9 +115,17 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
 #define NOME_T_SE     "dse"  // tempo minimo entre envio de SEnsores
 #define NOME_T_ST     "dst"  // tempo minimo entre envio de STatus
-#define NOME_T_MOTOR  "dm"   // intervalo de refresh dos motores
 #define NOME_T_DEB    "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 
+// Parametros pra uso durante calibragem (giraPID)
+#define NOME_PID_CAL_KP   "kpc"   // coeficientes do algoritmo de PID
+#define NOME_PID_CAL_KI   "kic"   //  "
+#define NOME_PID_CAL_KD   "kdc"   //  "
+#define NOME_PID_CAL_MVX  "mvxc"  // valor maximo MV
+#define NOME_PID_CAL_MVN  "mvnc"  // valor minimo MV
+#define NOME_PID_CAL_ZAC  "zacc"  // zera acumulador quando erro for 0
+
+// LF seguro pra curvas
 #define NOME_PID_KP    "kp"   // coeficientes do algoritmo de PID
 #define NOME_PID_KI    "ki"   //  "
 #define NOME_PID_KD    "kd"   //  "
@@ -125,12 +133,25 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_PID_MVN   "mvn"  // valor minimo MV
 #define NOME_PID_ZAC   "zac"  // zera acumulador quando erro for 0
 
-#define NOME_PID_CAL_KP    "kpc"   // coeficientes do algoritmo de PID
-#define NOME_PID_CAL_KI    "kic"   //  "
-#define NOME_PID_CAL_KD    "kdc"   //  "
-#define NOME_PID_CAL_MVX   "mvxc"  // valor maximo MV
-#define NOME_PID_CAL_MVN   "mvnc"  // valor minimo MV
-#define NOME_PID_CAL_ZAC   "zacc"  // zera acumulador quando erro for 0
+// LF otimizado pra retas (intervencao minima)
+#define NOME_PID_RETA_KP    "kpr"   // coeficientes do algoritmo de PID
+#define NOME_PID_RETA_KI    "kir"   //  "
+#define NOME_PID_RETA_KD    "kdr"   //  "
+#define NOME_PID_RETA_MVX   "mvxr"  // valor maximo MV
+#define NOME_PID_RETA_MVN   "mvnr"  // valor minimo MV
+#define NOME_PID_RETA_ZAC   "zacr"  // zera acumulador quando erro for 0
+
+// motor esquerdo
+#define NOME_PID_ME_KP    "kpe"   // coeficientes do algoritmo de PID
+#define NOME_PID_ME_KI    "kie"   //  "
+#define NOME_PID_ME_KD    "kde"   //  "
+#define NOME_PID_ME_ZAC   "zace"  // zera acumulador quando erro for 0
+
+// motor direito
+#define NOME_PID_MD_KP    "kpd"   // coeficientes do algoritmo de PID
+#define NOME_PID_MD_KI    "kid"   //  "
+#define NOME_PID_MD_KD    "kdd"   //  "
+#define NOME_PID_MD_ZAC   "zacd"  // zera acumulador quando erro for 0
 
 #define NOME_VEL_MAX     "vm" // limite de velocidade em %
 #define NOME_VEL_ESCALA  "ve" // escala a ser aplicada nas velocidades
@@ -211,7 +232,6 @@ enum Pids
     PID_CALIBRA  = 0,
     PID_CORRIDA  = 1,
     PID_RETA     = 2,
-    PID_COTOVELO = 3,
     PID_N
 };
 

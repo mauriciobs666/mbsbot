@@ -2706,26 +2706,43 @@ void setup()
     interpretador.declaraVar( VAR_INT,  NOME_T_SE,       &delaySensores );
     interpretador.declaraVar( VAR_INT,  NOME_T_ST,       &delayStatus );
     interpretador.declaraVar( VAR_INT,  NOME_T_RF,       &eeprom.dados.delays.ES );
-    interpretador.declaraVar( VAR_INT,  NOME_T_MOTOR,    &eeprom.dados.delays.motores );
     interpretador.declaraVar( VAR_INT,  NOME_T_DEB,      &eeprom.dados.delays.debounce );
     interpretador.declaraVar( VAR_INT,  NOME_ZERO_ESQ,   &eeprom.dados.motorEsq.deadband );
     interpretador.declaraVar( VAR_INT,  NOME_ACEL_ESQ,   &eeprom.dados.motorEsq.aceleracao );
     interpretador.declaraVar( VAR_INT,  NOME_ZERO_DIR,   &eeprom.dados.motorDir.deadband );
     interpretador.declaraVar( VAR_INT,  NOME_ACEL_DIR,   &eeprom.dados.motorDir.aceleracao );
 
-    interpretador.declaraVar( VAR_FIXO, NOME_PID_CAL_KP,     &eeprom.dados.pid[ PID_CALIBRA ].Kp );
-    interpretador.declaraVar( VAR_FIXO, NOME_PID_CAL_KI,     &eeprom.dados.pid[ PID_CALIBRA ].Ki );
-    interpretador.declaraVar( VAR_FIXO, NOME_PID_CAL_KD,     &eeprom.dados.pid[ PID_CALIBRA ].Kd );
-    interpretador.declaraVar( VAR_INT,  NOME_PID_CAL_MVX,    &eeprom.dados.pid[ PID_CALIBRA ].maxMV );
-    interpretador.declaraVar( VAR_INT,  NOME_PID_CAL_MVN,    &eeprom.dados.pid[ PID_CALIBRA ].minMV );
-    interpretador.declaraVar( VAR_INT,  NOME_PID_CAL_ZAC,    &eeprom.dados.pid[ PID_CALIBRA ].zeraAcc );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_CAL_KP,    &eeprom.dados.pid[ PID_CALIBRA ].Kp );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_CAL_KI,    &eeprom.dados.pid[ PID_CALIBRA ].Ki );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_CAL_KD,    &eeprom.dados.pid[ PID_CALIBRA ].Kd );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_CAL_MVX,   &eeprom.dados.pid[ PID_CALIBRA ].maxMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_CAL_MVN,   &eeprom.dados.pid[ PID_CALIBRA ].minMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_CAL_ZAC,   &eeprom.dados.pid[ PID_CALIBRA ].zeraAcc );
 
-    interpretador.declaraVar( VAR_FIXO, NOME_PID_KP,     &eeprom.dados.pid[ PID_CORRIDA ].Kp );
-    interpretador.declaraVar( VAR_FIXO, NOME_PID_KI,     &eeprom.dados.pid[ PID_CORRIDA ].Ki );
-    interpretador.declaraVar( VAR_FIXO, NOME_PID_KD,     &eeprom.dados.pid[ PID_CORRIDA ].Kd );
-    interpretador.declaraVar( VAR_INT,  NOME_PID_MVX,    &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
-    interpretador.declaraVar( VAR_INT,  NOME_PID_MVN,    &eeprom.dados.pid[ PID_CORRIDA ].minMV );
-    interpretador.declaraVar( VAR_INT,  NOME_PID_ZAC,    &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_KP,        &eeprom.dados.pid[ PID_CORRIDA ].Kp );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_KI,        &eeprom.dados.pid[ PID_CORRIDA ].Ki );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_KD,        &eeprom.dados.pid[ PID_CORRIDA ].Kd );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_MVX,       &eeprom.dados.pid[ PID_CORRIDA ].maxMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_MVN,       &eeprom.dados.pid[ PID_CORRIDA ].minMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_ZAC,       &eeprom.dados.pid[ PID_CORRIDA ].zeraAcc );
+
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_RETA_KP,   &eeprom.dados.pid[ PID_RETA ].Kp );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_RETA_KI,   &eeprom.dados.pid[ PID_RETA ].Ki );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_RETA_KD,   &eeprom.dados.pid[ PID_RETA ].Kd );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_RETA_MVX,  &eeprom.dados.pid[ PID_RETA ].maxMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_RETA_MVN,  &eeprom.dados.pid[ PID_RETA ].minMV );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_RETA_ZAC,  &eeprom.dados.pid[ PID_RETA ].zeraAcc );
+
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_ME_KP,     &eeprom.dados.motorEsq.pid.Kp );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_ME_KI,     &eeprom.dados.motorEsq.pid.Ki );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_ME_KD,     &eeprom.dados.motorEsq.pid.Kd );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_ME_ZAC,    &eeprom.dados.motorEsq.pid.zeraAcc );
+
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_MD_KP,     &eeprom.dados.motorDir.pid.Kp );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_MD_KI,     &eeprom.dados.motorDir.pid.Ki );
+    interpretador.declaraVar( VAR_FIXO, NOME_PID_MD_KD,     &eeprom.dados.motorDir.pid.Kd );
+    interpretador.declaraVar( VAR_INT,  NOME_PID_MD_ZAC,    &eeprom.dados.motorDir.pid.zeraAcc );
+
 }
 
 // ******************************************************************************
