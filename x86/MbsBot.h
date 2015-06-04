@@ -68,7 +68,6 @@ class MbsBot
             pedeVar(NOME_VEL_ESCALA);
             pedeVar(NOME_BALANCO);
 
-            pedeVar(NOME_T_MOTOR);
             pedeVar(NOME_T_RF);
             pedeVar(NOME_T_DEB);
 

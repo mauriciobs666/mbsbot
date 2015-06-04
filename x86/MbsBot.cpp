@@ -243,11 +243,6 @@ char * MbsBot::recebe()
                 if ( (tok = strtok(NULL, " ")) )
                     delayRF = atoi(tok);
             }
-            else if(strcmp(tok, NOME_T_MOTOR) == 0)
-            {
-                if ( (tok = strtok(NULL, " ")) )
-                    delayM = atoi(tok);
-            }
             else if(strcmp(tok, NOME_T_DEB) == 0)
             {
                 if ( (tok = strtok(NULL, " ")) )

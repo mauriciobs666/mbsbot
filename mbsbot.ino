@@ -447,19 +447,7 @@ public:
 
     void move( char potencia100 )
     {
-        /* onde:
-            potencia100 = +/- 0-100 %
-            deadband = pwm a partir do qual o motor comeca a se mover
-        */
-        if ( potencia100 )
-        {
-            short c = potencia100 > 0 ? cfg->deadband : -cfg->deadband; // c = deadband com sinal
-            short fator = 255 - cfg->deadband;                          // faixa de controle linear
-            meta = c + ( potencia100 * fator ) / 100;                   // converte % de potencia em PWM 8 bits
-            meta = constrain( meta, -255, 255 );                        // range de saida: +/- [deadband ... 255]
-        }
-        else
-            meta = 0;
+        meta100 = potencia100;
     }
 
     short getAtual()
@@ -479,49 +467,66 @@ public:
 
     void refresh( bool imediato = false )
     {
-
-        if( delaySemBlock( &ultimoAcel, eeprom.dados.delays.motores ) || imediato )
+        if( delaySemBlock( &ultimoAcel, cfg->pid.sampleTime ) || imediato )
         {
-            encoder = 0;
-            if( enc1 )
+            // atualiza encoder
+            if( enc1 && enc2 )
             {
-                encoder += *enc1;
-                *enc1 = 0;
+                encoder = *enc1 + *enc2;
+                *enc1 = *enc2 = 0;
             }
-            if( enc2 )
-            {
-                encoder += *enc2;
-                *enc2 = 0;
-            }
+            else
+                encoder = 0;
 
-            // acelerador: v = v0 + at
-            if ( meta > atual)
+            if( eeprom.dados.programa == PRG_LINE_FOLLOW && enc1 )
             {
-                if( atual == 0 && cfg->deadband ) // estava parado
-                    atual = cfg->deadband;
-                else if( cfg->aceleracao )
-                    atual += cfg->aceleracao;
+                // usa encoder e controlador PID
+            }
+            else
+            {
+                // marreta saida sem feedback encoder
+
+                if ( meta100 )
+                {
+                    // converte % de potencia em PWM 8 bits
+
+                    short c = meta100 > 0 ? cfg->deadband : -cfg->deadband; // c = deadband com sinal
+                    short fator = 255 - cfg->deadband;                          // faixa de controle linear
+                    meta = c + ( meta100 * fator ) / 100;
+                    meta = constrain( meta, -255, 255 );                        // range de saida: +/- [deadband ... 255]
+                }
                 else
-                    atual = meta;
+                    meta = 0;
 
-                if( meta < atual) // passou do ponto
-                    atual = meta;
-            }
-            else if ( meta < atual)
-            {
-                if( atual == 0 && cfg->deadband ) // estava parado
-                    atual = -cfg->deadband;
-                else if( cfg->aceleracao )
-                    atual -= cfg->aceleracao;
-                else
-                    atual = meta;
-
+                // acelerador: v = v0 + at
                 if ( meta > atual)
-                    atual = meta;
-            }
+                {
+                    if( atual == 0 && cfg->deadband ) // estava parado
+                        atual = cfg->deadband;
+                    else if( cfg->aceleracao )
+                        atual += cfg->aceleracao;
+                    else
+                        atual = meta;
 
-            if ( -cfg->deadband < atual && atual < cfg->deadband )
-                atual = 0;
+                    if( meta < atual) // passou do ponto
+                        atual = meta;
+                }
+                else if ( meta < atual)
+                {
+                    if( atual == 0 && cfg->deadband ) // estava parado
+                        atual = -cfg->deadband;
+                    else if( cfg->aceleracao )
+                        atual -= cfg->aceleracao;
+                    else
+                        atual = meta;
+
+                    if ( meta > atual)
+                        atual = meta;
+                }
+
+                if ( -cfg->deadband < atual && atual < cfg->deadband )
+                    atual = 0;
+            }
         }
 
         // I/O
@@ -548,7 +553,8 @@ public:
             analogWrite( cfg->pino, abs( atual ) );
     }
 protected:
-    short meta;         // saida raw -255 a 255
+    char  meta100;      // meta de saida em +/- %
+    short meta;         // meta de saida raw -255 a 255
     short atual;        // saida raw -255 a 255
     short encoder;      // leitura encoder, raw
     unsigned long ultimoAcel;
@@ -2000,12 +2006,10 @@ public:
 
         if( eco )
         {
-/*
             SERIALX.print( resultado.nome );
             SERIALX.print( " = " );
             resultado.print();
             SERIALX.println();
-*/
         }
 
         if( rc )

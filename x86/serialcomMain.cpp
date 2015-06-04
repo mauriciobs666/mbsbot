@@ -1052,7 +1052,7 @@ void serialcomFrame::OnTextCtrlBalancoTextEnter(wxCommandEvent& event)
 
 void serialcomFrame::OnTextCtrlDelayMotorTextEnter(wxCommandEvent& event)
 {
-    MbsBot::getInstance()->enviaVar(NOME_T_MOTOR, atoi(TextCtrlDelayMotor->GetValue().mb_str(wxConvUTF8)));
+//    MbsBot::getInstance()->enviaVar(NOME_T_MOTOR, atoi(TextCtrlDelayMotor->GetValue().mb_str(wxConvUTF8)));
 }
 
 void serialcomFrame::OnTextCtrlDelayReadTextEnter(wxCommandEvent& event)
