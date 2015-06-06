@@ -410,12 +410,143 @@ MbsGamePad gamepad;
     MbsGamePad rcpad;
 #endif // PINO_JOY_X
 
+
+class PID
+{
+public:
+    ConfigPID *cfg;
+
+    int proporcional;
+    int integral;
+    int derivada;
+
+    Fixo acumulador;
+
+    int erro;
+    int erroAnterior;
+    int entAnterior;
+
+    int setPoint;   // leitura de entrada desejada = meta
+    int MV;         // variavel manipulada = valor de saida
+    int sampleTime; // ms entre as amostras
+
+    PID()
+    {
+        cfg = NULL;
+        zera();
+    }
+
+    int executaSample( int entrada, bool reinicia = false )
+    {
+        if( ( ( agora - tUltimoLoop ) > sampleTime )
+           || reinicia )
+        {
+            MV = executa( entrada, reinicia );
+            tUltimoLoop = agora;
+        }
+        return MV;
+    }
+
+    void setConfig( ConfigPID *config )
+    {
+        cfg = config;
+    }
+
+    void zera( )
+    {
+        proporcional = integral = derivada = 0;
+        setPoint = MV = erro = erroAnterior = entAnterior = 0;
+        tUltimoLoop = 0;
+        acumulador.setInt(0);
+    }
+
+    int executa( int entrada, bool reinicia = false )
+    {
+        if( ! cfg )
+            return 0;
+
+//        SERIALX.print( "executa( " );
+//        SERIALX.print( entrada );
+//        SERIALX.println( " )" );
+
+        erro = entrada - setPoint;
+
+        // P
+        proporcional = cfg->Kp * erro;
+
+        // I
+        if( reinicia )
+        {
+            // apenas mantem curso, ignora acumulador anterior
+            acumulador = MV;
+        }
+        else if( erro > cfg->zeraAcc || erro < -cfg->zeraAcc )
+        {
+            Fixo temp = cfg->Ki;
+            temp *= Fixo(erro);
+            acumulador += temp;
+            acumulador.Constrain( cfg->minMV, cfg->maxMV );
+        }
+        else
+        {
+            acumulador = 0;
+        }
+
+        integral = acumulador.getInt();
+
+        // D
+        if( reinicia )
+        {
+            // anterior nao eh confiavel
+            derivada = 0;
+        }
+        else if( cfg->dEntrada )
+        {
+            // deriva entrada pra evitar spike qdo muda setPoint
+            derivada = cfg->Kd * ( - ( entrada - entAnterior ) );
+        }
+        else
+        {
+            // deriva erro ( setPoint - entrada )
+            derivada = cfg->Kd * ( erro - erroAnterior );
+        }
+
+        entAnterior = entrada;
+        erroAnterior = erro;
+
+        return constrain( proporcional + integral + derivada,
+                          cfg->minMV,
+                          cfg->maxMV );
+    }
+
+    void print()
+    {
+        //SERIALX.print( "en " );
+        //SERIALX.print( entAnterior );
+        SERIALX.print( " *" );
+        SERIALX.print( erro );
+        SERIALX.print( "* [" );
+        SERIALX.print( proporcional );
+        SERIALX.print( " " );
+        SERIALX.print( integral );
+        SERIALX.print( " " );
+        SERIALX.print( derivada );
+        SERIALX.println( "] " );
+//        SERIALX.print( "] => " );
+//        SERIALX.println( MV );
+    }
+
+protected:
+    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
+};
+
 // ******************************************************************************
 //		CONTROLADOR DE MOTORES
 // ******************************************************************************
 class Motor
 {
 public:
+    PID pid;
     ConfigMotor *cfg;
 
     Motor() : cfg(NULL), atual(0), ultimoAcel(0), meta(0), encoder(0), enc1(NULL), enc2(NULL) { }
@@ -423,6 +554,9 @@ public:
     void init( ConfigMotor *cfgm )
     {
         cfg = cfgm;
+
+        pid.setConfig( &cfg->pid );
+        pid.zera();
 
         pinMode( cfg->pino, OUTPUT );
         pinMode( cfg->pinoDir, OUTPUT );
@@ -481,6 +615,12 @@ public:
             if( eeprom.dados.programa == PRG_LINE_FOLLOW && enc1 )
             {
                 // usa encoder e controlador PID
+
+                meta = meta100 * ENCODER_MAX;
+                meta /= 100;
+
+                pid.setPoint = meta;
+                atual = -pid.executa( encoder );
             }
             else
             {
@@ -527,30 +667,30 @@ public:
                 if ( -cfg->deadband < atual && atual < cfg->deadband )
                     atual = 0;
             }
+
+            // I/O
+
+            atual = constrain( atual, -255, 255 ); // protecao de range
+
+            // uma ultima olhada no freio de mao
+            if( eeprom.dados.handBrake )
+                meta = atual = 0;
+
+            digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
+
+            if( cfg->pinoDirN >= 0 ) // pino de direcao invertido
+            {
+                if( atual ) // movendo, dirN = !dir
+                    digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
+                else        // freio, dirN = dir
+                    digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
+            }
+
+            if( atual == 0 && cfg->pinoDirN >= 0 )  // conduz 100% pra freiar
+                analogWrite( cfg->pino, 255 );
+            else                                    // operacao normal
+                analogWrite( cfg->pino, abs( atual ) );
         }
-
-        // I/O
-
-        atual = constrain( atual, -255, 255 ); // protecao de range
-
-        // uma ultima olhada no freio de mao
-        if( eeprom.dados.handBrake )
-            meta = atual = 0;
-
-        digitalWrite( cfg->pinoDir, (atual < 0) ^ cfg->invertido ? HIGH : LOW); // 1/2 ponte H
-
-        if( cfg->pinoDirN >= 0 ) // pino de direcao invertido
-        {
-            if( atual ) // movendo, dirN = !dir
-                digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? LOW : HIGH); // outra 1/2 ponte H
-            else        // freio, dirN = dir
-                digitalWrite( cfg->pinoDirN, (atual < 0) ^ cfg->invertido ? HIGH : LOW);
-        }
-
-        if( atual == 0 && cfg->pinoDirN >= 0 )  // conduz 100% pra freiar
-            analogWrite( cfg->pino, 255 );
-        else                                    // operacao normal
-            analogWrite( cfg->pino, abs( atual ) );
     }
 protected:
     char  meta100;      // meta de saida em +/- %
@@ -585,14 +725,18 @@ public:
 
     void move( char esq100, char dir100 )
     {
+        /*
         esq100 = map( esq100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
         esq100 = constrain( esq100, -eeprom.dados.velMax, eeprom.dados.velMax );
         esq100 += eeprom.dados.balanco;
+        */
         motorEsq.move( esq100 );
 
+        /*
         dir100 = map( dir100, -100, 100, -eeprom.dados.velEscala, eeprom.dados.velEscala);
         dir100 = constrain( dir100, -eeprom.dados.velMax, eeprom.dados.velMax );
         dir100 -= eeprom.dados.balanco;
+        */
         motorDir.move( dir100 );
     }
 
@@ -794,128 +938,6 @@ drive;
 	Drive drive2;
 #endif
 
-class PID
-{
-public:
-    ConfigPID *cfg;
-
-    int proporcional;
-    int integral;
-    int derivada;
-
-    int erro;
-    int erroAnterior;
-    int entAnterior;
-
-    int setPoint;   // leitura de entrada desejada = meta
-    int MV;         // variavel manipulada = valor de saida
-    int sampleTime; // ms entre as amostras
-
-    PID()
-    {
-        cfg = NULL;
-        zera();
-    }
-
-    int executaSample( int entrada, bool reinicia = false )
-    {
-        if( ( ( agora - tUltimoLoop ) > sampleTime )
-           || reinicia )
-        {
-            MV = executa( entrada, reinicia );
-            tUltimoLoop = agora;
-        }
-        return MV;
-    }
-
-    void setConfig( ConfigPID *config )
-    {
-        cfg = config;
-    }
-
-    void zera( )
-    {
-        proporcional = integral = derivada = 0;
-        setPoint = MV = erro = erroAnterior = entAnterior = 0;
-        tUltimoLoop = 0;
-    }
-
-    int executa( int entrada, bool reinicia = false )
-    {
-        if( ! cfg )
-            return 0;
-
-//        SERIALX.print( "executa( " );
-//        SERIALX.print( entrada );
-//        SERIALX.println( " )" );
-
-        erro = entrada - setPoint;
-
-        // P
-        proporcional = cfg->Kp * erro;
-
-        // I
-        if( reinicia )
-        {
-            // apenas mantem curso, ignora acumulador anterior
-            integral = MV;
-        }
-        else if( erro > cfg->zeraAcc || erro < -cfg->zeraAcc )
-        {
-            integral = constrain( ( integral + cfg->Ki * erro ),
-                                    cfg->minMV,
-                                    cfg->maxMV );
-        }
-        else
-        {
-            integral = 0;
-        }
-
-        // D
-        if( reinicia )
-        {
-            // anterior nao eh confiavel
-            derivada = 0;
-        }
-        else if( cfg->dEntrada )
-        {
-            // deriva entrada pra evitar spike qdo muda setPoint
-            derivada = cfg->Kd * ( - ( entrada - entAnterior ) );
-        }
-        else
-        {
-            // deriva erro ( setPoint - entrada )
-            derivada = cfg->Kd * ( erro - erroAnterior );
-        }
-
-        entAnterior = entrada;
-        erroAnterior = erro;
-
-        return constrain( proporcional + integral + derivada,
-                          cfg->minMV,
-                          cfg->maxMV );
-    }
-
-    void print()
-    {
-        //SERIALX.print( "en " );
-        //SERIALX.print( entAnterior );
-        SERIALX.print( " <" );
-        SERIALX.print( erro );
-        SERIALX.print( "> [" );
-        SERIALX.print( proporcional );
-        SERIALX.print( " " );
-        SERIALX.print( integral );
-        SERIALX.print( " " );
-        SERIALX.print( derivada );
-        SERIALX.print( "] => " );
-        SERIALX.println( MV );
-    }
-
-protected:
-    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
-};
-
 // ******************************************************************************
 //   LINE FOLLOWER
 // ******************************************************************************
@@ -990,6 +1012,7 @@ public:
 
         if( nGrupos == 1 )
         {
+            eleito = 0;
             trilho = grupos[0];
             eeprom.dados.programa = PRG_LINE_FOLLOW;
 
@@ -1030,8 +1053,8 @@ public:
         bool intersecciona( Grupo &b )
         {
             // expande um sensor pra cada lado
-            int pmin = pontoMin > 0 ? pontoMin - 1 : 0;
-            int pmax = pontoMax < LF_NUM_SENSORES - 1 ? pontoMax + 1 : pontoMax;
+            int pmin = pontoMin > 1 ? pontoMin - 2 : 0;
+            int pmax = pontoMax < LF_NUM_SENSORES - 2 ? pontoMax + 2 : LF_NUM_SENSORES;
 
             // se minimo ou maximo de b estiverem dentro do range
             if( ( b.pontoMin >= pmin && b.pontoMin <= pmax ) || ( b.pontoMax >= pmin && b.pontoMax <= pmax ) )
@@ -1138,7 +1161,7 @@ public:
         return false;
     }
 
-    int giraP( int setPoint = LF_SETPOINT, int aprox = 5 )
+    int giraP( int setPoint = LF_SETPOINT, int aprox = 20 )
     {
         #ifdef TRACE_LF
 //        SERIALX.print( "giraP( " );
@@ -1151,7 +1174,7 @@ public:
 
         pid.setPoint = setPoint;
 
-        drive.gira( pid.executaSample( trilho.pontoMedio ) );
+        drive.gira( -pid.executaSample( trilho.pontoMedio ) );
 
         drive.refresh();
 
@@ -1260,10 +1283,10 @@ bool LineFollower::calibrar()
     }
 
     SERIALX.print( "minimo = " );
-    SERIALX.print( minimo );
-    SERIALX.print( " maximo = " );
-    SERIALX.print( maximo );
-    SERIALX.print( " medio = " );
+    SERIALX.println( minimo );
+    SERIALX.print( "maximo = " );
+    SERIALX.println( maximo );
+    SERIALX.print( "medio = " );
     SERIALX.println( medio );
 
     // alerta que vai entrar em modo auto
@@ -1280,27 +1303,42 @@ bool LineFollower::calibrar()
 
     zeraTudo();
 
-    //trilho.pontoMedio = LF_SETPOINT; // supoe que robo ta centrado na linha
+    refresh();
+    trilho = grupos[0];
+
+    SERIALX.print( "trilho = " );
+    trilho.print();
+    SERIALX.println();
 
     timeout = millis() + LF_TIMEOUT_CAL;
 
     // gira tudo pro lado alto
+    SERIALX.println("gira horario...");
     while( ( ! timedout( &agora) ) && giraP( LF_RANGE ) );
 
-    //delay( 100 );
+//    drive.parar();
+//    drive.refresh( true );
+//    delay( 100 );
 
     print();
-
     trilho.print();
     SERIALX.println();
+
+    pid.zera();
 
     // gira tudo pro outro lado
+    SERIALX.println("gira anti horario...");
     while( ( ! timedout( &agora) ) && giraP( 0 ) );
 
-    //delay( 100 );
+//    drive.parar();
+//    drive.refresh( true );
 
     trilho.print();
     SERIALX.println();
+    SERIALX.println("centrando...");
+
+//    delay( 100 );
+    pid.zera();
 
     // centra
     while( ( ! timedout( &agora) ) && giraP( LF_SETPOINT ) );
@@ -1374,10 +1412,10 @@ void LineFollower::loop()
             {
                 // minimo de 2 sensores de distancia i.e 2 * peso
                 if( ( grupos[ig].pontoMax + 2*2 ) < trilho.pontoMin )
-                    marcaEsq = true;
+                    marcaDir = true;
 
                 if( ( trilho.pontoMax + 2*2 ) < grupos[ig].pontoMin )
-                    marcaDir = true;
+                    marcaEsq = true;
             }
         }
 
@@ -1474,8 +1512,8 @@ void LineFollower::loop()
     pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
     pid.executaSample( trilho.pontoMedio );
 
-    drive.move( (pid.MV < 0) ? (100 + pid.MV) : 100,
-                (pid.MV > 0) ? (100 - pid.MV) : 100 );
+    drive.move( (pid.MV > 0) ? (100 - pid.MV) : 100,
+                (pid.MV < 0) ? (100 + pid.MV) : 100 );
 
     drive.refresh();
 
@@ -2032,6 +2070,8 @@ public:
         char dest[TAM_TOKEN];
         strcpy( dest, token );
 
+        eco=false;
+
         if( 0 == strncmp( token, CMD_GRAVA, TAM_TOKEN )  )	        // salva EEPROM
             eeprom.save();
         else if( 0 == strncmp( token, CMD_CARREGA, TAM_TOKEN ) )    // descarta mudancas e recarrega da EEPROM
@@ -2199,7 +2239,10 @@ public:
                 enviaJoystick();
         }
         else
+        {
+            eco = true;
             rc = SKIP;
+        }
 
         #ifdef TRACE_INTERPRETADOR
         if( SUCESSO == rc )
@@ -2567,6 +2610,10 @@ void trataJoystick()
         // poe no modo RC
         eeprom.dados.programa = PRG_RC_SERIAL;
         //eeprom.dados.velEscala = 60;
+
+        //desliga trace
+        delaySensores = -1;
+        delayStatus = -1;
     }
 
     if(gamepad.botoesEdgeF & BT_X)
@@ -2579,6 +2626,7 @@ void trataJoystick()
     {
         eeprom.dados.handBrake = 0;
         lineFollower.iniciarCorrida();
+        trc = true;
     }
 /*
     if(gamepad.botoesAgora & BT_LT)

@@ -80,7 +80,6 @@ public:
         return i;
     }
 
-
     int operator*( int valor )
     {
         return (  (raw * valor ) >> 16 );
