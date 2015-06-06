@@ -33,7 +33,7 @@
 #define DFT_VEL_ESCALA  100
 #define DFT_DELAY_MOTOR  10
 #define DFT_BALANCO       0
-#define DFT_LF_DEBOUNCE  35
+#define DFT_LF_DEBOUNCE 100
 
 #define CAL_PID_P (float)0.05000
 #define CAL_PID_I (float)0.00100
@@ -44,9 +44,9 @@
 #define CAL_PID_DENTRADA    true
 #define CAL_PID_SAMPLE        10
 
-#define DFT_PID_P (float)0.15000
+#define DFT_PID_P (float)0.25000
 #define DFT_PID_I (float)      0
-#define DFT_PID_D (float)0.00200
+#define DFT_PID_D (float)0.00400
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
 #define DFT_PID_ZACC          50
@@ -62,7 +62,7 @@
 #define DFT_PID_RETA_DENTRADA    DFT_PID_DENTRADA
 #define DFT_PID_RETA_SAMPLE      DFT_PID_SAMPLE
 
-#define PID_MOTOR_P  (float) 10
+#define PID_MOTOR_P  (float) 15
 #define PID_MOTOR_I  (float)  1
 #define PID_MOTOR_D  (float)  0
 
@@ -122,6 +122,7 @@
 
 #define PINO_BOTAO_CAL      37
 #define PINO_BOTAO_PRG      39
+#define PINO_IR_EN          35
 
 #define ENCODER_RODAS
 // https://github.com/GreyGnome/EnableInterrupt/wiki/Usage-HiSpeed

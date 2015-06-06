@@ -260,7 +260,7 @@ public:
         dados.motorEsq.pid.Ki.setFloat( PID_MOTOR_I );
         dados.motorEsq.pid.Kd.setFloat( PID_MOTOR_D );
         dados.motorEsq.pid.maxMV      =  255;
-        dados.motorEsq.pid.minMV      = -100;
+        dados.motorEsq.pid.minMV      = -255;
         dados.motorEsq.pid.zeraAcc    = false;
         dados.motorEsq.pid.dEntrada   = true;
         dados.motorEsq.pid.sampleTime = DFT_DELAY_MOTOR;
@@ -269,7 +269,7 @@ public:
         dados.motorDir.pid.Ki.setFloat( PID_MOTOR_I );
         dados.motorDir.pid.Kd.setFloat( PID_MOTOR_D );
         dados.motorDir.pid.maxMV      =  255;
-        dados.motorDir.pid.minMV      = -100;
+        dados.motorDir.pid.minMV      = -255;
         dados.motorDir.pid.zeraAcc    = false;
         dados.motorDir.pid.dEntrada   = true;
         dados.motorDir.pid.sampleTime = DFT_DELAY_MOTOR;

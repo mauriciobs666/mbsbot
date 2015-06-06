@@ -441,7 +441,7 @@ public:
         if( ( ( agora - tUltimoLoop ) > sampleTime )
            || reinicia )
         {
-            MV = executa( entrada, reinicia );
+            executa( entrada, reinicia );
             tUltimoLoop = agora;
         }
         return MV;
@@ -514,9 +514,11 @@ public:
         entAnterior = entrada;
         erroAnterior = erro;
 
-        return constrain( proporcional + integral + derivada,
-                          cfg->minMV,
-                          cfg->maxMV );
+        MV = constrain( proporcional + integral + derivada,
+                        cfg->minMV,
+                        cfg->maxMV );
+
+        return MV;
     }
 
     void print()
@@ -531,9 +533,9 @@ public:
         SERIALX.print( integral );
         SERIALX.print( " " );
         SERIALX.print( derivada );
-        SERIALX.println( "] " );
-//        SERIALX.print( "] => " );
-//        SERIALX.println( MV );
+        SERIALX.print( "] " );
+        SERIALX.print( "] => " );
+        SERIALX.print( MV );
     }
 
 protected:
@@ -938,6 +940,21 @@ drive;
 	Drive drive2;
 #endif
 
+void enviaSensores(bool enviaComando = true)
+{
+    if(enviaComando)
+    {
+        SERIALX.print( NOME_AS );
+        SERIALX.print( " " );
+    }
+    for (int x = 0; x < NUM_SENSORES; x++)
+    {
+        SERIALX.print( sensores[x].refresh().getValor() );
+        SERIALX.print( " " );
+    }
+    SERIALX.println( "" );
+}
+
 // ******************************************************************************
 //   LINE FOLLOWER
 // ******************************************************************************
@@ -997,8 +1014,6 @@ public:
 
     void iniciarCorrida()
     {
-        zeraTudo();
-
         if( ! calibrado() )
         {
             calibrar();
@@ -1006,7 +1021,11 @@ public:
                 return;
         }
 
+        digitalWrite( PINO_IR_EN, HIGH );
+        delay(8);
+
         pid.setConfig( &eeprom.dados.pid[ PID_CORRIDA ] );
+        zeraTudo();
 
         refresh();
 
@@ -1024,6 +1043,7 @@ public:
         }
         else
         {
+            print();
             printErro(ERRO_LF_TRILHO);
             eeprom.dados.programa = DFT_PROGRAMA;
         }
@@ -1031,13 +1051,15 @@ public:
 
     void finalizarCorrida()
     {
+        digitalWrite(PINO_IR_EN, LOW);
+
         drive.parar();
         drive.refresh( true );
 
         if( trc )
         {
             delaySensores = -1;
-            //delayStatus = -1;
+            delayStatus = -1;
         }
     }
 
@@ -1079,10 +1101,6 @@ public:
     {
         SERIALX.print("LF ");
 
-        //for( x = 0; x < LF_NUM_SENSORES; x++ )
-        //    SERIALX.print( sensoresBool[x] ? "A" : "_" );
-        //SERIALX.print(" ");
-
         if( eleito < 0 )
         {
             SERIALX.print("?");
@@ -1101,16 +1119,27 @@ public:
         }
 
         pid.print();
+
+        for( int y = 0; y < LF_NUM_SENSORES; y++ )
+            SERIALX.print( sensoresBool[y] ? "A" : "_" );
+        SERIALX.println(" ");
+
+        //enviaSensores();
     }
 
     void refresh()
     {
+        int s;
+
         nGrupos = 0;
 
-        for( int sb = 0; sb < LF_NUM_SENSORES; sb++ )
-            sensoresBool[sb] = sensores[ LF_PINO_0 + sb ].refresh().getBool();
+        for( s = 0; s < LF_NUM_SENSORES; s++ )
+            sensores[ LF_PINO_0 + s ].refresh();
 
-        for( int s = 0; s < LF_NUM_SENSORES; s++ )
+        for( s = 0; s < LF_NUM_SENSORES; s++ )
+            sensoresBool[s] = sensores[ LF_PINO_0 + s ].getBool();
+
+        for( s = 0; s < LF_NUM_SENSORES; s++ )
         {
             if( sensoresBool[s] )
             {
@@ -1138,7 +1167,8 @@ public:
 
                 grp.pontoMedio = (int) ( num / den );
 
-                grupos[ nGrupos++ ] = grp;
+                grupos[ nGrupos ] = grp;
+                nGrupos++;
             }
         }
     }
@@ -1198,7 +1228,7 @@ public:
 
             for( int ig = 0; ig < nGrupos; ig++ )
             {
-                if( grupos[ig].tamanho < (LF_NUM_SENSORES/3) ) // ignora cruzamentos e marcacoes
+                if( grupos[ig].tamanho < (LF_RANGE/3) ) // ignora cruzamentos e marcacoes
                 {
                     if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
                     {
@@ -1235,6 +1265,8 @@ bool LineFollower::calibrar()
     refresh();
 
     SERIALX.println( "Calibrando..." );
+
+    digitalWrite(PINO_IR_EN, HIGH);
 
     // primeira rodada de leitura, estima valores maximo, minimo e medio
 
@@ -1347,6 +1379,7 @@ bool LineFollower::calibrar()
     drive.refresh( true );
 
     digitalWrite( PINO_LED, false );
+    digitalWrite( PINO_IR_EN , LOW);
 
     // imprime sensores
     for( int x = 0; x < LF_NUM_SENSORES; x++ )
@@ -1383,7 +1416,7 @@ void LineFollower::loop()
         SERIALX.print("Lap: ");
         SERIALX.print(int((agora-tInicio)/1000));
         SERIALX.println("s");
-
+/*
         // pisca LED por 2,25s
         for( int l = 0; l < 15; l ++ )
         {
@@ -1392,7 +1425,7 @@ void LineFollower::loop()
             delay(100);
             digitalWrite( PINO_LED, true );
         }
-
+*/
         // enganei um bobo da casca do ovo :-P
         iniciarCorrida();
         buscaInicioVolta = false;
@@ -1412,10 +1445,16 @@ void LineFollower::loop()
             {
                 // minimo de 2 sensores de distancia i.e 2 * peso
                 if( ( grupos[ig].pontoMax + 2*2 ) < trilho.pontoMin )
+                {
                     marcaDir = true;
+                    traceLF = true;
+                }
 
                 if( ( trilho.pontoMax + 2*2 ) < grupos[ig].pontoMin )
+                {
                     marcaEsq = true;
+                    traceLF = true;
+                }
             }
         }
 
@@ -1435,7 +1474,7 @@ void LineFollower::loop()
                     }
                 }
 
-                if( ( marcaEsq && marcaDir ) || ( conta1s > ( ( LF_NUM_SENSORES * 7 ) / 10 ) ) )
+                if( ( marcaEsq && marcaDir ) || ( conta1s > (  LF_NUM_SENSORES / 2 ) ) )
                 {
                     #ifdef TRACE_LF
                     if( trc )
@@ -1533,21 +1572,6 @@ void LineFollower::loop()
 //		SERVIDOR SERIAL
 // ******************************************************************************
 
-void enviaSensores(bool enviaComando = true)
-{
-    if(enviaComando)
-    {
-        SERIALX.print( NOME_AS );
-        SERIALX.print( " " );
-    }
-    for (int x = 0; x < NUM_SENSORES; x++)
-    {
-        SERIALX.print( sensores[x].refresh().getValor() );
-        SERIALX.print( " " );
-    }
-    SERIALX.println( "" );
-}
-
 void enviaStatus(bool enviaComando = true)
 {
     if(enviaComando)
@@ -1569,6 +1593,12 @@ void enviaStatus(bool enviaComando = true)
     SERIALX.print( drive.motorEsq.getEncoder() );
     SERIALX.print( " " );
     SERIALX.print( drive.motorDir.getEncoder() );
+
+    SERIALX.print( " " );
+    drive.motorEsq.pid.print();
+    SERIALX.print( " " );
+    drive.motorDir.pid.print();
+
 
     #ifdef RODAS_PWM_x4
         SERIALX.print(" ");
@@ -2602,6 +2632,11 @@ void trataJoystick()
 			drive2.parar();
 		#endif
 
+        if( eeprom.dados.programa == PRG_LINE_FOLLOW )
+        {
+            lineFollower.finalizarCorrida();
+        }
+
         // auto centra joystick
         gamepad.centrar();
 
@@ -2612,6 +2647,7 @@ void trataJoystick()
         //eeprom.dados.velEscala = 60;
 
         //desliga trace
+        trc = false;
         delaySensores = -1;
         delayStatus = -1;
     }
@@ -2619,14 +2655,15 @@ void trataJoystick()
     if(gamepad.botoesEdgeF & BT_X)
     {
         eeprom.dados.handBrake = 0;
+        trc = true;
         lineFollower.calibrar();
     }
 
     if(gamepad.botoesEdgeF & BT_Y)
     {
         eeprom.dados.handBrake = 0;
-        lineFollower.iniciarCorrida();
         trc = true;
+        lineFollower.iniciarCorrida();
     }
 /*
     if(gamepad.botoesAgora & BT_LT)
@@ -2701,6 +2738,9 @@ void setup()
     drive2.motorEsq.init( &eeprom.dados.motorEsqT );
     drive2.motorDir.init( &eeprom.dados.motorDirT );
 #endif
+
+    pinMode(PINO_IR_EN, OUTPUT);
+    digitalWrite(PINO_IR_EN, LOW);
 
     pinMode(PINO_LED, OUTPUT);
     digitalWrite(PINO_LED, LOW);
@@ -2842,7 +2882,8 @@ void loop()
 
     if( delaySemBlock(&ultimoStatus, delayStatus) )
     {
-        enviaSensores();
+//        digitalWrite( PINO_IR_EN, HIGH );
+//        enviaSensores();
         enviaStatus();
         //lineFollower.pid.print();
     }
@@ -2850,6 +2891,7 @@ void loop()
     if( delaySemBlock(&ultimoSensores, delaySensores) )
     {
         //enviaJoystick();
+        digitalWrite( PINO_IR_EN, HIGH );
         lineFollower.refresh();
         lineFollower.print();
     }
