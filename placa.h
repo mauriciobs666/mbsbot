@@ -15,6 +15,15 @@
  *	along with MBSBOT.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+kp
+kp = 0.14999
+ki
+ki = 0.00000
+kd
+kd = 0.01999
+*/
+
 #ifndef PLACA_H_INCLUDED
 #define PLACA_H_INCLUDED
 
@@ -44,9 +53,9 @@
 #define CAL_PID_DENTRADA    true
 #define CAL_PID_SAMPLE        10
 
-#define DFT_PID_P (float)0.25000
+#define DFT_PID_P (float)0.15000
 #define DFT_PID_I (float)      0
-#define DFT_PID_D (float)0.00400
+#define DFT_PID_D (float)0.02000
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
 #define DFT_PID_ZACC          50
@@ -101,7 +110,7 @@
 #define LF_FATOR_S      100
 #define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
-#define LF_TIMEOUT      1000
+#define LF_TIMEOUT      666
 #define LF_TIMEOUT_CAL  3000
 // ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
@@ -132,6 +141,6 @@
 #define INTERRUPT_FLAG_PIN14 encoderEsq1
 #define INTERRUPT_FLAG_PIN15 encoderEsq2
 
-#define ENCODER_MAX 13
+#define ENCODER_MAX 17
 
 #endif // PLACA_H_INCLUDED

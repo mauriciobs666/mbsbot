@@ -523,17 +523,16 @@ public:
 
     void print()
     {
-        //SERIALX.print( "en " );
+        //SERIALX.print( "i=" );
         //SERIALX.print( entAnterior );
-        SERIALX.print( " *" );
+        SERIALX.print( " e=" );
         SERIALX.print( erro );
-        SERIALX.print( "* [" );
+        SERIALX.print( " [" );
         SERIALX.print( proporcional );
         SERIALX.print( " " );
         SERIALX.print( integral );
         SERIALX.print( " " );
         SERIALX.print( derivada );
-        SERIALX.print( "] " );
         SERIALX.print( "] => " );
         SERIALX.print( MV );
     }
@@ -598,7 +597,7 @@ public:
 
     void write(int valor)
     {
-        meta = atual = valor;
+        meta100 = meta = atual = valor;
     }
 
     void refresh( bool imediato = false )
@@ -1037,7 +1036,7 @@ public:
 
             if( trc )
             {
-                delaySensores = 100;
+                delaySensores = 10;
                 //delayStatus = 100;
             }
         }
@@ -1053,6 +1052,7 @@ public:
     {
         digitalWrite(PINO_IR_EN, LOW);
 
+        eeprom.dados.programa = DFT_PROGRAMA;
         drive.parar();
         drive.refresh( true );
 
@@ -1101,13 +1101,23 @@ public:
     {
         SERIALX.print("LF ");
 
+        for( int y = LF_NUM_SENSORES-1; y >= 0 ; y-- )
+        {
+            if( eleito >=0 && y >= trilho.pontoMin && y <= trilho.pontoMax )
+                SERIALX.print( sensoresBool[y] ? "T" : "?" );
+            else
+                SERIALX.print( sensoresBool[y] ? "A" : "_" );
+        }
+        SERIALX.print(" ");
+
+/*
         if( eleito < 0 )
         {
             SERIALX.print("?");
             trilho.print();
             SERIALX.print("? ");
         }
-
+*/
         for( int x = 0; x < nGrupos; x++ )
         {
             if( x == eleito ) SERIALX.print("|");
@@ -1120,9 +1130,7 @@ public:
 
         pid.print();
 
-        for( int y = 0; y < LF_NUM_SENSORES; y++ )
-            SERIALX.print( sensoresBool[y] ? "A" : "_" );
-        SERIALX.println(" ");
+        SERIALX.println();
 
         //enviaSensores();
     }
@@ -1228,7 +1236,7 @@ public:
 
             for( int ig = 0; ig < nGrupos; ig++ )
             {
-                if( grupos[ig].tamanho < (LF_RANGE/3) ) // ignora cruzamentos e marcacoes
+                if( grupos[ig].tamanho < (LF_RANGE/2) ) // ignora cruzamentos e marcacoes
                 {
                     if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
                     {
@@ -1416,19 +1424,24 @@ void LineFollower::loop()
         SERIALX.print("Lap: ");
         SERIALX.print(int((agora-tInicio)/1000));
         SERIALX.println("s");
-/*
+
         // pisca LED por 2,25s
         for( int l = 0; l < 15; l ++ )
         {
-            delay(50);
+            drive.refresh();
             digitalWrite( PINO_LED, false );
-            delay(100);
+            delay(50);
+            drive.refresh();
             digitalWrite( PINO_LED, true );
+            delay(50);
+//            drive.refresh();
+//            delay(50);
         }
-*/
+
         // enganei um bobo da casca do ovo :-P
-        iniciarCorrida();
-        buscaInicioVolta = false;
+        //iniciarCorrida();
+        //buscaInicioVolta = false;
+        return;
     }
 
     refresh();
@@ -1478,7 +1491,10 @@ void LineFollower::loop()
                 {
                     #ifdef TRACE_LF
                     if( trc )
+                    {
                         SERIALX.println("C");
+
+                    }
                     #endif
                 }
                 else if( marcaEsq )
@@ -2892,7 +2908,7 @@ void loop()
     {
         //enviaJoystick();
         digitalWrite( PINO_IR_EN, HIGH );
-        lineFollower.refresh();
+        //lineFollower.refresh();
         lineFollower.print();
     }
 
