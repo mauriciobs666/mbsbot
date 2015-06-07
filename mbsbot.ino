@@ -975,6 +975,7 @@ public:
     bool debounceArray[ LF_NUM_SENSORES ];  // debounce pra determinar se uma marca esq/dir eh na verdade um cruzamneto
     bool marcaEsq;
     bool marcaDir;
+    bool cruzamento;
     bool buscaInicioVolta;
     bool estadoLed;
 
@@ -995,7 +996,7 @@ public:
 
         nGrupos = 0;
         tInicio = tFim = timeout = tPiscaLed = debounce = 0;
-        marcaEsq = marcaDir = estadoLed = false;
+        marcaEsq = marcaDir = cruzamento = estadoLed = false;
         buscaInicioVolta = true;
         eleito = -1;
 
@@ -1095,7 +1096,7 @@ public:
             SERIALX.print("]");
         }
     }
-    grupos[LF_NUM_SENSORES/2], trilho;
+    grupos[LF_NUM_SENSORES/2], trilho, debGrp;
 
     void print()
     {
@@ -1230,13 +1231,17 @@ public:
     {
         // busca provavel trilho entre os grupos
 
+        // salva bkp do trilho anterior
+        if( !debounce )
+            debGrp = trilho;
+
         if( nGrupos )
         {
-            int distEleito = 300; // distancia maxima do trilho anterior
+            int distEleito = 500; // distancia maxima do trilho anterior
 
             for( int ig = 0; ig < nGrupos; ig++ )
             {
-                if( grupos[ig].tamanho < (LF_RANGE/2) ) // ignora cruzamentos e marcacoes
+                if( grupos[ig].tamanho < (LF_NUM_SENSORES/2) ) // ignora cruzamentos e marcacoes
                 {
                     if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
                     {
@@ -1251,11 +1256,40 @@ public:
                         }
                     }
                 }
+                else
+                {
+                    if( 0 == debounce )
+                    {
+                        SERIALX.print("deb ");
+                        grupos[ig].print();
+                        SERIALX.println();
+                    }
+
+                    debounce = agora + eeprom.dados.delays.debounce;
+                }
             }
         }
         else
             eleito = -1;
 
+        if( debounce )
+        {
+            for( int s = 0; s < LF_NUM_SENSORES; s++ )
+                debounceArray[s] |= sensoresBool[s];
+
+            int conta1s = 0;
+
+            for( int s = 0; s < LF_NUM_SENSORES; s++ )
+            {
+                if( debounceArray[s] )
+                    conta1s++;
+            }
+
+            if( conta1s > (  LF_NUM_SENSORES / 2 ) )
+            {
+                cruzamento = true;
+            }
+        }
         #ifdef TRACE_LF
 //        SERIALX.print( "trilho " );
 //        trilho.print();
@@ -1476,8 +1510,8 @@ void LineFollower::loop()
             if( debounce && agora > debounce )
             {
                 debounce = 0;
-
                 int conta1s = 0;
+
                 for( int s = 0; s < LF_NUM_SENSORES; s++ )
                 {
                     if( debounceArray[s] )
@@ -1487,13 +1521,17 @@ void LineFollower::loop()
                     }
                 }
 
-                if( ( marcaEsq && marcaDir ) || ( conta1s > (  LF_NUM_SENSORES / 2 ) ) )
+                //if( ( marcaEsq && marcaDir ) || ( conta1s > (  LF_NUM_SENSORES / 2 ) ) )
+                if( ( marcaEsq && marcaDir ) || cruzamento )
                 {
                     #ifdef TRACE_LF
                     if( trc )
                     {
-                        SERIALX.println("C");
-
+                        SERIALX.print("C=");
+                        if( ( marcaEsq && marcaDir ) )
+                            SERIALX.println( "E+D" );
+                        else
+                            SERIALX.println( conta1s );
                     }
                     #endif
                 }
@@ -1506,10 +1544,6 @@ void LineFollower::loop()
                 }
                 else if( marcaDir )
                 {
-                    #ifdef TRACE_LF
-                    if( trc )
-                        SERIALX.println("D");
-                    #endif
                     if( buscaInicioVolta )
                     {
                         tInicio = agora;
@@ -1517,17 +1551,39 @@ void LineFollower::loop()
                     }
                     else
                     {
-                        tFim = agora + 500;
+                        if( ((agora-tInicio)/1000) < 30 )
+                        {
+                            #ifdef TRACE_LF
+                            if( trc )
+                                SERIALX.print("ign ");
+                            #endif
+                        }
+                        else
+                        {
+                            tFim = agora + 500;
+                        }
                     }
+                    #ifdef TRACE_LF
+                    if( trc )
+                        SERIALX.println("D");
+                    #endif
                 }
-                marcaEsq = marcaDir = false;
+
+                marcaEsq = marcaDir = cruzamento = false;
 
                 traceLF = true;
             }
         }
-        else // ( nGrupos > 1 ) || grupos[0].tamanho < (LF_NUM_SENSORES/3)
+        else // ( nGrupos > 1 )
         {
             traceLF = ( 0 == debounce );
+
+            if( traceLF )
+            {
+                debGrp = trilho;
+                SERIALX.print("deb n=");
+                SERIALX.println( nGrupos );
+            }
 
             debounce = agora + eeprom.dados.delays.debounce;
 
@@ -1563,6 +1619,12 @@ void LineFollower::loop()
             return;
         }
     }
+
+    if( cruzamento )
+    {
+        trilho = debGrp;
+    }
+
 
     pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
     pid.executaSample( trilho.pontoMedio );

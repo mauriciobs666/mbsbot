@@ -42,7 +42,7 @@ kd = 0.01999
 #define DFT_VEL_ESCALA  100
 #define DFT_DELAY_MOTOR  10
 #define DFT_BALANCO       0
-#define DFT_LF_DEBOUNCE 100
+#define DFT_LF_DEBOUNCE  35
 
 #define CAL_PID_P (float)0.05000
 #define CAL_PID_I (float)0.00100
@@ -110,7 +110,7 @@ kd = 0.01999
 #define LF_FATOR_S      100
 #define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
-#define LF_TIMEOUT      666
+#define LF_TIMEOUT      1000
 #define LF_TIMEOUT_CAL  3000
 // ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
@@ -141,6 +141,6 @@ kd = 0.01999
 #define INTERRUPT_FLAG_PIN14 encoderEsq1
 #define INTERRUPT_FLAG_PIN15 encoderEsq2
 
-#define ENCODER_MAX 17
+#define ENCODER_MAX 13
 
 #endif // PLACA_H_INCLUDED
