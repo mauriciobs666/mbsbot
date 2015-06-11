@@ -16,10 +16,10 @@
  */
 
 /*
-4/5/15 - Arduino 1.6.3 - ATMEGA1280 - placa_v4.h
+9/6/15 - Arduino 1.6.4 - ATMEGA1280 - placa_v4.h
 
-Sketch uses 26,006 bytes (20%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 2,025 bytes (24%) of dynamic memory, leaving 6,167 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 27,422 bytes (21%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,519 bytes (30%) of dynamic memory, leaving 5,673 bytes for local variables. Maximum is 8,192 bytes.
 
 17/3/15 - Arduino 1.6.1 - ATMEGA328 - placa_v23.h
 
@@ -994,10 +994,10 @@ public:
     {
         pid.zera();
 
-        nGrupos = 0;
         tInicio = tFim = timeout = tPiscaLed = debounce = 0;
         marcaEsq = marcaDir = cruzamento = estadoLed = false;
         buscaInicioVolta = true;
+        nGrupos = 0;
         eleito = -1;
 
         for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
@@ -1138,17 +1138,20 @@ public:
 
     void refresh()
     {
-        int s;
+        // salva bkp do trilho anterior
+        if( eleito && !debounce )
+            debGrp = trilho;
+
+        // le dos sensores
+        for( int s = 0; s < LF_NUM_SENSORES; s++ )
+            sensoresBool[s] = sensores[ LF_PINO_0 + s ].refresh().getBool();
 
         nGrupos = 0;
+        eleito = -1;
 
-        for( s = 0; s < LF_NUM_SENSORES; s++ )
-            sensores[ LF_PINO_0 + s ].refresh();
+        int distEleito = 500; // distancia do trilho anterior
 
-        for( s = 0; s < LF_NUM_SENSORES; s++ )
-            sensoresBool[s] = sensores[ LF_PINO_0 + s ].getBool();
-
-        for( s = 0; s < LF_NUM_SENSORES; s++ )
+        for( int s = 0; s < LF_NUM_SENSORES; s++ )
         {
             if( sensoresBool[s] )
             {
@@ -1162,13 +1165,14 @@ public:
                 long num = (long)s * (long)sensor * 100;
                 long den = sensor;
 
-                // agrupa enquanto o proximo for true
+                // agrupa enquanto o proximo sensor for true
                 while( ( s < LF_NUM_SENSORES-1 ) && sensoresBool[ s + 1 ] )
                 {
                     s++;
                     grp.pontoMax = s;
                     grp.tamanho++;
 
+                    // https://www.pololu.com/docs/0J18/16
                     sensor = sensores[ LF_PINO_0 + s ].getPorcento();
                     num += (long)s * (long)sensor * 100;
                     den += sensor;
@@ -1176,8 +1180,54 @@ public:
 
                 grp.pontoMedio = (int) ( num / den );
 
+                if( grp.tamanho < (LF_NUM_SENSORES/2) ) // ignora cruzamentos e marcacoes
+                {
+                    if( trilho.intersecciona( grp ) ) // apenas se houver intersecao
+                    {
+                        int distancia = abs( grp.pontoMedio - trilho.pontoMedio );
+
+                        if( distancia < distEleito )
+                        {
+                            // close enough :-)
+                            eleito = nGrupos;
+                            trilho = grp;
+                            distEleito = distancia;
+                        }
+                    }
+                }
+                else
+                {
+                    if( 0 == debounce )
+                    {
+                        SERIALX.print("deb ");
+                        grp.print();
+                        SERIALX.println();
+                    }
+
+                    debounce = agora + eeprom.dados.delays.debounce;
+                }
+
                 grupos[ nGrupos ] = grp;
                 nGrupos++;
+            }
+        }
+
+        if( debounce )
+        {
+            for( int s = 0; s < LF_NUM_SENSORES; s++ )
+                debounceArray[s] |= sensoresBool[s];
+
+            int conta1s = 0;
+
+            for( int s = 0; s < LF_NUM_SENSORES; s++ )
+            {
+                if( debounceArray[s] )
+                    conta1s++;
+            }
+
+            if( conta1s > (  LF_NUM_SENSORES / 2 ) )
+            {
+                cruzamento = true;
             }
         }
     }
@@ -1209,7 +1259,6 @@ public:
         #endif
 
         refresh();
-        elegeTrilho();
 
         pid.setPoint = setPoint;
 
@@ -1225,76 +1274,6 @@ public:
             return 0;
 
         return pid.erro;
-    }
-
-    void elegeTrilho()
-    {
-        // busca provavel trilho entre os grupos
-
-        // salva bkp do trilho anterior
-        if( !debounce )
-            debGrp = trilho;
-
-        if( nGrupos )
-        {
-            int distEleito = 500; // distancia maxima do trilho anterior
-
-            for( int ig = 0; ig < nGrupos; ig++ )
-            {
-                if( grupos[ig].tamanho < (LF_NUM_SENSORES/2) ) // ignora cruzamentos e marcacoes
-                {
-                    if( trilho.intersecciona( grupos[ig] ) ) // apenas se houver intersecao
-                    {
-                        int distancia = abs( grupos[ig].pontoMedio - trilho.pontoMedio );
-
-                        if( distancia < distEleito )
-                        {
-                            // close enough :-)
-                            eleito = ig;
-                            trilho = grupos[ eleito ];
-                            distEleito = distancia;
-                        }
-                    }
-                }
-                else
-                {
-                    if( 0 == debounce )
-                    {
-                        SERIALX.print("deb ");
-                        grupos[ig].print();
-                        SERIALX.println();
-                    }
-
-                    debounce = agora + eeprom.dados.delays.debounce;
-                }
-            }
-        }
-        else
-            eleito = -1;
-
-        if( debounce )
-        {
-            for( int s = 0; s < LF_NUM_SENSORES; s++ )
-                debounceArray[s] |= sensoresBool[s];
-
-            int conta1s = 0;
-
-            for( int s = 0; s < LF_NUM_SENSORES; s++ )
-            {
-                if( debounceArray[s] )
-                    conta1s++;
-            }
-
-            if( conta1s > (  LF_NUM_SENSORES / 2 ) )
-            {
-                cruzamento = true;
-            }
-        }
-        #ifdef TRACE_LF
-//        SERIALX.print( "trilho " );
-//        trilho.print();
-//        SERIALX.println();
-        #endif
     }
 }
 lineFollower;
@@ -1479,7 +1458,6 @@ void LineFollower::loop()
     }
 
     refresh();
-    elegeTrilho();
 
     if( eleito >= 0 )
     {
@@ -1624,7 +1602,6 @@ void LineFollower::loop()
     {
         trilho = debGrp;
     }
-
 
     pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
     pid.executaSample( trilho.pontoMedio );
