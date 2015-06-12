@@ -168,18 +168,10 @@ typedef struct
     char pinoDirN;
     int deadband;   // pwm a partir do qual o motor comeca a se mover
     int aceleracao; // variacao abs de potencia aplicada => dp / eeprom.delays.motores
+    char encoderA;
+    char encoderB;
 
     ConfigPID pid;
-
-    void initDC( char pinoPWM, char pinoDIR, char pinoDIRN=-1, int deadBand=0, int acel=255, bool inverso=false )
-    {
-        pino = pinoPWM;
-        pinoDir = pinoDIR;
-        pinoDirN = pinoDIRN;
-        deadband = deadBand;
-        invertido = inverso;
-        aceleracao = acel;
-    }
 }
 ConfigMotor;
 
@@ -233,46 +225,52 @@ public:
     }
     void defaults()
     {
-        dados.programa = DFT_PROGRAMA;
+        dados.programa  = DFT_PROGRAMA;
         dados.handBrake = DFT_FREIO_MAO;
-        dados.velMax = DFT_VEL_MAX;
+        dados.velMax    = DFT_VEL_MAX;
         dados.velEscala = DFT_VEL_ESCALA;
-        dados.balanco = DFT_BALANCO;
+        dados.balanco   = DFT_BALANCO;
 
-        #ifdef PINO_MOTOR_ESQ_N
-            dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, PINO_MOTOR_ESQ_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
-        #else
-            dados.motorEsq.initDC( PINO_MOTOR_ESQ_PWM, PINO_MOTOR_ESQ, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_ESQ_INV );
-        #endif
+        dados.motorEsq.pino         = PINO_MOTOR_ESQ_PWM;
+        dados.motorEsq.pinoDir      = PINO_MOTOR_ESQ;
+        dados.motorEsq.pinoDirN     = PINO_MOTOR_ESQ_N;
+        dados.motorEsq.deadband     = MOTOR_CENTRO;
+        dados.motorEsq.invertido    = MOTOR_ESQ_INV;
+        dados.motorEsq.aceleracao   = MOTOR_ACEL;
+        dados.motorEsq.encoderA     = PINO_MOTOR_ESQ_ENC_A;
+        dados.motorEsq.encoderB     = PINO_MOTOR_ESQ_ENC_B;
 
-        #ifdef PINO_MOTOR_DIR_N
-            dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, PINO_MOTOR_DIR_N, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
-        #else
-            dados.motorDir.initDC( PINO_MOTOR_DIR_PWM, PINO_MOTOR_DIR, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_DIR_INV );
-        #endif
+        dados.motorEsq.pid.Kp.setFloat( PID_MOTOR_P );
+        dados.motorEsq.pid.Ki.setFloat( PID_MOTOR_I );
+        dados.motorEsq.pid.Kd.setFloat( PID_MOTOR_D );
+        dados.motorEsq.pid.maxMV      = PID_MOTOR_MAX_MV;
+        dados.motorEsq.pid.minMV      = PID_MOTOR_MIN_MV;
+        dados.motorEsq.pid.zeraAcc    = PID_MOTOR_ZACC;
+        dados.motorEsq.pid.dEntrada   = PID_MOTOR_DENTRADA;
+        dados.motorEsq.pid.sampleTime = DFT_DELAY_MOTOR;
+
+        dados.motorDir.pino         = PINO_MOTOR_DIR_PWM;
+        dados.motorDir.pinoDir      = PINO_MOTOR_DIR;
+        dados.motorDir.pinoDirN     = PINO_MOTOR_DIR_N;
+        dados.motorDir.deadband     = MOTOR_CENTRO;
+        dados.motorDir.invertido    = MOTOR_DIR_INV;
+        dados.motorDir.aceleracao   = MOTOR_ACEL;
+        dados.motorDir.encoderA     = PINO_MOTOR_DIR_ENC_A;
+        dados.motorDir.encoderB     = PINO_MOTOR_DIR_ENC_B;
+
+        dados.motorDir.pid.Kp.setFloat( PID_MOTOR_P );
+        dados.motorDir.pid.Ki.setFloat( PID_MOTOR_I );
+        dados.motorDir.pid.Kd.setFloat( PID_MOTOR_D );
+        dados.motorDir.pid.maxMV      = PID_MOTOR_MAX_MV;
+        dados.motorDir.pid.minMV      = PID_MOTOR_MIN_MV;
+        dados.motorDir.pid.zeraAcc    = PID_MOTOR_ZACC;
+        dados.motorDir.pid.dEntrada   = PID_MOTOR_DENTRADA;
+        dados.motorDir.pid.sampleTime = DFT_DELAY_MOTOR;
 
         #ifdef RODAS_PWM_x4
             dados.motorEsqT.initDC( PINO_MOTOR_ESQ_T_PWM, PINO_MOTOR_ESQ_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_E_T_INV );
             dados.motorDirT.initDC( PINO_MOTOR_DIR_T_PWM, PINO_MOTOR_DIR_T, MOTOR_CENTRO, MOTOR_ACEL, MOTOR_D_T_INV );
         #endif
-
-        dados.motorEsq.pid.Kp.setFloat( PID_MOTOR_P );
-        dados.motorEsq.pid.Ki.setFloat( PID_MOTOR_I );
-        dados.motorEsq.pid.Kd.setFloat( PID_MOTOR_D );
-        dados.motorEsq.pid.maxMV      = 255;
-        dados.motorEsq.pid.minMV      = -255;
-        dados.motorEsq.pid.zeraAcc    = 0;
-        dados.motorEsq.pid.dEntrada   = true;
-        dados.motorEsq.pid.sampleTime = DFT_DELAY_MOTOR;
-
-        dados.motorDir.pid.Kp.setFloat( PID_MOTOR_P );
-        dados.motorDir.pid.Ki.setFloat( PID_MOTOR_I );
-        dados.motorDir.pid.Kd.setFloat( PID_MOTOR_D );
-        dados.motorDir.pid.maxMV      = 255;
-        dados.motorDir.pid.minMV      = -255;
-        dados.motorDir.pid.zeraAcc    = 0;
-        dados.motorDir.pid.dEntrada   = true;
-        dados.motorDir.pid.sampleTime = DFT_DELAY_MOTOR;
 
         dados.delays.ES = DFT_DELAY_ES;
         dados.delays.debounce = DFT_LF_DEBOUNCE;

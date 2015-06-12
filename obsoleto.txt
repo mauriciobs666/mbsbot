@@ -186,3 +186,10 @@ private:
     unsigned short dataArray[SCANNER_STEPS];
 };
 
+/*    // plaquinha com 8 leds conectada no canto do mega
+    for( int i = 39; i <= 53; i += 2 )
+        pinMode(i, OUTPUT);
+
+    for( int x = 0; x < LF_NUM_SENSORES; x++ )
+        digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
+*/

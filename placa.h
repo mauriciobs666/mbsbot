@@ -75,6 +75,10 @@ kd = 0.01999
 #define PID_MOTOR_P  (float) 15
 #define PID_MOTOR_I  (float)  1
 #define PID_MOTOR_D  (float)  0
+#define PID_MOTOR_MAX_MV    255
+#define PID_MOTOR_MIN_MV   -255
+#define PID_MOTOR_ZACC        0
+#define PID_MOTOR_DENTRADA true
 
 // inverte sentido dos motores
 #define MOTOR_ESQ_INV 0
@@ -83,14 +87,18 @@ kd = 0.01999
 #define MOTOR_D_T_INV 0
 
 // canal 1
-#define PINO_MOTOR_ESQ  	7
-#define PINO_MOTOR_ESQ_N	8
-#define PINO_MOTOR_ESQ_PWM	5
+#define PINO_MOTOR_ESQ        7
+#define PINO_MOTOR_ESQ_N      8
+#define PINO_MOTOR_ESQ_PWM    5
+#define PINO_MOTOR_ESQ_ENC_A 14
+#define PINO_MOTOR_ESQ_ENC_B 15
 
 // canal 2
-#define PINO_MOTOR_DIR      9
-#define PINO_MOTOR_DIR_N    12
-#define PINO_MOTOR_DIR_PWM	6
+#define PINO_MOTOR_DIR        9
+#define PINO_MOTOR_DIR_N     12
+#define PINO_MOTOR_DIR_PWM    6
+#define PINO_MOTOR_DIR_ENC_A 10
+#define PINO_MOTOR_DIR_ENC_B 11
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
@@ -133,14 +141,6 @@ kd = 0.01999
 #define PINO_BOTAO_CAL      37
 #define PINO_BOTAO_PRG      39
 #define PINO_IR_EN          35
-
-#define ENCODER_RODAS
-// https://github.com/GreyGnome/EnableInterrupt/wiki/Usage-HiSpeed
-#define NEEDFORSPEED
-#define INTERRUPT_FLAG_PIN10 encoderDir1
-#define INTERRUPT_FLAG_PIN11 encoderDir2
-#define INTERRUPT_FLAG_PIN14 encoderEsq1
-#define INTERRUPT_FLAG_PIN15 encoderEsq2
 
 #define ENCODER_MAX 13
 

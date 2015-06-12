@@ -64,8 +64,8 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 Eeprom eeprom;
 
 unsigned long agora = 0;
-
 unsigned long ultimoTrace = 0; // timeout de envios pela serial de status e sensores
+
 bool trc = false;
 char trace = 0;
 int delayTrace = DFT_DELAY_TRACE;
@@ -534,7 +534,7 @@ public:
     PID pid;
     ConfigMotor *cfg;
 
-    Motor() : cfg(NULL), atual(0), ultimoAcel(0), meta(0), encoder(0), enc1(NULL), enc2(NULL) { }
+    Motor() : cfg(NULL), atual(0), ultimoAcel(0), meta(0), encoder(0) { }
 
     void init( ConfigMotor *cfgm )
     {
@@ -546,17 +546,17 @@ public:
         pinMode( cfg->pino, OUTPUT );
         pinMode( cfg->pinoDir, OUTPUT );
 
-        if ( cfg->pinoDirN >= 0 )
+        if( cfg->pinoDirN >= 0 )
             pinMode( cfg->pinoDirN, OUTPUT);
+
+        if( cfg->encoderA >= 0 )
+            PCintPort::attachInterrupt( cfg->encoderA, &isrEncoder, CHANGE);
+
+        if( cfg->encoderB >= 0 )
+            PCintPort::attachInterrupt( cfg->encoderB, &isrEncoder, CHANGE);
 
         parar();
         refresh(true);
-    }
-
-    void setEncoder( volatile uint8_t *encoderVar1, volatile uint8_t *encoderVar2 )
-    {
-        enc1 = encoderVar1;
-        enc2 = encoderVar2;
     }
 
     void parar()
@@ -588,17 +588,7 @@ public:
     {
         if( delaySemBlock( &ultimoAcel, cfg->pid.sampleTime ) || imediato )
         {
-            // atualiza encoder
-
-            if( enc1 && enc2 )
-            {
-                encoder = *enc1 + *enc2;
-                *enc1 = *enc2 = 0;
-            }
-            else
-                encoder = 0;
-
-            if( eeprom.dados.programa == PRG_LINE_FOLLOW && enc1 )
+            if( eeprom.dados.programa == PRG_LINE_FOLLOW && ( cfg->encoderA >= 0 ) )
             {
                 // usa encoder e controlador PID
 
@@ -607,6 +597,7 @@ public:
 
                 pid.setPoint = meta;
                 atual = -pid.executa( encoder );
+                encoder = 0;
             }
             else
             {
@@ -617,9 +608,9 @@ public:
                     // converte % de potencia em PWM 8 bits
 
                     short c = meta100 > 0 ? cfg->deadband : -cfg->deadband; // c = deadband com sinal
-                    short fator = 255 - cfg->deadband;                          // faixa de controle linear
+                    short fator = 255 - cfg->deadband;                      // faixa de controle linear
                     meta = c + ( meta100 * fator ) / 100;
-                    meta = constrain( meta, -255, 255 );                        // range de saida: +/- [deadband ... 255]
+                    meta = constrain( meta, -255, 255 );                    // range de saida: +/- [deadband ... 255]
                 }
                 else
                     meta = 0;
@@ -678,15 +669,32 @@ public:
                 analogWrite( cfg->pino, abs( atual ) );
         }
     }
+
+    void isrEncoderA( bool estado )
+    {
+        encA = estado;
+        if( encB )
+            encoder++;
+        else
+            encoder--;
+    }
+    void isrEncoderB( bool estado )
+    {
+        encB = estado;
+        if( encA )
+            encoder++;
+        else
+            encoder--;
+    }
 protected:
     char  meta100;      // meta de saida em +/- %
     short meta;         // meta de saida raw -255 a 255
     short atual;        // saida raw -255 a 255
-    short encoder;      // leitura encoder, raw
     unsigned long ultimoAcel;
 
-    volatile uint8_t *enc1;
-    volatile uint8_t *enc2;
+    volatile uint8_t encoder; // leitura encoder, raw
+    volatile bool encA;
+    volatile bool encB;
 
     //char prioMeta;    // TODO (Mauricio#1#): prioridade processo que setou a meta
 };
@@ -924,6 +932,27 @@ drive;
 	Drive drive2;
 #endif
 
+void isrEncoder()
+{
+    switch(PCintPort::arduinoPin)
+    {
+    case PINO_MOTOR_ESQ_ENC_A:
+        drive.motorEsq.isrEncoderA( PCintPort::pinState );
+        break;
+    case PINO_MOTOR_ESQ_ENC_B:
+        drive.motorEsq.isrEncoderB( PCintPort::pinState );
+        break;
+    case PINO_MOTOR_DIR_ENC_A:
+        drive.motorDir.isrEncoderA( PCintPort::pinState );
+        break;
+    case PINO_MOTOR_DIR_ENC_B:
+        drive.motorDir.isrEncoderB( PCintPort::pinState );
+        break;
+    default:
+        break;
+    }
+}
+
 void enviaSensores(bool enviaComando = true)
 {
     if(enviaComando)
@@ -1021,9 +1050,7 @@ public:
             eeprom.dados.programa = PRG_LINE_FOLLOW;
 
             if( trc )
-            {
                 trace |= TRC_LF;
-            }
         }
         else
         {
@@ -1042,9 +1069,7 @@ public:
         drive.refresh( true );
 
         if( trc )
-        {
             trace &= !TRC_LF;
-        }
     }
 
     class Grupo
@@ -1193,6 +1218,11 @@ public:
                 grupos[ nGrupos ] = grp;
                 nGrupos++;
             }
+        }
+
+        if( 0 == nGrupos )
+        {
+
         }
 
         if( debounce )
@@ -2839,20 +2869,6 @@ void setup()
     drive.motorEsq.init( &eeprom.dados.motorEsq );
     drive.motorDir.init( &eeprom.dados.motorDir );
 
-#ifdef ENCODER_TOSCO
-    pinMode( 10, INPUT );
-    enableInterruptFast( 10, CHANGE );
-    pinMode( 11, INPUT );
-    enableInterruptFast( 11, CHANGE );
-    pinMode( 14, INPUT );
-    enableInterruptFast( 14, CHANGE );
-    pinMode( 15, INPUT );
-    enableInterruptFast( 15, CHANGE );
-
-    drive.motorEsq.setEncoder( &encoderEsq1, &encoderEsq2 );
-    drive.motorDir.setEncoder( &encoderDir1, &encoderDir2 );
-#endif
-
 #ifdef RODAS_PWM_x4
     drive2.motorEsq.init( &eeprom.dados.motorEsqT );
     drive2.motorDir.init( &eeprom.dados.motorDirT );
@@ -2885,14 +2901,6 @@ void setup()
         pinMode(unused[p], INPUT);
         digitalWrite(unused[p], HIGH);
     }
-
-/*    // plaquinha com 8 leds conectada no canto do mega
-    for( int i = 39; i <= 53; i += 2 )
-        pinMode(i, OUTPUT);
-
-    for( int x = 0; x < LF_NUM_SENSORES; x++ )
-        digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
-*/
 
 #ifdef PINO_JOY_X
     rcpad.setConfig( &eeprom.dados.joyRC );
