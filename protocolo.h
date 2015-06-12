@@ -113,8 +113,7 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_SERVO_Z  "sz"   // servo "Z" (roll)
 
 #define NOME_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
-#define NOME_T_SE     "dse"  // tempo minimo entre envio de SEnsores
-#define NOME_T_ST     "dst"  // tempo minimo entre envio de STatus
+#define NOME_T_TRC    "dtrc" // intervalo envio trace
 #define NOME_T_DEB    "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 
 // Parametros pra uso durante calibragem (giraPID)
@@ -158,6 +157,7 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_BALANCO     "bal" // balanco rodas esq/dir
 
 #define NOME_TRACE       "trc"
+#define NOME_TRACE_MSK   "trcm"
 #define NOME_ERRNO       "err"
 
 #define NOME_TIMESTAMP   "t"
@@ -226,7 +226,6 @@ enum Erros
 #define BT_L3  0x100 // 256 - L3
 #define BT_R3  0x200 // 512 - R3
 
-
 enum Pids
 {
     PID_CALIBRA  = 0,
@@ -243,5 +242,11 @@ enum Prioridades
     PRI_LINE_FOLLOW,
     PRI_IDLE
 };
+
+// mascara de trace
+#define TRC_STATUS   0x01
+#define TRC_SENSORES 0x02
+#define TRC_LF       0x04
+#define TRC_JOYSTICK 0x08
 
 #endif // PROTOCOLO_H_INCLUDED

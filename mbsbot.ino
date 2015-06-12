@@ -47,8 +47,8 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 
-// https://github.com/GreyGnome/EnableInterrupt/
-#include <EnableInterrupt.h>
+// https://github.com/GreyGnome/PinChangeInt
+#include "PinChangeInt.h"
 
 // speaker
 #ifdef PINO_BIP
@@ -63,29 +63,12 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 
 Eeprom eeprom;
 
-#ifdef PINO_SERVO_PAN
-Servo pan;
-#endif
-#ifdef PINO_SERVO_TILT
-Servo tilt;
-#endif
-#ifdef PINO_SERVO_ROLL
-Servo roll;
-#endif
-#ifdef SCANNER
-Scanner scanner;
-#endif
-
 unsigned long agora = 0;
 
-// timeout de envios pela serial de status e sensores
-unsigned long ultimoSensores = 0;
-unsigned long ultimoStatus = 0;
-// intervalo de envio
-int delaySensores = -1;
-int delayStatus = -1;
-
+unsigned long ultimoTrace = 0; // timeout de envios pela serial de status e sensores
 bool trc = false;
+char trace = 0;
+int delayTrace = DFT_DELAY_TRACE;
 
 bool resetPrg = true;
 
@@ -450,6 +433,7 @@ public:
     void setConfig( ConfigPID *config )
     {
         cfg = config;
+        zera(); // ou reinicia?
     }
 
     void zera( )
@@ -605,6 +589,7 @@ public:
         if( delaySemBlock( &ultimoAcel, cfg->pid.sampleTime ) || imediato )
         {
             // atualiza encoder
+
             if( enc1 && enc2 )
             {
                 encoder = *enc1 + *enc2;
@@ -1037,8 +1022,7 @@ public:
 
             if( trc )
             {
-                delaySensores = 10;
-                //delayStatus = 100;
+                trace |= TRC_LF;
             }
         }
         else
@@ -1059,8 +1043,7 @@ public:
 
         if( trc )
         {
-            delaySensores = -1;
-            delayStatus = -1;
+            trace &= !TRC_LF;
         }
     }
 
@@ -2702,9 +2685,7 @@ void trataJoystick()
         //eeprom.dados.velEscala = 60;
 
         //desliga trace
-        trc = false;
-        delaySensores = -1;
-        delayStatus = -1;
+        trace = 0;
     }
 
     if(gamepad.botoesEdgeF & BT_X)
@@ -2761,6 +2742,89 @@ void trataJoystick()
 }
 
 // ******************************************************************************
+//		INTS DE R/C - http://code.google.com/p/arduino-pinchangeint/wiki/Usage
+// ******************************************************************************
+
+void isrRadioEixo(class Sensor *s, unsigned long *inicioPulso)
+{
+    if( !s || !s->cfg || s->cfg->tipo != ConfigSensor::SENSOR_RC )
+        return;
+
+    if(PCintPort::pinState == HIGH)
+        *inicioPulso = micros();
+    else
+    {
+        if(*inicioPulso)
+        {
+            unsigned long duracao = micros() - *inicioPulso;
+            if( duracao > 1000 && duracao < 2000 )
+                s->setValor((unsigned short)duracao);
+            *inicioPulso = 0;
+        }
+    }
+}
+
+void isrRadio()
+{
+    if( eeprom.dados.programa == PRG_RC_SERIAL )
+    switch(PCintPort::arduinoPin)
+    {
+        #ifdef PINO_JOY_X
+        case PINO_JOY_X:
+        {
+            static unsigned long inicioPulsoX = 0;
+            isrRadioEixo(&gamepad.x, &inicioPulsoX);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_Y
+        case PINO_JOY_Y:
+        {
+            static unsigned long inicioPulsoY = 0;
+            isrRadioEixo(&gamepad.y, &inicioPulsoY);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_Z
+        case PINO_JOY_Z:
+        {
+            static unsigned long inicioPulsoZ = 0;
+            isrRadioEixo(&gamepad.z, &inicioPulsoZ);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_R
+        case PINO_JOY_R:
+        {
+            static unsigned long inicioPulsoR = 0;
+            isrRadioEixo(&gamepad.r, &inicioPulsoR);
+        }
+        break;
+        #endif
+        #ifdef PINO_JOY_SW1
+        case PINO_JOY_SW1:
+        {
+            static unsigned long inicioPulsoSW1 = 0;
+            if(PCintPort::pinState == HIGH)
+                inicioPulsoSW1 = micros();
+            else
+            {
+                if(inicioPulsoSW1)
+                {
+                    unsigned long duracao = micros() - inicioPulsoSW1;
+                    gamepad.refreshBotoes((duracao < 1500) ? BT_RB : 0);
+                    inicioPulsoSW1 = 0;
+                }
+            }
+        }
+        break;
+        #endif
+        default:
+        break;
+    }
+}
+
+// ******************************************************************************
 //		SETUP
 // ******************************************************************************
 
@@ -2775,7 +2839,7 @@ void setup()
     drive.motorEsq.init( &eeprom.dados.motorEsq );
     drive.motorDir.init( &eeprom.dados.motorDir );
 
-#ifdef ENCODER_RODAS
+#ifdef ENCODER_TOSCO
     pinMode( 10, INPUT );
     enableInterruptFast( 10, CHANGE );
     pinMode( 11, INPUT );
@@ -2830,6 +2894,26 @@ void setup()
         digitalWrite( (53 - (2 * x)) , sensoresBool[x] );
 */
 
+#ifdef PINO_JOY_X
+    rcpad.setConfig( &eeprom.dados.joyRC );
+    PCintPort::attachInterrupt(PINO_JOY_X, &isrRadio, CHANGE);
+
+    #ifdef PINO_JOY_Y
+        PCintPort::attachInterrupt(PINO_JOY_Y, &isrRadio, CHANGE);
+    #endif
+
+    #ifdef PINO_JOY_Z
+        PCintPort::attachInterrupt(PINO_JOY_Z, &isrRadio, CHANGE);
+    #endif
+
+    #ifdef PINO_JOY_R
+        PCintPort::attachInterrupt(PINO_JOY_R, &isrRadio, CHANGE);
+    #endif
+
+    #ifdef PINO_JOY_SW1
+        PCintPort::attachInterrupt(PINO_JOY_SW1, &isrRadio, CHANGE);
+    #endif
+#endif
 
 /*  Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, char tam=1 )
 
@@ -2848,12 +2932,12 @@ void setup()
     interpretador.declaraVar( VAR_CHAR, NOME_VEL_ESCALA, &eeprom.dados.velEscala );
     interpretador.declaraVar( VAR_CHAR, NOME_FREIO,      &eeprom.dados.handBrake );
     interpretador.declaraVar( VAR_BOOL, NOME_TRACE,      &trc );
+    interpretador.declaraVar( VAR_CHAR, NOME_TRACE_MSK,  &trace );
     interpretador.declaraVar( VAR_LONG, NOME_TIMESTAMP,  &agora );
     interpretador.declaraVar( VAR_INT,  NOME_ERRNO,      &erro );
-    interpretador.declaraVar( VAR_INT,  NOME_T_SE,       &delaySensores );
-    interpretador.declaraVar( VAR_INT,  NOME_T_ST,       &delayStatus );
     interpretador.declaraVar( VAR_INT,  NOME_T_RF,       &eeprom.dados.delays.ES );
     interpretador.declaraVar( VAR_INT,  NOME_T_DEB,      &eeprom.dados.delays.debounce );
+    interpretador.declaraVar( VAR_INT,  NOME_T_TRC,      &delayTrace );
     interpretador.declaraVar( VAR_INT,  NOME_ZERO_ESQ,   &eeprom.dados.motorEsq.deadband );
     interpretador.declaraVar( VAR_INT,  NOME_ACEL_ESQ,   &eeprom.dados.motorEsq.aceleracao );
     interpretador.declaraVar( VAR_INT,  NOME_ZERO_DIR,   &eeprom.dados.motorDir.deadband );
@@ -2935,20 +3019,19 @@ void loop()
     }
     #endif
 
-    if( delaySemBlock(&ultimoStatus, delayStatus) )
+    if( delaySemBlock( &ultimoTrace, delayTrace ) )
     {
-//        digitalWrite( PINO_IR_EN, HIGH );
-//        enviaSensores();
-        enviaStatus();
-        //lineFollower.pid.print();
-    }
+        if( trc & TRC_STATUS )
+            enviaStatus();
 
-    if( delaySemBlock(&ultimoSensores, delaySensores) )
-    {
-        //enviaJoystick();
-        digitalWrite( PINO_IR_EN, HIGH );
-        //lineFollower.refresh();
-        lineFollower.print();
+        if( trc & TRC_SENSORES )
+            enviaSensores();
+
+        if( trc & TRC_LF )
+            lineFollower.print();
+
+        if( trc & TRC_JOYSTICK )
+            enviaJoystick();
     }
 
     //#define TESTE_PERFORMANCE
@@ -3041,14 +3124,6 @@ void loop()
         case PRG_LINE_FOLLOW:
             lineFollower.loop();
         msExec = eeprom.dados.delays.ES;
-        break;
-
-        case PRG_LF_CAL:
-            SERIALX.println(encoderDir1);
-            SERIALX.println(encoderDir2);
-            SERIALX.println(encoderEsq1);
-            SERIALX.println(encoderEsq2);
-        msExec = 1000;
         break;
 
         case PRG_COLISAO:

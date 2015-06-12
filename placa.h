@@ -41,6 +41,7 @@ kd = 0.01999
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA  100
 #define DFT_DELAY_MOTOR  10
+#define DFT_DELAY_TRACE 100
 #define DFT_BALANCO       0
 #define DFT_LF_DEBOUNCE  35
 
