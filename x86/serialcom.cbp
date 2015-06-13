@@ -90,6 +90,7 @@
 			<Add directory="$(#mbsutil.lib)" />
 			<Add directory="$(#wx.lib)/gcc_dll" />
 		</Linker>
+		<Unit filename="../PinChangeInt.h" />
 		<Unit filename="../dados.h" />
 		<Unit filename="../dimensoes.txt" />
 		<Unit filename="../matematica.h" />

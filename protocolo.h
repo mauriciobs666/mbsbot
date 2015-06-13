@@ -113,7 +113,6 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_SERVO_Z  "sz"   // servo "Z" (roll)
 
 #define NOME_T_RF     "drf"  // tempo minimo entre leituras do dispositivo de range finder (ou sonar)
-#define NOME_T_TRC    "dtrc" // intervalo envio trace
 #define NOME_T_DEB    "deb"  // debounce do linefollower pra cruzamentos e marcas especiais
 
 // Parametros pra uso durante calibragem (giraPID)
@@ -158,6 +157,8 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 
 #define NOME_TRACE       "trc"
 #define NOME_TRACE_MSK   "trcm"
+#define NOME_T_TRC       "trcd" // intervalo envio trace
+
 #define NOME_ERRNO       "err"
 
 #define NOME_TIMESTAMP   "t"

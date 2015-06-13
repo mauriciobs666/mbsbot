@@ -97,8 +97,8 @@ kd = 0.01999
 #define PINO_MOTOR_DIR        9
 #define PINO_MOTOR_DIR_N     12
 #define PINO_MOTOR_DIR_PWM    6
-#define PINO_MOTOR_DIR_ENC_A 10
-#define PINO_MOTOR_DIR_ENC_B 11
+#define PINO_MOTOR_DIR_ENC_A 11
+#define PINO_MOTOR_DIR_ENC_B 10
 
 // economia de energia
 #define PINO_UNUSED_CNT 0

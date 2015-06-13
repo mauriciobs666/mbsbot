@@ -576,7 +576,7 @@ public:
 
     short getEncoder()
     {
-        return encoder;
+        return encoderBkp;
     }
 
     void write(int valor)
@@ -588,7 +588,12 @@ public:
     {
         if( delaySemBlock( &ultimoAcel, cfg->pid.sampleTime ) || imediato )
         {
-            if( eeprom.dados.programa == PRG_LINE_FOLLOW && ( cfg->encoderA >= 0 ) )
+
+            encoderBkp = encoder;
+            encoder = 0;
+
+            //if( eeprom.dados.programa == PRG_LINE_FOLLOW && ( cfg->encoderA >= 0 ) )
+            if( cfg->encoderA >= 0 )
             {
                 // usa encoder e controlador PID
 
@@ -596,8 +601,7 @@ public:
                 meta /= 100;
 
                 pid.setPoint = meta;
-                atual = -pid.executa( encoder );
-                encoder = 0;
+                atual = -pid.executa( encoderBkp );
             }
             else
             {
@@ -673,7 +677,7 @@ public:
     void isrEncoderA( bool estado )
     {
         encA = estado;
-        if( encB )
+        if( encA ^ encB )
             encoder++;
         else
             encoder--;
@@ -681,10 +685,10 @@ public:
     void isrEncoderB( bool estado )
     {
         encB = estado;
-        if( encA )
-            encoder++;
-        else
+        if( encA ^ encB )
             encoder--;
+        else
+            encoder++;
     }
 protected:
     char  meta100;      // meta de saida em +/- %
@@ -692,9 +696,11 @@ protected:
     short atual;        // saida raw -255 a 255
     unsigned long ultimoAcel;
 
-    volatile uint8_t encoder; // leitura encoder, raw
+    volatile char encoder; // leitura encoder, raw
     volatile bool encA;
     volatile bool encB;
+
+    short encoderBkp; // backup pra fins de print
 
     //char prioMeta;    // TODO (Mauricio#1#): prioridade processo que setou a meta
 };
@@ -2708,14 +2714,22 @@ void trataJoystick()
         // auto centra joystick
         gamepad.centrar();
 
-        eeprom.dados.handBrake = (gamepad.botoesEdgeF & BT_B);
+        if( gamepad.botoesEdgeF & BT_B )
+        {
+            eeprom.dados.handBrake = true;
+            //desliga trace
+            trace = 0;
+        }
+        else
+        {
+            eeprom.dados.handBrake = false;
+        }
+
+        trc = false;
 
         // poe no modo RC
         eeprom.dados.programa = PRG_RC_SERIAL;
         //eeprom.dados.velEscala = 60;
-
-        //desliga trace
-        trace = 0;
     }
 
     if(gamepad.botoesEdgeF & BT_X)
@@ -3027,18 +3041,18 @@ void loop()
     }
     #endif
 
-    if( delaySemBlock( &ultimoTrace, delayTrace ) )
+    if( delaySemBlock( &ultimoTrace, delayTrace ) && trc )
     {
-        if( trc & TRC_STATUS )
+        if( trace & TRC_STATUS )
             enviaStatus();
 
-        if( trc & TRC_SENSORES )
+        if( trace & TRC_SENSORES )
             enviaSensores();
 
-        if( trc & TRC_LF )
+        if( trace & TRC_LF )
             lineFollower.print();
 
-        if( trc & TRC_JOYSTICK )
+        if( trace & TRC_JOYSTICK )
             enviaJoystick();
     }
 
