@@ -507,18 +507,21 @@ public:
 
     void print()
     {
-        //SERIALX.print( "i=" );
-        //SERIALX.print( entAnterior );
-        SERIALX.print( " e=" );
-        SERIALX.print( erro );
-        SERIALX.print( " [" );
-        SERIALX.print( proporcional );
-        SERIALX.print( " " );
-        SERIALX.print( integral );
-        SERIALX.print( " " );
-        SERIALX.print( derivada );
-        SERIALX.print( "] => " );
-        SERIALX.print( MV );
+        if( trace & TRC_PID )
+        {
+            //SERIALX.print( "i=" );
+            //SERIALX.print( entAnterior );
+            SERIALX.print( " e=" );
+            SERIALX.print( erro );
+            SERIALX.print( " [" );
+            SERIALX.print( proporcional );
+            SERIALX.print( " " );
+            SERIALX.print( integral );
+            SERIALX.print( " " );
+            SERIALX.print( derivada );
+            SERIALX.print( "] => " );
+            SERIALX.print( MV );
+        }
     }
 
 protected:
@@ -597,7 +600,7 @@ public:
             {
                 // usa encoder e controlador PID
 
-                meta = meta100 * ENCODER_MAX;
+                meta = meta100 * eeprom.dados.velMax;
                 meta /= 100;
 
                 pid.setPoint = meta;
@@ -993,11 +996,13 @@ public:
 
     bool sensoresBool[ LF_NUM_SENSORES ];   // retorno do getBool()
     bool debounceArray[ LF_NUM_SENSORES ];  // debounce pra determinar se uma marca esq/dir eh na verdade um cruzamneto
+    int  debounce1s;                        // contagem de sensores ativados no array pra efeito de deteccao de cruzamento
     bool marcaEsq;
     bool marcaDir;
     bool cruzamento;
     bool buscaInicioVolta;
     bool estadoLed;
+    bool traceLF;
 
     int nGrupos;
     int eleito;
@@ -1015,10 +1020,11 @@ public:
         pid.zera();
 
         tInicio = tFim = timeout = tPiscaLed = debounce = 0;
-        marcaEsq = marcaDir = cruzamento = estadoLed = false;
+        marcaEsq = marcaDir = cruzamento = estadoLed = traceLF = false;
         buscaInicioVolta = true;
         nGrupos = 0;
         eleito = -1;
+        debounce1s = 0;
 
         for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
             sensoresBool[sb] = debounceArray[sb] = false;
@@ -1036,9 +1042,8 @@ public:
     {
         if( ! calibrado() )
         {
-            calibrar();
-            if( ! calibrado() )
-                return;
+            printErro( ERRO_LF_CALIBRA, "NAO calibrado" );
+            return;
         }
 
         digitalWrite( PINO_IR_EN, HIGH );
@@ -1075,7 +1080,7 @@ public:
         drive.refresh( true );
 
         if( trc )
-            trace &= !TRC_LF;
+            trace &= ~TRC_LF;
     }
 
     class Grupo
@@ -1125,14 +1130,17 @@ public:
         }
         SERIALX.print(" ");
 
-/*
         if( eleito < 0 )
         {
-            SERIALX.print("?");
+            SERIALX.print("{");
             trilho.print();
+            SERIALX.print("} ");
+
+            SERIALX.print("?");
+            debGrp.print();
             SERIALX.print("? ");
         }
-*/
+
         for( int x = 0; x < nGrupos; x++ )
         {
             if( x == eleito ) SERIALX.print("|");
@@ -1152,8 +1160,8 @@ public:
 
     void refresh()
     {
-        // salva bkp do trilho anterior
-        if( eleito && !debounce )
+        // salva bkp do ultimo trilho "bom"
+        if( eleito && !debounce && !cruzamento )
             debGrp = trilho;
 
         // le dos sensores
@@ -1194,12 +1202,15 @@ public:
 
                 grp.pontoMedio = (int) ( num / den );
 
-                if( grp.tamanho < (LF_NUM_SENSORES/2) ) // ignora cruzamentos e marcacoes
+                // verifica se tamanho do grupo eh aceitavel
+                if( grp.tamanho < (LF_NUM_SENSORES/2) )
                 {
-                    if( trilho.intersecciona( grp ) ) // apenas se houver intersecao
+                    if( trilho.intersecciona( grp ) ) // verifica se intersecao com trilho eh plausivel
                     {
                         int distancia = abs( grp.pontoMedio - trilho.pontoMedio );
 
+                        // usa menor distancia como criterio
+                        // TODO: olhar tendencia
                         if( distancia < distEleito )
                         {
                             // close enough :-)
@@ -1211,6 +1222,7 @@ public:
                 }
                 else
                 {
+                    // grupo muito grande pode ser indicio de cruzamento => liga debounce
                     if( 0 == debounce )
                     {
                         SERIALX.print("deb ");
@@ -1226,27 +1238,58 @@ public:
             }
         }
 
-        if( 0 == nGrupos )
+        // mais de um grupo pode ser marcacao ou inicio de cruzamento
+        if( nGrupos > 1 )
         {
+            if( 0 == debounce )
+            {
+                SERIALX.print("deb n=");
+                SERIALX.println( nGrupos );
+            }
 
+            debounce = agora + eeprom.dados.delays.debounce;
+            traceLF = true;
+
+            if( eleito >= 0 )
+            {
+                // busca marcas esquerda/direita
+                for( int ig = 0 ; ig < nGrupos ; ig++ )
+                {
+                    if( ig != eleito )
+                    {
+                        // minimo de 2 sensores de distancia i.e 2 * peso
+                        if( ( trilho.pontoMax + 2*2 ) < grupos[ig].pontoMin )
+                            marcaEsq = true;
+
+                        if( ( grupos[ig].pontoMax + 2*2 ) < trilho.pontoMin )
+                            marcaDir = true;
+                    }
+                }
+            }
+        }
+
+        if( eleito < 0 )
+        {
+            // perdeu trilho => ativa timeout
+            if( 0 == timeout )
+            {
+                timeout = agora + LF_TIMEOUT;
+                traceLF = true;
+            }
         }
 
         if( debounce )
         {
-            for( int s = 0; s < LF_NUM_SENSORES; s++ )
-                debounceArray[s] |= sensoresBool[s];
+            //  atualiza array de debounce e contador
+            for( int s = 0, debounce1s = 0; s < LF_NUM_SENSORES; s++ )
+                if( ( debounceArray[s] |= sensoresBool[s] ) )
+                    debounce1s++;
 
-            int conta1s = 0;
-
-            for( int s = 0; s < LF_NUM_SENSORES; s++ )
-            {
-                if( debounceArray[s] )
-                    conta1s++;
-            }
-
-            if( conta1s > (  LF_NUM_SENSORES / 2 ) )
+            // se mais de 3/4 dos sensores foram ativados se trata de um cruzamento
+            if( debounce1s > ( ( LF_NUM_SENSORES * 3 ) / 4 ) )
             {
                 cruzamento = true;
+                trilho = debGrp;
             }
         }
     }
@@ -1269,7 +1312,7 @@ public:
         return false;
     }
 
-    int giraP( int setPoint = LF_SETPOINT, int aprox = 20 )
+    int giraP( int setPoint = LF_SETPOINT, int aprox = CAL_PID_ZACC )
     {
         #ifdef TRACE_LF
 //        SERIALX.print( "giraP( " );
@@ -1296,6 +1339,156 @@ public:
     }
 }
 lineFollower;
+
+
+void LineFollower::loop()
+{
+    bool traceLF = false;
+
+    if( tFim && agora > tFim )
+    {
+        tFim = 0;
+
+        finalizarCorrida();
+
+        SERIALX.print("Lap: ");
+        SERIALX.print(int((agora-tInicio)/1000));
+        SERIALX.println("s");
+
+        // pisca LED por 2,25s
+        for( int l = 0; l < 15; l ++ )
+        {
+            drive.refresh();
+            digitalWrite( PINO_LED, false );
+            delay(50);
+            drive.refresh();
+            digitalWrite( PINO_LED, true );
+            delay(50);
+//            drive.refresh();
+//            delay(50);
+        }
+
+        // enganei um bobo da casca do ovo :-P
+        //iniciarCorrida();
+        //buscaInicioVolta = false;
+        return;
+    }
+
+    refresh();
+
+    if( eleito >= 0 )
+    {
+        if( nGrupos == 1 )
+        {
+            timeout = 0;
+
+            // tempo de debounce concluido, toma acoes devidas
+            if( debounce && agora > debounce )
+            {
+                debounce = 0;
+
+                // limpa array
+                for( int s = 0; s < LF_NUM_SENSORES; s++ )
+                    debounceArray[s] = false;
+
+                //if( ( marcaEsq && marcaDir ) || ( debounce1s > (  LF_NUM_SENSORES / 2 ) ) )
+                if( ( marcaEsq && marcaDir ) || cruzamento )
+                {
+                    #ifdef TRACE_LF
+                    if( trc )
+                    {
+                        SERIALX.print("C=");
+                        if( ( marcaEsq && marcaDir ) )
+                            SERIALX.println( "E+D" );
+                        else
+                            SERIALX.println( debounce1s );
+                    }
+                    #endif
+                }
+                else if( marcaEsq )
+                {
+                    #ifdef TRACE_LF
+                    if( trc )
+                        SERIALX.println("E");
+                    #endif
+                }
+                else if( marcaDir )
+                {
+                    if( buscaInicioVolta )
+                    {
+                        tInicio = agora;
+                        buscaInicioVolta = false;
+                    }
+                    else
+                    {
+                        if( ((agora-tInicio)/1000) < 30 )
+                        {
+                            #ifdef TRACE_LF
+                            if( trc )
+                                SERIALX.print("ign ");
+                            #endif
+                        }
+                        else
+                        {
+                            tFim = agora + 500;
+                        }
+                    }
+                    #ifdef TRACE_LF
+                    if( trc )
+                        SERIALX.println("D");
+                    #endif
+                }
+
+                marcaEsq = marcaDir = cruzamento = false;
+
+                traceLF = true;
+            }
+        }
+    }
+
+    if( timeout )
+    {
+        // perdeu trilho, continua tentando ate timeout
+
+        if( agora < timeout )
+        {
+            if( delaySemBlock( &tPiscaLed, 500 ) )
+            {
+                traceLF = true;
+                estadoLed = ! estadoLed;
+            }
+        }
+        else // timeout
+        {
+            finalizarCorrida();
+
+            eeprom.dados.programa = DFT_PROGRAMA;
+            print();
+            printErro( ERRO_LF_TRILHO, "timeout" );
+
+            return;
+        }
+    }
+
+    pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
+    pid.executaSample( trilho.pontoMedio );
+
+    drive.move( (pid.MV > 0) ? (100 - pid.MV) : 100,
+                (pid.MV < 0) ? (100 + pid.MV) : 100 );
+
+    drive.refresh();
+
+    digitalWrite( PINO_LED, estadoLed );
+
+    if( trc )
+    {
+        if( traceLF )
+        {
+            traceLF = false;
+            print();
+        }
+    }
+}
 
 bool LineFollower::calibrar()
 {
@@ -1440,206 +1633,6 @@ bool LineFollower::calibrar()
     SERIALX.println( "Calibragem OK" );
 
     return true;
-}
-
-
-void LineFollower::loop()
-{
-    bool traceLF = false;
-
-    if( tFim && agora > tFim )
-    {
-        tFim = 0;
-
-        finalizarCorrida();
-
-        SERIALX.print("Lap: ");
-        SERIALX.print(int((agora-tInicio)/1000));
-        SERIALX.println("s");
-
-        // pisca LED por 2,25s
-        for( int l = 0; l < 15; l ++ )
-        {
-            drive.refresh();
-            digitalWrite( PINO_LED, false );
-            delay(50);
-            drive.refresh();
-            digitalWrite( PINO_LED, true );
-            delay(50);
-//            drive.refresh();
-//            delay(50);
-        }
-
-        // enganei um bobo da casca do ovo :-P
-        //iniciarCorrida();
-        //buscaInicioVolta = false;
-        return;
-    }
-
-    refresh();
-
-    if( eleito >= 0 )
-    {
-        timeout = 0;
-
-        // busca marcas esquerda/direita
-        for( int ig = 0 ; ig < nGrupos ; ig++ )
-        {
-            if( ig != eleito )
-            {
-                // minimo de 2 sensores de distancia i.e 2 * peso
-                if( ( grupos[ig].pontoMax + 2*2 ) < trilho.pontoMin )
-                {
-                    marcaDir = true;
-                    traceLF = true;
-                }
-
-                if( ( trilho.pontoMax + 2*2 ) < grupos[ig].pontoMin )
-                {
-                    marcaEsq = true;
-                    traceLF = true;
-                }
-            }
-        }
-
-        if( nGrupos == 1 )
-        {
-            if( debounce && agora > debounce )
-            {
-                debounce = 0;
-                int conta1s = 0;
-
-                for( int s = 0; s < LF_NUM_SENSORES; s++ )
-                {
-                    if( debounceArray[s] )
-                    {
-                        conta1s++;
-                        debounceArray[s] = false;
-                    }
-                }
-
-                //if( ( marcaEsq && marcaDir ) || ( conta1s > (  LF_NUM_SENSORES / 2 ) ) )
-                if( ( marcaEsq && marcaDir ) || cruzamento )
-                {
-                    #ifdef TRACE_LF
-                    if( trc )
-                    {
-                        SERIALX.print("C=");
-                        if( ( marcaEsq && marcaDir ) )
-                            SERIALX.println( "E+D" );
-                        else
-                            SERIALX.println( conta1s );
-                    }
-                    #endif
-                }
-                else if( marcaEsq )
-                {
-                    #ifdef TRACE_LF
-                    if( trc )
-                        SERIALX.println("E");
-                    #endif
-                }
-                else if( marcaDir )
-                {
-                    if( buscaInicioVolta )
-                    {
-                        tInicio = agora;
-                        buscaInicioVolta = false;
-                    }
-                    else
-                    {
-                        if( ((agora-tInicio)/1000) < 30 )
-                        {
-                            #ifdef TRACE_LF
-                            if( trc )
-                                SERIALX.print("ign ");
-                            #endif
-                        }
-                        else
-                        {
-                            tFim = agora + 500;
-                        }
-                    }
-                    #ifdef TRACE_LF
-                    if( trc )
-                        SERIALX.println("D");
-                    #endif
-                }
-
-                marcaEsq = marcaDir = cruzamento = false;
-
-                traceLF = true;
-            }
-        }
-        else // ( nGrupos > 1 )
-        {
-            traceLF = ( 0 == debounce );
-
-            if( traceLF )
-            {
-                debGrp = trilho;
-                SERIALX.print("deb n=");
-                SERIALX.println( nGrupos );
-            }
-
-            debounce = agora + eeprom.dados.delays.debounce;
-
-            for( int s = 0; s < LF_NUM_SENSORES; s++ )
-                debounceArray[s] |= sensoresBool[s];
-        }
-    }
-    else
-    {
-        // perdeu trilho, continua tentando ate timeout
-
-        if( 0 == timeout )
-        {
-            timeout = agora + LF_TIMEOUT;
-            traceLF = true;
-        }
-        else if( agora < timeout )
-        {
-            if( delaySemBlock( &tPiscaLed, 500 ) )
-            {
-                traceLF = true;
-                estadoLed = ! estadoLed;
-            }
-        }
-        else // timeout
-        {
-            finalizarCorrida();
-
-            eeprom.dados.programa = DFT_PROGRAMA;
-            print();
-            printErro( ERRO_LF_TRILHO, "timeout" );
-
-            return;
-        }
-    }
-
-    if( cruzamento )
-    {
-        trilho = debGrp;
-    }
-
-    pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
-    pid.executaSample( trilho.pontoMedio );
-
-    drive.move( (pid.MV > 0) ? (100 - pid.MV) : 100,
-                (pid.MV < 0) ? (100 + pid.MV) : 100 );
-
-    drive.refresh();
-
-    digitalWrite( PINO_LED, estadoLed );
-
-    if( trc )
-    {
-        if( traceLF )
-        {
-            traceLF = false;
-            print();
-        }
-    }
 }
 
 // ******************************************************************************

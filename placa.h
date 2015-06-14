@@ -38,7 +38,7 @@ kd = 0.01999
 #define MOTOR_ACEL      255
 #define MOTOR_CENTRO     42
 
-#define DFT_VEL_MAX     100
+#define DFT_VEL_MAX      17
 #define DFT_VEL_ESCALA  100
 #define DFT_DELAY_MOTOR  10
 #define DFT_DELAY_TRACE 100
@@ -46,11 +46,11 @@ kd = 0.01999
 #define DFT_LF_DEBOUNCE  35
 
 #define CAL_PID_P (float)0.05000
-#define CAL_PID_I (float)0.00100
+#define CAL_PID_I (float)0.00500
 #define CAL_PID_D (float)      0
 #define CAL_PID_MAX_MV       100
 #define CAL_PID_MIN_MV      -100
-#define CAL_PID_ZACC           0
+#define CAL_PID_ZACC          50
 #define CAL_PID_DENTRADA    true
 #define CAL_PID_SAMPLE        10
 
@@ -119,7 +119,7 @@ kd = 0.01999
 #define LF_FATOR_S      100
 #define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
-#define LF_TIMEOUT      1000
+#define LF_TIMEOUT       666
 #define LF_TIMEOUT_CAL  3000
 // ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
@@ -141,7 +141,5 @@ kd = 0.01999
 #define PINO_BOTAO_CAL      37
 #define PINO_BOTAO_PRG      39
 #define PINO_IR_EN          35
-
-#define ENCODER_MAX 13
 
 #endif // PLACA_H_INCLUDED
