@@ -16,10 +16,10 @@
  */
 
 /*
-9/6/15 - Arduino 1.6.4 - ATMEGA1280 - placa_v4.h
+15/6/15 - Arduino 1.6.4 - ATMEGA1280 - placa_v4.h
 
-Sketch uses 27,422 bytes (21%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 2,519 bytes (30%) of dynamic memory, leaving 5,673 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 27,776 bytes (21%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,431 bytes (29%) of dynamic memory, leaving 5,761 bytes for local variables. Maximum is 8,192 bytes.
 
 17/3/15 - Arduino 1.6.1 - ATMEGA328 - placa_v23.h
 
@@ -1340,6 +1340,42 @@ public:
 
         return pid.erro;
     }
+/*
+    #define MAX_LOG_LF 200
+    class EntradaLog
+    {
+    public:
+        void print()
+        {
+        }
+    } logCircular[ MAX_LOG_LF ];
+
+    int leituraLog;
+    int escritaLog;
+
+    void insereLog()
+    {
+        if( ++escritaLog == MAX_LOG_LF )
+            escritaLog = 0;
+
+        if( escritaLog == leituraLog )
+        {
+            if( ++leituraLog == MAX_LOG_LF )
+                leituraLog = 0;
+        }
+    }
+
+    void dumpLog()
+    {
+        while( leituraLog != escritaLog )
+        {
+            logCircular[ leituraLog ].print();
+
+            if( ++leituraLog == MAX_LOG_LF )
+                leituraLog = 0;
+        }
+    }
+*/
 }
 lineFollower;
 
@@ -1560,7 +1596,7 @@ bool LineFollower::calibrar()
 
     // alerta que vai entrar em modo auto
 
-    for( int l = 0; l < 15; l ++ )
+    for( int l = 0; l < 5; l ++ )
     {
         delay(50);
         digitalWrite( PINO_LED, false );

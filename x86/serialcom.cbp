@@ -108,9 +108,6 @@
 		<Unit filename="../reflash.sh" />
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
-		<Unit filename="matematica.hpp">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="resource.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>
