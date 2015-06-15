@@ -1121,7 +1121,8 @@ public:
     {
         SERIALX.print("LF ");
 
-        for( int y = LF_NUM_SENSORES-1; y >= 0 ; y-- )
+//        for( int y = LF_NUM_SENSORES-1; y >= 0 ; y-- )
+        for( int y = 0 ; y < LF_NUM_SENSORES ; y++ )
         {
             if( eleito >=0 && y >= trilho.pontoMin && y <= trilho.pontoMax )
                 SERIALX.print( sensoresBool[y] ? "T" : "?" );
@@ -1130,15 +1131,15 @@ public:
         }
         SERIALX.print(" ");
 
+        SERIALX.print("D");
+        debGrp.print();
+        SERIALX.print("D ");
+
         if( eleito < 0 )
         {
             SERIALX.print("{");
             trilho.print();
             SERIALX.print("} ");
-
-            SERIALX.print("?");
-            debGrp.print();
-            SERIALX.print("? ");
         }
 
         for( int x = 0; x < nGrupos; x++ )
@@ -1273,6 +1274,8 @@ public:
             // perdeu trilho => ativa timeout
             if( 0 == timeout )
             {
+                SERIALX.println("eleito < 0");
+
                 timeout = agora + LF_TIMEOUT;
                 traceLF = true;
             }
@@ -1343,7 +1346,7 @@ lineFollower;
 
 void LineFollower::loop()
 {
-    bool traceLF = false;
+    traceLF = false;
 
     if( tFim && agora > tFim )
     {
@@ -1485,6 +1488,7 @@ void LineFollower::loop()
         if( traceLF )
         {
             traceLF = false;
+            SERIALX.print("T ");
             print();
         }
     }

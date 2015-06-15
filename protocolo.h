@@ -249,6 +249,6 @@ enum Prioridades
 #define TRC_SENSORES 0x02
 #define TRC_LF       0x04
 #define TRC_JOYSTICK 0x08
-#define TRC_PID      0x16
+#define TRC_PID      0x10
 
 #endif // PROTOCOLO_H_INCLUDED
