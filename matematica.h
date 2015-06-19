@@ -34,10 +34,14 @@ class Fixo
         raw = raww;
     }
 public:
+    Fixo() : raw(0) {}
+    /*
     Fixo( int inteiro = 0, unsigned int fracao = 0 )
     {
         setInt( inteiro, fracao );
     }
+    */
+
     int getInt()
     {
         return (int)( raw >> 16 );
@@ -45,6 +49,11 @@ public:
     unsigned int getFrac()
     {
         return ( raw & 0xFFFF );
+    }
+    Fixo& operator=( int inteiro )
+    {
+        setInt( inteiro );
+        return *this;
     }
     void setInt( int inteiro = 0, unsigned int fracao = 0 )
     {
@@ -80,9 +89,9 @@ public:
         return i;
     }
 
-    int operator*( int valor )
+    Fixo operator*( int valor )
     {
-        return (  (raw * valor ) >> 16 );
+        return ( raw * valor );
     }
     Fixo operator*( Fixo& valor )
     {

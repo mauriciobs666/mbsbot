@@ -90,6 +90,9 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define CMD_JOYPAD "j"
 /* CMD_JOYPAD BOTOES X Y Z R */
 
+#define CMD_WHO "who"
+/* mostra lista de variaveis */
+
 /* Lista de <variaveis> */
 #define NOME_PROGRAMA "p"    // enum Programas sendo executado
 

@@ -16,10 +16,10 @@
  */
 
 /*
-15/6/15 - Arduino 1.6.4 - ATMEGA1280 - placa_v4.h
+18/6/15 - Arduino 1.6.4 - ATMEGA1280 - placa_v4.h
 
-Sketch uses 27,776 bytes (21%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 2,431 bytes (29%) of dynamic memory, leaving 5,761 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 27,730 bytes (21%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,435 bytes (29%) of dynamic memory, leaving 5,757 bytes for local variables. Maximum is 8,192 bytes.
 
 17/3/15 - Arduino 1.6.1 - ATMEGA328 - placa_v23.h
 
@@ -466,9 +466,7 @@ public:
         }
         else if( erro > cfg->zeraAcc || erro < -cfg->zeraAcc )
         {
-            Fixo temp = cfg->Ki;
-            temp *= Fixo(erro);
-            acumulador += temp;
+            acumulador += cfg->Ki * erro;
             acumulador.Constrain( cfg->minMV, cfg->maxMV );
         }
         else
@@ -1376,6 +1374,24 @@ public:
         }
     }
 */
+    void encodeSensores( bool arrayS[], unsigned int* dest )
+    {
+        unsigned int tmp = 0;
+
+        for( int i = LF_NUM_SENSORES-1 ; i <= 0 ; i-- )
+        {
+            if( arrayS[i] )
+                tmp |= 1;
+
+            tmp <<= 1;
+        }
+        *dest = tmp;
+    }
+
+    void decodeSensores( unsigned int orig, bool arrayS[] )
+    {
+
+    }
 }
 lineFollower;
 
@@ -1851,20 +1867,21 @@ public:
     Fixo getFixo( char* membro = NULL ) const
     {
         void* var = dados; //getMembro( membro );
+        Fixo retorno;
 
         switch( tipo )
         {
         case VAR_INT:
-            return *((int*)var);
+            retorno = *((int*)var);
         case VAR_LONG:
-            return (int)*((long*)var);
+            retorno = (int)*((long*)var);
         case VAR_FIXO:
-            return *((Fixo*)var);
+            retorno = *((Fixo*)var);
         default:
             break;
         }
 
-        return 0;
+        return retorno;
     }
 
     Variavel& operator+=( const Variavel& var )
@@ -2134,7 +2151,7 @@ public:
             // tenta primeiros comandos hard coded
             rc = evalHardCoded( &resultado );
 
-            if( rc )
+            if( rc == SKIP )
             {
                 rc = SUCESSO;
 
@@ -2375,6 +2392,13 @@ public:
             else
                 enviaJoystick();
         }
+        else if( 0 == strncmp( token, CMD_WHO, TAM_TOKEN ) )
+        {
+            for( int i = 0 ; i < nvars ; i++ )
+            {
+                SERIALX.println( var[i].nome );
+            }
+        }
         else
         {
             eco = true;
@@ -2382,10 +2406,10 @@ public:
         }
 
         #ifdef TRACE_INTERPRETADOR
-        if( SUCESSO == rc )
-            SERIALX.println( " exec ok" );
-        else
-            SERIALX.println( " nope" );
+//        if( SUCESSO == rc )
+//            SERIALX.println( " exec ok" );
+//        else
+//            SERIALX.println( " nope" );
         #endif
 
         return rc;
@@ -2911,6 +2935,7 @@ void setup()
 
     uname();
 
+    //eeprom.defaults();
     eeprom.load();
 
     drive.motorEsq.init( &eeprom.dados.motorEsq );
