@@ -456,7 +456,8 @@ public:
         erro = entrada - setPoint;
 
         // P
-        proporcional = cfg->Kp * erro;
+        Fixo tmp = cfg->Kp * erro;
+        proporcional = tmp.getInt();
 
         // I
         if( reinicia )
@@ -485,12 +486,14 @@ public:
         else if( cfg->dEntrada )
         {
             // deriva entrada pra evitar spike qdo muda setPoint
-            derivada = cfg->Kd * ( - ( entrada - entAnterior ) );
+            tmp = cfg->Kd * ( entrada - entAnterior );
+            derivada = tmp.getInt();
         }
         else
         {
             // deriva erro ( setPoint - entrada )
-            derivada = cfg->Kd * ( erro - erroAnterior );
+            tmp = cfg->Kd * ( erro - erroAnterior );
+            derivada = tmp.getInt();
         }
 
         entAnterior = entrada;
@@ -1297,20 +1300,7 @@ public:
 
     bool timedout( unsigned long* pAgora )
     {
-        *pAgora = millis();
-
-//        SERIALX.print( "timeout = " );
-//        SERIALX.print( timeout );
-//        SERIALX.print( " agora = " );
-//        SERIALX.print( *pAgora );
-
-        if( timeout < *pAgora )
-        {
-//            SERIALX.println( " TIMEDOUT" );
-            return true;
-        }
-//        SERIALX.println();
-        return false;
+        return ( timeout < ( *pAgora = millis() ) );
     }
 
     int giraP( int setPoint = LF_SETPOINT, int aprox = CAL_PID_ZACC )
@@ -1540,7 +1530,6 @@ void LineFollower::loop()
         if( traceLF )
         {
             traceLF = false;
-            SERIALX.print("T ");
             print();
         }
     }

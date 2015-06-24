@@ -102,6 +102,7 @@
 		<Unit filename="../placa_v22.h" />
 		<Unit filename="../placa_v23.h" />
 		<Unit filename="../placa_v3.h" />
+		<Unit filename="../placa_v33.h" />
 		<Unit filename="../placa_v4.h" />
 		<Unit filename="../placa_v942.h" />
 		<Unit filename="../protocolo.h" />
