@@ -1039,6 +1039,13 @@ public:
         return true;
     }
 
+    void setIR( bool acende )
+    {
+        #ifdef PINO_IR_EN
+            digitalWrite( PINO_IR_EN, acende ? HIGH : LOW );
+        #endif
+    }
+
     void iniciarCorrida()
     {
         if( ! calibrado() )
@@ -1047,7 +1054,7 @@ public:
             return;
         }
 
-        digitalWrite( PINO_IR_EN, HIGH );
+        setIR( true );
         delay(8);
 
         pid.setConfig( &eeprom.dados.pid[ PID_CORRIDA ] );
@@ -1074,7 +1081,7 @@ public:
 
     void finalizarCorrida()
     {
-        digitalWrite(PINO_IR_EN, LOW);
+        setIR( false );
 
         eeprom.dados.programa = DFT_PROGRAMA;
         drive.parar();
@@ -1217,7 +1224,6 @@ public:
                         {
                             // close enough :-)
                             eleito = nGrupos;
-                            trilho = grp;
                             distEleito = distancia;
                         }
                     }
@@ -1240,12 +1246,28 @@ public:
             }
         }
 
+        if( eleito >= 0 )
+        {
+            trilho = grupos[ eleito ];
+        }
+        else
+        {
+            // perdeu trilho => ativa timeout
+            if( 0 == timeout )
+            {
+                SERIALX.println("eleito < 0");
+
+                timeout = agora + LF_TIMEOUT;
+                traceLF = true;
+            }
+        }
+
         // mais de um grupo pode ser marcacao ou inicio de cruzamento
         if( nGrupos > 1 )
         {
             if( 0 == debounce )
             {
-                SERIALX.print("deb n=");
+                SERIALX.print( "deb n=" );
                 SERIALX.println( nGrupos );
             }
 
@@ -1267,18 +1289,6 @@ public:
                             marcaDir = true;
                     }
                 }
-            }
-        }
-
-        if( eleito < 0 )
-        {
-            // perdeu trilho => ativa timeout
-            if( 0 == timeout )
-            {
-                SERIALX.println("eleito < 0");
-
-                timeout = agora + LF_TIMEOUT;
-                traceLF = true;
             }
         }
 
@@ -1544,7 +1554,7 @@ bool LineFollower::calibrar()
 
     SERIALX.println( "Calibrando..." );
 
-    digitalWrite(PINO_IR_EN, HIGH);
+    setIR( true );
 
     // primeira rodada de leitura, estima valores maximo, minimo e medio
 
@@ -1657,7 +1667,7 @@ bool LineFollower::calibrar()
     drive.refresh( true );
 
     digitalWrite( PINO_LED, false );
-    digitalWrite( PINO_IR_EN , LOW);
+    setIR( false );
 
     // imprime sensores
     for( int x = 0; x < LF_NUM_SENSORES; x++ )
@@ -2935,11 +2945,13 @@ void setup()
     drive2.motorDir.init( &eeprom.dados.motorDirT );
 #endif
 
-    pinMode(PINO_IR_EN, OUTPUT);
-    digitalWrite(PINO_IR_EN, LOW);
+#ifdef PINO_IR_EN
+    pinMode( PINO_IR_EN, OUTPUT );
+    digitalWrite( PINO_IR_EN, LOW );
+#endif
 
-    pinMode(PINO_LED, OUTPUT);
-    digitalWrite(PINO_LED, LOW);
+    pinMode( PINO_LED, OUTPUT );
+    digitalWrite( PINO_LED, LOW );
 
 #ifdef PINO_ARMA
     pinMode(PINO_ARMA, OUTPUT);
