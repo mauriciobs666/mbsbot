@@ -37,6 +37,7 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 #include "placa.h"
 #include "matematica.h"
 #include "dados.h"
+#include "pid.h"
 
 // ANSI
 #include <stdio.h>
@@ -132,6 +133,25 @@ void printVetor2i( Vetor2i* v )
     SERIALX.print( "," );
     SERIALX.print( v->y );
     SERIALX.print( ")" );
+}
+
+void printPID( PID* p )
+{
+    if( trace & TRC_PID )
+    {
+        //SERIALX.print( "i=" );
+        //SERIALX.print( p->entAnterior );
+        SERIALX.print( " e=" );
+        SERIALX.print( p->erro );
+        SERIALX.print( " [" );
+        SERIALX.print( p->proporcional );
+        SERIALX.print( " " );
+        SERIALX.print( p->integral );
+        SERIALX.print( " " );
+        SERIALX.print( p->derivada );
+        SERIALX.print( "] => " );
+        SERIALX.print( p->MV );
+    }
 }
 
 // ******************************************************************************
@@ -392,142 +412,6 @@ MbsGamePad gamepad;
 #ifdef PINO_JOY_X
     MbsGamePad rcpad;
 #endif // PINO_JOY_X
-
-
-class PID
-{
-public:
-    ConfigPID *cfg;
-
-    int proporcional;
-    int integral;
-    int derivada;
-
-    Fixo acumulador;
-
-    int erro;
-    int erroAnterior;
-    int entAnterior;
-
-    int setPoint;   // leitura de entrada desejada = meta
-    int MV;         // variavel manipulada = valor de saida
-    int sampleTime; // ms entre as amostras
-
-    PID()
-    {
-        cfg = NULL;
-        zera();
-    }
-
-    int executaSample( int entrada, bool reinicia = false )
-    {
-        if( ( ( agora - tUltimoLoop ) > sampleTime )
-           || reinicia )
-        {
-            executa( entrada, reinicia );
-            tUltimoLoop = agora;
-        }
-        return MV;
-    }
-
-    void setConfig( ConfigPID *config )
-    {
-        cfg = config;
-        zera(); // ou reinicia?
-    }
-
-    void zera( )
-    {
-        proporcional = integral = derivada = 0;
-        setPoint = MV = erro = erroAnterior = entAnterior = 0;
-        tUltimoLoop = 0;
-        acumulador.setInt(0);
-    }
-
-    int executa( int entrada, bool reinicia = false )
-    {
-        if( ! cfg )
-            return 0;
-
-//        SERIALX.print( "executa( " );
-//        SERIALX.print( entrada );
-//        SERIALX.println( " )" );
-
-        erro = entrada - setPoint;
-
-        // P
-        Fixo tmp = cfg->Kp * erro;
-        proporcional = tmp.getInt();
-
-        // I
-        if( reinicia )
-        {
-            // apenas mantem curso, ignora acumulador anterior
-            acumulador = MV;
-        }
-        else if( erro > cfg->zeraAcc || erro < -cfg->zeraAcc )
-        {
-            acumulador += cfg->Ki * erro;
-            acumulador.Constrain( cfg->minMV, cfg->maxMV );
-        }
-        else
-        {
-            acumulador = 0;
-        }
-
-        integral = acumulador.getInt();
-
-        // D
-        if( reinicia )
-        {
-            // anterior nao eh confiavel
-            derivada = 0;
-        }
-        else if( cfg->dEntrada )
-        {
-            // deriva entrada pra evitar spike qdo muda setPoint
-            tmp = cfg->Kd * ( entrada - entAnterior );
-            derivada = tmp.getInt();
-        }
-        else
-        {
-            // deriva erro ( setPoint - entrada )
-            tmp = cfg->Kd * ( erro - erroAnterior );
-            derivada = tmp.getInt();
-        }
-
-        entAnterior = entrada;
-        erroAnterior = erro;
-
-        MV = constrain( proporcional + integral + derivada,
-                        cfg->minMV,
-                        cfg->maxMV );
-
-        return MV;
-    }
-
-    void print()
-    {
-        if( trace & TRC_PID )
-        {
-            //SERIALX.print( "i=" );
-            //SERIALX.print( entAnterior );
-            SERIALX.print( " e=" );
-            SERIALX.print( erro );
-            SERIALX.print( " [" );
-            SERIALX.print( proporcional );
-            SERIALX.print( " " );
-            SERIALX.print( integral );
-            SERIALX.print( " " );
-            SERIALX.print( derivada );
-            SERIALX.print( "] => " );
-            SERIALX.print( MV );
-        }
-    }
-
-protected:
-    unsigned long tUltimoLoop;  // timestamp da iteracao anterior de executa()
-};
 
 // ******************************************************************************
 //		CONTROLADOR DE MOTORES
@@ -1027,6 +911,8 @@ public:
         eleito = -1;
         debounce1s = 0;
 
+        leituraLog = escritaLog = 0;
+
         for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
             sensoresBool[sb] = debounceArray[sb] = false;
     }
@@ -1160,7 +1046,7 @@ public:
             SERIALX.print(" ");
         }
 
-        pid.print();
+        printPID( &pid );
 
         SERIALX.println();
 
@@ -1212,14 +1098,14 @@ public:
                 grp.pontoMedio = (int) ( num / den );
 
                 // verifica se tamanho do grupo eh aceitavel
-                if( grp.tamanho < (LF_NUM_SENSORES/2) )
+                if( grp.tamanho < (LF_NUM_SENSORES/3) )
                 {
                     if( trilho.intersecciona( grp ) ) // verifica se intersecao com trilho eh plausivel
                     {
                         int distancia = abs( grp.pontoMedio - trilho.pontoMedio );
 
                         // usa menor distancia como criterio
-                        // TODO: olhar tendencia
+                        // TODO: olhar tendencia/momentum
                         if( distancia < distEleito )
                         {
                             // close enough :-)
@@ -1260,6 +1146,8 @@ public:
                 timeout = agora + LF_TIMEOUT;
                 traceLF = true;
             }
+
+            debounce = agora + eeprom.dados.delays.debounce;
         }
 
         // mais de um grupo pode ser marcacao ou inicio de cruzamento
@@ -1338,13 +1226,27 @@ public:
 
         return pid.erro;
     }
-/*
+
     #define MAX_LOG_LF 200
+
     class EntradaLog
     {
     public:
+        unsigned int sensoresInt;
+
         void print()
         {
+            unsigned int tmp = sensoresInt;
+
+            for( int i = 0 ; i < LF_NUM_SENSORES ; i++ )
+            {
+                if( tmp & 0x8000 )
+                    SERIALX.print("A");
+                else
+                    SERIALX.print("_");
+
+                tmp <<= 1;
+            }
         }
     } logCircular[ MAX_LOG_LF ];
 
@@ -1373,7 +1275,7 @@ public:
                 leituraLog = 0;
         }
     }
-*/
+
     void encodeSensores( bool arrayS[], unsigned int* dest )
     {
         unsigned int tmp = 0;
@@ -1413,14 +1315,23 @@ void LineFollower::loop()
         // pisca LED por 2,25s
         for( int l = 0; l < 15; l ++ )
         {
-            drive.refresh();
-            digitalWrite( PINO_LED, false );
-            delay(50);
-            drive.refresh();
             digitalWrite( PINO_LED, true );
-            delay(50);
-//            drive.refresh();
-//            delay(50);
+
+            tPiscaLed = agora + 50;
+            while( tPiscaLed > agora )
+            {
+                agora = millis();
+                drive.refresh();
+            }
+
+            digitalWrite( PINO_LED, false );
+
+            tPiscaLed = agora + 50;
+            while( tPiscaLed > agora )
+            {
+                agora = millis();
+                drive.refresh();
+            }
         }
 
         // enganei um bobo da casca do ovo :-P
@@ -1476,6 +1387,7 @@ void LineFollower::loop()
                     }
                     else
                     {
+                        /*
                         if( ((agora-tInicio)/1000) < 30 )
                         {
                             #ifdef TRACE_LF
@@ -1485,8 +1397,9 @@ void LineFollower::loop()
                         }
                         else
                         {
+                        */
                             tFim = agora + 500;
-                        }
+                        //}
                     }
                     #ifdef TRACE_LF
                     if( trc )
@@ -1717,9 +1630,9 @@ void enviaStatus(bool enviaComando = true)
     SERIALX.print( drive.motorDir.getEncoder() );
 
     SERIALX.print( " " );
-    drive.motorEsq.pid.print();
+    printPID( &drive.motorEsq.pid );
     SERIALX.print( " " );
-    drive.motorDir.pid.print();
+    printPID( &drive.motorDir.pid );
 
 
     #ifdef RODAS_PWM_x4
