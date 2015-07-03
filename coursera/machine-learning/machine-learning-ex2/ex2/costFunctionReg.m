@@ -22,12 +22,13 @@ h = sigmoid(X * theta);
 J = sum(  ( -y  .*  log( h ) ) .-  (( 1 .- y) .* log( 1 .- h ))  ) / m;
 J = J + ( lambda / ( 2 * m ) ) * sum( theta(2:end,:) .^2 );
 
-thetag = theta(2:end,:);
-Xg = X(2:end,:);
-hg = sigmoid( Xg, thetag );
-yg = y(2:end,:);
-
-%grad =  ( sum( ( hg .- yg ) .* Xg )  ./ (m-1) )' .+ ((lambda .* thetag) / (m-1)) ; 
+for i = 1:size(theta)
+	grad(i) = ( sum( ( h .- y ) .* X )  / m )(i);
+	
+	if i > 1
+		grad(i) = grad(i) + (lambda * theta(i)) / m;
+	end;	
+end;
 
 % =============================================================
 
