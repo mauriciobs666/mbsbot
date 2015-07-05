@@ -1067,9 +1067,6 @@ public:
             SERIALX.print(" ");
         }
 
-
-        printPID( &pid );
-
         SERIALX.print(" ");
 
         if( marcaEsq )
@@ -1078,7 +1075,7 @@ public:
             SERIALX.print("C");
         if( marcaDir )
             SERIALX.print("D");
-
+/*
         if( debounce )
         {
             SERIALX.print(" ");
@@ -1097,6 +1094,9 @@ public:
             SERIALX.print(" ");
             SERIALX.print(tFim-agora);
         }
+*/
+
+        printPID( &pid );
 
         SERIALX.println();
 
@@ -1240,16 +1240,11 @@ public:
             }
 
             // se mais de 3/4 dos sensores foram ativados se trata de um cruzamento
-            if( debounce1s > ( ( LF_NUM_SENSORES * 3 ) / 4 ) )
+            if( debounce1s >= LF_NUM_SENSORES-1 )
             {
                 cruzamento = true;
-                trilho = debGrp;
             }
         }
-
-        // salva bkp do ultimo trilho "bom"
-        if( ( eleito >= 0 ) && !debounce && !cruzamento )
-            debGrp = trilho;
     }
 
     bool timedout( unsigned long* pAgora )
@@ -1400,6 +1395,10 @@ void LineFollower::loop()
 
     if( eleito >= 0 )
     {
+        // salva bkp do ultimo trilho "bom"
+        if( !debounce && !cruzamento )
+            debGrp = trilho;
+
         if( nGrupos == 1 )
         {
             timeout = 0;
@@ -1481,12 +1480,11 @@ void LineFollower::loop()
     }
 
     pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
-    pid.executaSample( trilho.pontoMedio );
+
+    pid.executaSample( cruzamento ? debGrp.pontoMedio : trilho.pontoMedio );
 
     drive.move( (pid.MV > 0) ? (100 - pid.MV) : 100,
                 (pid.MV < 0) ? (100 + pid.MV) : 100 );
-
-    //drive.refresh();
 
     digitalWrite( PINO_LED, estadoLed );
 
