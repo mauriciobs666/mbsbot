@@ -198,6 +198,7 @@ enum Erros
     ERRO_INTERPRETADOR,
     ERRO_LF_CALIBRA,
     ERRO_LF_TRILHO,
+    ERRO_LF_TIMEOUT,
     SKIP
 };
 

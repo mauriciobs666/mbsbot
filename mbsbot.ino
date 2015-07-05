@@ -16,10 +16,10 @@
  */
 
 /*
-18/6/15 - Arduino 1.6.4 - ATMEGA1280 - placa_v4.h
+5/7/15 - Arduino 1.6.5 - ATMEGA1280 - placa_v33.h
 
-Sketch uses 27,730 bytes (21%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 2,435 bytes (29%) of dynamic memory, leaving 5,757 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 27,986 bytes (22%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,824 bytes (34%) of dynamic memory, leaving 5,368 bytes for local variables. Maximum is 8,192 bytes.
 
 17/3/15 - Arduino 1.6.1 - ATMEGA328 - placa_v23.h
 
@@ -66,6 +66,7 @@ Eeprom eeprom;
 
 unsigned long agora = 0;
 unsigned long ultimoTrace = 0; // timeout de envios pela serial de status e sensores
+unsigned long tPiscaLed = 0;
 
 bool trc = false;
 char trace = 0;
@@ -86,6 +87,7 @@ const char ErroVarArray[]   PROGMEM = "ERRO: VAR_ARRAY";
 const char ErroInpretador[] PROGMEM = "ERRO: INTERPRETADOR";
 const char ErroLFCalibra[]  PROGMEM = "ERRO: LF_CALIBRA";
 const char ErroLFTrilho[]   PROGMEM = "ERRO: LF_TRILHO";
+const char ErroLFTimeout[]  PROGMEM = "ERRO: LF_TIMEOUT";
 const char ErroSkip[]       PROGMEM = "INFO: SKIP";
 
 const char* const tabErros[] PROGMEM =
@@ -100,6 +102,7 @@ const char* const tabErros[] PROGMEM =
     ErroInpretador,
     ErroLFCalibra,
     ErroLFTrilho,
+    ErroLFTimeout,
     ErroSkip
 };
 
@@ -789,6 +792,11 @@ public:
         //#undef TRACE
     }
 
+    void uniciclo( int velocidade, int angulo )
+    {
+
+    }
+
     void printRodas()
     {
         SERIALX.print( NOME_RODA_ESQ );
@@ -879,11 +887,9 @@ public:
     unsigned long tFim;
     unsigned long timeout;
     unsigned long debounce;
-    unsigned long tPiscaLed;
 
     bool sensoresBool[ LF_NUM_SENSORES ];   // retorno do getBool()
     bool debounceArray[ LF_NUM_SENSORES ];  // debounce pra determinar se uma marca esq/dir eh na verdade um cruzamneto
-    int  debounce1s;                        // contagem de sensores ativados no array pra efeito de deteccao de cruzamento
     bool marcaEsq;
     bool marcaDir;
     bool cruzamento;
@@ -891,8 +897,19 @@ public:
     bool estadoLed;
     bool traceLF;
 
+    int debounce1s;                        // contagem de sensores ativados no array pra efeito de deteccao de cruzamento
     int nGrupos;
     int eleito;
+
+    enum EstadoLF
+    {
+        RESET,
+        BUSCA_INICIO_VOLTA,
+        CORRIDA,
+        CURVA,
+        CRUZAMENTO,
+        FIM_VOLTA
+    } estadoLF;
 
     void loop();
     bool calibrar();
@@ -906,7 +923,7 @@ public:
     {
         pid.zera();
 
-        tInicio = tFim = timeout = tPiscaLed = debounce = 0;
+        tInicio = tFim = timeout = debounce = 0;
         marcaEsq = marcaDir = cruzamento = estadoLed = traceLF = false;
         buscaInicioVolta = true;
         nGrupos = 0;
@@ -917,6 +934,8 @@ public:
 
         for(int sb = 0; sb < LF_NUM_SENSORES; sb++)
             sensoresBool[sb] = debounceArray[sb] = false;
+
+        estadoLF = RESET;
     }
 
     bool calibrado()
@@ -938,7 +957,7 @@ public:
     {
         if( ! calibrado() )
         {
-            printErro( ERRO_LF_CALIBRA, "NAO calibrado" );
+            printErro( ERRO_LF_CALIBRA );
             return;
         }
 
@@ -962,7 +981,7 @@ public:
         else
         {
             print();
-            printErro(ERRO_LF_TRILHO);
+            printErro( ERRO_LF_TRILHO );
             eeprom.dados.programa = DFT_PROGRAMA;
         }
     }
@@ -1048,7 +1067,36 @@ public:
             SERIALX.print(" ");
         }
 
+
         printPID( &pid );
+
+        SERIALX.print(" ");
+
+        if( marcaEsq )
+            SERIALX.print("E");
+        if( cruzamento )
+            SERIALX.print("C");
+        if( marcaDir )
+            SERIALX.print("D");
+
+        if( debounce )
+        {
+            SERIALX.print(" ");
+            SERIALX.print(debounce-agora);
+
+            SERIALX.print(" ");
+            for( int y = 0 ; y < LF_NUM_SENSORES ; y++ )
+                SERIALX.print( debounceArray[y] ? "D" : "_" );
+
+            SERIALX.print(" ");
+            SERIALX.print(debounce1s);
+        }
+
+        if( tFim )
+        {
+            SERIALX.print(" ");
+            SERIALX.print(tFim-agora);
+        }
 
         SERIALX.println();
 
@@ -1057,10 +1105,6 @@ public:
 
     void refresh()
     {
-        // salva bkp do ultimo trilho "bom"
-        if( eleito && !debounce && !cruzamento )
-            debGrp = trilho;
-
         // le dos sensores
         for( int s = 0; s < LF_NUM_SENSORES; s++ )
             sensoresBool[s] = sensores[ LF_PINO_0 + s ].refresh().getBool();
@@ -1100,7 +1144,7 @@ public:
                 grp.pontoMedio = (int) ( num / den );
 
                 // verifica se tamanho do grupo eh aceitavel
-                if( grp.tamanho < (LF_NUM_SENSORES/3) )
+                if( grp.tamanho < (LF_NUM_SENSORES/2) )
                 {
                     if( trilho.intersecciona( grp ) ) // verifica se intersecao com trilho eh plausivel
                     {
@@ -1182,12 +1226,18 @@ public:
             }
         }
 
-        if( debounce )
+        if( debounce || timeout )
         {
             //  atualiza array de debounce e contador
-            for( int s = 0, debounce1s = 0; s < LF_NUM_SENSORES; s++ )
-                if( ( debounceArray[s] |= sensoresBool[s] ) )
+            debounce1s = 0;
+
+            for( int s = 0; s < LF_NUM_SENSORES; s++ )
+            {
+                debounceArray[s] |= sensoresBool[s];
+
+                if( debounceArray[s] )
                     debounce1s++;
+            }
 
             // se mais de 3/4 dos sensores foram ativados se trata de um cruzamento
             if( debounce1s > ( ( LF_NUM_SENSORES * 3 ) / 4 ) )
@@ -1196,6 +1246,10 @@ public:
                 trilho = debGrp;
             }
         }
+
+        // salva bkp do ultimo trilho "bom"
+        if( ( eleito >= 0 ) && !debounce && !cruzamento )
+            debGrp = trilho;
     }
 
     bool timedout( unsigned long* pAgora )
@@ -1353,13 +1407,6 @@ void LineFollower::loop()
             // tempo de debounce concluido, toma acoes devidas
             if( debounce && agora > debounce )
             {
-                debounce = 0;
-
-                // limpa array
-                for( int s = 0; s < LF_NUM_SENSORES; s++ )
-                    debounceArray[s] = false;
-
-                //if( ( marcaEsq && marcaDir ) || ( debounce1s > (  LF_NUM_SENSORES / 2 ) ) )
                 if( ( marcaEsq && marcaDir ) || cruzamento )
                 {
                     #ifdef TRACE_LF
@@ -1389,19 +1436,7 @@ void LineFollower::loop()
                     }
                     else
                     {
-                        /*
-                        if( ((agora-tInicio)/1000) < 30 )
-                        {
-                            #ifdef TRACE_LF
-                            if( trc )
-                                SERIALX.print("ign ");
-                            #endif
-                        }
-                        else
-                        {
-                        */
-                            tFim = agora + 500;
-                        //}
+                        tFim = agora + 500;
                     }
                     #ifdef TRACE_LF
                     if( trc )
@@ -1409,7 +1444,12 @@ void LineFollower::loop()
                     #endif
                 }
 
+                debounce = 0;
                 marcaEsq = marcaDir = cruzamento = false;
+
+                // limpa array
+                for( int s = 0; s < LF_NUM_SENSORES; s++ )
+                    debounceArray[s] = false;
 
                 traceLF = true;
             }
@@ -1434,7 +1474,7 @@ void LineFollower::loop()
 
             eeprom.dados.programa = DFT_PROGRAMA;
             print();
-            printErro( ERRO_LF_TRILHO, "timeout" );
+            printErro( ERRO_LF_TIMEOUT );
 
             return;
         }
@@ -1446,7 +1486,7 @@ void LineFollower::loop()
     drive.move( (pid.MV > 0) ? (100 - pid.MV) : 100,
                 (pid.MV < 0) ? (100 + pid.MV) : 100 );
 
-    drive.refresh();
+    //drive.refresh();
 
     digitalWrite( PINO_LED, estadoLed );
 
@@ -1592,11 +1632,11 @@ bool LineFollower::calibrar()
     }
 
     if( agora > timeout )
-        printErro( ERRO_LF_CALIBRA, "timeout" );
+        printErro( ERRO_LF_TIMEOUT );
 
     if( ! calibrado() )
     {
-        printErro( ERRO_LF_CALIBRA, "NAO calibrado" );
+        printErro( ERRO_LF_CALIBRA );
         return false;
     }
 
@@ -2625,7 +2665,7 @@ interpretador;
 
 class Telnet
 {
-    char command[MAX_CMD];
+    char comando[MAX_CMD];
     unsigned char pos;
 
 public:
@@ -2645,12 +2685,12 @@ public:
             }
             else if( c == CMD_EOL )
             {
-                command[ pos ] = 0;
+                comando[ pos ] = 0;
                 pos = 0;
                 return true;
             }
             else
-                command[ pos++ ] = c;
+                comando[ pos++ ] = c;
         }
         return false;
     }
@@ -2658,7 +2698,7 @@ public:
     void loop()
     {
         while( recebe() )
-            interpretador.eval( command );
+            interpretador.eval( comando );
     }
 }
 telnet;
@@ -3080,10 +3120,9 @@ void loop()
         }
         case PRG_IDLE:
         {
-            static unsigned long piscaLed = 0;
             static int intervalo = 100;
 
-            if( delaySemBlock( &piscaLed, intervalo ) )
+            if( delaySemBlock( &tPiscaLed, intervalo ) )
             {
                 if( intervalo == 100 )
                 {
