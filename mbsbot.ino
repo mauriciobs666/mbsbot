@@ -866,6 +866,8 @@ void enviaSensores(bool enviaComando = true)
 //   LINE FOLLOWER
 // ******************************************************************************
 
+#ifndef SEM_LINE_FOLLOWER
+
 #define TRACE_LF
 
 class LineFollower
@@ -1602,6 +1604,8 @@ bool LineFollower::calibrar()
 
     return true;
 }
+
+#endif
 
 // ******************************************************************************
 //		SERVIDOR SERIAL

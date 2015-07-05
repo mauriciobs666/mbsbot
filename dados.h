@@ -304,7 +304,7 @@ public:
 
         // TODO (mbs#1#): permitir config dos sensores via serial
 
-#ifdef LINE_FOLLOWER
+#ifndef SEM_LINE_FOLLOWER
         for( int p = LF_PINO_0;
                  p < ( LF_PINO_0 +LF_NUM_SENSORES );
                  p++ )

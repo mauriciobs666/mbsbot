@@ -102,8 +102,6 @@
 #define NUM_SENSORES    16
 #define THRESHOLD_CAL   200
 
-#define LINE_FOLLOWER
-
 #define LF_NUM_SENSORES NUM_SENSORES
 #define LF_PINO_0       0
 #define LF_PINO_N       ( LF_PINO_0 + LF_NUM_SENSORES )

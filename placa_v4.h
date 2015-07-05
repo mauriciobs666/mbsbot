@@ -31,21 +31,45 @@
 
 #define DFT_VEL_MAX     100
 #define DFT_VEL_ESCALA   80
-#define DFT_DELAY_MOTOR   1
+#define DFT_DELAY_MOTOR  10
+#define DFT_DELAY_TRACE 100
 #define DFT_BALANCO       0
-#define DFT_LF_DEBOUNCE 35
+#define DFT_LF_DEBOUNCE  35
 
-#define DFT_PID_P             12
-#define DFT_PID_I            500
-#define DFT_PID_D           5000
+#define CAL_PID_P (float)0.05000
+#define CAL_PID_I (float)0.00500
+#define CAL_PID_D (float)      0
+#define CAL_PID_MAX_MV       100
+#define CAL_PID_MIN_MV      -100
+#define CAL_PID_ZACC          50
+#define CAL_PID_DENTRADA    true
+#define CAL_PID_SAMPLE        10
+
+#define DFT_PID_P (float)0.15000
+#define DFT_PID_I (float)      0
+#define DFT_PID_D (float)0.02000
 #define DFT_PID_MAX_MV       100
 #define DFT_PID_MIN_MV      -100
-#define DFT_PID_ZACC        true
+#define DFT_PID_ZACC          50
 #define DFT_PID_DENTRADA    true
-#define DFT_PID_SAMPLE         5
+#define DFT_PID_SAMPLE        10
 
-// Habilita controle PWM (se undef controla por largura de pulso/servo)
-#define RODAS_PWM 1
+#define DFT_PID_RETA_P           DFT_PID_P
+#define DFT_PID_RETA_I           DFT_PID_I
+#define DFT_PID_RETA_D           DFT_PID_D
+#define DFT_PID_RETA_MAX_MV      DFT_PID_MAX_MV
+#define DFT_PID_RETA_MIN_MV      DFT_PID_MIN_MV
+#define DFT_PID_RETA_ZACC        DFT_PID_ZACC
+#define DFT_PID_RETA_DENTRADA    DFT_PID_DENTRADA
+#define DFT_PID_RETA_SAMPLE      DFT_PID_SAMPLE
+
+#define PID_MOTOR_P  (float) 15
+#define PID_MOTOR_I  (float)  1
+#define PID_MOTOR_D  (float)  0
+#define PID_MOTOR_MAX_MV    255
+#define PID_MOTOR_MIN_MV   -255
+#define PID_MOTOR_ZACC        0
+#define PID_MOTOR_DENTRADA true
 
 // 4 rodas mechanum
 #define RODAS_PWM_x4 1
@@ -78,17 +102,18 @@
 //#define PINO_SERVO_ROLL		8
 
 #define NUM_SENSORES    16
+#define THRESHOLD_CAL   200
 
-//#define LINE_FOLLOWER
+#define SEM_LINE_FOLLOWER
 
 #define LF_NUM_SENSORES NUM_SENSORES
 #define LF_PINO_0       0
 #define LF_PINO_N       ( LF_PINO_0 + LF_NUM_SENSORES )
 #define LF_FATOR_S      100
-#define LF_RANGE        ( NUM_SENSORES * LF_FATOR_S )
+#define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
-#define LF_TIMEOUT      1000
-#define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )
+#define LF_TIMEOUT       666
+#define LF_TIMEOUT_CAL  3000
 // ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
 // http://arduino.cc/en/Reference/Tone

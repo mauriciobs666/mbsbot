@@ -30,31 +30,46 @@
 #define MOTOR_CENTRO     42
 
 #define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA   80
-#define DFT_DELAY_MOTOR   1
+#define DFT_VEL_ESCALA  100
+#define DFT_DELAY_MOTOR  10
+#define DFT_DELAY_TRACE 100
 #define DFT_BALANCO       0
-#define DFT_LF_DEBOUNCE 35
+#define DFT_LF_DEBOUNCE  35
 
-#define DFT_PID_P              1
-#define DFT_PID_I              0
-#define DFT_PID_D              0
-#define DFT_PID_MAX_MV       100
-#define DFT_PID_MIN_MV      -100
-#define DFT_PID_ZACC        true
-#define DFT_PID_DENTRADA    true
-#define DFT_PID_SAMPLE         5
-
-#define CAL_PID_P       (float)1
-#define CAL_PID_I              0
-#define CAL_PID_D              0
+#define CAL_PID_P (float)0.05000
+#define CAL_PID_I (float)0.00500
+#define CAL_PID_D (float)      0
 #define CAL_PID_MAX_MV       100
 #define CAL_PID_MIN_MV      -100
-#define CAL_PID_ZACC        true
+#define CAL_PID_ZACC          50
 #define CAL_PID_DENTRADA    true
-#define CAL_PID_SAMPLE         5
+#define CAL_PID_SAMPLE        10
 
-// Habilita controle PWM (se undef controla por largura de pulso/servo)
-#define RODAS_PWM 1
+#define DFT_PID_P (float)0.15000
+#define DFT_PID_I (float)      0
+#define DFT_PID_D (float)0.02000
+#define DFT_PID_MAX_MV       100
+#define DFT_PID_MIN_MV      -100
+#define DFT_PID_ZACC          50
+#define DFT_PID_DENTRADA    true
+#define DFT_PID_SAMPLE        10
+
+#define DFT_PID_RETA_P           DFT_PID_P
+#define DFT_PID_RETA_I           DFT_PID_I
+#define DFT_PID_RETA_D           DFT_PID_D
+#define DFT_PID_RETA_MAX_MV      DFT_PID_MAX_MV
+#define DFT_PID_RETA_MIN_MV      DFT_PID_MIN_MV
+#define DFT_PID_RETA_ZACC        DFT_PID_ZACC
+#define DFT_PID_RETA_DENTRADA    DFT_PID_DENTRADA
+#define DFT_PID_RETA_SAMPLE      DFT_PID_SAMPLE
+
+#define PID_MOTOR_P  (float) 15
+#define PID_MOTOR_I  (float)  1
+#define PID_MOTOR_D  (float)  0
+#define PID_MOTOR_MAX_MV    255
+#define PID_MOTOR_MIN_MV   -255
+#define PID_MOTOR_ZACC        0
+#define PID_MOTOR_DENTRADA true
 
 // inverte sentido dos motores
 #define MOTOR_ESQ_INV 0
@@ -63,14 +78,18 @@
 #define MOTOR_D_T_INV 0
 
 // canal 1
-#define PINO_MOTOR_ESQ  	7
-#define PINO_MOTOR_ESQ_N	8
-#define PINO_MOTOR_ESQ_PWM	5
+#define PINO_MOTOR_ESQ        7
+#define PINO_MOTOR_ESQ_N      8
+#define PINO_MOTOR_ESQ_PWM    5
+#define PINO_MOTOR_ESQ_ENC_A -1
+#define PINO_MOTOR_ESQ_ENC_B -1
 
 // canal 2
-#define PINO_MOTOR_DIR      9
-#define PINO_MOTOR_DIR_N    12
-#define PINO_MOTOR_DIR_PWM	6
+#define PINO_MOTOR_DIR        9
+#define PINO_MOTOR_DIR_N     12
+#define PINO_MOTOR_DIR_PWM    6
+#define PINO_MOTOR_DIR_ENC_A -1
+#define PINO_MOTOR_DIR_ENC_B -1
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
@@ -83,16 +102,14 @@
 #define NUM_SENSORES    16
 #define THRESHOLD_CAL   200
 
-#define LINE_FOLLOWER
-
 #define LF_NUM_SENSORES NUM_SENSORES
 #define LF_PINO_0       0
 #define LF_PINO_N       ( LF_PINO_0 + LF_NUM_SENSORES )
 #define LF_FATOR_S      100
 #define LF_RANGE        ( (NUM_SENSORES-1) * LF_FATOR_S )
 #define LF_SETPOINT     ( LF_RANGE / 2 )
-#define LF_TIMEOUT      1000
-#define LF_TIMEOUT_CAL  ( 3 * LF_TIMEOUT )
+#define LF_TIMEOUT       666
+#define LF_TIMEOUT_CAL  3000
 // ex: LF_NUM_SENSORES = 3 e LF_PINO_0 = 2 significa que os pinos A2, A3 e A4 estao conectados a uma barra de sensores IR
 
 // http://arduino.cc/en/Reference/Tone
@@ -112,5 +129,6 @@
 
 #define PINO_BOTAO_CAL      37
 #define PINO_BOTAO_PRG      39
+//#define PINO_IR_EN          35
 
 #endif // PLACA_H_INCLUDED
