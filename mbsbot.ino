@@ -18,8 +18,13 @@
 /*
 5/7/15 - Arduino 1.6.5 - ATMEGA1280 - placa_v33.h
 
-Sketch uses 27,986 bytes (22%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 2,824 bytes (34%) of dynamic memory, leaving 5,368 bytes for local variables. Maximum is 8,192 bytes.
+#ifdef SEM_LINE_FOLLOWER
+Sketch uses 22,904 bytes (18%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,203 bytes (26%) of dynamic memory, leaving 5,989 bytes for local variables. Maximum is 8,192 bytes.
+#else
+Sketch uses 28,218 bytes (22%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,957 bytes (36%) of dynamic memory, leaving 5,235 bytes for local variables. Maximum is 8,192 bytes.
+#endif
 
 17/3/15 - Arduino 1.6.1 - ATMEGA328 - placa_v23.h
 
@@ -876,7 +881,7 @@ void enviaSensores(bool enviaComando = true)
 
 #ifndef SEM_LINE_FOLLOWER
 
-#define TRACE_LF
+//#define TRACE_LF
 
 class LineFollower
 {
@@ -1759,14 +1764,14 @@ public:
     char tipo;
     int linhas;
     int colunas;
-    void *dados;
+    void* dados;
 
-    Variavel( TipoVariavel tipo_=VAR_NULO, const char *nome_=NULL, void *dados_=NULL, int linhas_=1, int colunas_=1 )
+    Variavel( TipoVariavel tipo_=VAR_NULO, const char* nome_=NULL, void* dados_=NULL, int linhas_=1, int colunas_=1 )
     {
         declara( tipo_, nome_, dados_, linhas_, colunas_ );
     }
 
-    void declara( TipoVariavel tipo_, const char *nome_, void *dados_, int linhas_=1, int colunas_=1 )
+    void declara( TipoVariavel tipo_, const char* nome_, void* dados_, int linhas_=1, int colunas_=1 )
     {
         tipo = tipo_;
         strncpy( nome, nome_, TAM_NOME );
@@ -1775,9 +1780,48 @@ public:
         colunas = colunas_;
     }
 
-    Variavel& operator[]( size_t i )
+    Variavel operator[]( size_t i )
     {
+        void* pos = NULL;
+        size_t siz;
 
+        if( i >= linhas )
+            printErro( ERRO_VAR_ARRAY );
+        else
+        {
+                /*
+            switch( tipo )
+            {
+            case VAR_CHAR:
+                pos = (void*)(((char*)dados) + i);
+                break;
+            case VAR_INT:
+                pos = (void*)(((int*)dados) + i);
+                siz = sizeof( int );
+                break;            case VAR_LONG:
+                siz = sizeof( long );
+                break;            case VAR_FIXO:
+                siz = sizeof( Fixo );
+                break;
+            case VAR_BOOL:
+                siz = sizeof( bool );
+                break;
+            case VAR_PID:
+                siz = sizeof( PID );
+                break;
+            case VAR_SENSOR:
+                siz = sizeof( Sensor );
+                break;
+            case VAR_MOTOR:
+                siz = sizeof( Motor );
+                break;
+            case VAR_GAMEPAD:
+                siz = sizeof( MbsGamePad );
+                break;
+            }
+                */
+        }
+        return Variavel( (TipoVariavel)tipo, nome, pos );;
     }
 
     int getInt() const
@@ -2194,10 +2238,12 @@ public:
             enviaStatus();
         else if( 0 == strncmp( token, CMD_UNAME, TAM_TOKEN ) )
             uname();
+        #ifndef SEM_LINE_FOLLOWER
         else if( 0 == strncmp( token, CMD_LF_CAL, TAM_TOKEN ) )     // calibra sensores do line follower
             lineFollower.calibrar();
         else if( 0 == strncmp( token, CMD_LF, TAM_TOKEN ) )
             lineFollower.iniciarCorrida();
+        #endif
         else if( 0 == strncmp( token, NOME_AS, TAM_TOKEN ) )
             enviaSensores(true);
         else if( 0 == strncmp( token, CMD_MV_PARAR, TAM_TOKEN ) )
@@ -2717,10 +2763,12 @@ void trataJoystick()
 			drive2.parar();
 		#endif
 
+        #ifndef SEM_LINE_FOLLOWER
         if( eeprom.dados.programa == PRG_LINE_FOLLOW )
         {
             lineFollower.finalizarCorrida();
         }
+        #endif
 
         // auto centra joystick
         gamepad.centrar();
@@ -2745,16 +2793,20 @@ void trataJoystick()
 
     if(gamepad.botoesEdgeF & BT_X)
     {
+        #ifndef SEM_LINE_FOLLOWER
         eeprom.dados.handBrake = 0;
         trc = true;
         lineFollower.calibrar();
+        #endif
     }
 
     if(gamepad.botoesEdgeF & BT_Y)
     {
+        #ifndef SEM_LINE_FOLLOWER
         eeprom.dados.handBrake = 0;
         trc = true;
         lineFollower.iniciarCorrida();
+        #endif
     }
 /*
     if(gamepad.botoesAgora & BT_LT)
@@ -3030,7 +3082,9 @@ void loop()
         // soltar o botao => false
         if( false == botaoCal.getEstado() )
         {
+            #ifndef SEM_LINE_FOLLOWER
             lineFollower.calibrar();
+            #endif
         }
     }
     #endif
@@ -3040,6 +3094,7 @@ void loop()
     {
         if( false == botaoPrg.getEstado() )
         {
+            #ifndef SEM_LINE_FOLLOWER
             if( eeprom.dados.programa == PRG_LINE_FOLLOW )
             {
                 drive.parar();
@@ -3047,6 +3102,7 @@ void loop()
             }
             else
                 lineFollower.iniciarCorrida();
+            #endif
         }
         else
         {
@@ -3063,8 +3119,10 @@ void loop()
         if( trace & TRC_SENSORES )
             enviaSensores();
 
+        #ifndef SEM_LINE_FOLLOWER
         if( trace & TRC_LF )
             lineFollower.print();
+        #endif
 
         if( trace & TRC_JOYSTICK )
             enviaJoystick();
@@ -3103,15 +3161,16 @@ void loop()
         {
         case PRG_RC_SERIAL:
         {
-            #ifdef RODAS_PWM_x4
-                drive.vetorial(gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
-                drive2.vetorial(-gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
-            #else
-                Vetor2i direcao( gamepad.x.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
+            Vetor2i direcao( gamepad.x.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
 //                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
-                    drive.vetorial( direcao );
+                drive.vetorial( direcao );
 //                else
 //                    drive.vetorialSensor( direcao );
+
+            #ifdef RODAS_PWM_x4
+                drive2.vetorial( direcao );
+                //drive.vetorial(gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
+                //drive2.vetorial(-gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
             #endif
 
             // fall through
@@ -3156,10 +3215,12 @@ void loop()
         msExec = eeprom.dados.delays.ES;
         break;
 
+        #ifndef SEM_LINE_FOLLOWER
         case PRG_LINE_FOLLOW:
             lineFollower.loop();
         msExec = eeprom.dados.delays.ES;
         break;
+        #endif
 
         case PRG_COLISAO:
         {

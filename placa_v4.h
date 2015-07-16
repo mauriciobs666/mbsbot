@@ -29,8 +29,8 @@
 #define MOTOR_ACEL      255
 #define MOTOR_CENTRO     42
 
-#define DFT_VEL_MAX     100
-#define DFT_VEL_ESCALA   80
+#define DFT_VEL_MAX      17
+#define DFT_VEL_ESCALA  100
 #define DFT_DELAY_MOTOR  10
 #define DFT_DELAY_TRACE 100
 #define DFT_BALANCO       0
@@ -125,10 +125,14 @@
 #define PINO_LED            13
 
 // RADIO CONTROLE
-#define PINO_JOY_X      18
-#define PINO_JOY_Y      19
-#define PINO_JOY_Z      20
-//#define PINO_JOY_R
-#define PINO_JOY_SW1    21
+//#define PINO_JOY_X      2
+//#define PINO_JOY_Y      3
+//#define PINO_JOY_Z      17
+//#define PINO_JOY_R      18
+//#define PINO_JOY_SW1    4
+
+#define PINO_BOTAO_CAL      37
+#define PINO_BOTAO_PRG      39
+#define PINO_IR_EN          35
 
 #endif // PLACA_H_INCLUDED

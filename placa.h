@@ -18,7 +18,7 @@
 #ifndef PLACA_H_INCLUDED
 #define PLACA_H_INCLUDED
 
-#define VERSAO_PLACA 33
+#define VERSAO_PLACA 4
 
 #define SERIALX Serial1
 
@@ -71,25 +71,42 @@
 #define PID_MOTOR_ZACC        0
 #define PID_MOTOR_DENTRADA true
 
+// 4 rodas mechanum
+#define RODAS_PWM_x4 1
+
 // inverte sentido dos motores
-#define MOTOR_ESQ_INV 0
-#define MOTOR_DIR_INV 0
+#define MOTOR_ESQ_INV 1
+#define MOTOR_DIR_INV 1
 #define MOTOR_E_T_INV 0
 #define MOTOR_D_T_INV 0
 
-// canal 1
-#define PINO_MOTOR_ESQ        7
-#define PINO_MOTOR_ESQ_N      8
-#define PINO_MOTOR_ESQ_PWM    5
-#define PINO_MOTOR_ESQ_ENC_A 14
-#define PINO_MOTOR_ESQ_ENC_B 15
+// canal 1 - roda esquerda traseira
+#define PINO_MOTOR_ESQ_T        23
+#define PINO_MOTOR_ESQ_T_PWM     5
+#define PINO_MOTOR_ESQ_T_N      -1
+#define PINO_MOTOR_ESQ_T_ENC_A  -1
+#define PINO_MOTOR_ESQ_T_ENC_B  -1
 
-// canal 2
-#define PINO_MOTOR_DIR        9
-#define PINO_MOTOR_DIR_N     12
-#define PINO_MOTOR_DIR_PWM    6
-#define PINO_MOTOR_DIR_ENC_A 11
-#define PINO_MOTOR_DIR_ENC_B 10
+// canal 2 - roda direita traseira
+#define PINO_MOTOR_DIR_T        24
+#define PINO_MOTOR_DIR_T_PWM     4
+#define PINO_MOTOR_DIR_T_N      -1
+#define PINO_MOTOR_DIR_T_ENC_A  -1
+#define PINO_MOTOR_DIR_T_ENC_B  -1
+
+// canal 3 - roda esquerda dianteira
+#define PINO_MOTOR_ESQ          25
+#define PINO_MOTOR_ESQ_PWM       3
+#define PINO_MOTOR_ESQ_N        -1
+#define PINO_MOTOR_ESQ_ENC_A    -1
+#define PINO_MOTOR_ESQ_ENC_B    -1
+
+// canal 4 - roda direita dianteira
+#define PINO_MOTOR_DIR          26
+#define PINO_MOTOR_DIR_PWM       2
+#define PINO_MOTOR_DIR_N        -1
+#define PINO_MOTOR_DIR_ENC_A    -1
+#define PINO_MOTOR_DIR_ENC_B    -1
 
 // economia de energia
 #define PINO_UNUSED_CNT 0
@@ -101,6 +118,8 @@
 
 #define NUM_SENSORES    16
 #define THRESHOLD_CAL   200
+
+#define SEM_LINE_FOLLOWER
 
 #define LF_NUM_SENSORES NUM_SENSORES
 #define LF_PINO_0       0
@@ -114,9 +133,9 @@
 
 // http://arduino.cc/en/Reference/Tone
 // Use of the tone() function will interfere with PWM output on pins 3 and 11 (on boards other than the Mega).
-//#define PINO_BIP 			11
+//#define PINO_BIP 			12
 
-//#define PINO_ARMA           10
+#define PINO_ARMA           6
 
 #define PINO_LED            13
 
