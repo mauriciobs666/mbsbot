@@ -96,6 +96,7 @@
 		<Unit filename="../dsm.txt" />
 		<Unit filename="../matematica.h" />
 		<Unit filename="../mbsbot.ino" />
+		<Unit filename="../motor.h" />
 		<Unit filename="../obsoleto.txt" />
 		<Unit filename="../pid.h" />
 		<Unit filename="../placa.h" />
@@ -109,6 +110,7 @@
 		<Unit filename="../placa_v942.h" />
 		<Unit filename="../protocolo.h" />
 		<Unit filename="../reflash.sh" />
+		<Unit filename="../sensor.h" />
 		<Unit filename="MbsBot.cpp" />
 		<Unit filename="MbsBot.h" />
 		<Unit filename="resource.rc">

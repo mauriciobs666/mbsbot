@@ -43,6 +43,8 @@ Global variables use 1,429 bytes (69%) of dynamic memory, leaving 619 bytes for 
 #include "matematica.h"
 #include "dados.h"
 #include "pid.h"
+#include "sensor.h"
+#include "motor.h"
 
 // ANSI
 #include <stdio.h>
@@ -81,6 +83,13 @@ bool resetPrg = true;
 
 int erro = SUCESSO;
 
+// ******************************************************************************
+//		PRINTERS
+// ******************************************************************************
+
+// Lookup table de mensagens de erro
+// indexado por enum Erros em protocolo.h
+
 #define MAX_STR_ERRO 20            // "01234567890123456789"
 const char ErroSucesso[]    PROGMEM = "SUCESSO";
 const char ErroTodo[]       PROGMEM = "INFO: TODO";
@@ -110,10 +119,6 @@ const char* const tabErros[] PROGMEM =
     ErroLFTimeout,
     ErroSkip
 };
-
-// ******************************************************************************
-//		PRINTERS
-// ******************************************************************************
 
 void printErro( enum Erros err, char* detalhes = NULL )
 {
@@ -175,142 +180,7 @@ bool delaySemBlock(unsigned long *ultimaVez, long ms)
     return false;
 }
 
-// ******************************************************************************
-//		SENSOR UNIVERSAL
-// ******************************************************************************
-class Sensor
-{
-public:
-    volatile unsigned short valor, anterior;
-
-    ConfigSensor *cfg;
-
-    Sensor() : valor(0), anterior(0), cfg(NULL)
-        {}
-    unsigned short getValor()
-        { return valor; }
-    void centrar()
-        { if( cfg ) cfg->centro = valor; }
-    int delta()
-        { return valor - anterior; }
-    bool ehMinimo(unsigned short margem = 0)
-        { return ( cfg->invertido ? (cfg->maximo - valor) <= margem : (valor - cfg->minimo) <= margem ); }
-    bool ehMaximo(unsigned short margem = 0)
-        { return ( cfg->invertido ? (valor - cfg->minimo) <= margem : (cfg->maximo - valor) <= margem ); }
-
-    void setConfig(ConfigSensor *c)
-    {
-        cfg=c;
-        valor = anterior = cfg->centro;
-    }
-
-    void setValor(unsigned short v)
-    {
-
-        if( cfg )
-        {
-            if( cfg->autoMinMax )
-            {
-                if (v < cfg->minimo) cfg->minimo = v;
-                if (v > cfg->maximo) cfg->maximo = v;
-            }
-        }
-        anterior = valor;
-        valor = v;
-    }
-    unsigned short calibrar()
-    {
-        refresh();
-        if( cfg )
-        {
-            cfg->minimo = cfg->maximo = cfg->centro = valor;
-            cfg->autoMinMax = true;
-        }
-        return valor;
-    }
-    Sensor& refresh()
-    {
-        if( cfg )
-        {
-            switch(cfg->tipo)
-            {
-                case ConfigSensor::SENSOR_ANALOGICO:
-                    setValor( analogRead( cfg->pino ) );
-                break;
-                case ConfigSensor::SENSOR_PING:
-                    // manda pulso de 2ms pro ping))) pra acionar leitura
-                    pinMode( cfg->pino, OUTPUT );
-                    digitalWrite( cfg->pino, LOW );
-                    delayMicroseconds( 2 );
-                    digitalWrite( cfg->pino, HIGH );
-                    delayMicroseconds( 5 );
-                    digitalWrite( cfg->pino, LOW );
-
-                    // duracao do pulso = distancia
-                    pinMode( cfg->pino, INPUT );
-                    setValor( pulseIn( cfg->pino, HIGH ) );
-                break;
-                case ConfigSensor::SENSOR_DIGITAL:
-                    setValor( digitalRead( cfg->pino ) );
-                break;
-                default:
-                break;
-            }
-        }
-        return *this;
-    }
-    int getPorcento()
-    {
-        /*
-            distancia da borda inferior ( min ou max de acordo com invertido )
-            /
-            range min/max
-            *
-            100%
-        */
-        return ( cfg->maximo != cfg->minimo )
-                    ? cfg->invertido
-                        ? constrain( (((long)(cfg->maximo - valor) * 100) / ( cfg->maximo - cfg->minimo ) ), 0, 100 )
-                        : constrain( (((long)(valor - cfg->minimo) * 100) / ( cfg->maximo - cfg->minimo ) ), 0, 100 )
-                    : 0;
-    }
-    int getPorcento( int arredonda )
-    {
-        int x = getPorcento();
-
-            // arredonda no centro e pontas
-        if( 100 + x < arredonda) return -100;
-        if(  abs(x) < arredonda) return 0;
-        if( 100 - x < arredonda) return 100;
-
-        return x;
-    }
-    int getPorcentoCentro( int arredonda=10 )
-    {
-        long x = (long)valor - (long)cfg->centro;
-
-        // calcula o range de 0 a min/max
-        long r = ( x > 0 ) ? (cfg->maximo - cfg->centro) : (cfg->centro - cfg->minimo);
-
-        // x%
-        if(r)
-            x = constrain( ((x * 100) / r ) , -100, 100 );
-        else
-            x = 0;
-
-        // arredonda no centro e pontas
-        if( 100 + x < arredonda) return -100;
-        if(  abs(x) < arredonda) return 0;
-        if( 100 - x < arredonda) return 100;
-
-        return x;
-    }
-    bool getBool()
-    {
-        return ( getPorcento() > 50 );
-    }
-}
-sensores[NUM_SENSORES];
+Sensor sensores[NUM_SENSORES];
 
 class Botao
 {
@@ -426,6 +296,20 @@ MbsGamePad gamepad;
 // ******************************************************************************
 class Motor
 {
+protected:
+    char  meta100;      // meta de saida em +/- %
+    short meta;         // meta de saida raw -255 a 255
+    short atual;        // saida raw -255 a 255
+
+    unsigned long ultimoAcel;
+
+    volatile char encoder; // leitura encoder, raw
+    volatile bool encA;
+    volatile bool encB;
+
+    short encoderBkp; // backup pra fins de print
+
+    //char prioMeta;    // TODO (Mauricio#1#): prioridade processo que setou a meta
 public:
     PID pid;
     ConfigMotor *cfg;
@@ -586,19 +470,6 @@ public:
         else
             encoder++;
     }
-protected:
-    char  meta100;      // meta de saida em +/- %
-    short meta;         // meta de saida raw -255 a 255
-    short atual;        // saida raw -255 a 255
-    unsigned long ultimoAcel;
-
-    volatile char encoder; // leitura encoder, raw
-    volatile bool encA;
-    volatile bool encB;
-
-    short encoderBkp; // backup pra fins de print
-
-    //char prioMeta;    // TODO (Mauricio#1#): prioridade processo que setou a meta
 };
 
 class Drive
@@ -1666,28 +1537,37 @@ void enviaStatus(bool enviaComando = true)
     SERIALX.print( (int)erro );
     SERIALX.print( " " );
     SERIALX.print( (int)eeprom.dados.handBrake );
-    SERIALX.print( " " );
-    SERIALX.print( drive.motorEsq.getAtual() );
-    SERIALX.print( " " );
-    SERIALX.print( drive.motorDir.getAtual() );
 
+    SERIALX.print( " [[" );
+    SERIALX.print( drive.motorEsq.getAtual() );
     SERIALX.print( " " );
     SERIALX.print( drive.motorEsq.getEncoder() );
     SERIALX.print( " " );
-    SERIALX.print( drive.motorDir.getEncoder() );
-
-    SERIALX.print( " " );
     printPID( &drive.motorEsq.pid );
+    SERIALX.print( "] [" );
+    SERIALX.print( drive.motorDir.getAtual() );
+    SERIALX.print( " " );
+    SERIALX.print( drive.motorDir.getEncoder() );
     SERIALX.print( " " );
     printPID( &drive.motorDir.pid );
-
+    SERIALX.print( "]] " );
 
     #ifdef RODAS_PWM_x4
-        SERIALX.print(" ");
+        SERIALX.print(" [[");
         SERIALX.print(drive2.motorEsq.getAtual());
-        SERIALX.print(" ");
+        SERIALX.print( " " );
+        SERIALX.print( drive2.motorEsq.getEncoder() );
+        SERIALX.print( " " );
+        printPID( &drive.motorEsq.pid );
+        SERIALX.print("] [");
         SERIALX.print(drive2.motorDir.getAtual());
+        SERIALX.print( " " );
+        SERIALX.print( drive2.motorDir.getEncoder() );
+        SERIALX.print( " " );
+        printPID( &drive2.motorDir.pid );
+        SERIALX.print( "]] " );
     #endif
+
     #ifdef PINO_SERVO_PAN
         SERIALX.print(" ");
         SERIALX.print(pan.read());
@@ -3062,6 +2942,7 @@ void setup()
     interpretador.declaraVar( VAR_FIXO, NOME_PID_MD_KD,     &eeprom.dados.motorDir.pid.Kd );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MD_ZAC,    &eeprom.dados.motorDir.pid.zeraAcc );
 
+    SERIALX.println( "coco" );
 }
 
 // ******************************************************************************
@@ -3161,16 +3042,14 @@ void loop()
         {
         case PRG_RC_SERIAL:
         {
-            Vetor2i direcao( gamepad.x.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
-//                if( gamepad.botoesAgora & BT_RT ) // arma ligada desabilita sensores
+            #ifndef RODAS_PWM_x4
+                Vetor2i direcao( gamepad.x.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
                 drive.vetorial( direcao );
-//                else
-//                    drive.vetorialSensor( direcao );
-
-            #ifdef RODAS_PWM_x4
-                drive2.vetorial( direcao );
-                //drive.vetorial(gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
-                //drive2.vetorial(-gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro());
+            #else
+                Vetor2i direcao(   gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
+                Vetor2i direcao2( -gamepad.x.getPorcentoCentro() + gamepad.z.getPorcentoCentro(), -gamepad.y.getPorcentoCentro() );
+                drive.vetorial( direcao );
+                drive2.vetorial( direcao2 );
             #endif
 
             // fall through
