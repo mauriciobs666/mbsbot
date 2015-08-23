@@ -1,8 +1,12 @@
 
 function avg = moving_average( x )
 
-    persistent buf = zeros(25);
-    persistent i = 1;
+    persistent buf;
+    persistent i;
+    
+    if isempty(i)
+        i = 0;
+    endif;
     
     if i < 25
         i++;
