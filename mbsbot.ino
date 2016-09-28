@@ -1,4 +1,4 @@
-/**	Copyright (C) 2010-2015 - Mauricio Bieze Stefani
+/**	Copyright (C) 2010-2016 - Mauricio Bieze Stefani
  *	This file is part of the MBSBOT project.
  *
  *	MBSBOT is free software: you can redistribute it and/or modify

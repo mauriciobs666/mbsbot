@@ -71,6 +71,9 @@
 #define PID_MOTOR_ZACC        0
 #define PID_MOTOR_DENTRADA true
 
+// 4 rodas mechanum
+//#define RODAS_PWM_x4 1
+
 // inverte sentido dos motores
 #define MOTOR_ESQ_INV 0
 #define MOTOR_DIR_INV 0
@@ -101,6 +104,8 @@
 
 #define NUM_SENSORES    16
 #define THRESHOLD_CAL   200
+
+//#define SEM_LINE_FOLLOWER
 
 #define LF_NUM_SENSORES NUM_SENSORES
 #define LF_PINO_0       0
