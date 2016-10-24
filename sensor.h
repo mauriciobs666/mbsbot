@@ -34,8 +34,6 @@ public:
         {}
     unsigned short getValor()
         { return valor; }
-    void centrar()
-        { if( cfg ) cfg->centro = valor; }
     int delta()
         { return valor - anterior; }
     bool ehMinimo(unsigned short margem = 0)
@@ -70,6 +68,16 @@ public:
         {
             cfg->minimo = cfg->maximo = cfg->centro = valor;
             cfg->autoMinMax = true;
+        }
+        return valor;
+    }
+    unsigned short centrar()
+    {
+        refresh();
+        if( cfg )
+        {
+            cfg->centro = valor;
+            cfg->autoMinMax = false;
         }
         return valor;
     }
@@ -153,6 +161,102 @@ public:
     bool getBool()
     {
         return ( getPorcento() > 50 );
+    }
+};
+
+class Botao
+{
+public:
+    Botao( unsigned char pino, bool invertido = true ) : debounce(0), antes(false), estado(false), trocou(false)
+    {
+         init( pino, invertido );
+    }
+    void init( unsigned char pino, bool invertido = true )
+    {
+        pinMode( pino, invertido ? INPUT_PULLUP : INPUT );
+        cfg.init( ConfigSensor::SENSOR_DIGITAL, pino, invertido );
+        s.setConfig( &cfg );
+        s.calibrar();
+    }
+    Botao& refresh()
+    {
+        s.refresh();
+
+        bool atual = s.getBool();
+
+        if( atual != antes )
+            debounce = agora;
+
+        if( ( agora - debounce ) > 50 )
+        {
+            if( estado != atual )
+            {
+                estado = atual;
+                trocou = true;
+            }
+        }
+        antes = atual;
+        return *this;
+    }
+    bool getEstado()
+    {
+        return estado;
+    }
+    bool trocouEstado()
+    {
+        if( trocou )
+        {
+            trocou = false;
+            return true;
+        }
+        return false;
+    }
+private:
+    Sensor s;
+    ConfigSensor cfg;
+    unsigned long debounce;
+    bool antes, estado, trocou;
+};
+
+// ******************************************************************************
+//		GAMEPAD E R/C
+// ******************************************************************************
+class MbsGamePad
+{
+public:
+    char tipo;
+    Sensor x, y, z, r;
+    volatile unsigned int botoesAntes, botoesAgora, botoesEdgeF, botoesEdgeR;
+    MbsGamePad() : botoesAntes(0), botoesAgora(0), botoesEdgeF(0), botoesEdgeR(0)
+        {}
+    unsigned int refreshBotoes(unsigned int novo)
+    {
+        botoesAntes = botoesAgora;
+        botoesEdgeR = (novo ^ botoesAntes) & novo;
+        botoesEdgeF = (novo ^ botoesAntes) & ~novo;
+        return botoesAgora = novo;
+    }
+    void setConfig( ConfigGamepad *cfg )
+    {
+        tipo = cfg->tipo;
+        x.setConfig( &cfg->X );
+        y.setConfig( &cfg->Y );
+        z.setConfig( &cfg->Z );
+        r.setConfig( &cfg->R );
+    }
+    void calibrar()
+    {
+        x.calibrar();
+        y.calibrar();
+        z.calibrar();
+        r.calibrar();
+    }
+    void centrar()
+    {
+        x.centrar();
+        y.centrar();
+        z.centrar();
+        r.centrar();
     }
 };
 

@@ -16,14 +16,14 @@
  */
 
 /*
-5/7/15 - Arduino 1.6.5 - ATMEGA1280 - placa_v33.h
+23/10/16 - Arduino 1.6.12 - ATMEGA1280 - placa_v33.h
 
 #ifdef SEM_LINE_FOLLOWER
-Sketch uses 22,904 bytes (18%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 2,203 bytes (26%) of dynamic memory, leaving 5,989 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 20,930 bytes (16%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,053 bytes (25%) of dynamic memory, leaving 6,139 bytes for local variables. Maximum is 8,192 bytes.
 #else
-Sketch uses 28,218 bytes (22%) of program storage space. Maximum is 126,976 bytes.
-Global variables use 2,957 bytes (36%) of dynamic memory, leaving 5,235 bytes for local variables. Maximum is 8,192 bytes.
+Sketch uses 25,682 bytes (20%) of program storage space. Maximum is 126,976 bytes.
+Global variables use 2,805 bytes (34%) of dynamic memory, leaving 5,387 bytes for local variables. Maximum is 8,192 bytes.
 #endif
 
 17/3/15 - Arduino 1.6.1 - ATMEGA328 - placa_v23.h
@@ -82,6 +82,22 @@ int delayTrace = DFT_DELAY_TRACE;
 bool resetPrg = true;
 
 int erro = SUCESSO;
+
+Sensor sensores[NUM_SENSORES];
+
+#ifdef PINO_BOTAO_CAL
+    Botao botaoCal( PINO_BOTAO_CAL );
+#endif
+
+#ifdef PINO_BOTAO_PRG
+    Botao botaoPrg( PINO_BOTAO_PRG );
+#endif
+
+MbsGamePad gamepad;
+
+#ifdef PINO_JOY_X
+    MbsGamePad rcpad;
+#endif // PINO_JOY_X
 
 // ******************************************************************************
 //		PRINTERS
@@ -180,117 +196,6 @@ bool delaySemBlock(unsigned long *ultimaVez, long ms)
     return false;
 }
 
-Sensor sensores[NUM_SENSORES];
-
-class Botao
-{
-public:
-    Botao( unsigned char pino, bool invertido = true ) : debounce(0), antes(false), estado(false), trocou(false)
-    {
-         init( pino, invertido );
-    }
-    void init( unsigned char pino, bool invertido = true )
-    {
-        pinMode( pino, invertido ? INPUT_PULLUP : INPUT );
-        cfg.init( ConfigSensor::SENSOR_DIGITAL, pino, invertido );
-        s.setConfig( &cfg );
-        s.calibrar();
-    }
-    Botao& refresh()
-    {
-        s.refresh();
-
-        bool atual = s.getBool();
-
-        if( atual != antes )
-            debounce = agora;
-
-        if( ( agora - debounce ) > 50 )
-        {
-            if( estado != atual )
-            {
-                estado = atual;
-                trocou = true;
-            }
-        }
-        antes = atual;
-        return *this;
-    }
-    bool getEstado()
-    {
-        return estado;
-    }
-    bool trocouEstado()
-    {
-        if( trocou )
-        {
-            trocou = false;
-            return true;
-        }
-        return false;
-    }
-private:
-    Sensor s;
-    ConfigSensor cfg;
-    unsigned long debounce;
-    bool antes, estado, trocou;
-};
-
-#ifdef PINO_BOTAO_CAL
-    Botao botaoCal( PINO_BOTAO_CAL );
-#endif
-
-#ifdef PINO_BOTAO_PRG
-    Botao botaoPrg( PINO_BOTAO_PRG );
-#endif
-
-// ******************************************************************************
-//		GAMEPAD E R/C
-// ******************************************************************************
-class MbsGamePad
-{
-public:
-    char tipo;
-    Sensor x, y, z, r;
-    volatile unsigned int botoesAntes, botoesAgora, botoesEdgeF, botoesEdgeR;
-    MbsGamePad() : botoesAntes(0), botoesAgora(0), botoesEdgeF(0), botoesEdgeR(0)
-        {}
-    unsigned int refreshBotoes(unsigned int novo)
-    {
-        botoesAntes = botoesAgora;
-        botoesEdgeR = (novo ^ botoesAntes) & novo;
-        botoesEdgeF = (novo ^ botoesAntes) & ~novo;
-        return botoesAgora = novo;
-    }
-    void setConfig( ConfigGamepad *cfg )
-    {
-        tipo = cfg->tipo;
-        x.setConfig( &cfg->X );
-        y.setConfig( &cfg->Y );
-        z.setConfig( &cfg->Z );
-        r.setConfig( &cfg->R );
-    }
-    void calibrar()
-    {
-        x.calibrar();
-        y.calibrar();
-        z.calibrar();
-        r.calibrar();
-    }
-    void centrar()
-    {
-        x.centrar();
-        y.centrar();
-        z.centrar();
-        r.centrar();
-    }
-};
-MbsGamePad gamepad;
-
-#ifdef PINO_JOY_X
-    MbsGamePad rcpad;
-#endif // PINO_JOY_X
-
 // ******************************************************************************
 //		CONTROLADOR DE MOTORES
 // ******************************************************************************
@@ -366,7 +271,7 @@ public:
 
     void refresh( bool imediato = false )
     {
-        if( delaySemBlock( &ultimoAcel, cfg->pid.sampleTime ) || imediato )
+        if( delaySemBlock( &ultimoAcel, DFT_DELAY_MOTOR ) || imediato )
         {
 
             encoderBkp = encoder;
@@ -381,7 +286,7 @@ public:
                 meta /= 100;
 
                 pid.setPoint = meta;
-                atual = -pid.executa( encoderBkp );
+                atual = -pid.executaSample( encoderBkp );
             }
             else
             {
@@ -1357,7 +1262,7 @@ void LineFollower::loop()
 
     pid.setPoint = LF_SETPOINT;  // meio da barra de sensores
 
-    pid.executaSample( cruzamento ? debGrp.pontoMedio : trilho.pontoMedio );
+    pid.executa( cruzamento ? debGrp.pontoMedio : trilho.pontoMedio );
 
     drive.move( (pid.MV > 0) ? (100 - pid.MV) : 100,
                 (pid.MV < 0) ? (100 + pid.MV) : 100 );
@@ -1551,6 +1456,7 @@ void enviaStatus(bool enviaComando = true)
     SERIALX.print( " " );
     printPID( &drive.motorDir.pid );
     SERIALX.print( "]] " );
+    SERIALX.print( agora );
 
     #ifdef RODAS_PWM_x4
         SERIALX.print(" [[");
@@ -2629,11 +2535,31 @@ telnet;
 
 void trataJoystick()
 {
-    if(gamepad.botoesEdgeR & BT_L3)
+    if(gamepad.botoesEdgeR & BT_SEL)
     {
-        gamepad.calibrar();
+        drive.parar();
+		#ifdef RODAS_PWM_x4
+			drive2.parar();
+		#endif
+
         eeprom.dados.handBrake = 1;
         eeprom.dados.programa = PRG_RC_SERIAL;
+
+        gamepad.calibrar();
+    }
+
+    if(gamepad.botoesEdgeR & BT_STR)
+    {
+        drive.parar();
+		#ifdef RODAS_PWM_x4
+			drive2.parar();
+		#endif
+
+        eeprom.dados.handBrake = 0;
+        eeprom.dados.programa = PRG_RC_SERIAL;
+
+        // auto centra joystick
+        gamepad.centrar();
     }
 
     if( (gamepad.botoesEdgeF & BT_A) || (gamepad.botoesEdgeF & BT_B) )
@@ -2650,9 +2576,6 @@ void trataJoystick()
         }
         #endif
 
-        // auto centra joystick
-        gamepad.centrar();
-
         if( gamepad.botoesEdgeF & BT_B )
         {
             eeprom.dados.handBrake = true;
@@ -2666,9 +2589,7 @@ void trataJoystick()
 
         trc = false;
 
-        // poe no modo RC
         eeprom.dados.programa = PRG_RC_SERIAL;
-        //eeprom.dados.velEscala = 60;
     }
 
     if(gamepad.botoesEdgeF & BT_X)
@@ -2688,24 +2609,7 @@ void trataJoystick()
         lineFollower.iniciarCorrida();
         #endif
     }
-/*
-    if(gamepad.botoesAgora & BT_LT)
-    {
-        // 4 rodas: controla servos com eixos Z e R
-    }
 
-    if(gamepad.botoesAgora & BT_RT)
-    {
-        eeprom.dados.handBrake = 0;
-#ifdef PINO_ARMA
-        digitalWrite(PINO_ARMA, HIGH);
-    }
-    else
-    {
-        digitalWrite(PINO_ARMA, LOW);
-#endif
-    }
-*/
     if(gamepad.botoesEdgeF & BT_LB)
     {
         if( eeprom.dados.velEscala > 30 )
@@ -2817,7 +2721,7 @@ void isrRadio()
 
 void setup()
 {
-    SERIALX.begin(115200);
+    SERIALX.begin(SERIALX_SPD);
 
     uname();
 
@@ -2941,8 +2845,6 @@ void setup()
     interpretador.declaraVar( VAR_FIXO, NOME_PID_MD_KI,     &eeprom.dados.motorDir.pid.Ki );
     interpretador.declaraVar( VAR_FIXO, NOME_PID_MD_KD,     &eeprom.dados.motorDir.pid.Kd );
     interpretador.declaraVar( VAR_INT,  NOME_PID_MD_ZAC,    &eeprom.dados.motorDir.pid.zeraAcc );
-
-    SERIALX.println( "coco" );
 }
 
 // ******************************************************************************
