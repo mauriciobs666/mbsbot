@@ -1,8 +1,11 @@
-
 // (c) 2016 MBS - Mauricio Bieze Stefani
 
 #include <Wire.h>
-#include <SparkFunMPL3115A2.h>
+
+//#include <SparkFunMPL3115A2.h>
+#include <SFE_BMP180.h>
+
+#include <toneAC.h>
 
 #define THRESHOLD_SUBIDA     5
 #define THRESHOLD_QUEDA     -5
@@ -24,12 +27,19 @@ template <class tipo, int tamanho> class Circular
     int leitura;
     int escrita;
 
-    void incrementa( tipo & ponteiro )
+    int proximo( int ponteiro )
     {
         ponteiro++;
 
         if( ponteiro == tamanho )
             ponteiro = 0;
+
+        return ponteiro;
+    }
+
+    int incrementa( int & ponteiro )
+    {
+        return ( ponteiro = proximo( ponteiro ) );
     }
 
 public:
@@ -41,6 +51,11 @@ public:
     void limpa()
     {
         leitura = escrita = 0;
+    }
+
+    bool vazio()
+    {
+        return ( escrita == leitura );
     }
 
     void insere( const tipo & elemento )
@@ -61,7 +76,7 @@ public:
 
     tipo * topo()
     {
-        return ( escrita != leitura ) ? &circular[leitura] : NULL;
+        return vazio() ? NULL : &circular[leitura];
     }
 };
 
@@ -88,29 +103,83 @@ enum Estado
     NAVEGACAO
 };
 
-MPL3115A2 altimetro;
+//MPL3115A2 altimetro;
+
+SFE_BMP180 barometro;
 
 Estado estado = SOLO;
 
 Circular<int,30> circular;
-Circular<Ponto,300> datalog;
+Circular<Ponto,15> datalog;
 
-int altitudeAgora = 0;
-int altitudeAntes = 0;
-int altitudeOffset = 0;
-int altitudeDelta = 0;
-int altitudePS = 0;
+double altitudeAgora = 0;
+double altitudeAntes = 0;
+double altitudeOffset = 0;
+double altitudeDelta = 0;
+double altitudePS = 0;
+
+double readAltitudeFt()
+{
+    char atraso = barometro.startTemperature();
+
+    if( atraso != 0 )
+    {
+        delay( atraso );
+
+        double T;
+
+        atraso = barometro.getTemperature( T );
+
+        if( atraso != 0 )
+        {
+
+            atraso = barometro.startPressure( 3 ); // oversampling 0-3
+
+            if( atraso != 0 )
+            {
+                delay( atraso );
+
+                double P;
+
+                atraso = barometro.getPressure( P, T );
+
+                if( atraso != 0 )
+                {
+                    return( barometro.altitude( P, 1013.25 ) * 3.28084 ); // MSL Mean Sea Level
+                }
+            }
+        }
+    }
+
+    return -666;
+}
 
 void setup()
 {
     Serial.begin(115200);
 
-    Wire.begin();
+    if( ! barometro.begin() )
+    {
+        Serial.println("Erro inicializando modulo BMP180\n");
+        toneAC(200);
+        delay(300);
+        toneAC();
+        while(1);
+    }
 
-    altimetro.begin();
-    altimetro.setModeAltimeter();
-    altimetro.setOversampleRate(7);
-    altimetro.enableEventFlags();
+//    Wire.begin();
+//    altimetro.begin();
+//    altimetro.setModeAltimeter();
+//    altimetro.setOversampleRate(7);
+//    altimetro.enableEventFlags();
+
+    for( unsigned long freq = 125; freq < 15000; freq += 10 )
+    {
+        toneAC( freq );
+        delay( 1 );
+    }
+
+    toneAC();
 }
 
 void loop()
@@ -118,16 +187,19 @@ void loop()
     long inicio = millis();
 
     altitudeAntes = altitudeAgora;
-    altitudeAgora = altimetro.readAltitudeFt();
+
+    //altitudeAgora = altimetro.readAltitudeFt();
+
+    altitudeAgora = readAltitudeFt();
+
     altitudeDelta = altitudeAgora - altitudeAntes;
 
     long agora = millis();
 
-    Serial.print( "Altitude(ft): " );
-    Serial.print( altitudeAgora, 2 );
+    Serial.print( agora );
     Serial.print( " " );
-    Serial.print( agora - inicio );
-    Serial.println( "ms" );
+    Serial.print( altitudeAgora, 2 );
+    Serial.println();
 
     if( ! altitudeAntes )
     {
@@ -160,7 +232,6 @@ void loop()
         }
         break;
     case NAVEGACAO:
-
         break;
     }
 }
