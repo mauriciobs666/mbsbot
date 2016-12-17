@@ -1,9 +1,17 @@
+
 // (c) 2016 MBS - Mauricio Bieze Stefani
+
+#define BMP180
 
 #include <Wire.h>
 
-//#include <SparkFunMPL3115A2.h>
+#ifdef MPL3115A2
+#include <SparkFunMPL3115A2.h>
+#endif
+
+#ifdef BMP180
 #include <SFE_BMP180.h>
+#endif
 
 #include <toneAC.h>
 
@@ -103,20 +111,14 @@ enum Estado
     NAVEGACAO
 };
 
-//MPL3115A2 altimetro;
+#ifdef MPL3115A2
+MPL3115A2 altimetro;
+#endif
 
 SFE_BMP180 barometro;
 
 Estado estado = SOLO;
 
-Circular<int,30> circular;
-Circular<Ponto,15> datalog;
-
-double altitudeAgora = 0;
-double altitudeAntes = 0;
-double altitudeOffset = 0;
-double altitudeDelta = 0;
-double altitudePS = 0;
 
 double readAltitudeFt()
 {
@@ -154,6 +156,21 @@ double readAltitudeFt()
     return -666;
 }
 
+//Circular<int,30> circular;
+//Circular<Ponto,15> datalog;
+
+double altitudeAgora = 0;
+double altitudeAntes = 0;
+double altitudeOffset = 0;
+double altitudeDelta = 0;
+double altitudePS = 0;
+
+double ganho= 0;
+double p = 1;
+
+double media = 0;
+double variancia = 0;
+
 void setup()
 {
     Serial.begin(115200);
@@ -167,19 +184,35 @@ void setup()
         while(1);
     }
 
-//    Wire.begin();
-//    altimetro.begin();
-//    altimetro.setModeAltimeter();
-//    altimetro.setOversampleRate(7);
-//    altimetro.enableEventFlags();
+#ifdef MPL3115A2
+    Wire.begin();
+    altimetro.begin();
+    altimetro.setModeAltimeter();
+    altimetro.setOversampleRate(7);
+    altimetro.enableEventFlags();
+#endif
 
-    for( unsigned long freq = 125; freq < 15000; freq += 10 )
+    #define CALIBRAGEM_SZ 100
+    double calibragem[CALIBRAGEM_SZ];
+
+    for( int z = 0, freq = 200; z < CALIBRAGEM_SZ; z++, freq +=50 )
     {
+        media += ( calibragem[z] = readAltitudeFt() );
         toneAC( freq );
-        delay( 1 );
     }
 
     toneAC();
+
+    media /= CALIBRAGEM_SZ;
+
+    for( int z = 0; z < CALIBRAGEM_SZ; z++ )
+    {
+        variancia += pow( calibragem[z] - media, 2 );
+    }
+
+    variancia /= CALIBRAGEM_SZ;
+
+    altitudeAgora = altitudeAntes = media;
 }
 
 void loop()
@@ -190,15 +223,26 @@ void loop()
 
     //altitudeAgora = altimetro.readAltitudeFt();
 
-    altitudeAgora = readAltitudeFt();
+    ganho = p + 0.1 / (p + variancia);
+
+    double sensor = readAltitudeFt();
+
+    altitudeAgora = altitudeAntes + ganho * ( sensor - altitudeAntes );
+
+    p = ( 1 - ganho ) * p;
 
     altitudeDelta = altitudeAgora - altitudeAntes;
 
     long agora = millis();
 
-    Serial.print( agora );
+    Serial.print( sensor );
+//    Serial.print( agora );
     Serial.print( " " );
     Serial.print( altitudeAgora, 2 );
+//    Serial.print( " " );
+//    Serial.print( ganho );
+//    Serial.print( " " );
+//    Serial.print( p );
     Serial.println();
 
     if( ! altitudeAntes )
@@ -216,7 +260,7 @@ void loop()
         }
         else
         {
-            circular.insere( altitudeAntes );
+//            circular.insere( altitudeAntes );
         }
         break;
     case SUBIDA:
