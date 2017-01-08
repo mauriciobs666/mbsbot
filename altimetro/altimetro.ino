@@ -119,51 +119,17 @@ SFE_BMP180 barometro;
 
 Estado estado = SOLO;
 
-
-double readAltitudeFt()
-{
-    char atraso = barometro.startTemperature();
-
-    if( atraso != 0 )
-    {
-        delay( atraso );
-
-        double T;
-
-        atraso = barometro.getTemperature( T );
-
-        if( atraso != 0 )
-        {
-
-            atraso = barometro.startPressure( 3 ); // oversampling 0-3
-
-            if( atraso != 0 )
-            {
-                delay( atraso );
-
-                double P;
-
-                atraso = barometro.getPressure( P, T );
-
-                if( atraso != 0 )
-                {
-                    return( barometro.altitude( P, 1013.25 ) * 3.28084 ); // MSL Mean Sea Level
-                }
-            }
-        }
-    }
-
-    return -666;
-}
-
-//Circular<int,30> circular;
+Circular<double,30> circular;
 //Circular<Ponto,15> datalog;
 
+double sensor = 0;
+double temperatura = 0;
 double altitudeAgora = 0;
 double altitudeAntes = 0;
 double altitudeOffset = 0;
 double altitudeDelta = 0;
-double altitudePS = 0;
+double altitudePS = 0;      // ponto de saida
+double altitudeDZ = 0;      // area de pouso
 
 double ganho= 0;
 double p = 1;
@@ -171,16 +137,61 @@ double p = 1;
 double media = 0;
 double variancia = 0;
 
+long agora = 1;
+
+double readAltitudeFt()
+{
+    static long proximaLeituraT = 0;
+
+    char atraso;
+
+    // refresh temperatura apenas a cada segundo
+
+    if( millis() > proximaLeituraT || proximaLeituraT == 0 )
+    {
+        atraso = barometro.startTemperature();
+
+        if( atraso > 0 )
+        {
+            delay( atraso );
+
+            barometro.getTemperature( temperatura );
+        }
+
+        proximaLeituraT += 100;
+    }
+
+    atraso = barometro.startPressure( 3 ); // oversampling 0-3
+
+    if( atraso > 0 )
+    {
+        delay( atraso );
+
+        double pressao;
+
+        atraso = barometro.getPressure( pressao, temperatura );
+
+        if( atraso != 0 )
+        {
+            return( barometro.altitude( pressao, 1013.25 ) * 3.28084 ); // MSL Mean Sea Level
+        }
+    }
+
+    return -666;
+}
+
 void setup()
 {
+    toneAC( 60, 3, 100 );
+
     Serial.begin(115200);
 
     if( ! barometro.begin() )
     {
         Serial.println("Erro inicializando modulo BMP180\n");
-        toneAC(200);
-        delay(300);
-        toneAC();
+        toneAC( 4000, 10, 200 );
+        delay(200);
+        toneAC( 4000, 10, 200 );
         while(1);
     }
 
@@ -195,14 +206,10 @@ void setup()
     #define CALIBRAGEM_SZ 100
     double calibragem[CALIBRAGEM_SZ];
 
-    for( int z = 0, freq = 200; z < CALIBRAGEM_SZ; z++, freq +=50 )
+    for( int z = 0; z < CALIBRAGEM_SZ; z++ )
     {
         media += ( calibragem[z] = readAltitudeFt() );
-        toneAC( freq );
     }
-
-    toneAC();
-
     media /= CALIBRAGEM_SZ;
 
     for( int z = 0; z < CALIBRAGEM_SZ; z++ )
@@ -212,43 +219,38 @@ void setup()
 
     variancia /= CALIBRAGEM_SZ;
 
-    altitudeAgora = altitudeAntes = media;
+    altitudeDZ = altitudeAgora = altitudeAntes = media;
+
+    toneAC( 4000, 10, 150 );
 }
 
 void loop()
 {
     long inicio = millis();
 
-    altitudeAntes = altitudeAgora;
+    // leitura sensores
 
-    //altitudeAgora = altimetro.readAltitudeFt();
+    #ifdef BMP180
+    sensor = readAltitudeFt();
+    #endif
 
-    ganho = p + 0.1 / (p + variancia);
+    #ifdef MPL3115A2
+    sensor = altimetro.readAltitudeFt();
+    #endif
 
-    double sensor = readAltitudeFt();
+    // etapa predicao Kalman
+
+    ganho = p + 0.05 / (p + variancia);
 
     altitudeAgora = altitudeAntes + ganho * ( sensor - altitudeAntes );
+
+    // etapa update Kalman
 
     p = ( 1 - ganho ) * p;
 
     altitudeDelta = altitudeAgora - altitudeAntes;
 
-    long agora = millis();
-
-    Serial.print( sensor );
-//    Serial.print( agora );
-    Serial.print( " " );
-    Serial.print( altitudeAgora, 2 );
-//    Serial.print( " " );
-//    Serial.print( ganho );
-//    Serial.print( " " );
-//    Serial.print( p );
-    Serial.println();
-
-    if( ! altitudeAntes )
-    {
-        return;
-    }
+    agora = millis();
 
     switch( estado )
     {
@@ -278,4 +280,18 @@ void loop()
     case NAVEGACAO:
         break;
     }
+
+    // trace
+
+    Serial.print( sensor - altitudeDZ );
+//    Serial.print( agora );
+    Serial.print( " " );
+    Serial.print( altitudeAgora - altitudeDZ, 2 );
+//    Serial.print( " " );
+//    Serial.print( temperatura );
+//    Serial.print( " " );
+//    Serial.print( p );
+    Serial.println();
+
+    altitudeAntes = altitudeAgora;
 }
