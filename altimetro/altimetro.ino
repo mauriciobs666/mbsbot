@@ -1,5 +1,5 @@
 
-// (c) 2016 MBS - Mauricio Bieze Stefani
+// (c) 2017 MBS - Mauricio Bieze Stefani
 
 #define BMP180
 
@@ -29,69 +29,10 @@
 #define NAVEGACAO_C      900
 #define NAVEGACAO_D     1200
 
-template <class tipo, int tamanho> class Circular
-{
-    tipo circular[tamanho];
-    int leitura;
-    int escrita;
-
-    int proximo( int ponteiro )
-    {
-        ponteiro++;
-
-        if( ponteiro == tamanho )
-            ponteiro = 0;
-
-        return ponteiro;
-    }
-
-    int incrementa( int & ponteiro )
-    {
-        return ( ponteiro = proximo( ponteiro ) );
-    }
-
-public:
-    Circular()
-    {
-        limpa();
-    }
-
-    void limpa()
-    {
-        leitura = escrita = 0;
-    }
-
-    bool vazio()
-    {
-        return ( escrita == leitura );
-    }
-
-    void insere( const tipo & elemento )
-    {
-        circular[escrita] = elemento;
-
-        incrementa(escrita);
-
-        if( escrita == leitura )
-            incrementa( leitura );
-    }
-
-    void retira()
-    {
-        if( escrita != leitura )
-            incrementa( leitura );
-    }
-
-    tipo * topo()
-    {
-        return vazio() ? NULL : &circular[leitura];
-    }
-};
-
 typedef struct Ponto
 {
-    int clock;
-    int altura;
+    long clock;
+    float altura;
 };
 
 typedef struct Salto
@@ -119,13 +60,18 @@ SFE_BMP180 barometro;
 
 Estado estado = SOLO;
 
-Circular<double,30> circular;
+//Circular<double,30> circular;
 //Circular<Ponto,15> datalog;
+
+long ultimaLeitura = 0;
 
 double sensor = 0;
 double temperatura = 0;
+double deltaT = 0;
 double altitudeAgora = 0;
 double altitudeAntes = 0;
+double velocidadeAgora = 0;
+double velocidadeAntes = 0;
 double altitudeOffset = 0;
 double altitudeDelta = 0;
 double altitudePS = 0;      // ponto de saida
@@ -158,7 +104,7 @@ double readAltitudeFt()
             barometro.getTemperature( temperatura );
         }
 
-        proximaLeituraT += 100;
+        proximaLeituraT += 1;
     }
 
     atraso = barometro.startPressure( 3 ); // oversampling 0-3
@@ -182,7 +128,13 @@ double readAltitudeFt()
 
 void setup()
 {
-    toneAC( 60, 3, 100 );
+    toneAC( 60, 5, 100 );
+
+//    for( int x = 200; x < 10000; x += 200 )
+//    {
+//        toneAC( x, 10, 150 );
+//        delay( 300 );
+//    }
 
     Serial.begin(115200);
 
@@ -209,6 +161,7 @@ void setup()
     for( int z = 0; z < CALIBRAGEM_SZ; z++ )
     {
         media += ( calibragem[z] = readAltitudeFt() );
+        delay(10);
     }
     media /= CALIBRAGEM_SZ;
 
@@ -221,14 +174,14 @@ void setup()
 
     altitudeDZ = altitudeAgora = altitudeAntes = media;
 
-    toneAC( 4000, 10, 150 );
+    toneAC( 5000, 10, 150 );
 }
 
 void loop()
 {
     long inicio = millis();
 
-    // leitura sensores
+    // leitura sensores ( delay variavel )
 
     #ifdef BMP180
     sensor = readAltitudeFt();
@@ -238,19 +191,27 @@ void loop()
     sensor = altimetro.readAltitudeFt();
     #endif
 
-    // etapa predicao Kalman
-
-    ganho = p + 0.05 / (p + variancia);
-
-    altitudeAgora = altitudeAntes + ganho * ( sensor - altitudeAntes );
-
-    // etapa update Kalman
-
-    p = ( 1 - ganho ) * p;
-
-    altitudeDelta = altitudeAgora - altitudeAntes;
+    // etapa predicao
 
     agora = millis();
+
+    deltaT = ( (double) agora - ultimaLeitura ) / 1000.0;
+
+    altitudeAgora = altitudeAntes + velocidadeAntes * deltaT;
+    velocidadeAgora = velocidadeAntes;
+
+    double desvio = sensor - altitudeAgora;
+    double alpha = 0.1, beta = 0.0005;
+
+    altitudeAgora += alpha * desvio;
+    velocidadeAgora += ( beta * desvio ) / deltaT;
+
+//    // Kalman
+//    ganho = p + 0.05 / (p + variancia);
+//    altitudeAgora = altitudeAntes + ganho * ( sensor - altitudeAntes );
+//    p = ( 1 - ganho ) * p;
+
+    altitudeDelta = altitudeAgora - altitudeAntes;
 
     switch( estado )
     {
@@ -287,11 +248,13 @@ void loop()
 //    Serial.print( agora );
     Serial.print( " " );
     Serial.print( altitudeAgora - altitudeDZ, 2 );
-//    Serial.print( " " );
-//    Serial.print( temperatura );
+    Serial.print( " " );
+    Serial.print( velocidadeAgora );
 //    Serial.print( " " );
 //    Serial.print( p );
     Serial.println();
 
     altitudeAntes = altitudeAgora;
+    velocidadeAntes = velocidadeAgora;
+    ultimaLeitura = agora;
 }

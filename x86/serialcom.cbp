@@ -91,9 +91,15 @@
 			<Add directory="$(#wx.lib)/gcc_dll" />
 		</Linker>
 		<Unit filename="../PinChangeInt.h" />
+		<Unit filename="../circular.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="../dados.h" />
 		<Unit filename="../dimensoes.txt" />
 		<Unit filename="../dsm.txt" />
+		<Unit filename="../interpretador.hpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="../matematica.h" />
 		<Unit filename="../mbsbot.ino" />
 		<Unit filename="../motor.h" />
