@@ -5,6 +5,8 @@
 
 #include <Wire.h>
 
+#include "circular.h"
+
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
 #endif
@@ -13,10 +15,20 @@
 #include <SFE_BMP180.h>
 #endif
 
+/*
+    pinagem BMP180 X Arduino Nano
+
+    vermelho - 3v3
+    verde - a4
+    amarelo - a5
+    preto - gnd
+    azul - d9 e d10
+*/
+
 #include <toneAC.h>
 
-#define THRESHOLD_SUBIDA     5
-#define THRESHOLD_QUEDA     -5
+#define THRESHOLD_DECOLAGEM  1
+#define THRESHOLD_QUEDA     -1
 #define THRESHOLD_NAVEGACAO -3
 
 #define AVISO_ALTA_1    6000
@@ -31,7 +43,7 @@
 
 typedef struct Ponto
 {
-    long clock;
+    unsigned long clock;
     float altura;
 };
 
@@ -44,12 +56,25 @@ typedef struct Salto
     int ps;
 };
 
-enum Estado
+typedef enum Estado
 {
     SOLO,
-    SUBIDA,
+    CLIMB,
     QUEDA,
     NAVEGACAO
+};
+
+class TonePlayer
+{
+    public:
+        typedef struct Nota
+        {
+            int frequencia;
+            int duracao;
+        } notas[10];
+
+        int notasI;
+        int notasO;
 };
 
 #ifdef MPL3115A2
@@ -60,40 +85,37 @@ SFE_BMP180 barometro;
 
 Estado estado = SOLO;
 
-//Circular<double,30> circular;
-//Circular<Ponto,15> datalog;
+CircularStats<double,60> circular60s;
+CircularStats<double,15> circular15s;
 
-long ultimaLeitura = 0;
-
-double sensor = 0;
+double sensorAgora = 0;
+double sensorAntes = 0;
 double temperatura = 0;
 double deltaT = 0;
 double altitudeAgora = 0;
 double altitudeAntes = 0;
+double altitudeDelta = 0;
+double altitudeT0 = 0;
 double velocidadeAgora = 0;
 double velocidadeAntes = 0;
-double altitudeOffset = 0;
-double altitudeDelta = 0;
 double altitudePS = 0;      // ponto de saida
 double altitudeDZ = 0;      // area de pouso
 
-double ganho= 0;
-double p = 1;
+unsigned long agora = 1;
+unsigned long ultimaLeitura = 0;
+unsigned long tUmSegundo= 0;
 
-double media = 0;
-double variancia = 0;
+bool trace = true;
 
-long agora = 1;
-
-double readAltitudeFt()
+double readAltitudeFtBmp( long delayTemp = 0 )
 {
-    static long proximaLeituraT = 0;
+    static unsigned long proximaLeituraT = 0;
 
-    char atraso;
+    char atraso = 0;
 
     // refresh temperatura apenas a cada segundo
 
-    if( millis() > proximaLeituraT || proximaLeituraT == 0 )
+    if( ! delayTemp || millis() > proximaLeituraT )
     {
         atraso = barometro.startTemperature();
 
@@ -104,7 +126,7 @@ double readAltitudeFt()
             barometro.getTemperature( temperatura );
         }
 
-        proximaLeituraT += 1;
+        proximaLeituraT += delayTemp;
     }
 
     atraso = barometro.startPressure( 3 ); // oversampling 0-3
@@ -155,106 +177,160 @@ void setup()
     altimetro.enableEventFlags();
 #endif
 
-    #define CALIBRAGEM_SZ 100
-    double calibragem[CALIBRAGEM_SZ];
+    #define CALIBRAGEM_SZ 60
+//    #define CALIBRAGEM_SZ 100
+//    double calibragem[CALIBRAGEM_SZ];
+    double media = 0;
+    double varianciaT0 = 0;
 
     for( int z = 0; z < CALIBRAGEM_SZ; z++ )
     {
-        media += ( calibragem[z] = readAltitudeFt() );
-        delay(10);
+        circular60s.insere( readAltitudeFtBmp( 0 ) );
+//        media += ( calibragem[z] = readAltitudeFtBmp() );
+//        delay(10);
     }
-    media /= CALIBRAGEM_SZ;
+//    media /= CALIBRAGEM_SZ;
+    media = circular60s.media();
 
-    for( int z = 0; z < CALIBRAGEM_SZ; z++ )
-    {
-        variancia += pow( calibragem[z] - media, 2 );
-    }
+//    for( int z = 0; z < CALIBRAGEM_SZ; z++ )
+//    {
+//        varianciaT0 += pow( calibragem[z] - media, 2 );
+//    }
+//
+//    varianciaT0 /= CALIBRAGEM_SZ;
+    varianciaT0 = circular60s.variancia();
 
-    variancia /= CALIBRAGEM_SZ;
+    altitudePS = altitudeT0 = altitudeDZ = altitudeAgora = altitudeAntes = media;
 
-    altitudeDZ = altitudeAgora = altitudeAntes = media;
+    toneAC( 5000, 5, 150 );
 
-    toneAC( 5000, 10, 150 );
+    ultimaLeitura = millis();
 }
 
 void loop()
 {
-    long inicio = millis();
+    unsigned long inicio = millis();
 
-    // leitura sensores ( delay variavel )
+    // atualiza sensores
 
     #ifdef BMP180
-    sensor = readAltitudeFt();
+    sensorAgora = readAltitudeFtBmp( 1000 );
     #endif
 
     #ifdef MPL3115A2
-    sensor = altimetro.readAltitudeFt();
+    sensorAgora = altimetro.readAltitudeFt();
     #endif
+
+    agora = millis();
 
     // etapa predicao
 
-    agora = millis();
+
+
+    //double analogico = analogRead(1);
 
     deltaT = ( (double) agora - ultimaLeitura ) / 1000.0;
 
     altitudeAgora = altitudeAntes + velocidadeAntes * deltaT;
     velocidadeAgora = velocidadeAntes;
 
-    double desvio = sensor - altitudeAgora;
-    double alpha = 0.1, beta = 0.0005;
+    double desvio = sensorAgora - altitudeAgora;
+//    double alpha = analogico / 1000;
+    double alpha = 0.1;
+    double beta = 0.001;
 
     altitudeAgora += alpha * desvio;
     velocidadeAgora += ( beta * desvio ) / deltaT;
 
 //    // Kalman
+//
+//    static double ganho= 0;
+//    static double p = 1;
 //    ganho = p + 0.05 / (p + variancia);
-//    altitudeAgora = altitudeAntes + ganho * ( sensor - altitudeAntes );
+//    altitudeAgora = altitudeAntes + ganho * ( sensorAgora - altitudeAntes );
 //    p = ( 1 - ganho ) * p;
 
-    altitudeDelta = altitudeAgora - altitudeAntes;
+    if( agora > tUmSegundo )
+    {
+        circular60s.insere( altitudeAgora );
+        circular15s.insere( altitudeAgora );
+
+        tUmSegundo = agora + 1000;
+    }
 
     switch( estado )
     {
     case SOLO:
-        if( altitudeDelta > THRESHOLD_SUBIDA )
+        if( velocidadeAgora > THRESHOLD_DECOLAGEM )
         {
-            //altitudeOffset = circular.media();
-            estado = SUBIDA;
+            toneAC( 5000, 10, 150 );
+
+            estado = CLIMB;
         }
         else
         {
-//            circular.insere( altitudeAntes );
+            altitudeDZ = altitudePS = circular60s.media();
         }
         break;
-    case SUBIDA:
-        if( altitudeDelta < THRESHOLD_QUEDA )
+    case CLIMB:
+        if( velocidadeAgora < THRESHOLD_QUEDA )
         {
+            toneAC( 5000, 10, 150 );
+            delay(100);
+            toneAC( 5000, 10, 150 );
+
             estado = QUEDA;
+        }
+        else
+        {
+            altitudePS = circular15s.media();
         }
         break;
     case QUEDA:
-        if( altitudeDelta > THRESHOLD_NAVEGACAO )
+        if( velocidadeAgora > THRESHOLD_NAVEGACAO )
         {
-            estado = QUEDA;
+            toneAC( 5000, 10, 150 );
+            delay(100);
+            toneAC( 5000, 10, 150 );
+            delay(100);
+            toneAC( 5000, 10, 150 );
+
+            estado = NAVEGACAO;
         }
         break;
     case NAVEGACAO:
+
         break;
     }
 
+    // player
+
+
+
     // trace
 
-    Serial.print( sensor - altitudeDZ );
-//    Serial.print( agora );
-    Serial.print( " " );
-    Serial.print( altitudeAgora - altitudeDZ, 2 );
-    Serial.print( " " );
-    Serial.print( velocidadeAgora );
-//    Serial.print( " " );
-//    Serial.print( p );
-    Serial.println();
+    if( trace )
+    {
+//        Serial.print( deltaT * 1000 );
+//        Serial.print( " " );
+//        Serial.print( agora - inicio );
+//        Serial.print( " " );
+        Serial.print( altitudeAgora - altitudeDZ, 2 );
+        Serial.print( " " );
+        Serial.print( circular15s.media() - altitudeDZ, 2  );
+        Serial.print( " " );
+        Serial.print( velocidadeAgora, 2  );
+        Serial.print( " " );
+        Serial.print( sensorAgora - altitudeDZ, 2  );
+        Serial.print( " " );
+        Serial.print( altitudePS - altitudeDZ, 2 );
+        Serial.println();
+    }
 
+    sensorAntes = sensorAgora;
     altitudeAntes = altitudeAgora;
     velocidadeAntes = velocidadeAgora;
     ultimaLeitura = agora;
+
+    //delay(100);
 }
