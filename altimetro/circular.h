@@ -98,6 +98,11 @@ public:
 
         return ( somaQ / (tipo) disponiveis() );
     }
+
+    tipo desvio()
+    {
+        return sqrt( variancia() );
+    }
 };
 
 #endif // CIRCULAR_H_INCLUDED

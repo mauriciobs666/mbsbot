@@ -1,18 +1,20 @@
 
 // (c) 2017 MBS - Mauricio Bieze Stefani
 
-#define BMP180
-
 #include <Wire.h>
 
 #include "circular.h"
 
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
+MPL3115A2 altimetro;
 #endif
+
+#define BMP180
 
 #ifdef BMP180
 #include <SFE_BMP180.h>
+SFE_BMP180 barometro;
 #endif
 
 /*
@@ -27,9 +29,13 @@
 
 #include <toneAC.h>
 
-#define THRESHOLD_DECOLAGEM  1
-#define THRESHOLD_QUEDA     -1
-#define THRESHOLD_NAVEGACAO -3
+#ifdef PRODUCAO
+
+#define THRESHOLD_DECOLAGEM  1.0 // pes/s
+#define THRESHOLD_QUEDA     -1.0 // pes/s
+#define THRESHOLD_ABERTURA  -0.5 // pes/s
+
+#define AVISO_SUBIDA_CINTO 1500
 
 #define AVISO_ALTA_1    6000
 #define AVISO_ALTA_2    5000
@@ -41,10 +47,35 @@
 #define NAVEGACAO_C      900
 #define NAVEGACAO_D     1200
 
+#define TRACE          false
+
+#else
+
+#define THRESHOLD_DECOLAGEM  0.8
+#define THRESHOLD_QUEDA     -0.8
+#define THRESHOLD_ABERTURA   0.8
+
+#define AVISO_SUBIDA_CINTO 12
+
+#define AVISO_ALTA_1      36
+#define AVISO_ALTA_2      24
+#define AVISO_ALTA_3      12
+#define ALARME_ALTA        6
+
+#define NAVEGACAO_A        6
+#define NAVEGACAO_B       12
+#define NAVEGACAO_C       24
+#define NAVEGACAO_D       36
+
+#define TRACE           true
+
+#endif
+
+/*
 typedef struct Ponto
 {
     unsigned long clock;
-    float altura;
+    double altura;
 };
 
 typedef struct Salto
@@ -55,6 +86,7 @@ typedef struct Salto
     int tNavegacao;
     int ps;
 };
+*/
 
 typedef enum Estado
 {
@@ -67,31 +99,120 @@ typedef enum Estado
 class TonePlayer
 {
     public:
-        typedef struct Nota
+        TonePlayer()
+        {
+            limpa();
+        }
+
+        void insere( int duracao, int frequencia = 0, int volume = 0 )
+        {
+            notas[escrita].duracao = duracao;
+            notas[escrita].frequencia = frequencia;
+            notas[escrita].volume = volume;
+
+            incrementa(escrita);
+
+            if( escrita == leitura )
+                incrementa( leitura );
+        }
+
+        void loop( unsigned long agora )
+        {
+            static bool mudoQdoTerminar = false;
+
+            if( agora > tocando )
+            {
+                if( leitura != escrita )
+                {
+                    toneAC( notas[leitura].frequencia,
+                            notas[leitura].volume,
+                            notas[leitura].duracao,
+                            true );
+
+                    tocando = agora + notas[leitura].duracao;
+
+                    incrementa( leitura );
+
+                    mudoQdoTerminar = true;
+                }
+                else
+                {
+                    if( mudoQdoTerminar )
+                    {
+                        noToneAC();
+                        mudoQdoTerminar = false;
+                    }
+
+                    tocando = agora;
+                }
+            }
+        }
+
+        void limpa()
+        {
+            leitura = escrita = 0;
+            tocando = 0;
+        }
+    private:
+        int leitura;
+        int escrita;
+        unsigned long tocando;
+
+        #define SZ_NOTAS 10
+        struct Nota
         {
             int frequencia;
             int duracao;
-        } notas[10];
+            char volume;
+        } notas[SZ_NOTAS];
 
-        int notasI;
-        int notasO;
+        int proximo( int ponteiro )
+        {
+            ponteiro++;
+
+            if( ponteiro == SZ_NOTAS )
+                ponteiro = 0;
+
+            return ponteiro;
+        }
+
+        int incrementa( int & ponteiro )
+        {
+            return ( ponteiro = proximo( ponteiro ) );
+        }
 };
 
-#ifdef MPL3115A2
-MPL3115A2 altimetro;
-#endif
+typedef struct
+{
+    int altura;
 
-SFE_BMP180 barometro;
+    enum TipoAviso
+    {
+        BIP_UNICO = 0,
+        BIP_DUPLO,
+        BIP_TRIPLO,
+        SIRENE
+    } tipo;
+
+    char volume;
+
+    unsigned long atingido;
+} Aviso;
+
+Aviso avisosAlta[4], avisosBaixa[4], avisosSubida;
 
 Estado estado = SOLO;
 
-CircularStats<double,60> circular60s;
-CircularStats<double,15> circular15s;
+CircularStats<double,15> circular15;
+CircularStats<double,50> circular1s;
+
+TonePlayer tonePlayer;
 
 double sensorAgora = 0;
 double sensorAntes = 0;
 double temperatura = 0;
-double deltaT = 0;
+double varianciaT0 = 0;
+
 double altitudeAgora = 0;
 double altitudeAntes = 0;
 double altitudeDelta = 0;
@@ -103,9 +224,11 @@ double altitudeDZ = 0;      // area de pouso
 
 unsigned long agora = 1;
 unsigned long ultimaLeitura = 0;
-unsigned long tUmSegundo= 0;
+unsigned long tUmSegundo = 0;
+unsigned long tUmDecimo = 0;
+double deltaT = 0;
 
-bool trace = true;
+bool trace = TRACE;
 
 double readAltitudeFtBmp( long delayTemp = 0 )
 {
@@ -166,6 +289,7 @@ void setup()
         toneAC( 4000, 10, 200 );
         delay(200);
         toneAC( 4000, 10, 200 );
+        return;
         while(1);
     }
 
@@ -177,32 +301,52 @@ void setup()
     altimetro.enableEventFlags();
 #endif
 
-    #define CALIBRAGEM_SZ 60
-//    #define CALIBRAGEM_SZ 100
-//    double calibragem[CALIBRAGEM_SZ];
-    double media = 0;
-    double varianciaT0 = 0;
-
-    for( int z = 0; z < CALIBRAGEM_SZ; z++ )
+    for( int z = 0; z < 100; z++ )
     {
-        circular60s.insere( readAltitudeFtBmp( 0 ) );
-//        media += ( calibragem[z] = readAltitudeFtBmp() );
-//        delay(10);
+        double alti = readAltitudeFtBmp( 0 );
+        circular1s.insere( alti );
+        circular15.insere( alti );
     }
-//    media /= CALIBRAGEM_SZ;
-    media = circular60s.media();
 
-//    for( int z = 0; z < CALIBRAGEM_SZ; z++ )
-//    {
-//        varianciaT0 += pow( calibragem[z] - media, 2 );
-//    }
-//
-//    varianciaT0 /= CALIBRAGEM_SZ;
-    varianciaT0 = circular60s.variancia();
+    varianciaT0 = circular1s.variancia();
 
-    altitudePS = altitudeT0 = altitudeDZ = altitudeAgora = altitudeAntes = media;
+    altitudePS = altitudeT0 = altitudeDZ = altitudeAgora = altitudeAntes = circular1s.media();
 
-    toneAC( 5000, 5, 150 );
+    tonePlayer.insere( 250, 5000, 10 );
+
+    avisosAlta[0].altura = AVISO_ALTA_1;
+    avisosAlta[1].altura = AVISO_ALTA_2;
+    avisosAlta[2].altura = AVISO_ALTA_3;
+    avisosAlta[3].altura = ALARME_ALTA;
+
+    avisosAlta[0].tipo = Aviso::BIP_UNICO;
+    avisosAlta[1].tipo = Aviso::BIP_DUPLO;
+    avisosAlta[2].tipo = Aviso::BIP_TRIPLO;
+    avisosAlta[3].tipo = Aviso::SIRENE;
+
+    avisosAlta[0].volume = 10;
+    avisosAlta[1].volume = 10;
+    avisosAlta[2].volume = 10;
+    avisosAlta[3].volume = 10;
+
+    avisosBaixa[0].altura = NAVEGACAO_A;
+    avisosBaixa[1].altura = NAVEGACAO_B;
+    avisosBaixa[2].altura = NAVEGACAO_C;
+    avisosBaixa[3].altura = NAVEGACAO_D;
+
+    avisosBaixa[0].tipo = Aviso::BIP_TRIPLO;
+    avisosBaixa[1].tipo = Aviso::BIP_DUPLO;
+    avisosBaixa[2].tipo = Aviso::BIP_UNICO;
+    avisosBaixa[3].tipo = Aviso::BIP_UNICO;
+
+    avisosBaixa[0].volume = 10;
+    avisosBaixa[1].volume = 10;
+    avisosBaixa[2].volume = 10;
+    avisosBaixa[3].volume = 10;
+
+    avisosSubida.altura = AVISO_SUBIDA_CINTO;
+    avisosSubida.tipo = Aviso::BIP_UNICO;
+    avisosSubida.volume = 10;
 
     ultimaLeitura = millis();
 }
@@ -225,17 +369,13 @@ void loop()
 
     // etapa predicao
 
-
-
-    //double analogico = analogRead(1);
-
     deltaT = ( (double) agora - ultimaLeitura ) / 1000.0;
 
     altitudeAgora = altitudeAntes + velocidadeAntes * deltaT;
     velocidadeAgora = velocidadeAntes;
 
     double desvio = sensorAgora - altitudeAgora;
-//    double alpha = analogico / 1000;
+
     double alpha = 0.1;
     double beta = 0.001;
 
@@ -250,12 +390,34 @@ void loop()
 //    altitudeAgora = altitudeAntes + ganho * ( sensorAgora - altitudeAntes );
 //    p = ( 1 - ganho ) * p;
 
-    if( agora > tUmSegundo )
+    circular1s.insere( altitudeAgora );
+
+    if( agora >= tUmSegundo )
     {
-        circular60s.insere( altitudeAgora );
-        circular15s.insere( altitudeAgora );
+        circular15.insere( circular1s.media() );
 
         tUmSegundo = agora + 1000;
+    }
+
+    if( agora >= tUmDecimo )
+    {
+/*
+        if( velocidadeAgora > 0.5 )
+        {
+            int freq = 1000 + velocidadeAgora * 1000;
+            toneAC( freq, 3, 200, true );
+        }
+        else if( velocidadeAgora < -0.5 )
+        {
+            int freq = 1000 - velocidadeAgora * 500;
+            toneAC( freq, 3, 200, true );
+        }
+        else
+        {
+            noToneAC();
+        }
+*/
+        tUmDecimo = agora + 100;
     }
 
     switch( estado )
@@ -263,49 +425,49 @@ void loop()
     case SOLO:
         if( velocidadeAgora > THRESHOLD_DECOLAGEM )
         {
-            toneAC( 5000, 10, 150 );
+            tonePlayer.insere( 250, 5000, 10 );
 
             estado = CLIMB;
         }
         else
         {
-            altitudeDZ = altitudePS = circular60s.media();
+            altitudeDZ = altitudePS = *circular15.topo();
         }
         break;
     case CLIMB:
         if( velocidadeAgora < THRESHOLD_QUEDA )
         {
-            toneAC( 5000, 10, 150 );
-            delay(100);
-            toneAC( 5000, 10, 150 );
+            tonePlayer.insere( 250, 5000, 10 );
+            tonePlayer.insere( 250 );
+            tonePlayer.insere( 250, 5000, 10 );
 
             estado = QUEDA;
         }
         else
         {
-            altitudePS = circular15s.media();
+            altitudePS = *circular15.topo();
         }
         break;
     case QUEDA:
-        if( velocidadeAgora > THRESHOLD_NAVEGACAO )
+        if( velocidadeAgora > THRESHOLD_ABERTURA )
         {
-            toneAC( 5000, 10, 150 );
-            delay(100);
-            toneAC( 5000, 10, 150 );
-            delay(100);
-            toneAC( 5000, 10, 150 );
+            tonePlayer.insere( 250 );
+            tonePlayer.insere( 250, 5000, 10 );
+            tonePlayer.insere( 250 );
+            tonePlayer.insere( 250, 5000, 10 );
+            tonePlayer.insere( 250 );
+            tonePlayer.insere( 250, 5000, 10 );
 
             estado = NAVEGACAO;
         }
         break;
     case NAVEGACAO:
-
         break;
     }
 
     // player
 
-
+    tonePlayer.loop( agora );
 
     // trace
 
@@ -317,13 +479,15 @@ void loop()
 //        Serial.print( " " );
         Serial.print( altitudeAgora - altitudeDZ, 2 );
         Serial.print( " " );
-        Serial.print( circular15s.media() - altitudeDZ, 2  );
+        Serial.print( circular15.media() - altitudeDZ, 2  );
         Serial.print( " " );
         Serial.print( velocidadeAgora, 2  );
         Serial.print( " " );
         Serial.print( sensorAgora - altitudeDZ, 2  );
         Serial.print( " " );
         Serial.print( altitudePS - altitudeDZ, 2 );
+        Serial.print( " " );
+        Serial.print( circular1s.desvio(), 2 );
         Serial.println();
     }
 
