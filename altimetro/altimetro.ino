@@ -3,7 +3,7 @@
 
 #include <Wire.h>
 
-#include "circular.h"
+#include "circular.hpp"
 
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
@@ -31,11 +31,12 @@ SFE_BMP180 barometro;
 
 #ifdef PRODUCAO
 
-#define THRESHOLD_DECOLAGEM  1.0 // pes/s
-#define THRESHOLD_QUEDA     -1.0 // pes/s
-#define THRESHOLD_ABERTURA  -0.5 // pes/s
+#define THRESHOLD_DECOLAGEM  3.0 // pes/s
+#define THRESHOLD_QUEDA    -10.0 // pes/s
+#define THRESHOLD_ABERTURA -10.0 // pes/s
 
 #define AVISO_SUBIDA_CINTO 1500
+#define AVISO_SUBIDA_CHECK 9000
 
 #define AVISO_ALTA_1    6000
 #define AVISO_ALTA_2    5000
@@ -56,6 +57,7 @@ SFE_BMP180 barometro;
 #define THRESHOLD_ABERTURA   0.8
 
 #define AVISO_SUBIDA_CINTO 12
+#define AVISO_SUBIDA_CHECK 24
 
 #define AVISO_ALTA_1      36
 #define AVISO_ALTA_2      24
@@ -71,49 +73,58 @@ SFE_BMP180 barometro;
 
 #endif
 
-/*
-typedef struct Ponto
+typedef struct
 {
     unsigned long clock;
     double altura;
-};
+} Ponto;
 
-typedef struct Salto
+typedef struct
 {
     int offset;
     int tSubida;
     int tQueda;
     int tNavegacao;
     int ps;
-};
-*/
+} Salto;
 
-typedef enum Estado
+typedef enum
 {
     SOLO,
     CLIMB,
     QUEDA,
     NAVEGACAO
-};
+} Estado;
+
+typedef struct
+{
+    int altura;
+
+    enum TipoAviso
+    {
+        BIP_UNICO = 0,
+        BIP_DUPLO,
+        BIP_TRIPLO,
+        SIRENE
+    } tipo;
+
+    char volume;
+
+    unsigned long atingido;
+} Aviso;
 
 class TonePlayer
 {
     public:
+        void limpa()
+        {
+            leitura = escrita = 0;
+            tocando = 0;
+        }
+
         TonePlayer()
         {
             limpa();
-        }
-
-        void insere( int duracao, int frequencia = 0, int volume = 0 )
-        {
-            notas[escrita].duracao = duracao;
-            notas[escrita].frequencia = frequencia;
-            notas[escrita].volume = volume;
-
-            incrementa(escrita);
-
-            if( escrita == leitura )
-                incrementa( leitura );
         }
 
         void loop( unsigned long agora )
@@ -148,11 +159,50 @@ class TonePlayer
             }
         }
 
-        void limpa()
+        void insere( int duracao, int frequencia = 0, int volume = 0 )
         {
-            leitura = escrita = 0;
-            tocando = 0;
+            notas[escrita].duracao = duracao;
+            notas[escrita].frequencia = frequencia;
+            notas[escrita].volume = volume;
+
+            incrementa(escrita);
+
+            if( escrita == leitura )
+                incrementa( leitura );
         }
+
+        void bipe( int nbips = 1, int vol = 10, int freq = 5000, int dur = 250, int inter = 250 )
+        {
+            for( int n = 0; n < nbips; n++ )
+            {
+                insere( dur, freq, vol );
+                insere( inter );
+            }
+        }
+
+        void insere( Aviso & aviso )
+        {
+            switch( aviso.tipo )
+            {
+                BIP_UNICO:
+                    bipe( 1, aviso.volume );
+                    break;
+                BIP_DUPLO:
+                    bipe( 2, aviso.volume );
+                    break;
+                BIP_TRIPLO:
+                    bipe( 3, aviso.volume );
+                    break;
+                SIRENE:
+                    for( int n = 0; n < 3; n++ )
+                    {
+                        insere( 250, 5000, aviso.volume );
+                        insere( 250, 1000, aviso.volume );
+                    }
+                    break;
+            }
+        }
+
     private:
         int leitura;
         int escrita;
@@ -182,29 +232,12 @@ class TonePlayer
         }
 };
 
-typedef struct
-{
-    int altura;
-
-    enum TipoAviso
-    {
-        BIP_UNICO = 0,
-        BIP_DUPLO,
-        BIP_TRIPLO,
-        SIRENE
-    } tipo;
-
-    char volume;
-
-    unsigned long atingido;
-} Aviso;
-
-Aviso avisosAlta[4], avisosBaixa[4], avisosSubida;
-
 Estado estado = SOLO;
 
-CircularStats<double,15> circular15;
+CircularStats<double,10> circular10;
 CircularStats<double,50> circular1s;
+
+Aviso avisosAlta[4], avisosBaixa[4], avisosSubida[1];
 
 TonePlayer tonePlayer;
 
@@ -305,7 +338,7 @@ void setup()
     {
         double alti = readAltitudeFtBmp( 0 );
         circular1s.insere( alti );
-        circular15.insere( alti );
+        circular10.insere( alti );
     }
 
     varianciaT0 = circular1s.variancia();
@@ -314,39 +347,47 @@ void setup()
 
     tonePlayer.insere( 250, 5000, 10 );
 
+    for( int a = 0; a < sizeof( avisosAlta[a] ); a++ )
+        avisosAlta[a].atingido = 0;
+
     avisosAlta[0].altura = AVISO_ALTA_1;
-    avisosAlta[1].altura = AVISO_ALTA_2;
-    avisosAlta[2].altura = AVISO_ALTA_3;
-    avisosAlta[3].altura = ALARME_ALTA;
-
     avisosAlta[0].tipo = Aviso::BIP_UNICO;
-    avisosAlta[1].tipo = Aviso::BIP_DUPLO;
-    avisosAlta[2].tipo = Aviso::BIP_TRIPLO;
-    avisosAlta[3].tipo = Aviso::SIRENE;
-
     avisosAlta[0].volume = 10;
+    avisosAlta[1].altura = AVISO_ALTA_2;
+    avisosAlta[1].tipo = Aviso::BIP_DUPLO;
     avisosAlta[1].volume = 10;
+    avisosAlta[2].altura = AVISO_ALTA_3;
+    avisosAlta[2].tipo = Aviso::BIP_TRIPLO;
     avisosAlta[2].volume = 10;
+    avisosAlta[3].altura = ALARME_ALTA;
+    avisosAlta[3].tipo = Aviso::SIRENE;
     avisosAlta[3].volume = 10;
 
+    for( int a = 0; a < sizeof( avisosBaixa[a] ); a++ )
+        avisosBaixa[a].atingido = 0;
+
     avisosBaixa[0].altura = NAVEGACAO_A;
-    avisosBaixa[1].altura = NAVEGACAO_B;
-    avisosBaixa[2].altura = NAVEGACAO_C;
-    avisosBaixa[3].altura = NAVEGACAO_D;
-
     avisosBaixa[0].tipo = Aviso::BIP_TRIPLO;
-    avisosBaixa[1].tipo = Aviso::BIP_DUPLO;
-    avisosBaixa[2].tipo = Aviso::BIP_UNICO;
-    avisosBaixa[3].tipo = Aviso::BIP_UNICO;
-
     avisosBaixa[0].volume = 10;
+    avisosBaixa[1].altura = NAVEGACAO_B;
+    avisosBaixa[1].tipo = Aviso::BIP_DUPLO;
     avisosBaixa[1].volume = 10;
+    avisosBaixa[2].altura = NAVEGACAO_C;
+    avisosBaixa[2].tipo = Aviso::BIP_UNICO;
     avisosBaixa[2].volume = 10;
+    avisosBaixa[3].altura = NAVEGACAO_D;
+    avisosBaixa[3].tipo = Aviso::BIP_UNICO;
     avisosBaixa[3].volume = 10;
 
-    avisosSubida.altura = AVISO_SUBIDA_CINTO;
-    avisosSubida.tipo = Aviso::BIP_UNICO;
-    avisosSubida.volume = 10;
+    for( int a = 0; a < sizeof( avisosSubida[a] ); a++ )
+        avisosSubida[a].atingido = 0;
+
+    avisosSubida[0].altura = AVISO_SUBIDA_CINTO;
+    avisosSubida[0].tipo = Aviso::BIP_UNICO;
+    avisosSubida[0].volume = 5;
+    avisosSubida[1].altura = AVISO_SUBIDA_CHECK;
+    avisosSubida[1].tipo = Aviso::BIP_DUPLO;
+    avisosSubida[1].volume = 5;
 
     ultimaLeitura = millis();
 }
@@ -394,30 +435,35 @@ void loop()
 
     if( agora >= tUmSegundo )
     {
-        circular15.insere( circular1s.media() );
-
         tUmSegundo = agora + 1000;
+
+        circular10.insere( circular1s.media() );
     }
 
     if( agora >= tUmDecimo )
     {
+        tUmDecimo = agora + 100;
 /*
-        if( velocidadeAgora > 0.5 )
+        // variometro
+
+        if( ! tonePlayer.tocando() )
         {
-            int freq = 1000 + velocidadeAgora * 1000;
-            toneAC( freq, 3, 200, true );
-        }
-        else if( velocidadeAgora < -0.5 )
-        {
-            int freq = 1000 - velocidadeAgora * 500;
-            toneAC( freq, 3, 200, true );
-        }
-        else
-        {
-            noToneAC();
+            if( velocidadeAgora > 0.5 )
+            {
+                int freq = 1000 + velocidadeAgora * 1000;
+                toneAC( freq, 3, 200, true );
+            }
+            else if( velocidadeAgora < -0.5 )
+            {
+                int freq = 1000 - velocidadeAgora * 500;
+                toneAC( freq, 3, 200, true );
+            }
+            else
+            {
+                noToneAC();
+            }
         }
 */
-        tUmDecimo = agora + 100;
     }
 
     switch( estado )
@@ -425,51 +471,85 @@ void loop()
     case SOLO:
         if( velocidadeAgora > THRESHOLD_DECOLAGEM )
         {
-            tonePlayer.insere( 250, 5000, 10 );
+            tonePlayer.bipe( );
 
             estado = CLIMB;
         }
         else
         {
-            altitudeDZ = altitudePS = *circular15.topo();
+            altitudeDZ = altitudePS = *circular10.topo();
         }
         break;
+
     case CLIMB:
         if( velocidadeAgora < THRESHOLD_QUEDA )
         {
-            tonePlayer.insere( 250, 5000, 10 );
-            tonePlayer.insere( 250 );
-            tonePlayer.insere( 250, 5000, 10 );
+            tonePlayer.bipe( 2 );
 
             estado = QUEDA;
         }
         else
         {
-            altitudePS = *circular15.topo();
+            altitudePS = *circular10.topo();
         }
+
+        for( int i = 0;  i < sizeof( avisosSubida ); i++ )
+        {
+            if( ! avisosSubida[i].atingido && altitudeAgora > avisosSubida[i].altura )
+            {
+                avisosSubida[i].atingido = agora;
+
+                tonePlayer.insere( avisosSubida[i] );
+            }
+        }
+
         break;
+
     case QUEDA:
         if( velocidadeAgora > THRESHOLD_ABERTURA )
         {
-            tonePlayer.insere( 250 );
-            tonePlayer.insere( 250, 5000, 10 );
-            tonePlayer.insere( 250 );
-            tonePlayer.insere( 250, 5000, 10 );
-            tonePlayer.insere( 250 );
-            tonePlayer.insere( 250, 5000, 10 );
+            tonePlayer.limpa();
+            tonePlayer.bipe( 3 );
 
             estado = NAVEGACAO;
         }
+
+        for( int i = 0;  i < sizeof( avisosAlta ); i++ )
+        {
+            if( ! avisosAlta[i].atingido && altitudeAgora < avisosAlta[i].altura )
+            {
+                avisosAlta[i].atingido = agora;
+
+                tonePlayer.insere( avisosAlta[i] );
+            }
+        }
+
         break;
+
     case NAVEGACAO:
+        if( velocidadeAgora < THRESHOLD_QUEDA )
+        {
+            tonePlayer.bipe( 2 );
+
+            estado = QUEDA;
+        }
+
+        for( int i = 0;  i < sizeof( avisosBaixa ); i++ )
+        {
+            if( ! avisosBaixa[i].atingido && altitudeAgora < avisosBaixa[i].altura )
+            {
+                avisosBaixa[i].atingido = agora;
+
+                tonePlayer.insere( avisosBaixa[i] );
+            }
+        }
+
         break;
     }
 
     // player
 
     tonePlayer.loop( agora );
-
-    // trace
 
     if( trace )
     {
@@ -479,7 +559,7 @@ void loop()
 //        Serial.print( " " );
         Serial.print( altitudeAgora - altitudeDZ, 2 );
         Serial.print( " " );
-        Serial.print( circular15.media() - altitudeDZ, 2  );
+        Serial.print( circular10.media() - altitudeDZ, 2  );
         Serial.print( " " );
         Serial.print( velocidadeAgora, 2  );
         Serial.print( " " );
