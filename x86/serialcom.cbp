@@ -92,7 +92,8 @@
 		</Linker>
 		<Unit filename="../PinChangeInt.h" />
 		<Unit filename="../altimetro/altimetro.ino" />
-		<Unit filename="../altimetro/circular.h" />
+		<Unit filename="../altimetro/circular.hpp" />
+		<Unit filename="../altimetro/interpretador.hpp" />
 		<Unit filename="../dados.h" />
 		<Unit filename="../dimensoes.txt" />
 		<Unit filename="../dsm.txt" />

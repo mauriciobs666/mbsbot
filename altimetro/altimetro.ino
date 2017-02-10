@@ -237,7 +237,7 @@ Estado estado = SOLO;
 CircularStats<double,10> circular10;
 CircularStats<double,50> circular1s;
 
-Aviso avisosAlta[4], avisosBaixa[4], avisosSubida[1];
+Aviso avisosAlta[4], avisosBaixa[4], avisosSubida[2];
 
 TonePlayer tonePlayer;
 
@@ -285,6 +285,9 @@ double readAltitudeFtBmp( long delayTemp = 0 )
         proximaLeituraT += delayTemp;
     }
 
+//    Serial.print( temperatura );
+//    Serial.print( " " );
+
     atraso = barometro.startPressure( 3 ); // oversampling 0-3
 
     if( atraso > 0 )
@@ -295,6 +298,11 @@ double readAltitudeFtBmp( long delayTemp = 0 )
 
         atraso = barometro.getPressure( pressao, temperatura );
 
+//        pressao -= 2.9; // offset erro sensor
+/*
+        Serial.print( pressao );
+        Serial.print( " " );
+*/
         if( atraso != 0 )
         {
             return( barometro.altitude( pressao, 1013.25 ) * 3.28084 ); // MSL Mean Sea Level
@@ -557,10 +565,11 @@ void loop()
 //        Serial.print( " " );
 //        Serial.print( agora - inicio );
 //        Serial.print( " " );
+//        Serial.print( altitudeAgora, 2 );
         Serial.print( altitudeAgora - altitudeDZ, 2 );
         Serial.print( " " );
-        Serial.print( circular10.media() - altitudeDZ, 2  );
-        Serial.print( " " );
+//        Serial.print( circular10.media() - altitudeDZ, 2  );
+//        Serial.print( " " );
         Serial.print( velocidadeAgora, 2  );
         Serial.print( " " );
         Serial.print( sensorAgora - altitudeDZ, 2  );

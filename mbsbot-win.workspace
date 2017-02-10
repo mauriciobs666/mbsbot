@@ -4,9 +4,9 @@
 		<Project filename="../mbsutil/MBSUtil.cbp" />
 		<Project filename="cv/cv-win.cbp" />
 		<Project filename="proksi/proksi-win.cbp" />
-		<Project filename="scope/scope-win.cbp" />
 		<Project filename="x86/serialcom.cbp">
 			<Depends filename="../mbsutil/MBSUtil.cbp" />
 		</Project>
+		<Project filename="scope/scope-win.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>
