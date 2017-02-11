@@ -43,10 +43,10 @@ SFE_BMP180 barometro;
 #define AVISO_ALTA_3    4000
 #define ALARME_ALTA     2500
 
-#define NAVEGACAO_A      300
-#define NAVEGACAO_B      600
-#define NAVEGACAO_C      900
-#define NAVEGACAO_D     1200
+#define AVISO_NAVEGACAO_A      300
+#define AVISO_NAVEGACAO_B      600
+#define AVISO_NAVEGACAO_C      900
+#define AVISO_NAVEGACAO_D     1200
 
 #define TRACE          false
 
@@ -59,15 +59,15 @@ SFE_BMP180 barometro;
 #define AVISO_SUBIDA_CINTO 12
 #define AVISO_SUBIDA_CHECK 24
 
-#define AVISO_ALTA_1      36
-#define AVISO_ALTA_2      24
-#define AVISO_ALTA_3      12
-#define ALARME_ALTA        6
+#define AVISO_ALTA_1      20
+#define AVISO_ALTA_2      15
+#define AVISO_ALTA_3      10
+#define ALARME_ALTA        5
 
-#define NAVEGACAO_A        6
-#define NAVEGACAO_B       12
-#define NAVEGACAO_C       24
-#define NAVEGACAO_D       36
+#define AVISO_NAVEGACAO_A        6
+#define AVISO_NAVEGACAO_B       12
+#define AVISO_NAVEGACAO_C       24
+#define AVISO_NAVEGACAO_D       36
 
 #define TRACE           true
 
@@ -81,24 +81,46 @@ typedef struct
 
 typedef struct
 {
-    int offset;
-    int tSubida;
-    int tQueda;
-    int tNavegacao;
-    int ps;
+    double altitudeDZ;  // area de pouso
+    double altitudePS;  // ponto de saida
+
+    unsigned long clockDecolagem;
+    unsigned long clockPS;
+    unsigned long clockAbertura;
+
+    void limpa()
+    {
+        altitudeDZ = altitudePS = 0;
+        clockDecolagem = clockPS = clockAbertura = 0;
+    }
 } Salto;
+
+#define ESTAGIO_SOLO        0x00
+#define ESTAGIO_SUBIDA      0x01
+#define ESTAGIO_QUEDA       0x02
+#define ESTAGIO_NAVEGACAO   0x04
 
 typedef enum
 {
-    SOLO,
-    CLIMB,
-    QUEDA,
-    NAVEGACAO
+    SOLO        = ESTAGIO_SOLO,
+    CLIMB       = ESTAGIO_SUBIDA,
+    QUEDA       = ESTAGIO_QUEDA,
+    NAVEGACAO   = ESTAGIO_NAVEGACAO
+} Estagio;
+
+typedef struct
+{
+    double sensor;
+    double altitude;
+    double velocidade;
+    unsigned long relogio;
 } Estado;
 
 typedef struct
 {
     int altura;
+
+    char estagio;
 
     enum TipoAviso
     {
@@ -112,6 +134,20 @@ typedef struct
 
     unsigned long atingido;
 } Aviso;
+
+Aviso avisos[] =
+{
+    { AVISO_SUBIDA_CINTO, ESTAGIO_SUBIDA, Aviso::BIP_UNICO, 5, 0 },
+    { AVISO_SUBIDA_CHECK, ESTAGIO_SUBIDA, Aviso::BIP_DUPLO, 5, 0 },
+    { AVISO_ALTA_1, ESTAGIO_QUEDA, Aviso::BIP_UNICO, 10, 0 },
+    { AVISO_ALTA_2, ESTAGIO_QUEDA, Aviso::BIP_DUPLO, 10, 0 },
+    { AVISO_ALTA_3, ESTAGIO_QUEDA, Aviso::BIP_TRIPLO, 10, 0 },
+    { ALARME_ALTA, ESTAGIO_QUEDA, Aviso::SIRENE, 10, 0 },
+    { AVISO_NAVEGACAO_A, ESTAGIO_NAVEGACAO, Aviso::BIP_TRIPLO, 10, 0 },
+    { AVISO_NAVEGACAO_B, ESTAGIO_NAVEGACAO, Aviso::BIP_DUPLO, 10, 0 },
+    { AVISO_NAVEGACAO_C, ESTAGIO_NAVEGACAO, Aviso::BIP_UNICO, 10, 0 },
+    { AVISO_NAVEGACAO_D, ESTAGIO_NAVEGACAO, Aviso::BIP_UNICO, 10, 0 }
+};
 
 class TonePlayer
 {
@@ -232,14 +268,14 @@ class TonePlayer
         }
 };
 
-Estado estado = SOLO;
+Estagio estagio = SOLO;
 
 CircularStats<double,10> circular10;
 CircularStats<double,50> circular1s;
 
-Aviso avisosAlta[4], avisosBaixa[4], avisosSubida[2];
-
 TonePlayer tonePlayer;
+
+Salto salto;
 
 double sensorAgora = 0;
 double sensorAntes = 0;
@@ -252,8 +288,6 @@ double altitudeDelta = 0;
 double altitudeT0 = 0;
 double velocidadeAgora = 0;
 double velocidadeAntes = 0;
-double altitudePS = 0;      // ponto de saida
-double altitudeDZ = 0;      // area de pouso
 
 unsigned long agora = 1;
 unsigned long ultimaLeitura = 0;
@@ -316,12 +350,6 @@ void setup()
 {
     toneAC( 60, 5, 100 );
 
-//    for( int x = 200; x < 10000; x += 200 )
-//    {
-//        toneAC( x, 10, 150 );
-//        delay( 300 );
-//    }
-
     Serial.begin(115200);
 
     if( ! barometro.begin() )
@@ -345,57 +373,16 @@ void setup()
     for( int z = 0; z < 100; z++ )
     {
         double alti = readAltitudeFtBmp( 0 );
+
         circular1s.insere( alti );
-        circular10.insere( alti );
+        circular10.insere( circular1s.media() );
     }
 
     varianciaT0 = circular1s.variancia();
 
-    altitudePS = altitudeT0 = altitudeDZ = altitudeAgora = altitudeAntes = circular1s.media();
+    salto.altitudePS = altitudeT0 = salto.altitudeDZ = altitudeAgora = altitudeAntes = circular10.media();
 
     tonePlayer.insere( 250, 5000, 10 );
-
-    for( int a = 0; a < sizeof( avisosAlta[a] ); a++ )
-        avisosAlta[a].atingido = 0;
-
-    avisosAlta[0].altura = AVISO_ALTA_1;
-    avisosAlta[0].tipo = Aviso::BIP_UNICO;
-    avisosAlta[0].volume = 10;
-    avisosAlta[1].altura = AVISO_ALTA_2;
-    avisosAlta[1].tipo = Aviso::BIP_DUPLO;
-    avisosAlta[1].volume = 10;
-    avisosAlta[2].altura = AVISO_ALTA_3;
-    avisosAlta[2].tipo = Aviso::BIP_TRIPLO;
-    avisosAlta[2].volume = 10;
-    avisosAlta[3].altura = ALARME_ALTA;
-    avisosAlta[3].tipo = Aviso::SIRENE;
-    avisosAlta[3].volume = 10;
-
-    for( int a = 0; a < sizeof( avisosBaixa[a] ); a++ )
-        avisosBaixa[a].atingido = 0;
-
-    avisosBaixa[0].altura = NAVEGACAO_A;
-    avisosBaixa[0].tipo = Aviso::BIP_TRIPLO;
-    avisosBaixa[0].volume = 10;
-    avisosBaixa[1].altura = NAVEGACAO_B;
-    avisosBaixa[1].tipo = Aviso::BIP_DUPLO;
-    avisosBaixa[1].volume = 10;
-    avisosBaixa[2].altura = NAVEGACAO_C;
-    avisosBaixa[2].tipo = Aviso::BIP_UNICO;
-    avisosBaixa[2].volume = 10;
-    avisosBaixa[3].altura = NAVEGACAO_D;
-    avisosBaixa[3].tipo = Aviso::BIP_UNICO;
-    avisosBaixa[3].volume = 10;
-
-    for( int a = 0; a < sizeof( avisosSubida[a] ); a++ )
-        avisosSubida[a].atingido = 0;
-
-    avisosSubida[0].altura = AVISO_SUBIDA_CINTO;
-    avisosSubida[0].tipo = Aviso::BIP_UNICO;
-    avisosSubida[0].volume = 5;
-    avisosSubida[1].altura = AVISO_SUBIDA_CHECK;
-    avisosSubida[1].tipo = Aviso::BIP_DUPLO;
-    avisosSubida[1].volume = 5;
 
     ultimaLeitura = millis();
 }
@@ -448,10 +435,11 @@ void loop()
         circular10.insere( circular1s.media() );
     }
 
+/*
     if( agora >= tUmDecimo )
     {
         tUmDecimo = agora + 100;
-/*
+
         // variometro
 
         if( ! tonePlayer.tocando() )
@@ -471,44 +459,38 @@ void loop()
                 noToneAC();
             }
         }
-*/
     }
+*/
 
-    switch( estado )
+    switch( estagio )
     {
     case SOLO:
         if( velocidadeAgora > THRESHOLD_DECOLAGEM )
         {
+            // reset alarmes
+            for( int i = 0; i < sizeof( avisos ); i++ )
+                avisos[i].atingido = 0;
+
             tonePlayer.bipe( );
 
-            estado = CLIMB;
+            estagio = CLIMB;
         }
         else
         {
-            altitudeDZ = altitudePS = *circular10.topo();
+            salto.altitudeDZ = salto.altitudePS = *circular10.topo();
         }
         break;
 
     case CLIMB:
         if( velocidadeAgora < THRESHOLD_QUEDA )
         {
-            tonePlayer.bipe( 2 );
+            tonePlayer.bipe( 1 );
 
-            estado = QUEDA;
+            estagio = QUEDA;
         }
         else
         {
-            altitudePS = *circular10.topo();
-        }
-
-        for( int i = 0;  i < sizeof( avisosSubida ); i++ )
-        {
-            if( ! avisosSubida[i].atingido && altitudeAgora > avisosSubida[i].altura )
-            {
-                avisosSubida[i].atingido = agora;
-
-                tonePlayer.insere( avisosSubida[i] );
-            }
+            salto.altitudePS = *circular10.topo();
         }
 
         break;
@@ -519,17 +501,7 @@ void loop()
             tonePlayer.limpa();
             tonePlayer.bipe( 3 );
 
-            estado = NAVEGACAO;
-        }
-
-        for( int i = 0;  i < sizeof( avisosAlta ); i++ )
-        {
-            if( ! avisosAlta[i].atingido && altitudeAgora < avisosAlta[i].altura )
-            {
-                avisosAlta[i].atingido = agora;
-
-                tonePlayer.insere( avisosAlta[i] );
-            }
+            estagio = NAVEGACAO;
         }
 
         break;
@@ -537,22 +509,34 @@ void loop()
     case NAVEGACAO:
         if( velocidadeAgora < THRESHOLD_QUEDA )
         {
+            tonePlayer.limpa();
             tonePlayer.bipe( 2 );
 
-            estado = QUEDA;
-        }
-
-        for( int i = 0;  i < sizeof( avisosBaixa ); i++ )
-        {
-            if( ! avisosBaixa[i].atingido && altitudeAgora < avisosBaixa[i].altura )
-            {
-                avisosBaixa[i].atingido = agora;
-
-                tonePlayer.insere( avisosBaixa[i] );
-            }
+            estagio = QUEDA;
         }
 
         break;
+    }
+
+    // avisos de altura
+
+    register int iAltitudeAgora = altitudeAgora;
+    register int iAltitudeAntes = altitudeAntes;
+
+    for( int i = 0;  i < sizeof( avisos ); i++ )
+    {
+        if( 0 == avisos[i].atingido && avisos[i].estagio & estagio )
+        {
+            register int altura = avisos[i].altura;
+
+            if( ( iAltitudeAntes < altura && altura < iAltitudeAgora )
+             || ( iAltitudeAntes > altura && altura > iAltitudeAgora ) )
+            {
+                avisos[i].atingido = agora;
+
+                tonePlayer.insere( avisos[i] );
+            }
+        }
     }
 
     // player
@@ -566,15 +550,15 @@ void loop()
 //        Serial.print( agora - inicio );
 //        Serial.print( " " );
 //        Serial.print( altitudeAgora, 2 );
-        Serial.print( altitudeAgora - altitudeDZ, 2 );
+        Serial.print( altitudeAgora - salto.altitudeDZ, 2 );
         Serial.print( " " );
 //        Serial.print( circular10.media() - altitudeDZ, 2  );
 //        Serial.print( " " );
         Serial.print( velocidadeAgora, 2  );
         Serial.print( " " );
-        Serial.print( sensorAgora - altitudeDZ, 2  );
+        Serial.print( sensorAgora - salto.altitudeDZ, 2  );
         Serial.print( " " );
-        Serial.print( altitudePS - altitudeDZ, 2 );
+        Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
         Serial.print( " " );
         Serial.print( circular1s.desvio(), 2 );
         Serial.println();
@@ -584,6 +568,4 @@ void loop()
     altitudeAntes = altitudeAgora;
     velocidadeAntes = velocidadeAgora;
     ultimaLeitura = agora;
-
-    //delay(100);
 }
