@@ -77,7 +77,22 @@ typedef struct
 {
     unsigned long clock;
     double altura;
-} Ponto;
+}
+Ponto;
+
+#define ESTAGIO_SOLO        0x00
+#define ESTAGIO_SUBIDA      0x01
+#define ESTAGIO_QUEDA       0x02
+#define ESTAGIO_NAVEGACAO   0x04
+
+typedef enum
+{
+    SOLO        = ESTAGIO_SOLO,
+    CLIMB       = ESTAGIO_SUBIDA,
+    QUEDA       = ESTAGIO_QUEDA,
+    NAVEGACAO   = ESTAGIO_NAVEGACAO
+}
+Estagio;
 
 typedef struct
 {
@@ -93,28 +108,22 @@ typedef struct
         altitudeDZ = altitudePS = 0;
         clockDecolagem = clockPS = clockAbertura = 0;
     }
-} Salto;
+}
+Salto;
 
-#define ESTAGIO_SOLO        0x00
-#define ESTAGIO_SUBIDA      0x01
-#define ESTAGIO_QUEDA       0x02
-#define ESTAGIO_NAVEGACAO   0x04
-
-typedef enum
+class Estado
 {
-    SOLO        = ESTAGIO_SOLO,
-    CLIMB       = ESTAGIO_SUBIDA,
-    QUEDA       = ESTAGIO_QUEDA,
-    NAVEGACAO   = ESTAGIO_NAVEGACAO
-} Estagio;
+public:
+    Estado() :  sensor(0),
+                altitude(0),
+                velocidade(0),
+                relogio(0) {}
 
-typedef struct
-{
     double sensor;
     double altitude;
     double velocidade;
     unsigned long relogio;
-} Estado;
+};
 
 typedef struct
 {
@@ -133,7 +142,8 @@ typedef struct
     char volume;
 
     unsigned long atingido;
-} Aviso;
+}
+Aviso;
 
 Aviso avisos[] =
 {
@@ -268,6 +278,8 @@ class TonePlayer
         }
 };
 
+bool trace = TRACE;
+
 Estagio estagio = SOLO;
 
 CircularStats<double,10> circular10;
@@ -277,25 +289,14 @@ TonePlayer tonePlayer;
 
 Salto salto;
 
-double sensorAgora = 0;
-double sensorAntes = 0;
 double temperatura = 0;
 double varianciaT0 = 0;
-
-double altitudeAgora = 0;
-double altitudeAntes = 0;
-double altitudeDelta = 0;
 double altitudeT0 = 0;
-double velocidadeAgora = 0;
-double velocidadeAntes = 0;
 
-unsigned long agora = 1;
-unsigned long ultimaLeitura = 0;
 unsigned long tUmSegundo = 0;
 unsigned long tUmDecimo = 0;
-double deltaT = 0;
 
-bool trace = TRACE;
+Estado antes, agora;
 
 double readAltitudeFtBmp( long delayTemp = 0 )
 {
@@ -380,11 +381,11 @@ void setup()
 
     varianciaT0 = circular1s.variancia();
 
-    salto.altitudePS = altitudeT0 = salto.altitudeDZ = altitudeAgora = altitudeAntes = circular10.media();
+    salto.altitudePS = altitudeT0 = salto.altitudeDZ = agora.altitude = antes.altitude = circular10.media();
 
     tonePlayer.insere( 250, 5000, 10 );
 
-    ultimaLeitura = millis();
+    antes.relogio = millis();
 }
 
 void loop()
@@ -394,64 +395,64 @@ void loop()
     // atualiza sensores
 
     #ifdef BMP180
-    sensorAgora = readAltitudeFtBmp( 1000 );
+    agora.sensor = readAltitudeFtBmp( 1000 );
     #endif
 
     #ifdef MPL3115A2
-    sensorAgora = altimetro.readAltitudeFt();
+    agora.sensor = altimetro.readAltitudeFt();
     #endif
 
-    agora = millis();
+    agora.relogio = millis();
 
     // etapa predicao
 
-    deltaT = ( (double) agora - ultimaLeitura ) / 1000.0;
+    double deltaT = ( (double) agora.relogio - antes.relogio ) / 1000.0;
 
-    altitudeAgora = altitudeAntes + velocidadeAntes * deltaT;
-    velocidadeAgora = velocidadeAntes;
+    agora.altitude = antes.altitude + antes.velocidade * deltaT;
+    agora.velocidade = antes.velocidade;
 
-    double desvio = sensorAgora - altitudeAgora;
+    double desvio = agora.sensor - agora.altitude;
 
     double alpha = 0.1;
     double beta = 0.001;
 
-    altitudeAgora += alpha * desvio;
-    velocidadeAgora += ( beta * desvio ) / deltaT;
+    agora.altitude += alpha * desvio;
+    agora.velocidade += ( beta * desvio ) / deltaT;
 
 //    // Kalman
 //
 //    static double ganho= 0;
 //    static double p = 1;
 //    ganho = p + 0.05 / (p + variancia);
-//    altitudeAgora = altitudeAntes + ganho * ( sensorAgora - altitudeAntes );
+//    agora.altitude = antes.altitude + ganho * ( agora.sensor - antes.altitude );
 //    p = ( 1 - ganho ) * p;
 
-    circular1s.insere( altitudeAgora );
+    circular1s.insere( agora.altitude );
 
-    if( agora >= tUmSegundo )
+    if( agora.relogio >= tUmSegundo )
     {
-        tUmSegundo = agora + 1000;
+        tUmSegundo = agora.relogio + 1000;
 
         circular10.insere( circular1s.media() );
     }
 
 /*
-    if( agora >= tUmDecimo )
+    if( agora.relogio >= tUmDecimo )
     {
-        tUmDecimo = agora + 100;
+        tUmDecimo = agora.relogio + 100;
 
         // variometro
 
         if( ! tonePlayer.tocando() )
         {
-            if( velocidadeAgora > 0.5 )
+            if( agora.velocidade > 0.5 )
             {
-                int freq = 1000 + velocidadeAgora * 1000;
+                int freq = 1000 + agora.velocidade * 1000;
                 toneAC( freq, 3, 200, true );
             }
-            else if( velocidadeAgora < -0.5 )
+            else if( agora.velocidade < -0.5 )
             {
-                int freq = 1000 - velocidadeAgora * 500;
+                int freq = 1000 - agora.velocidade * 500;
                 toneAC( freq, 3, 200, true );
             }
             else
@@ -465,7 +466,7 @@ void loop()
     switch( estagio )
     {
     case SOLO:
-        if( velocidadeAgora > THRESHOLD_DECOLAGEM )
+        if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
             // reset alarmes
             for( int i = 0; i < sizeof( avisos ); i++ )
@@ -482,7 +483,7 @@ void loop()
         break;
 
     case CLIMB:
-        if( velocidadeAgora < THRESHOLD_QUEDA )
+        if( agora.velocidade < THRESHOLD_QUEDA )
         {
             tonePlayer.bipe( 1 );
 
@@ -496,7 +497,7 @@ void loop()
         break;
 
     case QUEDA:
-        if( velocidadeAgora > THRESHOLD_ABERTURA )
+        if( agora.velocidade > THRESHOLD_ABERTURA )
         {
             tonePlayer.limpa();
             tonePlayer.bipe( 3 );
@@ -507,7 +508,7 @@ void loop()
         break;
 
     case NAVEGACAO:
-        if( velocidadeAgora < THRESHOLD_QUEDA )
+        if( agora.velocidade < THRESHOLD_QUEDA )
         {
             tonePlayer.limpa();
             tonePlayer.bipe( 2 );
@@ -520,8 +521,8 @@ void loop()
 
     // avisos de altura
 
-    register int iAltitudeAgora = altitudeAgora;
-    register int iAltitudeAntes = altitudeAntes;
+    register int iAltitudeAgora = agora.altitude;
+    register int iAltitudeAntes = antes.altitude;
 
     for( int i = 0;  i < sizeof( avisos ); i++ )
     {
@@ -532,7 +533,7 @@ void loop()
             if( ( iAltitudeAntes < altura && altura < iAltitudeAgora )
              || ( iAltitudeAntes > altura && altura > iAltitudeAgora ) )
             {
-                avisos[i].atingido = agora;
+                avisos[i].atingido = agora.relogio;
 
                 tonePlayer.insere( avisos[i] );
             }
@@ -541,22 +542,22 @@ void loop()
 
     // player
 
-    tonePlayer.loop( agora );
+    tonePlayer.loop( agora.relogio );
 
     if( trace )
     {
 //        Serial.print( deltaT * 1000 );
 //        Serial.print( " " );
-//        Serial.print( agora - inicio );
+//        Serial.print( agora.relogio - inicio );
 //        Serial.print( " " );
-//        Serial.print( altitudeAgora, 2 );
-        Serial.print( altitudeAgora - salto.altitudeDZ, 2 );
+//        Serial.print( agora.altitude, 2 );
+        Serial.print( agora.altitude - salto.altitudeDZ, 2 );
         Serial.print( " " );
 //        Serial.print( circular10.media() - altitudeDZ, 2  );
 //        Serial.print( " " );
-        Serial.print( velocidadeAgora, 2  );
+        Serial.print( agora.velocidade, 2  );
         Serial.print( " " );
-        Serial.print( sensorAgora - salto.altitudeDZ, 2  );
+        Serial.print( agora.sensor - salto.altitudeDZ, 2  );
         Serial.print( " " );
         Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
         Serial.print( " " );
@@ -564,8 +565,5 @@ void loop()
         Serial.println();
     }
 
-    sensorAntes = sensorAgora;
-    altitudeAntes = altitudeAgora;
-    velocidadeAntes = velocidadeAgora;
-    ultimaLeitura = agora;
+    antes = agora;
 }
