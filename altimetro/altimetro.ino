@@ -117,12 +117,14 @@ public:
     Estado() :  sensor(0),
                 altitude(0),
                 velocidade(0),
-                relogio(0) {}
+                relogio(0),
+                estagio( ESTAGIO_SOLO ) {}
 
     double sensor;
     double altitude;
     double velocidade;
     unsigned long relogio;
+    Estagio estagio;
 };
 
 typedef struct
@@ -158,6 +160,8 @@ Aviso avisos[] =
     { AVISO_NAVEGACAO_C, ESTAGIO_NAVEGACAO, Aviso::BIP_UNICO, 10, 0 },
     { AVISO_NAVEGACAO_D, ESTAGIO_NAVEGACAO, Aviso::BIP_UNICO, 10, 0 }
 };
+
+const unsigned int nAvisos = ( sizeof(avisos)/sizeof(avisos[0]) );
 
 class TonePlayer
 {
@@ -280,9 +284,7 @@ class TonePlayer
 
 bool trace = TRACE;
 
-Estagio estagio = SOLO;
-
-CircularStats<double,10> circular10;
+CircularStats<double,30> circular10;
 CircularStats<double,50> circular1s;
 
 TonePlayer tonePlayer;
@@ -434,6 +436,32 @@ void loop()
         tUmSegundo = agora.relogio + 1000;
 
         circular10.insere( circular1s.media() );
+
+        if( trace )
+        {
+    //        Serial.print( deltaT * 1000 );
+    //        Serial.print( " " );
+    //        Serial.print( agora.relogio - inicio );
+    //        Serial.print( " " );
+            Serial.print( agora.altitude, 2 );
+//            Serial.print( agora.altitude - salto.altitudeDZ, 2 );
+            Serial.print( " " );
+            Serial.print( circular10.media() , 2  );
+            //Serial.print( circular10.media() - altitudeDZ, 2  );
+            Serial.print( " " );
+    //        Serial.print( agora.velocidade, 2  );
+    //        Serial.print( " " );
+//            Serial.print( agora.sensor - salto.altitudeDZ, 2  );
+            Serial.print( agora.sensor, 2  );
+            Serial.print( " " );
+    //        Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
+    //        Serial.print( " " );
+            Serial.print( circular1s.media() , 2 );
+            //Serial.print( circular1s.media() - salto.altitudeDZ, 2 );
+     //       Serial.print( " " );
+     //       Serial.print( circular1s.desvio(), 2 );
+            Serial.println();
+        }
     }
 
 /*
@@ -463,18 +491,18 @@ void loop()
     }
 */
 
-    switch( estagio )
+    switch( agora.estagio )
     {
     case SOLO:
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
             // reset alarmes
-            for( int i = 0; i < sizeof( avisos ); i++ )
+            for( int i = 0; i < nAvisos ; i++ )
                 avisos[i].atingido = 0;
 
             tonePlayer.bipe( );
 
-            estagio = CLIMB;
+            agora.estagio = CLIMB;
         }
         else
         {
@@ -485,9 +513,9 @@ void loop()
     case CLIMB:
         if( agora.velocidade < THRESHOLD_QUEDA )
         {
-            tonePlayer.bipe( 1 );
+            tonePlayer.bipe( 2 );
 
-            estagio = QUEDA;
+            agora.estagio = QUEDA;
         }
         else
         {
@@ -502,7 +530,7 @@ void loop()
             tonePlayer.limpa();
             tonePlayer.bipe( 3 );
 
-            estagio = NAVEGACAO;
+            agora.estagio = NAVEGACAO;
         }
 
         break;
@@ -513,7 +541,7 @@ void loop()
             tonePlayer.limpa();
             tonePlayer.bipe( 2 );
 
-            estagio = QUEDA;
+            agora.estagio = QUEDA;
         }
 
         break;
@@ -524,18 +552,21 @@ void loop()
     register int iAltitudeAgora = agora.altitude;
     register int iAltitudeAntes = antes.altitude;
 
-    for( int i = 0;  i < sizeof( avisos ); i++ )
+    for( int i = 0;  i < nAvisos; i++ )
     {
-        if( 0 == avisos[i].atingido && avisos[i].estagio & estagio )
+        if( ! avisos[i].atingido )
         {
-            register int altura = avisos[i].altura;
-
-            if( ( iAltitudeAntes < altura && altura < iAltitudeAgora )
-             || ( iAltitudeAntes > altura && altura > iAltitudeAgora ) )
+            if( avisos[i].estagio & agora.estagio )
             {
-                avisos[i].atingido = agora.relogio;
+                register int altura = avisos[i].altura;
 
-                tonePlayer.insere( avisos[i] );
+                if( ( iAltitudeAntes < altura && altura < iAltitudeAgora )
+                 || ( iAltitudeAntes > altura && altura > iAltitudeAgora ) )
+                {
+                    avisos[i].atingido = agora.relogio;
+
+                    tonePlayer.insere( avisos[i] );
+                }
             }
         }
     }
@@ -543,27 +574,6 @@ void loop()
     // player
 
     tonePlayer.loop( agora.relogio );
-
-    if( trace )
-    {
-//        Serial.print( deltaT * 1000 );
-//        Serial.print( " " );
-//        Serial.print( agora.relogio - inicio );
-//        Serial.print( " " );
-//        Serial.print( agora.altitude, 2 );
-        Serial.print( agora.altitude - salto.altitudeDZ, 2 );
-        Serial.print( " " );
-//        Serial.print( circular10.media() - altitudeDZ, 2  );
-//        Serial.print( " " );
-        Serial.print( agora.velocidade, 2  );
-        Serial.print( " " );
-        Serial.print( agora.sensor - salto.altitudeDZ, 2  );
-        Serial.print( " " );
-        Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
-        Serial.print( " " );
-        Serial.print( circular1s.desvio(), 2 );
-        Serial.println();
-    }
 
     antes = agora;
 }
