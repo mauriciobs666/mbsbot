@@ -29,6 +29,9 @@ SFE_BMP180 barometro;
 
 #include <toneAC.h>
 
+#define PRODUCAO 1
+// else debug
+
 #ifdef PRODUCAO
 
 #define THRESHOLD_DECOLAGEM  3.0 // pes/s
@@ -284,7 +287,8 @@ class TonePlayer
 
 bool trace = TRACE;
 
-CircularStats<double,30> circular10;
+CircularStats<double,10> circular10;
+CircularStats<double,10> circular10media;
 CircularStats<double,50> circular1s;
 
 TonePlayer tonePlayer;
@@ -437,6 +441,9 @@ void loop()
 
         circular10.insere( circular1s.media() );
 
+        circular10media.insere( circular10.media() );
+    }
+
         if( trace )
         {
     //        Serial.print( deltaT * 1000 );
@@ -445,30 +452,31 @@ void loop()
     //        Serial.print( " " );
             Serial.print( agora.altitude, 2 );
 //            Serial.print( agora.altitude - salto.altitudeDZ, 2 );
-            Serial.print( " " );
-            Serial.print( circular10.media() , 2  );
+//            Serial.print( " " );
+//            Serial.print( circular10.media() , 2  );
             //Serial.print( circular10.media() - altitudeDZ, 2  );
             Serial.print( " " );
     //        Serial.print( agora.velocidade, 2  );
     //        Serial.print( " " );
 //            Serial.print( agora.sensor - salto.altitudeDZ, 2  );
-            Serial.print( agora.sensor, 2  );
+            Serial.print( *circular10media.topo() , 2 );
             Serial.print( " " );
     //        Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
     //        Serial.print( " " );
             Serial.print( circular1s.media() , 2 );
+            Serial.print( " " );
+            Serial.print( agora.sensor, 2  );
             //Serial.print( circular1s.media() - salto.altitudeDZ, 2 );
      //       Serial.print( " " );
      //       Serial.print( circular1s.desvio(), 2 );
             Serial.println();
         }
-    }
 
-/*
     if( agora.relogio >= tUmDecimo )
     {
         tUmDecimo = agora.relogio + 100;
 
+/*
         // variometro
 
         if( ! tonePlayer.tocando() )
@@ -488,8 +496,8 @@ void loop()
                 noToneAC();
             }
         }
-    }
 */
+    }
 
     switch( agora.estagio )
     {
@@ -506,7 +514,7 @@ void loop()
         }
         else
         {
-            salto.altitudeDZ = salto.altitudePS = *circular10.topo();
+            salto.altitudeDZ = salto.altitudePS = *circular10media.topo();
         }
         break;
 
@@ -519,7 +527,7 @@ void loop()
         }
         else
         {
-            salto.altitudePS = *circular10.topo();
+            salto.altitudePS = *circular10media.topo();
         }
 
         break;
@@ -550,7 +558,6 @@ void loop()
     // avisos de altura
 
     register int iAltitudeAgora = agora.altitude;
-    register int iAltitudeAntes = antes.altitude;
 
     for( int i = 0;  i < nAvisos; i++ )
     {
@@ -558,10 +565,8 @@ void loop()
         {
             if( avisos[i].estagio & agora.estagio )
             {
-                register int altura = avisos[i].altura;
-
-                if( ( iAltitudeAntes < altura && altura < iAltitudeAgora )
-                 || ( iAltitudeAntes > altura && altura > iAltitudeAgora ) )
+                if( ( iAltitudeAgora < avisos[i].altura && avisos[i].estagio & (ESTAGIO_NAVEGACAO|ESTAGIO_QUEDA) )
+                 || ( iAltitudeAgora > avisos[i].altura && avisos[i].estagio & (ESTAGIO_SUBIDA) ) )
                 {
                     avisos[i].atingido = agora.relogio;
 
