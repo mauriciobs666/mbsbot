@@ -17,16 +17,6 @@ MPL3115A2 altimetro;
 SFE_BMP180 barometro;
 #endif
 
-/*
-    pinagem BMP180 X Arduino Nano
-
-    vermelho - 3v3
-    verde - a4
-    amarelo - a5
-    preto - gnd
-    azul - d9 e d10
-*/
-
 #include <toneAC.h>
 
 #define PRODUCAO 1
@@ -34,9 +24,9 @@ SFE_BMP180 barometro;
 
 #ifdef PRODUCAO
 
-#define THRESHOLD_DECOLAGEM  3.0 // pes/s
-#define THRESHOLD_QUEDA    -10.0 // pes/s
-#define THRESHOLD_ABERTURA -10.0 // pes/s
+#define THRESHOLD_DECOLAGEM   5.0 // pes/s
+#define THRESHOLD_QUEDA    -100.0 // pes/s
+#define THRESHOLD_ABERTURA -100.0 // pes/s
 
 #define AVISO_SUBIDA_CINTO 1500
 #define AVISO_SUBIDA_CHECK 9000
@@ -76,13 +66,6 @@ SFE_BMP180 barometro;
 
 #endif
 
-typedef struct
-{
-    unsigned long clock;
-    double altura;
-}
-Ponto;
-
 #define ESTAGIO_SOLO        0x00
 #define ESTAGIO_SUBIDA      0x01
 #define ESTAGIO_QUEDA       0x02
@@ -96,6 +79,13 @@ typedef enum
     NAVEGACAO   = ESTAGIO_NAVEGACAO
 }
 Estagio;
+
+typedef struct
+{
+    unsigned long clock;
+    double altura;
+}
+Ponto;
 
 typedef struct
 {
@@ -152,8 +142,8 @@ Aviso;
 
 Aviso avisos[] =
 {
-    { AVISO_SUBIDA_CINTO, ESTAGIO_SUBIDA, Aviso::BIP_UNICO, 5, 0 },
-    { AVISO_SUBIDA_CHECK, ESTAGIO_SUBIDA, Aviso::BIP_DUPLO, 5, 0 },
+    { AVISO_SUBIDA_CINTO, ESTAGIO_SUBIDA, Aviso::BIP_UNICO, 10, 0 },
+    { AVISO_SUBIDA_CHECK, ESTAGIO_SUBIDA, Aviso::BIP_DUPLO, 10, 0 },
     { AVISO_ALTA_1, ESTAGIO_QUEDA, Aviso::BIP_UNICO, 10, 0 },
     { AVISO_ALTA_2, ESTAGIO_QUEDA, Aviso::BIP_DUPLO, 10, 0 },
     { AVISO_ALTA_3, ESTAGIO_QUEDA, Aviso::BIP_TRIPLO, 10, 0 },
@@ -304,7 +294,7 @@ unsigned long tUmDecimo = 0;
 
 Estado antes, agora;
 
-double readAltitudeFtBmp( long delayTemp = 0 )
+double readAltitudeFtBmp( int delayTemp = 0 )
 {
     static unsigned long proximaLeituraT = 0;
 
