@@ -2,6 +2,27 @@
 #ifndef INTERPRETADOR_HPP_INCLUDED
 #define INTERPRETADOR_HPP_INCLUDED
 
+#include "Arduino.h"
+
+#include "matematica.h"
+
+typedef enum
+{
+    SUCESSO = 0,
+    SKIP,
+    ERRO_INTERPRETADOR,
+    ERRO_VAR_ARRAY,
+    ERRO_VAR_EXISTE,
+    ERRO_VAR_INVALIDA
+}
+Erros;
+
+void printErro( int err )
+{
+    SERIALX.print( "Erro: ");
+    SERIALX.println( err );
+}
+
 typedef enum
 {
     VAR_NULO = 0,
@@ -10,11 +31,13 @@ typedef enum
     VAR_LONG,   // signed 32
     VAR_FIXO,   // 16.16
     VAR_BOOL,
-
+    VAR_DOUBLE
+/*    ,
     VAR_PID,    // ConfigPID
     VAR_SENSOR, // ConfigSensor
     VAR_MOTOR,  // ConfigMotor
     VAR_GAMEPAD // ConfigGamepad
+*/
 }
 TipoVariavel;
 
@@ -96,6 +119,9 @@ public:
         case VAR_FIXO:
             return ((Fixo*)dados)->getInt();
         case VAR_BOOL:
+            return *((bool*)dados) ? 1 : 0;
+        case VAR_DOUBLE:
+            return (int) *((double*)dados);
         default:
             break;
         }
@@ -112,17 +138,21 @@ public:
             return *((long*)dados);
         case VAR_FIXO:
             return ((Fixo*)dados)->getLong();
+        case VAR_BOOL:
+            return *((bool*)dados) ? 1 : 0;
+        case VAR_DOUBLE:
+            return (long) *((double*)dados);
         default:
             break;
         }
         return 0;
     }
-
+/*
     void* getMembro( char* membro )
     {
         return dados;
     }
-
+*/
     Fixo getFixo( char* membro = NULL ) const
     {
         void* var = dados; //getMembro( membro );
@@ -395,7 +425,7 @@ public:
             SERIALX.println( " )" );
         #endif
 
-        enum Erros rc = SUCESSO;
+        Erros rc = SUCESSO;
         Fixo res;
         Variavel resultado( VAR_FIXO, "ans", (void*) &res );
         eco = true;
@@ -478,8 +508,8 @@ public:
             SERIALX.println( " )" );
         #endif
 
-        enum Erros rc = SUCESSO;
-
+        Erros rc = SUCESSO;
+/*
         char dest[TAM_TOKEN];
         strcpy( dest, token );
 
@@ -572,44 +602,42 @@ public:
         {
             eeprom.dados.programa = PRG_RC_SERIAL;
             Vetor2i direcao;
-/*
-            if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
-            {
-                direcao.x = atoi(tok);
-                if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
-                {
-                    direcao.y = atoi(tok);
-                    drive.vetorial( direcao );
-                    #ifdef RODAS_PWM_x4
-                        if ((tok = STRTOK(NULL, " ")))  // quarto token eh o percentual de potencia p/ eixo X
-                        {
-                            direcao.x = atoi(tok);
-                            if ((tok = STRTOK(NULL, " ")))// quinto token eh o percentual de potencia p/ eixo Y
-                            {
-                                direcao.y = atoi(tok);
-                                drive2.vetorial( direcao );
-                            }
-                        }
-                    #endif
-                }
-            }
-*/
+
+//            if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
+//            {
+//                direcao.x = atoi(tok);
+//                if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
+//                {
+//                    direcao.y = atoi(tok);
+//                    drive.vetorial( direcao );
+//                    #ifdef RODAS_PWM_x4
+//                        if ((tok = STRTOK(NULL, " ")))  // quarto token eh o percentual de potencia p/ eixo X
+//                        {
+//                            direcao.x = atoi(tok);
+//                            if ((tok = STRTOK(NULL, " ")))// quinto token eh o percentual de potencia p/ eixo Y
+//                            {
+//                                direcao.y = atoi(tok);
+//                                drive2.vetorial( direcao );
+//                            }
+//                        }
+//                    #endif
+//                }
+//            }
+
         }
         else if( 0 == strncmp( token, CMD_BIP, TAM_TOKEN ) )
         {
             #ifdef PINO_BIP
-            /*
-                tok = STRTOK(NULL, " ");
-                if (tok)			        // frequencia
-                {
-                    int hz = atoi(tok);
-                    tok = STRTOK(NULL, " ");
-                    if (tok)                // duracao
-                        BIP(hz, atoi(tok));
-                    else
-                        BIP(hz, 200);
-                }
-            */
+//                tok = STRTOK(NULL, " ");
+//                if (tok)			        // frequencia
+//                {
+//                    int hz = atoi(tok);
+//                    tok = STRTOK(NULL, " ");
+//                    if (tok)                // duracao
+//                        BIP(hz, atoi(tok));
+//                    else
+//                        BIP(hz, 200);
+//                }
             #endif
         }
         else if( 0 == strncmp( token, CMD_JOYPAD, TAM_TOKEN ) )
@@ -665,7 +693,7 @@ public:
             eco = true;
             rc = SKIP;
         }
-
+*/
         #ifdef TRACE_INTERPRETADOR
 //        if( SUCESSO == rc )
 //            SERIALX.println( " exec ok" );
@@ -697,7 +725,7 @@ private:
 
     Erros evalExpressao( Variavel* resultado )
     {
-        enum Erros rc = SUCESSO;
+        Erros rc = SUCESSO;
 
         #ifdef TRACE_INTERPRETADOR
             SERIALX.print( "evalExpressao: " );
@@ -742,7 +770,7 @@ private:
             SERIALX.println( linha );
         #endif
 
-        enum Erros rc = SUCESSO;
+        Erros rc = SUCESSO;
 
         rc = evalFator( resultado );
 
@@ -781,7 +809,7 @@ private:
             SERIALX.println( linha );
         #endif
 
-        enum Erros rc = SUCESSO;
+        Erros rc = SUCESSO;
 
         // +/- unario
         char op = 0;
@@ -965,6 +993,6 @@ private:
     {
         return ( strchr("+-*/=();", c ) || c == 0 || c == ' ' );
     }
-}
+};
 
 #endif // INTERPRETADOR_HPP_INCLUDED
