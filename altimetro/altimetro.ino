@@ -3,6 +3,8 @@
 
 #include <Wire.h>
 
+#define SERIALX Serial
+
 #include "circular.hpp"
 
 #ifdef MPL3115A2
@@ -19,14 +21,15 @@ SFE_BMP180 barometro;
 
 #include <toneAC.h>
 
-#define PRODUCAO 1
-// else debug
+//#define DEBUG 1
 
-#ifdef PRODUCAO
+#ifndef DEBUG
+
+// PRODUCAO !
 
 #define THRESHOLD_DECOLAGEM   5.0 // pes/s
 #define THRESHOLD_QUEDA    -100.0 // pes/s
-#define THRESHOLD_ABERTURA -100.0 // pes/s
+#define THRESHOLD_ABERTURA  -50.0 // pes/s
 
 #define AVISO_SUBIDA_CINTO 1500
 #define AVISO_SUBIDA_CHECK 9000
@@ -44,6 +47,14 @@ SFE_BMP180 barometro;
 #define TRACE          false
 
 #else
+
+// DEBUG
+
+#define NUM_VARS 10
+#define TAM_TOKEN 10
+#define TAM_NOME 5
+
+#include "interpretador.hpp"
 
 #define THRESHOLD_DECOLAGEM  0.8
 #define THRESHOLD_QUEDA     -0.8
@@ -80,17 +91,18 @@ typedef enum
 }
 Estagio;
 
-typedef struct
-{
-    unsigned long clock;
-    double altura;
-}
-Ponto;
+//typedef struct
+//{
+//    unsigned long clock;
+//    double altura;
+//}
+//Ponto;
 
 typedef struct
 {
     double altitudeDZ;  // area de pouso
     double altitudePS;  // ponto de saida
+    double altitudeCMD; // abertura pqd
 
     unsigned long clockDecolagem;
     unsigned long clockPS;
@@ -214,7 +226,7 @@ class TonePlayer
                 incrementa( leitura );
         }
 
-        void bipe( int nbips = 1, int vol = 10, int freq = 5000, int dur = 250, int inter = 250 )
+        void bipe( int nbips = 1, int vol = 10, int freq = 2700, int dur = 250, int inter = 250 )
         {
             for( int n = 0; n < nbips; n++ )
             {
@@ -277,25 +289,27 @@ class TonePlayer
 
 bool trace = TRACE;
 
-CircularStats<double,10> circular10;
-CircularStats<double,10> circular10media;
-CircularStats<double,50> circular1s;
+CircularStats<double,50> circular1s;        // ultimas 50 leituras ( ~1 segundo )
+CircularStats<double,10> circular10;        // medias dos ultimos 10 segundos
+CircularStats<double,10> circular10media;   // delay line das medias dos ultimos 10 segundos
 
 TonePlayer tonePlayer;
 
 Salto salto;
-
-double temperatura = 0;
-double varianciaT0 = 0;
-double altitudeT0 = 0;
 
 unsigned long tUmSegundo = 0;
 unsigned long tUmDecimo = 0;
 
 Estado antes, agora;
 
+#define MAX_CMD 50
+#define CMD_EOL '\n'
+char comando[MAX_CMD];
+unsigned char pos = 0;
+
 double readAltitudeFtBmp( int delayTemp = 0 )
 {
+    static double temperatura = 0;
     static unsigned long proximaLeituraT = 0;
 
     char atraso = 0;
@@ -345,8 +359,14 @@ double readAltitudeFtBmp( int delayTemp = 0 )
 
 void setup()
 {
-    toneAC( 60, 5, 100 );
-
+    toneAC( 3200, 5, 100 );
+/*
+    for(int x=2700; x<3200; x+=100)
+    {
+        toneAC( x, 10, 250 );
+        delay(500);
+    }
+*/
     Serial.begin(115200);
 
     if( ! barometro.begin() )
@@ -373,20 +393,21 @@ void setup()
 
         circular1s.insere( alti );
         circular10.insere( circular1s.media() );
+        circular10media.insere( circular10.media() );
     }
 
-    varianciaT0 = circular1s.variancia();
+    //double varianciaT0 = circular1s.variancia();
 
-    salto.altitudePS = altitudeT0 = salto.altitudeDZ = agora.altitude = antes.altitude = circular10.media();
+    salto.altitudePS = salto.altitudeDZ = salto.altitudeCMD = agora.altitude = antes.altitude = circular10.media();
 
-    tonePlayer.insere( 250, 5000, 10 );
+    tonePlayer.insere( 250, 2700, 10 );
 
     antes.relogio = millis();
 }
 
 void loop()
 {
-    unsigned long inicio = millis();
+//    unsigned long inicio = millis();
 
     // atualiza sensores
 
@@ -494,6 +515,8 @@ void loop()
     case SOLO:
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
+            salto.altitudeDZ = *circular10media.topo();
+
             // reset alarmes
             for( int i = 0; i < nAvisos ; i++ )
                 avisos[i].atingido = 0;
@@ -502,29 +525,24 @@ void loop()
 
             agora.estagio = CLIMB;
         }
-        else
-        {
-            salto.altitudeDZ = salto.altitudePS = *circular10media.topo();
-        }
         break;
 
     case CLIMB:
         if( agora.velocidade < THRESHOLD_QUEDA )
         {
+            salto.altitudePS = *circular10media.topo();
+
             tonePlayer.bipe( 2 );
 
             agora.estagio = QUEDA;
         }
-        else
-        {
-            salto.altitudePS = *circular10media.topo();
-        }
-
         break;
 
     case QUEDA:
         if( agora.velocidade > THRESHOLD_ABERTURA )
         {
+            salto.altitudeCMD = circular1s.media();
+
             tonePlayer.limpa();
             tonePlayer.bipe( 3 );
 
@@ -541,7 +559,6 @@ void loop()
 
             agora.estagio = QUEDA;
         }
-
         break;
     }
 
@@ -570,5 +587,26 @@ void loop()
 
     tonePlayer.loop( agora.relogio );
 
+    // interpretador de comandos via serial
+/*
+    while( SERIALX.available() > 0 )
+    {
+        char c = SERIALX.read();
+
+        if ( pos == MAX_CMD )
+        {
+            pos = 0;
+            //printErro( ERRO_TAM_MAX_CMD );
+        }
+        else if( c == CMD_EOL )
+        {
+            comando[ pos ] = 0;
+            pos = 0;
+            //return true;
+        }
+        else
+            comando[ pos++ ] = c;
+    }
+*/
     antes = agora;
 }
