@@ -1,6 +1,8 @@
 
 // (c) 2017 MBS - Mauricio Bieze Stefani
 
+#include <math.h>
+
 #include <Wire.h>
 
 #define SERIALX Serial
@@ -27,12 +29,10 @@ SFE_BMP180 barometro;
 
 // PRODUCAO !
 
-#define THRESHOLD_DECOLAGEM   5.0 // pes/s
 #define THRESHOLD_QUEDA    -100.0 // pes/s
-#define THRESHOLD_ABERTURA  -50.0 // pes/s
+#define THRESHOLD_ABERTURA  -60.0 // pes/s
 
-#define AVISO_SUBIDA_CINTO 1500
-#define AVISO_SUBIDA_CHECK 9000
+#define AVISO_SUBIDA_CHECK 11000
 
 #define AVISO_ALTA_1    6000
 #define AVISO_ALTA_2    5000
@@ -82,15 +82,6 @@ SFE_BMP180 barometro;
 #define ESTAGIO_QUEDA       0x02
 #define ESTAGIO_NAVEGACAO   0x04
 
-typedef enum
-{
-    SOLO        = ESTAGIO_SOLO,
-    CLIMB       = ESTAGIO_SUBIDA,
-    QUEDA       = ESTAGIO_QUEDA,
-    NAVEGACAO   = ESTAGIO_NAVEGACAO
-}
-Estagio;
-
 //typedef struct
 //{
 //    unsigned long clock;
@@ -129,7 +120,7 @@ public:
     double altitude;
     double velocidade;
     unsigned long relogio;
-    Estagio estagio;
+    char estagio;
 };
 
 typedef struct
@@ -512,7 +503,7 @@ void loop()
 
     switch( agora.estagio )
     {
-    case SOLO:
+    case ESTAGIO_SOLO:
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
             salto.altitudeDZ = *circular10media.topo();
@@ -523,22 +514,22 @@ void loop()
 
             tonePlayer.bipe( );
 
-            agora.estagio = CLIMB;
+            agora.estagio = ESTAGIO_SUBIDA;
         }
         break;
 
-    case CLIMB:
+    case ESTAGIO_SUBIDA:
         if( agora.velocidade < THRESHOLD_QUEDA )
         {
             salto.altitudePS = *circular10media.topo();
 
             tonePlayer.bipe( 2 );
 
-            agora.estagio = QUEDA;
+            agora.estagio = ESTAGIO_QUEDA;
         }
         break;
 
-    case QUEDA:
+    case ESTAGIO_QUEDA:
         if( agora.velocidade > THRESHOLD_ABERTURA )
         {
             salto.altitudeCMD = circular1s.media();
@@ -546,34 +537,33 @@ void loop()
             tonePlayer.limpa();
             tonePlayer.bipe( 3 );
 
-            agora.estagio = NAVEGACAO;
+            agora.estagio = ESTAGIO_NAVEGACAO;
         }
-
         break;
 
-    case NAVEGACAO:
+    case ESTAGIO_NAVEGACAO:
         if( agora.velocidade < THRESHOLD_QUEDA )
         {
             tonePlayer.limpa();
             tonePlayer.bipe( 2 );
 
-            agora.estagio = QUEDA;
+            agora.estagio = ESTAGIO_QUEDA;
         }
         break;
     }
 
     // avisos de altura
 
-    register int iAltitudeAgora = agora.altitude;
+    register int iAltitudeAgora = int( agora.altitude - salto.altitudeDZ );
 
     for( int i = 0;  i < nAvisos; i++ )
     {
-        if( ! avisos[i].atingido )
+        if( 0 == avisos[i].atingido )
         {
             if( avisos[i].estagio & agora.estagio )
             {
-                if( ( iAltitudeAgora < avisos[i].altura && avisos[i].estagio & (ESTAGIO_NAVEGACAO|ESTAGIO_QUEDA) )
-                 || ( iAltitudeAgora > avisos[i].altura && avisos[i].estagio & (ESTAGIO_SUBIDA) ) )
+                if( ( ( iAltitudeAgora < avisos[i].altura ) && ( avisos[i].estagio & (ESTAGIO_NAVEGACAO|ESTAGIO_QUEDA) ) )
+                 || ( ( iAltitudeAgora > avisos[i].altura ) && ( avisos[i].estagio & (ESTAGIO_SUBIDA) ) ) )
                 {
                     avisos[i].atingido = agora.relogio;
 
