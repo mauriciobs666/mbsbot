@@ -23,16 +23,22 @@ SFE_BMP180 barometro;
 
 #include <toneAC.h>
 
-//#define DEBUG 1
+#define DEBUG 1
+
+#define TRACE_OFF          0x00
+#define TRACE_ARDUINO_PLOT 0x01
+#define TRACE_AVISOS       0x02
 
 #ifndef DEBUG
 
 // PRODUCAO !
 
-#define THRESHOLD_QUEDA    -100.0 // pes/s
+#define THRESHOLD_DECOLAGEM   7.0 // pes/s
+#define THRESHOLD_QUEDA    -150.0 // pes/s
 #define THRESHOLD_ABERTURA  -60.0 // pes/s
 
-#define AVISO_SUBIDA_CHECK 11000
+#define AVISO_SUBIDA_CINTO  1500
+#define AVISO_SUBIDA_CHECK 11500
 
 #define AVISO_ALTA_1    6000
 #define AVISO_ALTA_2    5000
@@ -44,7 +50,7 @@ SFE_BMP180 barometro;
 #define AVISO_NAVEGACAO_C      900
 #define AVISO_NAVEGACAO_D     1200
 
-#define TRACE          false
+#define TRACE          TRACE_OFF
 
 #else
 
@@ -60,12 +66,12 @@ SFE_BMP180 barometro;
 #define THRESHOLD_QUEDA     -0.8
 #define THRESHOLD_ABERTURA   0.8
 
-#define AVISO_SUBIDA_CINTO 12
-#define AVISO_SUBIDA_CHECK 24
+#define AVISO_SUBIDA_CINTO  6
+#define AVISO_SUBIDA_CHECK 12
 
-#define AVISO_ALTA_1      20
-#define AVISO_ALTA_2      15
-#define AVISO_ALTA_3      10
+#define AVISO_ALTA_1       9
+#define AVISO_ALTA_2       6
+#define AVISO_ALTA_3       3
 #define ALARME_ALTA        5
 
 #define AVISO_NAVEGACAO_A        6
@@ -73,7 +79,7 @@ SFE_BMP180 barometro;
 #define AVISO_NAVEGACAO_C       24
 #define AVISO_NAVEGACAO_D       36
 
-#define TRACE           true
+#define TRACE           TRACE_ARDUINO_PLOT
 
 #endif
 
@@ -114,12 +120,14 @@ public:
                 altitude(0),
                 velocidade(0),
                 relogio(0),
+                altura(0),
                 estagio( ESTAGIO_SOLO ) {}
 
     double sensor;
     double altitude;
     double velocidade;
     unsigned long relogio;
+    int altura;
     char estagio;
 };
 
@@ -140,6 +148,20 @@ typedef struct
     char volume;
 
     unsigned long atingido;
+
+    void print()
+    {
+        SERIALX.print("h:");
+        SERIALX.print( altura );
+        SERIALX.print(" stg:");
+        SERIALX.print( (int)estagio );
+        SERIALX.print(" t:");
+        SERIALX.print( (int)tipo );
+        SERIALX.print(" v:");
+        SERIALX.print( (int)volume );
+        SERIALX.print(" qdo:");
+        SERIALX.print( atingido );
+    }
 }
 Aviso;
 
@@ -159,7 +181,7 @@ Aviso avisos[] =
 
 const unsigned int nAvisos = ( sizeof(avisos)/sizeof(avisos[0]) );
 
-class TonePlayer
+class TocadorToneAC
 {
     public:
         void limpa()
@@ -168,7 +190,7 @@ class TonePlayer
             tocando = 0;
         }
 
-        TonePlayer()
+        TocadorToneAC()
         {
             limpa();
         }
@@ -219,6 +241,14 @@ class TonePlayer
 
         void bipe( int nbips = 1, int vol = 10, int freq = 2700, int dur = 250, int inter = 250 )
         {
+//            SERIALX.print("bipe(");
+//            SERIALX.print( nbips );
+//            SERIALX.print( ", " );
+//            SERIALX.print( vol );
+//            SERIALX.print( ", " );
+//            SERIALX.print( freq );
+//            SERIALX.println( ")" );
+
             for( int n = 0; n < nbips; n++ )
             {
                 insere( dur, freq, vol );
@@ -228,22 +258,26 @@ class TonePlayer
 
         void insere( Aviso & aviso )
         {
+//            SERIALX.print("insere(");
+//            aviso.print();
+//            SERIALX.println(")");
+
             switch( aviso.tipo )
             {
-                BIP_UNICO:
+                case Aviso::BIP_UNICO:
                     bipe( 1, aviso.volume );
                     break;
-                BIP_DUPLO:
+                case Aviso::BIP_DUPLO:
                     bipe( 2, aviso.volume );
                     break;
-                BIP_TRIPLO:
+                case Aviso::BIP_TRIPLO:
                     bipe( 3, aviso.volume );
                     break;
-                SIRENE:
-                    for( int n = 0; n < 3; n++ )
+                case Aviso::SIRENE:
+                    for( int n = 0; n < 10; n++ )
                     {
-                        insere( 250, 5000, aviso.volume );
-                        insere( 250, 1000, aviso.volume );
+                        insere( 200, 2700, aviso.volume );
+                        insere( 200, 3000, aviso.volume );
                     }
                     break;
             }
@@ -254,7 +288,7 @@ class TonePlayer
         int escrita;
         unsigned long tocando;
 
-        #define SZ_NOTAS 10
+        #define SZ_NOTAS 30
         struct Nota
         {
             int frequencia;
@@ -278,18 +312,20 @@ class TonePlayer
         }
 };
 
-bool trace = TRACE;
+char trace = TRACE;
 
-CircularStats<double,50> circular1s;        // ultimas 50 leituras ( ~1 segundo )
+CircularStats<double,30> circular1s;        // ultimas 30 leituras ( ~1 segundo )
 CircularStats<double,10> circular10;        // medias dos ultimos 10 segundos
 CircularStats<double,10> circular10media;   // delay line das medias dos ultimos 10 segundos
 
-TonePlayer tonePlayer;
+TocadorToneAC tocadorToneAC;
 
 Salto salto;
 
 unsigned long tUmSegundo = 0;
 unsigned long tUmDecimo = 0;
+int contadorLoop = 0;
+int loopsSeg = 0;
 
 Estado antes, agora;
 
@@ -298,50 +334,41 @@ Estado antes, agora;
 char comando[MAX_CMD];
 unsigned char pos = 0;
 
-double readAltitudeFtBmp( int delayTemp = 0 )
+double readAltitudeFtBmp()
 {
-    static double temperatura = 0;
-    static unsigned long proximaLeituraT = 0;
+    double temperatura = 0;
 
-    char atraso = 0;
-
-    // refresh temperatura apenas a cada segundo
-
-    if( ! delayTemp || millis() > proximaLeituraT )
-    {
-        atraso = barometro.startTemperature();
-
-        if( atraso > 0 )
-        {
-            delay( atraso );
-
-            barometro.getTemperature( temperatura );
-        }
-
-        proximaLeituraT += delayTemp;
-    }
-
-//    Serial.print( temperatura );
-//    Serial.print( " " );
-
-    atraso = barometro.startPressure( 3 ); // oversampling 0-3
+    char atraso = barometro.startTemperature();
 
     if( atraso > 0 )
     {
         delay( atraso );
 
-        double pressao;
+        barometro.getTemperature( temperatura );
 
-        atraso = barometro.getPressure( pressao, temperatura );
+    //    Serial.print( temperatura );
+    //    Serial.print( " " );
 
-//        pressao -= 2.9; // offset erro sensor
-/*
-        Serial.print( pressao );
-        Serial.print( " " );
-*/
-        if( atraso != 0 )
+        atraso = barometro.startPressure( 3 ); // oversampling 0-3
+
+        if( atraso > 0 )
         {
-            return( barometro.altitude( pressao, 1013.25 ) * 3.28084 ); // MSL Mean Sea Level
+            delay( atraso );
+
+            double pressao;
+
+            atraso = barometro.getPressure( pressao, temperatura );
+
+    //        pressao -= 2.9; // offset erro sensor
+    /*
+            Serial.print( pressao );
+            Serial.print( " " );
+    */
+            if( atraso != 0 )
+            {
+                delay( atraso );
+                return( barometro.altitude( pressao, 1013.25 ) * 3.28084 ); // MSL Mean Sea Level
+            }
         }
     }
 
@@ -358,7 +385,7 @@ void setup()
         delay(500);
     }
 */
-    Serial.begin(115200);
+    SERIALX.begin( 115200 );
 
     if( ! barometro.begin() )
     {
@@ -380,7 +407,7 @@ void setup()
 
     for( int z = 0; z < 100; z++ )
     {
-        double alti = readAltitudeFtBmp( 0 );
+        double alti = readAltitudeFtBmp();
 
         circular1s.insere( alti );
         circular10.insere( circular1s.media() );
@@ -391,19 +418,21 @@ void setup()
 
     salto.altitudePS = salto.altitudeDZ = salto.altitudeCMD = agora.altitude = antes.altitude = circular10.media();
 
-    tonePlayer.insere( 250, 2700, 10 );
+    tocadorToneAC.insere( 250, 2700, 10 );
 
     antes.relogio = millis();
 }
 
 void loop()
 {
+    bool traceAgora = false;
+
 //    unsigned long inicio = millis();
 
     // atualiza sensores
 
     #ifdef BMP180
-    agora.sensor = readAltitudeFtBmp( 1000 );
+    agora.sensor = readAltitudeFtBmp();
     #endif
 
     #ifdef MPL3115A2
@@ -435,7 +464,10 @@ void loop()
 //    agora.altitude = antes.altitude + ganho * ( agora.sensor - antes.altitude );
 //    p = ( 1 - ganho ) * p;
 
-    circular1s.insere( agora.altitude );
+//    circular1s.insere( agora.altitude );
+    circular1s.insere( agora.sensor );
+
+    contadorLoop++;
 
     if( agora.relogio >= tUmSegundo )
     {
@@ -444,35 +476,12 @@ void loop()
         circular10.insere( circular1s.media() );
 
         circular10media.insere( circular10.media() );
-    }
 
-        if( trace )
-        {
-    //        Serial.print( deltaT * 1000 );
-    //        Serial.print( " " );
-    //        Serial.print( agora.relogio - inicio );
-    //        Serial.print( " " );
-            Serial.print( agora.altitude, 2 );
-//            Serial.print( agora.altitude - salto.altitudeDZ, 2 );
-//            Serial.print( " " );
-//            Serial.print( circular10.media() , 2  );
-            //Serial.print( circular10.media() - altitudeDZ, 2  );
-            Serial.print( " " );
-    //        Serial.print( agora.velocidade, 2  );
-    //        Serial.print( " " );
-//            Serial.print( agora.sensor - salto.altitudeDZ, 2  );
-            Serial.print( *circular10media.topo() , 2 );
-            Serial.print( " " );
-    //        Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
-    //        Serial.print( " " );
-            Serial.print( circular1s.media() , 2 );
-            Serial.print( " " );
-            Serial.print( agora.sensor, 2  );
-            //Serial.print( circular1s.media() - salto.altitudeDZ, 2 );
-     //       Serial.print( " " );
-     //       Serial.print( circular1s.desvio(), 2 );
-            Serial.println();
-        }
+        loopsSeg = contadorLoop;
+        contadorLoop = 0;
+
+        traceAgora = (bool)trace;
+    }
 
     if( agora.relogio >= tUmDecimo )
     {
@@ -481,7 +490,7 @@ void loop()
 /*
         // variometro
 
-        if( ! tonePlayer.tocando() )
+        if( ! tocadorToneAC.tocando() )
         {
             if( agora.velocidade > 0.5 )
             {
@@ -501,18 +510,22 @@ void loop()
 */
     }
 
+    // regras de negocio
+
     switch( agora.estagio )
     {
     case ESTAGIO_SOLO:
+
+        salto.altitudeDZ = *circular10media.topo();
+
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
-            salto.altitudeDZ = *circular10media.topo();
 
             // reset alarmes
             for( int i = 0; i < nAvisos ; i++ )
                 avisos[i].atingido = 0;
 
-            tonePlayer.bipe( );
+            tocadorToneAC.bipe( );
 
             agora.estagio = ESTAGIO_SUBIDA;
         }
@@ -523,7 +536,8 @@ void loop()
         {
             salto.altitudePS = *circular10media.topo();
 
-            tonePlayer.bipe( 2 );
+            tocadorToneAC.limpa();
+            tocadorToneAC.bipe( 2 );
 
             agora.estagio = ESTAGIO_QUEDA;
         }
@@ -534,8 +548,8 @@ void loop()
         {
             salto.altitudeCMD = circular1s.media();
 
-            tonePlayer.limpa();
-            tonePlayer.bipe( 3 );
+            tocadorToneAC.limpa();
+            tocadorToneAC.bipe( 3 );
 
             agora.estagio = ESTAGIO_NAVEGACAO;
         }
@@ -544,8 +558,8 @@ void loop()
     case ESTAGIO_NAVEGACAO:
         if( agora.velocidade < THRESHOLD_QUEDA )
         {
-            tonePlayer.limpa();
-            tonePlayer.bipe( 2 );
+            tocadorToneAC.limpa();
+            tocadorToneAC.bipe( 2 );
 
             agora.estagio = ESTAGIO_QUEDA;
         }
@@ -554,7 +568,7 @@ void loop()
 
     // avisos de altura
 
-    register int iAltitudeAgora = int( agora.altitude - salto.altitudeDZ );
+    agora.altura = int( agora.altitude - salto.altitudeDZ );
 
     for( int i = 0;  i < nAvisos; i++ )
     {
@@ -562,12 +576,12 @@ void loop()
         {
             if( avisos[i].estagio & agora.estagio )
             {
-                if( ( ( iAltitudeAgora < avisos[i].altura ) && ( avisos[i].estagio & (ESTAGIO_NAVEGACAO|ESTAGIO_QUEDA) ) )
-                 || ( ( iAltitudeAgora > avisos[i].altura ) && ( avisos[i].estagio & (ESTAGIO_SUBIDA) ) ) )
+                if( ( ( agora.altura > avisos[i].altura ) && ( avisos[i].estagio & (ESTAGIO_SUBIDA) ) )
+                 || ( ( agora.altura < avisos[i].altura ) && ( avisos[i].estagio & (ESTAGIO_NAVEGACAO|ESTAGIO_QUEDA) ) ) )
                 {
                     avisos[i].atingido = agora.relogio;
 
-                    tonePlayer.insere( avisos[i] );
+                    tocadorToneAC.insere( avisos[i] );
                 }
             }
         }
@@ -575,7 +589,7 @@ void loop()
 
     // player
 
-    tonePlayer.loop( agora.relogio );
+    tocadorToneAC.loop( agora.relogio );
 
     // interpretador de comandos via serial
 /*
@@ -598,5 +612,48 @@ void loop()
             comando[ pos++ ] = c;
     }
 */
+
+    if( traceAgora && trace & TRACE_AVISOS )
+    {
+         for( int i = 0;  i < nAvisos; i++ )
+         {
+            SERIALX.print("[");
+            SERIALX.print(i);
+            SERIALX.print("]");
+            avisos[i].print();
+            SERIALX.println();
+         }
+    }
+
+    if( ( traceAgora && trace & TRACE_ARDUINO_PLOT ) || ( trace == TRACE_ARDUINO_PLOT ) )
+    {
+//        Serial.print( deltaT * 1000 );
+//        Serial.print( " " );
+//        Serial.print( agora.relogio - inicio );
+//        Serial.print( " " );
+        Serial.print( agora.altura );
+//        Serial.print( agora.altitude, 2 );
+//        Serial.print( agora.altitude - salto.altitudeDZ, 2 );
+//        Serial.print( " " );
+//        Serial.print( circular10.media() , 2  );
+        //Serial.print( circular10.media() - altitudeDZ, 2  );
+        Serial.print( " " );
+//        Serial.print( agora.velocidade, 2  );
+        Serial.print( agora.sensor - salto.altitudeDZ, 2  );
+        Serial.print( " " );
+        Serial.print( *circular10media.topo() - salto.altitudeDZ, 2 );
+        Serial.print( " " );
+//        Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
+//        Serial.print( " " );
+//        Serial.print( circular1s.media() , 2 );
+//        Serial.print( " " );
+//        Serial.print( agora.sensor, 2  );
+        Serial.print( circular1s.media() - salto.altitudeDZ, 2 );
+//        Serial.print( " " );
+//        Serial.print( circular1s.desvio(), 2 );
+//        Serial.print( " " );
+        Serial.println();
+    }
+
     antes = agora;
 }
