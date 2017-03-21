@@ -23,7 +23,7 @@ SFE_BMP180 barometro;
 
 #include <toneAC.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #define TRACE_OFF          0x00
 #define TRACE_ARDUINO_PLOT 0x01
@@ -33,17 +33,17 @@ SFE_BMP180 barometro;
 
 // PRODUCAO !
 
-#define THRESHOLD_DECOLAGEM   7.0 // pes/s
+#define THRESHOLD_DECOLAGEM   6.0 // pes/s
 #define THRESHOLD_QUEDA    -150.0 // pes/s
 #define THRESHOLD_ABERTURA  -60.0 // pes/s
 
 #define AVISO_SUBIDA_CINTO  1500
 #define AVISO_SUBIDA_CHECK 11500
 
-#define AVISO_ALTA_1    6000
-#define AVISO_ALTA_2    5000
-#define AVISO_ALTA_3    4000
-#define ALARME_ALTA     2500
+#define AVISO_ALTA_1    6500
+#define AVISO_ALTA_2    5500
+#define AVISO_ALTA_3    4500
+#define ALARME_ALTA     3500
 
 #define AVISO_NAVEGACAO_A      300
 #define AVISO_NAVEGACAO_B      600
@@ -276,8 +276,8 @@ class TocadorToneAC
                 case Aviso::SIRENE:
                     for( int n = 0; n < 10; n++ )
                     {
-                        insere( 200, 2700, aviso.volume );
-                        insere( 200, 3000, aviso.volume );
+                        insere( 150, 2700, aviso.volume );
+                        insere( 150, 3000, aviso.volume );
                     }
                     break;
             }
