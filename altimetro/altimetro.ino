@@ -23,6 +23,7 @@ SFE_BMP180 barometro;
 
 #include <toneAC.h>
 
+//#define DEBUG 1
 
 #define TRACE_OFF          0x00
 #define TRACE_ARDUINO_PLOT 0x01
