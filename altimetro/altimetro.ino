@@ -23,7 +23,6 @@ SFE_BMP180 barometro;
 
 #include <toneAC.h>
 
-// #define DEBUG 1
 
 #define TRACE_OFF          0x00
 #define TRACE_ARDUINO_PLOT 0x01
@@ -88,50 +87,62 @@ SFE_BMP180 barometro;
 #define ESTADO_QUEDA        0x02
 #define ESTADO_NAVEGACAO    0x04
 
-//typedef struct
-//{
-//    unsigned long timestamp;
-//    double altura;
-//    double velocidade;
-//}
-//Ponto;
-
-typedef struct
+class Ponto
 {
-    double altitudeDZ;  // area de pouso
-    double altitudePS;  // ponto de saida
-    double altitudeCMD; // abertura pqd
+public:
+    Ponto() : altitude(0),
+              velocidade(0),
+              timestamp(0) {}
 
-    unsigned long timestampDecolagem;
-    unsigned long timestampSaida;
-    unsigned long timestampAbertura;
-
-    // TODO: array velocidade altitude
+    unsigned long timestamp;
+    double altitude;
+    double velocidade;
 
     void limpa()
     {
-        altitudeDZ = altitudePS = altitudeCMD = 0;
-        timestampDecolagem = timestampSaida = timestampAbertura = 0;
+        timestamp = 0;
+        altitude = velocidade = 0;
     }
-}
-Salto;
+};
 
-class Estado
+class Evento
 {
 public:
-    Estado() :  sensor(0),
-                altitude(0),
-                velocidade(0),
-                timestamp(0),
-                altura(0),
-                estado( ESTADO_DZ ) {}
 
-    double sensor;
-    double altitude;
-    double velocidade;
-    unsigned long timestamp;
-    int altura;
+};
+
+class Salto
+{
+public:
+    Salto() : estado( ESTADO_DZ ) {}
+
     char estado;
+
+    Ponto decolagem;    // area de pouso, DZ
+    Ponto saida;
+    Ponto abertura;
+    Ponto pouso;
+
+    void trocaEstado( char novoEstado )
+    {
+        estado = novoEstado;
+    }
+
+    // TODO: array velocidade altitude
+    void log()
+    {
+
+    }
+
+    void limpa()
+    {
+        estado = ESTADO_DZ;
+
+        decolagem.limpa();
+        saida.limpa();
+        abertura.limpa();
+        pouso.limpa();
+    }
 };
 
 typedef struct
@@ -340,7 +351,7 @@ unsigned long debounceAbertura = 0;
 int contadorLoop = 0;
 int loopsSeg = 0;
 
-Estado antes, agora;
+Ponto antes, agora;
 
 #define MAX_CMD 50
 #define CMD_EOL '\n'
@@ -385,13 +396,7 @@ double readAltitudeFtBmp()
 void setup()
 {
     toneAC( 3200, 5, 100 );
-/*
-    for(int x=2700; x<3200; x+=100)
-    {
-        toneAC( x, 10, 250 );
-        delay(500);
-    }
-*/
+
     SERIALX.begin( 115200 );
 
     if( ! barometro.begin() )
@@ -421,9 +426,7 @@ void setup()
         circular10media.insere( circular10.media() );
     }
 
-    //double varianciaT0 = circular1s.variancia();
-
-    salto.altitudePS = salto.altitudeDZ = salto.altitudeCMD = agora.altitude = antes.altitude = circular10.media();
+    salto.saida.altitude = salto.decolagem.altitude = salto.abertura.altitude = agora.altitude = antes.altitude = circular10.media();
 
     tocadorToneAC.insere( 250, 2700, 10 );
 
@@ -437,7 +440,7 @@ void loop()
     // atualiza sensores
 
     #ifdef BMP180
-    agora.sensor = readAltitudeFtBmp();
+    double sensor = readAltitudeFtBmp();
     #endif
 
     #ifdef MPL3115A2
@@ -452,7 +455,7 @@ void loop()
     agora.altitude = antes.altitude + antes.velocidade * deltaT;
     agora.velocidade = antes.velocidade;
 
-    double desvio = agora.sensor - agora.altitude;
+    double desvio = sensor - agora.altitude;
 
     double alpha = 0.1;
     double beta = 0.001;
@@ -465,11 +468,11 @@ void loop()
 //    static double ganho= 0;
 //    static double p = 1;
 //    ganho = p + 0.05 / (p + variancia);
-//    agora.altitude = antes.altitude + ganho * ( agora.sensor - antes.altitude );
+//    agora.altitude = antes.altitude + ganho * ( sensor - antes.altitude );
 //    p = ( 1 - ganho ) * p;
 //    circular1s.insere( agora.altitude );
 
-    circular1s.insere( agora.sensor );
+    circular1s.insere( sensor );
 
     contadorLoop++;
 
@@ -500,14 +503,15 @@ void loop()
 
     // regras de negocio
 
-    switch( agora.estado )
+    switch( salto.estado )
     {
     case ESTADO_DZ:
-        salto.altitudeDZ = *circular10media.topo();
+        salto.decolagem.altitude = *circular10media.topo();
 
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
-            salto.timestampDecolagem = agora.timestamp;
+            salto.decolagem.timestamp = agora.timestamp;
+            salto.decolagem.velocidade = agora.velocidade;
 
             // reset alarmes
             for( int i = 0; i < nAvisos ; i++ )
@@ -515,32 +519,32 @@ void loop()
 
             tocadorToneAC.bipe( );
 
-            agora.estado = ESTADO_SUBIDA;
+            salto.estado = ESTADO_SUBIDA;
         }
         break;
 
     case ESTADO_SUBIDA:
         if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
         {
-            salto.altitudePS = *circular10media.topo();
-            salto.timestampSaida = agora.timestamp;
+            salto.saida.altitude = *circular10media.topo();
+            salto.saida.timestamp = agora.timestamp;
 
             tocadorToneAC.limpa();
             tocadorToneAC.bipe( 2 );
 
-            agora.estado = ESTADO_QUEDA;
+            salto.estado = ESTADO_QUEDA;
         }
         else if( agora.velocidade < -2 ) // abertura subterminal
         {
             if( debounceAbertura && debounceAbertura < agora.timestamp )
             {
-                salto.altitudeCMD = circular1s.media();
-                salto.timestampAbertura = agora.timestamp;
+                salto.abertura.altitude = circular1s.media();
+                salto.abertura.timestamp = agora.timestamp;
 
                 tocadorToneAC.limpa();
                 tocadorToneAC.bipe( 3 );
 
-                agora.estado = ESTADO_NAVEGACAO;
+                salto.estado = ESTADO_NAVEGACAO;
             }
         }
         else // subindo ou estavel
@@ -552,13 +556,13 @@ void loop()
     case ESTADO_QUEDA:
         if( agora.velocidade > THRESHOLD_ABERTURA )
         {
-            salto.altitudeCMD = circular1s.media();
-            salto.timestampAbertura = agora.timestamp;
+            salto.abertura.altitude = circular1s.media();
+            salto.abertura.timestamp = agora.timestamp;
 
             tocadorToneAC.limpa();
             tocadorToneAC.bipe( 3 );
 
-            agora.estado = ESTADO_NAVEGACAO;
+            salto.estado = ESTADO_NAVEGACAO;
         }
         break;
 
@@ -568,23 +572,23 @@ void loop()
             tocadorToneAC.limpa();
             tocadorToneAC.bipe( 2 );
 
-            agora.estado = ESTADO_QUEDA;
+            salto.estado = ESTADO_QUEDA;
         }
         break;
     }
 
     // avisos de altura
 
-    agora.altura = int( agora.altitude - salto.altitudeDZ );
+    int altura = int( agora.altitude - salto.decolagem.altitude );
 
     for( int i = 0;  i < nAvisos; i++ )
     {
         if( 0 == avisos[i].atingido )
         {
-            if( avisos[i].estado & agora.estado )
+            if( avisos[i].estado & salto.estado )
             {
-                if( ( ( agora.altura > avisos[i].altura ) && ( avisos[i].estado & (ESTADO_SUBIDA) ) )
-                 || ( ( agora.altura < avisos[i].altura ) && ( avisos[i].estado & (ESTADO_NAVEGACAO|ESTADO_QUEDA) ) ) )
+                if( ( ( altura > avisos[i].altura ) && ( avisos[i].estado & (ESTADO_SUBIDA) ) )
+                 || ( ( altura < avisos[i].altura ) && ( avisos[i].estado & (ESTADO_NAVEGACAO|ESTADO_QUEDA) ) ) )
                 {
                     avisos[i].atingido = agora.timestamp;
 
@@ -636,24 +640,24 @@ void loop()
     {
 //        Serial.print( deltaT * 1000 );
 //        Serial.print( " " );
-        Serial.print( agora.altura );
+        Serial.print( altura );
 //        Serial.print( agora.altitude, 2 );
-//        Serial.print( agora.altitude - salto.altitudeDZ, 2 );
+//        Serial.print( agora.altitude - salto.decolagem.altitude, 2 );
 //        Serial.print( " " );
 //        Serial.print( circular10.media() , 2  );
-        //Serial.print( circular10.media() - altitudeDZ, 2  );
+        //Serial.print( circular10.media() - decolagem.altitude, 2  );
         Serial.print( " " );
 //        Serial.print( agora.velocidade, 2  );
-        Serial.print( agora.sensor - salto.altitudeDZ, 2  );
+        Serial.print( sensor - salto.decolagem.altitude, 2  );
         Serial.print( " " );
-        Serial.print( *circular10media.topo() - salto.altitudeDZ, 2 );
+        Serial.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
         Serial.print( " " );
-//        Serial.print( salto.altitudePS - salto.altitudeDZ, 2 );
+//        Serial.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
 //        Serial.print( " " );
 //        Serial.print( circular1s.media() , 2 );
 //        Serial.print( " " );
-//        Serial.print( agora.sensor, 2  );
-        Serial.print( circular1s.media() - salto.altitudeDZ, 2 );
+//        Serial.print( sensor, 2  );
+        Serial.print( circular1s.media() - salto.decolagem.altitude, 2 );
 //        Serial.print( " " );
 //        Serial.print( circular1s.desvio(), 2 );
 //        Serial.print( " " );
