@@ -2,32 +2,41 @@
 // (c) 2017 MBS - Mauricio Bieze Stefani
 
 #include <math.h>
-
 #include <Wire.h>
 
 #define SERIALX Serial
+#define SERIALX_SPD 115200
+#define BMP180
+#define DEBUG 1
 
 #include "circular.hpp"
+
+#include "tocador.hpp"
+TocadorToneAC tocadorToneAC;
 
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
 MPL3115A2 altimetro;
 #endif
 
-#define BMP180
-
 #ifdef BMP180
 #include <SFE_BMP180.h>
 SFE_BMP180 barometro;
 #endif
 
-#include <toneAC.h>
+#define ESTADO_DZ           0x00
+#define ESTADO_SUBIDA       0x01
+#define ESTADO_QUEDA        0x02
+#define ESTADO_NAVEGACAO    0x04
 
-//#define DEBUG 1
+#define TRACE_OFF           0x00
+#define TRACE_ARDUINO_PLOT  0x01
+#define TRACE_AVISOS        0x02
 
-#define TRACE_OFF          0x00
-#define TRACE_ARDUINO_PLOT 0x01
-#define TRACE_AVISOS       0x02
+#define NUM_VARS 10
+#define TAM_TOKEN 10
+#define TAM_NOME 5
+#include "interpretador.hpp"
 
 #ifndef DEBUG
 
@@ -56,12 +65,6 @@ SFE_BMP180 barometro;
 
 // DEBUG
 
-#define NUM_VARS 10
-#define TAM_TOKEN 10
-#define TAM_NOME 5
-
-#include "interpretador.hpp"
-
 #define THRESHOLD_DECOLAGEM  0.8
 #define THRESHOLD_QUEDA     -0.8
 #define THRESHOLD_ABERTURA   0.8
@@ -82,11 +85,6 @@ SFE_BMP180 barometro;
 #define TRACE           TRACE_ARDUINO_PLOT
 
 #endif
-
-#define ESTADO_DZ           0x00
-#define ESTADO_SUBIDA       0x01
-#define ESTADO_QUEDA        0x02
-#define ESTADO_NAVEGACAO    0x04
 
 class Ponto
 {
@@ -180,6 +178,39 @@ typedef struct
         SERIALX.print(" qdo:");
         SERIALX.print( atingido );
     }
+
+    void tocar()
+    {
+//            SERIALX.print("insere(");
+//            aviso.print();
+//            SERIALX.println(")");
+        int repeticoes = 1;
+
+        switch( tipo )
+        {
+            case TipoAviso::BIP_TRIPLO:
+                repeticoes++;
+            case TipoAviso::BIP_DUPLO: //fall trough
+                repeticoes++;
+            case TipoAviso::BIP_UNICO: //fall trough
+                tocadorToneAC.bipe( repeticoes, volume );
+                break;
+
+            case TipoAviso::SIRENE:
+                repeticoes+=7;
+            case TipoAviso::SIRENE_TRIPLO: //fall trough
+                repeticoes++;
+            case TipoAviso::SIRENE_DUPLO:  //fall trough
+                repeticoes++;
+            case TipoAviso::SIRENE_UNICO:  //fall trough
+                for( int n = 0; n < repeticoes; n++ )
+                {
+                    tocadorToneAC.insere( 150, 2700, volume );
+                    tocadorToneAC.insere( 150, 3000, volume );
+                }
+                break;
+        }
+    }
 }
 Aviso;
 
@@ -199,150 +230,11 @@ Aviso avisos[] =
 
 const unsigned int nAvisos = ( sizeof(avisos)/sizeof(avisos[0]) );
 
-class TocadorToneAC
-{
-    public:
-        void limpa()
-        {
-            leitura = escrita = 0;
-            tocando = 0;
-        }
-
-        TocadorToneAC()
-        {
-            limpa();
-        }
-
-        void loop( unsigned long agora )
-        {
-            static bool mudoQdoTerminar = false;
-
-            if( agora > tocando )
-            {
-                if( leitura != escrita )
-                {
-                    toneAC( notas[leitura].frequencia,
-                            notas[leitura].volume,
-                            notas[leitura].duracao,
-                            true );
-
-                    tocando = agora + notas[leitura].duracao;
-
-                    incrementa( leitura );
-
-                    mudoQdoTerminar = true;
-                }
-                else
-                {
-                    if( mudoQdoTerminar )
-                    {
-                        noToneAC();
-                        mudoQdoTerminar = false;
-                    }
-
-                    tocando = agora;
-                }
-            }
-        }
-
-        void insere( int duracao, int frequencia = 0, int volume = 0 )
-        {
-            notas[escrita].duracao = duracao;
-            notas[escrita].frequencia = frequencia;
-            notas[escrita].volume = volume;
-
-            incrementa(escrita);
-
-            if( escrita == leitura )
-                incrementa( leitura );
-        }
-
-        void bipe( int nbips = 1, int vol = 10, int freq = 2700, int dur = 250, int inter = 250 )
-        {
-//            SERIALX.print("bipe(");
-//            SERIALX.print( nbips );
-//            SERIALX.print( ", " );
-//            SERIALX.print( vol );
-//            SERIALX.print( ", " );
-//            SERIALX.print( freq );
-//            SERIALX.println( ")" );
-
-            for( int n = 0; n < nbips; n++ )
-            {
-                insere( dur, freq, vol );
-                insere( inter );
-            }
-        }
-
-        void insere( Aviso & aviso )
-        {
-//            SERIALX.print("insere(");
-//            aviso.print();
-//            SERIALX.println(")");
-            int repeticoes = 1;
-
-            switch( aviso.tipo )
-            {
-                case Aviso::BIP_TRIPLO:
-                    repeticoes++;
-                case Aviso::BIP_DUPLO: //fall trough
-                    repeticoes++;
-                case Aviso::BIP_UNICO: //fall trough
-                    bipe( repeticoes, aviso.volume );
-                    break;
-
-                case Aviso::SIRENE:
-                    repeticoes+=7;
-                case Aviso::SIRENE_TRIPLO: //fall trough
-                    repeticoes++;
-                case Aviso::SIRENE_DUPLO:  //fall trough
-                    repeticoes++;
-                case Aviso::SIRENE_UNICO:  //fall trough
-                    for( int n = 0; n < repeticoes; n++ )
-                    {
-                        insere( 150, 2700, aviso.volume );
-                        insere( 150, 3000, aviso.volume );
-                    }
-                    break;
-            }
-        }
-
-    private:
-        int leitura;
-        int escrita;
-        unsigned long tocando;
-
-        #define SZ_NOTAS 30
-        struct Nota
-        {
-            int frequencia;
-            int duracao;
-            char volume;
-        } notas[SZ_NOTAS];
-
-        int proximo( int ponteiro )
-        {
-            ponteiro++;
-
-            if( ponteiro == SZ_NOTAS )
-                ponteiro = 0;
-
-            return ponteiro;
-        }
-
-        int incrementa( int & ponteiro )
-        {
-            return ( ponteiro = proximo( ponteiro ) );
-        }
-};
-
 char trace = TRACE;
 
 CircularStats<double,30> circular1s;        // ultimas 30 leituras ( ~1 segundo )
 CircularStats<double,10> circular10;        // medias dos ultimos 10 segundos
 CircularStats<double,10> circular10media;   // delay line das medias dos ultimos 10 segundos
-
-TocadorToneAC tocadorToneAC;
 
 Salto salto;
 
@@ -398,7 +290,7 @@ void setup()
 {
     toneAC( 3200, 5, 100 );
 
-    SERIALX.begin( 115200 );
+    SERIALX.begin( SERIALX_SPD );
 
     if( ! barometro.begin() )
     {
@@ -592,8 +484,7 @@ void loop()
                  || ( ( altura < avisos[i].altura ) && ( avisos[i].estado & (ESTADO_NAVEGACAO|ESTADO_QUEDA) ) ) )
                 {
                     avisos[i].atingido = agora.timestamp;
-
-                    tocadorToneAC.insere( avisos[i] );
+                    avisos[i].tocar();
                 }
             }
         }
@@ -604,7 +495,7 @@ void loop()
     tocadorToneAC.loop( agora.timestamp );
 
     // interpretador de comandos via serial
-/*
+
     while( SERIALX.available() > 0 )
     {
         char c = SERIALX.read();
@@ -623,7 +514,6 @@ void loop()
         else
             comando[ pos++ ] = c;
     }
-*/
 
     if( traceAgora && trace & TRACE_AVISOS )
     {
@@ -641,27 +531,29 @@ void loop()
     {
 //        Serial.print( deltaT * 1000 );
 //        Serial.print( " " );
-        Serial.print( altura );
-//        Serial.print( agora.altitude, 2 );
+//        Serial.print( altura );
+//        Serial.print( " " );
+        Serial.print( agora.altitude, 2 );
 //        Serial.print( agora.altitude - salto.decolagem.altitude, 2 );
 //        Serial.print( " " );
 //        Serial.print( circular10.media() , 2  );
         //Serial.print( circular10.media() - decolagem.altitude, 2  );
-        Serial.print( " " );
+//        Serial.print( " " );
 //        Serial.print( agora.velocidade, 2  );
-        Serial.print( sensor - salto.decolagem.altitude, 2  );
-        Serial.print( " " );
-        Serial.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
-        Serial.print( " " );
+//        Serial.print( sensor - salto.decolagem.altitude, 2  );
+//        Serial.print( " " );
+//        Serial.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
+//        Serial.print( " " );
 //        Serial.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
 //        Serial.print( " " );
 //        Serial.print( circular1s.media() , 2 );
 //        Serial.print( " " );
 //        Serial.print( sensor, 2  );
-        Serial.print( circular1s.media() - salto.decolagem.altitude, 2 );
+//        Serial.print( circular1s.media() - salto.decolagem.altitude, 2 );
 //        Serial.print( " " );
 //        Serial.print( circular1s.desvio(), 2 );
 //        Serial.print( " " );
+//        Serial.print("\n\r");
         Serial.println();
     }
 
