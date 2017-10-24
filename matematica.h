@@ -67,11 +67,11 @@ public:
     {
         raw = raww;
     }
-    float getFloat()
+    double getFloat()
     {
         return raw / 65536.0;
     }
-    void setFloat( float f )
+    void setFloat( double f )
     {
         raw = f * 65536;
     }

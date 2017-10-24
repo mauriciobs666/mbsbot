@@ -3,11 +3,12 @@
 
 #include <math.h>
 #include <Wire.h>
+#include <EEPROM.h>
 
-#define SERIALX Serial
-#define SERIALX_SPD 115200
 #define BMP180
 #define DEBUG 1
+
+#include "impressora.hpp"
 
 #include "circular.hpp"
 
@@ -29,14 +30,9 @@ SFE_BMP180 barometro;
 #define ESTADO_QUEDA        0x02
 #define ESTADO_NAVEGACAO    0x04
 
-#define TRACE_OFF           0x00
-#define TRACE_ARDUINO_PLOT  0x01
-#define TRACE_AVISOS        0x02
-
-#define NUM_VARS 10
-#define TAM_TOKEN 10
-#define TAM_NOME 5
+#include "protocolo.h"
 #include "interpretador.hpp"
+Interpretador interpretador;
 
 #ifndef DEBUG
 
@@ -59,7 +55,7 @@ SFE_BMP180 barometro;
 #define AVISO_NAVEGACAO_C      900
 #define AVISO_NAVEGACAO_D     1200
 
-#define TRACE          TRACE_OFF
+#define TRACE 0
 
 #else
 
@@ -82,7 +78,7 @@ SFE_BMP180 barometro;
 #define AVISO_NAVEGACAO_C       24
 #define AVISO_NAVEGACAO_D       36
 
-#define TRACE           TRACE_ARDUINO_PLOT
+#define TRACE ( TRACE_ALTITUDE | TRACE_MASTER_EN )
 
 #endif
 
@@ -96,53 +92,15 @@ public:
     unsigned long timestamp;
     double altitude;
     double velocidade;
+    double aceleracao;
 
     void limpa()
     {
         timestamp = 0;
-        altitude = velocidade = 0;
+        altitude = velocidade = aceleracao = 0.0;
     }
-};
-
-class Evento
-{
-public:
-
-};
-
-class Salto
-{
-public:
-    Salto() : estado( ESTADO_DZ ) {}
-
-    char estado;
-
-    Ponto decolagem;    // area de pouso, DZ
-    Ponto saida;
-    Ponto abertura;
-    Ponto pouso;
-
-    void trocaEstado( char novoEstado )
-    {
-        estado = novoEstado;
-    }
-
-    // TODO: array velocidade altitude
-    void log()
-    {
-
-    }
-
-    void limpa()
-    {
-        estado = ESTADO_DZ;
-
-        decolagem.limpa();
-        saida.limpa();
-        abertura.limpa();
-        pouso.limpa();
-    }
-};
+}
+antes, agora;
 
 typedef struct
 {
@@ -230,26 +188,128 @@ Aviso avisos[] =
 
 const unsigned int nAvisos = ( sizeof(avisos)/sizeof(avisos[0]) );
 
-char trace = TRACE;
+typedef struct
+{
+public:
+    char estado;
+
+    Ponto decolagem;    // area de pouso, DZ
+    Ponto saida;
+    Ponto abertura;
+    Ponto pouso;
+
+    void trocaEstado( char novoEstado )
+    {
+        estado = novoEstado;
+    }
+
+    void limpa()
+    {
+        estado = ESTADO_DZ;
+        decolagem.limpa();
+        saida.limpa();
+        abertura.limpa();
+        pouso.limpa();
+    }
+}
+Salto;
+
+Salto salto;
+
+class Eeprom
+{
+    int tamanhoBufSaltos;
+public:
+    struct Configuracao
+    {
+        char trace;
+        int delayTrace;
+        double alpha;
+        double beta;
+    }
+    dados;
+
+    struct Caderneta
+    {
+        int numero;
+        int altitudeDZ;
+        int tempoSubida;
+        int alturaSaida;
+        int tempoQueda;
+        int velocidadeMaxQueda;
+        int alturaAbertura;
+        int tempoNavegacao;
+        int velocidadeMaxNavegacao;
+    };
+
+    int init()
+    {
+        int carregados = carrega();
+
+        int e2len = EEPROM.length();
+        tamanhoBufSaltos = ( e2len - sizeof( Configuracao ) ) / sizeof( Caderneta );
+
+        SERIALX.print( "E2 sz=" );
+        SERIALX.print( e2len );
+        SERIALX.print( "B cfg=" );
+        SERIALX.print( carregados );
+        SERIALX.print( "B disp=" );
+        SERIALX.println( tamanhoBufSaltos );
+    }
+
+    int insere( struct Caderneta *salto )
+    {
+        struct Caderneta tmp;
+
+        int endereco = sizeof( Configuracao );
+
+        for( int busca = 0; busca < tamanhoBufSaltos; busca++, endereco+=sizeof(Caderneta) )
+        {
+            EEPROM.get( endereco, tmp );
+
+        }
+    }
+
+    int limpa( int nProximoSalto )
+    {
+
+    }
+
+    int carrega()
+    {
+        unsigned int addr = 0;
+        char * dest = (char*) &dados;
+        for( ; addr < sizeof(dados); addr++, dest++ )
+            *dest = eeprom_read_byte(( unsigned char * ) addr );
+        return addr;
+    }
+
+    void salva()
+    {
+        char * dest = (char*) &dados;
+        for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
+            eeprom_write_byte(( unsigned char  *) addr, *dest);
+    }
+
+    void defaults()
+    {
+        dados.trace = TRACE;
+        dados.delayTrace = DFT_DELAY_TRACE;
+        dados.alpha = 0.1;
+        dados.beta = 0.001;
+    }
+}
+eeprom;
 
 CircularStats<double,30> circular1s;        // ultimas 30 leituras ( ~1 segundo )
 CircularStats<double,10> circular10;        // medias dos ultimos 10 segundos
 CircularStats<double,10> circular10media;   // delay line das medias dos ultimos 10 segundos
 
-Salto salto;
-
 unsigned long tUmSegundo = 0;
-unsigned long tUmDecimo = 0;
+unsigned long tTrace = 0;
 unsigned long debounceAbertura = 0;
 int contadorLoop = 0;
 int loopsSeg = 0;
-
-Ponto antes, agora;
-
-#define MAX_CMD 50
-#define CMD_EOL '\n'
-char comando[MAX_CMD];
-unsigned char pos = 0;
 
 double readAltitudeFtBmp()
 {
@@ -286,17 +346,66 @@ double readAltitudeFtBmp()
     return -666;
 }
 
+Erros Interpretador::evalHardCoded( Variavel* resultado )
+{
+    #ifdef TRACE_INTERPRETADOR
+        SERIALX.print( "evalHardCoded( " );
+        SERIALX.print( token );
+        SERIALX.println( " )" );
+    #endif
+
+    Erros rc = SUCESSO;
+
+    char dest[TAM_TOKEN];
+    strcpy( dest, token );
+
+    eco=false;
+
+    if( 0 == strncmp( token, CMD_GRAVA, TAM_TOKEN )  )	        // salva EEPROM
+        eeprom.salva();
+    else if( 0 == strncmp( token, CMD_CARREGA, TAM_TOKEN ) )    // descarta mudancas e recarrega da EEPROM
+        eeprom.carrega();
+    else if( 0 == strncmp( token, CMD_DEFAULT, TAM_TOKEN ) )    // hard-coded
+        eeprom.defaults();
+    else if( 0 == strncmp( token, CMD_BIP, TAM_TOKEN )  )
+    {
+    }
+    else
+    {
+        eco = true;
+        rc = SKIP;
+    }
+
+    #ifdef TRACE_INTERPRETADOR
+//        if( SUCESSO == rc )
+//            SERIALX.println( " exec ok" );
+//        else
+//            SERIALX.println( " nope" );
+    #endif
+
+    return rc;
+}
+
 void setup()
 {
     toneAC( 3200, 5, 100 );
 
     SERIALX.begin( SERIALX_SPD );
 
+    eeprom.init();
+
+    interpretador.declaraVar( VAR_CHAR, NOME_TRACE, &eeprom.dados.trace );
+    interpretador.declaraVar( VAR_INT,  NOME_T_TRC, &eeprom.dados.delayTrace );
+    interpretador.declaraVar( VAR_INT,  NOME_LOOPS, &loopsSeg );
+    interpretador.declaraVar( VAR_DOUBLE, NOME_ALPHA, &eeprom.dados.alpha );
+    interpretador.declaraVar( VAR_DOUBLE, NOME_BETA, &eeprom.dados.beta );
+    interpretador.declaraVar( VAR_LONG, NOME_TIMESTAMP,  &agora.timestamp );
+
     if( ! barometro.begin() )
     {
         Serial.println("Erro inicializando modulo BMP180\n");
         toneAC( 4000, 10, 200 );
-        delay(200);
+        delay( 200 );
         toneAC( 4000, 10, 200 );
         return;
         while(1);
@@ -319,6 +428,7 @@ void setup()
         circular10media.insere( circular10.media() );
     }
 
+    salto.limpa();
     salto.saida.altitude = salto.decolagem.altitude = salto.abertura.altitude = agora.altitude = antes.altitude = circular10.media();
 
     tocadorToneAC.insere( 250, 2700, 10 );
@@ -328,8 +438,6 @@ void setup()
 
 void loop()
 {
-    bool traceAgora = false;
-
     // atualiza sensores
 
     #ifdef BMP180
@@ -341,7 +449,7 @@ void loop()
     #endif
 
     agora.timestamp = millis();
-    double deltaT = ( (double) agora.timestamp - antes.timestamp ) / 1000.0;
+    double deltaT = ( (double) ( agora.timestamp - antes.timestamp ) ) / 1000.0;
 
     // predicao
 
@@ -350,11 +458,8 @@ void loop()
 
     double desvio = sensor - agora.altitude;
 
-    double alpha = 0.1;
-    double beta = 0.001;
-
-    agora.altitude += alpha * desvio;
-    agora.velocidade += ( beta * desvio ) / deltaT;
+    agora.altitude += eeprom.dados.alpha * desvio;
+    agora.velocidade += ( eeprom.dados.beta * desvio ) / deltaT;
 
 //    // Kalman
 //
@@ -379,19 +484,6 @@ void loop()
 
         loopsSeg = contadorLoop;
         contadorLoop = 0;
-
-        traceAgora = (bool)trace;
-    }
-
-    if( agora.timestamp >= tUmDecimo )
-    {
-        tUmDecimo = agora.timestamp + 100;
-
-        #ifdef DEBUG
-
-        // TODO leitura analogicas
-
-        #endif
     }
 
     // regras de negocio
@@ -412,7 +504,7 @@ void loop()
 
             tocadorToneAC.bipe( );
 
-            salto.estado = ESTADO_SUBIDA;
+            salto.trocaEstado( ESTADO_SUBIDA );
         }
         break;
 
@@ -425,7 +517,7 @@ void loop()
             tocadorToneAC.limpa();
             tocadorToneAC.bipe( 2 );
 
-            salto.estado = ESTADO_QUEDA;
+            salto.trocaEstado( ESTADO_QUEDA );
         }
         else if( agora.velocidade < -2 ) // abertura subterminal
         {
@@ -437,7 +529,7 @@ void loop()
                 tocadorToneAC.limpa();
                 tocadorToneAC.bipe( 3 );
 
-                salto.estado = ESTADO_NAVEGACAO;
+                salto.trocaEstado( ESTADO_NAVEGACAO );
             }
         }
         else // subindo ou estavel
@@ -455,7 +547,7 @@ void loop()
             tocadorToneAC.limpa();
             tocadorToneAC.bipe( 3 );
 
-            salto.estado = ESTADO_NAVEGACAO;
+            salto.trocaEstado( ESTADO_NAVEGACAO );
         }
         break;
 
@@ -465,7 +557,7 @@ void loop()
             tocadorToneAC.limpa();
             tocadorToneAC.bipe( 2 );
 
-            salto.estado = ESTADO_QUEDA;
+            salto.trocaEstado( ESTADO_QUEDA );
         }
         break;
     }
@@ -496,64 +588,89 @@ void loop()
 
     // interpretador de comandos via serial
 
-    while( SERIALX.available() > 0 )
     {
-        char c = SERIALX.read();
+        static char comando[MAX_CMD];
+        static unsigned char pos = 0;
 
-        if ( pos == MAX_CMD )
+        while( SERIALX.available() > 0 )
         {
-            pos = 0;
-            //printErro( ERRO_TAM_MAX_CMD );
+            char c = SERIALX.read();
+
+            if ( pos == MAX_CMD )
+            {
+                pos = 0;
+                //printErro( ERRO_TAM_MAX_CMD );
+            }
+            else if( c == CMD_EOL )
+            {
+                comando[ pos ] = 0;
+                pos = 0;
+
+                interpretador.eval( comando );
+            }
+            else
+                comando[ pos++ ] = c;
         }
-        else if( c == CMD_EOL )
-        {
-            comando[ pos ] = 0;
-            pos = 0;
-            //return true;
-        }
-        else
-            comando[ pos++ ] = c;
     }
 
-    if( traceAgora && trace & TRACE_AVISOS )
-    {
-         for( int i = 0;  i < nAvisos; i++ )
-         {
-            SERIALX.print("[");
-            SERIALX.print(i);
-            SERIALX.print("]");
-            avisos[i].print();
-            SERIALX.println();
-         }
-    }
 
-    if( ( traceAgora && trace & TRACE_ARDUINO_PLOT ) || ( trace == TRACE_ARDUINO_PLOT ) )
+    if( ( eeprom.dados.trace & TRACE_MASTER_EN ) && ( agora.timestamp >= tTrace ) )
     {
-//        Serial.print( deltaT * 1000 );
-//        Serial.print( " " );
-//        Serial.print( altura );
-//        Serial.print( " " );
-        Serial.print( agora.altitude, 2 );
-//        Serial.print( agora.altitude - salto.decolagem.altitude, 2 );
-//        Serial.print( " " );
-//        Serial.print( circular10.media() , 2  );
-        //Serial.print( circular10.media() - decolagem.altitude, 2  );
-//        Serial.print( " " );
-//        Serial.print( agora.velocidade, 2  );
-//        Serial.print( sensor - salto.decolagem.altitude, 2  );
-//        Serial.print( " " );
-//        Serial.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
-//        Serial.print( " " );
-//        Serial.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
-//        Serial.print( " " );
-//        Serial.print( circular1s.media() , 2 );
-//        Serial.print( " " );
-//        Serial.print( sensor, 2  );
-//        Serial.print( circular1s.media() - salto.decolagem.altitude, 2 );
-//        Serial.print( " " );
-//        Serial.print( circular1s.desvio(), 2 );
-//        Serial.print( " " );
-//        Serial.print("\n\r");
+        tTrace = agora.timestamp + eeprom.dados.delayTrace;
+
+        if( eeprom.dados.trace & TRACE_AVISOS )
+        {
+             for( int i = 0;  i < nAvisos; i++ )
+             {
+                SERIALX.print("[");
+                SERIALX.print(i);
+                SERIALX.print("]");
+                avisos[i].print();
+                SERIALX.println();
+             }
+        }
+
+        bool androidGraphicsApp = ( eeprom.dados.trace & TRACE_ANDROID_GRAPHICS_APP );
+
+        if( androidGraphicsApp )
+        {
+            Serial.print( "E" );
+        }
+
+        if( eeprom.dados.trace & TRACE_ALTURA )
+        {
+            Serial.print( altura ); // Serial.print( agora.altitude - salto.decolagem.altitude, 2 );
+            Serial.print( androidGraphicsApp ? "," : " " );
+        }
+
+        if( eeprom.dados.trace & TRACE_ALTITUDE )
+        {
+            Serial.print( agora.altitude, 2 );
+            Serial.print( androidGraphicsApp ? "," : " " );
+        }
+
+        if( eeprom.dados.trace & TRACE_VELOCIDADE )
+        {
+            Serial.print( agora.velocidade, 2  );
+            Serial.print( androidGraphicsApp ? "," : " " );
+        }
+
+        if( eeprom.dados.trace & TRACE_SENSOR )
+        {
+            //Serial.print( sensor, 2  );
+            Serial.print( sensor - salto.decolagem.altitude, 2  );
+            Serial.print( androidGraphicsApp ? "," : " " );
+        }
+
+    //        Serial.print( deltaT * 1000 );
+    //        Serial.print( circular10.media() , 2  );
+    //        Serial.print( circular10.media() - decolagem.altitude, 2  );
+    //        Serial.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
+    //        Serial.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
+    //        Serial.print( circular1s.media() , 2 );
+    //        Serial.print( circular1s.media() - salto.decolagem.altitude, 2 );
+    //        Serial.print( circular1s.desvio(), 2 );
+
         Serial.println();
     }
 

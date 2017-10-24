@@ -6,20 +6,9 @@
 
 #include "matematica.h"
 
-typedef enum
-{
-    SUCESSO = 0,
-    SKIP,
-    ERRO_INTERPRETADOR,
-    ERRO_VAR_ARRAY,
-    ERRO_VAR_EXISTE,
-    ERRO_VAR_INVALIDA
-}
-Erros;
-
 void printErro( int err )
 {
-    SERIALX.print( "Erro: ");
+    SERIALX.print( "Erro ");
     SERIALX.println( err );
 }
 
@@ -32,12 +21,6 @@ typedef enum
     VAR_FIXO,   // 16.16
     VAR_BOOL,
     VAR_DOUBLE
-/*    ,
-    VAR_PID,    // ConfigPID
-    VAR_SENSOR, // ConfigSensor
-    VAR_MOTOR,  // ConfigMotor
-    VAR_GAMEPAD // ConfigGamepad
-*/
 }
 TipoVariavel;
 
@@ -112,6 +95,8 @@ public:
     {
         switch( tipo )
         {
+        case VAR_CHAR:
+            return *((char*)dados);
         case VAR_INT:
             return *((int*)dados);
         case VAR_LONG:
@@ -121,9 +106,7 @@ public:
         case VAR_BOOL:
             return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
-            return (int) *((double*)dados);
-        default:
-            break;
+            return *((double*)dados);
         }
         return 0;
     }
@@ -132,6 +115,8 @@ public:
     {
         switch( tipo )
         {
+        case VAR_CHAR:
+            return *((char*)dados);
         case VAR_INT:
             return *((int*)dados);
         case VAR_LONG:
@@ -141,21 +126,14 @@ public:
         case VAR_BOOL:
             return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
-            return (long) *((double*)dados);
-        default:
-            break;
+            return *((double*)dados);
         }
         return 0;
     }
-/*
-    void* getMembro( char* membro )
+
+    Fixo getFixo() const
     {
-        return dados;
-    }
-*/
-    Fixo getFixo( char* membro = NULL ) const
-    {
-        void* var = dados; //getMembro( membro );
+        void* var = dados;
         Fixo retorno;
 
         switch( tipo )
@@ -166,11 +144,35 @@ public:
             retorno = (int)*((long*)var);
         case VAR_FIXO:
             retorno = *((Fixo*)var);
+        case VAR_BOOL:
+            retorno.setInt( *((bool*)dados) ? 1 : 0 );
+        case VAR_DOUBLE:
+            retorno.setFloat( *((double*)dados) );
         default:
             break;
         }
 
         return retorno;
+    }
+
+    double getDouble() const
+    {
+        switch( tipo )
+        {
+        case VAR_CHAR:
+            return *((char*)dados);
+        case VAR_INT:
+            return *((int*)dados);
+        case VAR_LONG:
+            return *((long*)dados);
+        case VAR_FIXO:
+            return ((Fixo*)dados)->getFloat();
+        case VAR_BOOL:
+            return *((bool*)dados) ? 1 : 0;
+        case VAR_DOUBLE:
+            return *((double*)dados);
+        }
+        return 0;
     }
 
     Variavel& operator+=( const Variavel& var )
@@ -185,6 +187,9 @@ public:
             break;
         case VAR_FIXO:
             ((Fixo*)dados)->operator+=(var.getFixo());
+            break;
+        case VAR_DOUBLE:
+            *((double*)dados) += var.getDouble();
             break;
         default:
             break;
@@ -205,6 +210,9 @@ public:
         case VAR_FIXO:
             ((Fixo*)dados)->operator-=(var.getFixo());
             break;
+        case VAR_DOUBLE:
+            *((double*)dados) -= var.getDouble();
+            break;
         default:
             break;
         }
@@ -224,6 +232,9 @@ public:
         case VAR_FIXO:
             ((Fixo*)dados)->operator*=(var.getFixo());
             break;
+        case VAR_DOUBLE:
+            *((double*)dados) *= var.getDouble();
+            break;
         default:
             break;
         }
@@ -242,6 +253,9 @@ public:
             break;
         case VAR_FIXO:
             ((Fixo*)dados)->operator/=(var.getFixo());
+            break;
+        case VAR_DOUBLE:
+            *((double*)dados) /= var.getDouble();
             break;
         default:
             break;
@@ -264,6 +278,9 @@ public:
             break;
         case VAR_FIXO:
             ((Fixo*)dados)->setLong( - ((Fixo*)dados)->getLong() );
+            break;
+        case VAR_DOUBLE:
+            *((double*)dados) = - (*((double*)dados));
             break;
         default:
             break;
@@ -290,6 +307,9 @@ public:
         case VAR_BOOL:
             *( (bool*) dados ) = v.getInt();
             return SUCESSO;
+        case VAR_DOUBLE:
+            *( (double*) dados ) = v.getDouble();
+            return SUCESSO;
         default:
             break;
         }
@@ -315,8 +335,9 @@ public:
         case VAR_BOOL:
             *( (bool*) dados ) = atoi( str );
             break;
-        default:
-            return ERRO_INTERPRETADOR;
+        case VAR_DOUBLE:
+            *( (double*) dados ) = atof( str );
+            break;
         }
         return SUCESSO;
     }
@@ -340,7 +361,8 @@ public:
         case VAR_BOOL:
             SERIALX.print( (bool) *( (bool*) dados ) );
             break;
-        default:
+        case VAR_DOUBLE:
+            SERIALX.print( (double) *( (double*) dados ), 5 );
             break;
         }
     }
@@ -390,7 +412,7 @@ public:
             return NULL;
         }
 
-        if( ! ( nvars < NUM_VARS-1 ) )
+        if( nvars >= NUM_VARS )
         {
             printErro( ERRO_VAR_ARRAY );
             return NULL;
@@ -426,8 +448,8 @@ public:
         #endif
 
         Erros rc = SUCESSO;
-        Fixo res;
-        Variavel resultado( VAR_FIXO, "ans", (void*) &res );
+        double res;
+        Variavel resultado( VAR_DOUBLE, "ans", (void*) &res );
         eco = true;
 
         linha = lnh;
@@ -500,209 +522,8 @@ public:
         }
     }
 
-    Erros evalHardCoded( Variavel* resultado )
-    {
-        #ifdef TRACE_INTERPRETADOR
-            SERIALX.print( "evalHardCoded( " );
-            SERIALX.print( token );
-            SERIALX.println( " )" );
-        #endif
+    Erros evalHardCoded( Variavel* resultado );
 
-        Erros rc = SUCESSO;
-/*
-        char dest[TAM_TOKEN];
-        strcpy( dest, token );
-
-        eco=false;
-
-        if( 0 == strncmp( token, CMD_GRAVA, TAM_TOKEN )  )	        // salva EEPROM
-            eeprom.save();
-        else if( 0 == strncmp( token, CMD_CARREGA, TAM_TOKEN ) )    // descarta mudancas e recarrega da EEPROM
-            eeprom.load();
-        else if( 0 == strncmp( token, CMD_DEFAULT, TAM_TOKEN ) )    // hard-coded
-            eeprom.defaults();
-        else if( 0 == strncmp( token, CMD_CAL, TAM_TOKEN ) )        // entra no modo autocalibracao de joystick
-            gamepad.calibrar();
-        else if( 0 == strncmp( token, CMD_CENTRO, TAM_TOKEN ) )     // sai do modo de autocalibracao e centra joystick
-            gamepad.centrar();
-        else if( 0 == strncmp( token, CMD_STATUS, TAM_TOKEN ) )
-            enviaStatus();
-        else if( 0 == strncmp( token, CMD_UNAME, TAM_TOKEN ) )
-            uname();
-        #ifndef SEM_LINE_FOLLOWER
-        else if( 0 == strncmp( token, CMD_LF_CAL, TAM_TOKEN ) )     // calibra sensores do line follower
-            lineFollower.calibrar();
-        else if( 0 == strncmp( token, CMD_LF, TAM_TOKEN ) )
-            lineFollower.iniciarCorrida();
-        #endif
-        else if( 0 == strncmp( token, NOME_AS, TAM_TOKEN ) )
-            enviaSensores(true);
-        else if( 0 == strncmp( token, CMD_MV_PARAR, TAM_TOKEN ) )
-        {
-            eeprom.dados.programa = DFT_PROGRAMA;
-            resetPrg = true;
-
-            drive.parar();
-            #ifdef RODAS_PWM_x4
-                drive2.parar();
-            #endif
-        }
-        else if( 0 == strncmp( token, NOME_RODA_ESQ, TAM_TOKEN ) )
-        {
-            getToken();
-
-            if( token[0] == '=' )
-            {
-                getToken();
-
-                if( SUCESSO == ( rc = evalExpressao( resultado ) ) )
-                    drive.motorEsq.move( resultado->getInt() );
-            }
-            else
-            {
-                SERIALX.print( dest );          // ecoa nome da variavel
-                SERIALX.print(" = ");
-                SERIALX.println(drive.motorEsq.getAtual());
-            }
-        }
-        else if( 0 == strncmp( token, NOME_RODA_DIR, TAM_TOKEN ) )
-        {
-            getToken();
-
-            if( token[0] == '=' )
-            {
-                getToken();
-
-                if( SUCESSO == ( rc = evalExpressao( resultado ) ) )
-                    drive.motorDir.move( resultado->getInt() );
-            }
-            else
-            {
-                SERIALX.print( dest );          // ecoa nome da variavel
-                SERIALX.print(" = ");
-                SERIALX.println(drive.motorDir.getAtual());
-            }
-        }
-        else if( 0 == strncmp( token, CMD_MV_RODAS, TAM_TOKEN ) )
-        {
-            getToken();
-
-            if( SUCESSO == ( rc = evalExpressao( resultado ) ) )
-            {
-                int lw = resultado->getInt();
-
-                if( SUCESSO == ( rc = evalExpressao( resultado ) ) )
-                {
-                    drive.motorEsq.move(lw);
-                    drive.motorDir.move(resultado->getInt());
-                }
-            }
-        }
-        else if( 0 == strncmp( token, CMD_MV_VET, TAM_TOKEN ) )
-        {
-            eeprom.dados.programa = PRG_RC_SERIAL;
-            Vetor2i direcao;
-
-//            if ((tok = STRTOK(NULL, " ")))			// segundo token eh o percentual de potencia p/ eixo X
-//            {
-//                direcao.x = atoi(tok);
-//                if ((tok = STRTOK(NULL, " ")))		// terceiro token eh o percentual de potencia p/ eixo Y
-//                {
-//                    direcao.y = atoi(tok);
-//                    drive.vetorial( direcao );
-//                    #ifdef RODAS_PWM_x4
-//                        if ((tok = STRTOK(NULL, " ")))  // quarto token eh o percentual de potencia p/ eixo X
-//                        {
-//                            direcao.x = atoi(tok);
-//                            if ((tok = STRTOK(NULL, " ")))// quinto token eh o percentual de potencia p/ eixo Y
-//                            {
-//                                direcao.y = atoi(tok);
-//                                drive2.vetorial( direcao );
-//                            }
-//                        }
-//                    #endif
-//                }
-//            }
-
-        }
-        else if( 0 == strncmp( token, CMD_BIP, TAM_TOKEN ) )
-        {
-            #ifdef PINO_BIP
-//                tok = STRTOK(NULL, " ");
-//                if (tok)			        // frequencia
-//                {
-//                    int hz = atoi(tok);
-//                    tok = STRTOK(NULL, " ");
-//                    if (tok)                // duracao
-//                        BIP(hz, atoi(tok));
-//                    else
-//                        BIP(hz, 200);
-//                }
-            #endif
-        }
-        else if( 0 == strncmp( token, CMD_JOYPAD, TAM_TOKEN ) )
-        {
-            int temp;
-
-            // segundo token eh o status dos botoes
-            getToken();
-            if( SUCESSO == getInt( &temp ) )
-            {
-                // gambi
-                if( gamepad.tipo != ConfigGamepad::TIPO_PC  )
-                {
-                    gamepad.setConfig( &eeprom.dados.joyPC );
-                }
-
-                gamepad.refreshBotoes( temp );
-
-                // terceiro token eh o eixo X
-                if( SUCESSO == getInt( &temp ) )
-                {
-                    gamepad.x.setValor( temp );
-
-                    // quarto token eh o eixo Y
-                    if( SUCESSO == getInt( &temp ) )
-                    {
-                        gamepad.y.setValor( temp );
-
-                        // quinto token eh o eixo Z
-                        if( SUCESSO == getInt( &temp ) )
-                        {
-                            gamepad.z.setValor( temp );
-
-                            // sexto token eh o eixo Rudder
-                            if( SUCESSO == getInt( &temp ) )
-                                gamepad.r.setValor( temp );
-                        }
-                    }
-                }
-            }
-            else
-                enviaJoystick();
-        }
-        else if( 0 == strncmp( token, CMD_WHO, TAM_TOKEN ) )
-        {
-            for( int i = 0 ; i < nvars ; i++ )
-            {
-                SERIALX.println( var[i].nome );
-            }
-        }
-        else
-        {
-            eco = true;
-            rc = SKIP;
-        }
-*/
-        #ifdef TRACE_INTERPRETADOR
-//        if( SUCESSO == rc )
-//            SERIALX.println( " exec ok" );
-//        else
-//            SERIALX.println( " nope" );
-        #endif
-
-        return rc;
-    }
 private:
 
     char *linha;
@@ -739,8 +560,8 @@ private:
         char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '+' || op == '-' ) )
         {
-            Fixo res;
-            Variavel temp( VAR_FIXO, "tmp", &res );
+            double res;
+            Variavel temp( VAR_DOUBLE, "tmp", &res );
 
             getToken();
 
@@ -777,8 +598,8 @@ private:
         char op;
         while( rc == SUCESSO && ( ( op = token[0] ) == '*' || op == '/' ) )
         {
-            Fixo res;
-            Variavel temp( VAR_FIXO, "tmp", &res );
+            double res;
+            Variavel temp( VAR_DOUBLE, "tmp", &res );
 
             getToken();
 

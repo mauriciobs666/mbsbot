@@ -2725,7 +2725,6 @@ void setup()
 
     uname();
 
-    //eeprom.defaults();
     eeprom.load();
 
     drive.motorEsq.init( &eeprom.dados.motorEsq );
