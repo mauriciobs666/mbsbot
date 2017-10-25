@@ -82,12 +82,127 @@ Interpretador interpretador;
 
 #endif
 
+class Eeprom
+{
+    int tamanhoBufSaltos;
+public:
+    struct Configuracao
+    {
+        char trace;
+        int delayTrace;
+        double alpha;
+        double beta;
+        double gama;
+    }
+    dados;
+
+    struct Caderneta
+    {
+        int numero;
+        int altitudeDZ;
+        int tempoSubida;
+        int alturaSaida;
+        int tempoQueda;
+        int velocidadeMaxQueda;
+        int alturaAbertura;
+        int tempoNavegacao;
+        int velocidadeMaxNavegacao;
+
+        void print()
+        {
+            SERIALX.print( "#" );
+            SERIALX.print( numero );
+            SERIALX.print( " alt=" );
+            SERIALX.print( altitudeDZ );
+            SERIALX.print( " sub=" );
+            SERIALX.print( tempoSubida );
+            SERIALX.print( " ps=" );
+            SERIALX.print( alturaSaida );
+            SERIALX.print( " tql=" );
+            SERIALX.print( tempoQueda );
+            SERIALX.print( " vmq=" );
+            SERIALX.print( velocidadeMaxQueda );
+            SERIALX.print( " opn=" );
+            SERIALX.print( alturaAbertura );
+            SERIALX.print( " tnav=" );
+            SERIALX.print( tempoNavegacao );
+            SERIALX.print( " vmn=" );
+            SERIALX.println( velocidadeMaxNavegacao );
+        }
+
+        void limpa()
+        {
+            numero = altitudeDZ = tempoSubida = alturaSaida = tempoQueda = 0;
+            velocidadeMaxQueda = alturaAbertura = tempoNavegacao = velocidadeMaxNavegacao = 0;
+        }
+    };
+
+    int init()
+    {
+        int carregados = carrega();
+
+        int e2len = EEPROM.length();
+        tamanhoBufSaltos = ( e2len - sizeof( Configuracao ) ) / sizeof( Caderneta );
+
+        SERIALX.print( "E2 sz=" );
+        SERIALX.print( e2len );
+        SERIALX.print( "B cfg=" );
+        SERIALX.print( carregados );
+        SERIALX.print( "B disp=" );
+        SERIALX.println( tamanhoBufSaltos );
+    }
+
+    int insere( struct Caderneta *salto )
+    {
+        struct Caderneta tmp;
+
+        int endereco = sizeof( Configuracao );
+
+        for( int busca = 0; busca < tamanhoBufSaltos; busca++, endereco+=sizeof(Caderneta) )
+        {
+            EEPROM.get( endereco, tmp );
+
+        }
+    }
+
+    int limpa( int nProximoSalto )
+    {
+
+    }
+
+    int carrega()
+    {
+        unsigned int addr = 0;
+        char * dest = (char*) &dados;
+        for( ; addr < sizeof(dados); addr++, dest++ )
+            *dest = eeprom_read_byte(( unsigned char * ) addr );
+        return addr;
+    }
+
+    void salva()
+    {
+        char * dest = (char*) &dados;
+        for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
+            eeprom_write_byte(( unsigned char  *) addr, *dest);
+    }
+
+    void defaults()
+    {
+        dados.trace = TRACE;
+        dados.delayTrace = DFT_DELAY_TRACE;
+        dados.alpha = 0.1;
+        dados.beta = 0.001;
+    }
+}
+eeprom;
+
 class Ponto
 {
 public:
     Ponto() : altitude(0),
-              velocidade(0),
-              timestamp(0) {}
+              velocidade(0.0),
+              timestamp(0.0),
+              aceleracao(0.0) {}
 
     unsigned long timestamp;
     double altitude;
@@ -188,7 +303,7 @@ Aviso avisos[] =
 
 const unsigned int nAvisos = ( sizeof(avisos)/sizeof(avisos[0]) );
 
-typedef struct
+class Salto
 {
 public:
     char estado;
@@ -197,10 +312,34 @@ public:
     Ponto saida;
     Ponto abertura;
     Ponto pouso;
+    Eeprom::Caderneta anotacao;
 
     void trocaEstado( char novoEstado )
     {
         estado = novoEstado;
+
+        tocadorToneAC.limpa();
+        tocadorToneAC.bipe( );
+
+        switch( estado )
+        {
+        case ESTADO_SUBIDA:
+            anotacao.altitudeDZ = decolagem.altitude;
+            break;
+        case ESTADO_QUEDA:
+            anotacao.alturaSaida = saida.altitude - decolagem.altitude;
+            anotacao.tempoSubida = ( saida.timestamp - decolagem.timestamp ) / 1000;
+            break;
+        case ESTADO_NAVEGACAO:
+            anotacao.alturaAbertura = abertura.altitude - decolagem.altitude;
+            anotacao.tempoQueda = ( abertura.timestamp - saida.timestamp ) / 1000;
+            break;
+        case ESTADO_DZ:
+            anotacao.tempoNavegacao = ( pouso.timestamp - abertura.timestamp ) / 1000;
+            break;
+        }
+
+        anotacao.print();
     }
 
     void limpa()
@@ -212,94 +351,7 @@ public:
         pouso.limpa();
     }
 }
-Salto;
-
-Salto salto;
-
-class Eeprom
-{
-    int tamanhoBufSaltos;
-public:
-    struct Configuracao
-    {
-        char trace;
-        int delayTrace;
-        double alpha;
-        double beta;
-    }
-    dados;
-
-    struct Caderneta
-    {
-        int numero;
-        int altitudeDZ;
-        int tempoSubida;
-        int alturaSaida;
-        int tempoQueda;
-        int velocidadeMaxQueda;
-        int alturaAbertura;
-        int tempoNavegacao;
-        int velocidadeMaxNavegacao;
-    };
-
-    int init()
-    {
-        int carregados = carrega();
-
-        int e2len = EEPROM.length();
-        tamanhoBufSaltos = ( e2len - sizeof( Configuracao ) ) / sizeof( Caderneta );
-
-        SERIALX.print( "E2 sz=" );
-        SERIALX.print( e2len );
-        SERIALX.print( "B cfg=" );
-        SERIALX.print( carregados );
-        SERIALX.print( "B disp=" );
-        SERIALX.println( tamanhoBufSaltos );
-    }
-
-    int insere( struct Caderneta *salto )
-    {
-        struct Caderneta tmp;
-
-        int endereco = sizeof( Configuracao );
-
-        for( int busca = 0; busca < tamanhoBufSaltos; busca++, endereco+=sizeof(Caderneta) )
-        {
-            EEPROM.get( endereco, tmp );
-
-        }
-    }
-
-    int limpa( int nProximoSalto )
-    {
-
-    }
-
-    int carrega()
-    {
-        unsigned int addr = 0;
-        char * dest = (char*) &dados;
-        for( ; addr < sizeof(dados); addr++, dest++ )
-            *dest = eeprom_read_byte(( unsigned char * ) addr );
-        return addr;
-    }
-
-    void salva()
-    {
-        char * dest = (char*) &dados;
-        for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
-            eeprom_write_byte(( unsigned char  *) addr, *dest);
-    }
-
-    void defaults()
-    {
-        dados.trace = TRACE;
-        dados.delayTrace = DFT_DELAY_TRACE;
-        dados.alpha = 0.1;
-        dados.beta = 0.001;
-    }
-}
-eeprom;
+salto;
 
 CircularStats<double,30> circular1s;        // ultimas 30 leituras ( ~1 segundo )
 CircularStats<double,10> circular10;        // medias dos ultimos 10 segundos
@@ -308,6 +360,7 @@ CircularStats<double,10> circular10media;   // delay line das medias dos ultimos
 unsigned long tUmSegundo = 0;
 unsigned long tTrace = 0;
 unsigned long debounceAbertura = 0;
+unsigned long debouncePouso = 0;
 int contadorLoop = 0;
 int loopsSeg = 0;
 
@@ -498,11 +551,11 @@ void loop()
             salto.decolagem.timestamp = agora.timestamp;
             salto.decolagem.velocidade = agora.velocidade;
 
+            salto.anotacao.limpa();
+
             // reset alarmes
             for( int i = 0; i < nAvisos ; i++ )
                 avisos[i].atingido = 0;
-
-            tocadorToneAC.bipe( );
 
             salto.trocaEstado( ESTADO_SUBIDA );
         }
@@ -514,9 +567,6 @@ void loop()
             salto.saida.altitude = *circular10media.topo();
             salto.saida.timestamp = agora.timestamp;
 
-            tocadorToneAC.limpa();
-            tocadorToneAC.bipe( 2 );
-
             salto.trocaEstado( ESTADO_QUEDA );
         }
         else if( agora.velocidade < -2 ) // abertura subterminal
@@ -525,9 +575,6 @@ void loop()
             {
                 salto.abertura.altitude = circular1s.media();
                 salto.abertura.timestamp = agora.timestamp;
-
-                tocadorToneAC.limpa();
-                tocadorToneAC.bipe( 3 );
 
                 salto.trocaEstado( ESTADO_NAVEGACAO );
             }
@@ -544,8 +591,7 @@ void loop()
             salto.abertura.altitude = circular1s.media();
             salto.abertura.timestamp = agora.timestamp;
 
-            tocadorToneAC.limpa();
-            tocadorToneAC.bipe( 3 );
+            debouncePouso = agora.timestamp + 10000;
 
             salto.trocaEstado( ESTADO_NAVEGACAO );
         }
@@ -554,10 +600,21 @@ void loop()
     case ESTADO_NAVEGACAO:
         if( agora.velocidade < THRESHOLD_QUEDA )
         {
-            tocadorToneAC.limpa();
-            tocadorToneAC.bipe( 2 );
-
             salto.trocaEstado( ESTADO_QUEDA );
+        }
+        else if( agora.velocidade > -2 && agora.velocidade < 2) // pouso
+        {
+            if( debouncePouso && debouncePouso < agora.timestamp )
+            {
+                salto.pouso.altitude = *circular10media.topo();
+                salto.pouso.timestamp = agora.timestamp - 10000;
+
+                salto.trocaEstado( ESTADO_DZ );
+            }
+        }
+        else
+        {
+            debouncePouso = agora.timestamp + 10000;
         }
         break;
     }
