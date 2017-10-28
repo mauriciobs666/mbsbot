@@ -62,6 +62,9 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define CMD_BIP "bip"
 /* CMD_BIP [Hz] [ms] */
 
+#define CMD_DUMP "dmp"
+#define CMD_CLEAR "clr"
+
 #define CMD_WHO "who"
 /* mostra lista de variaveis */
 

@@ -78,7 +78,7 @@ Interpretador interpretador;
 #define AVISO_NAVEGACAO_C       24
 #define AVISO_NAVEGACAO_D       36
 
-#define TRACE ( TRACE_ALTITUDE | TRACE_MASTER_EN )
+#define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR | TRACE_ALTURA | TRACE_VELOCIDADE )
 
 #endif
 
@@ -156,18 +156,56 @@ public:
     {
         struct Caderneta tmp;
 
-        int endereco = sizeof( Configuracao );
+        int endereco = sizeof( dados ); // layout: alocado logo apos a membro dados
 
-        for( int busca = 0; busca < tamanhoBufSaltos; busca++, endereco+=sizeof(Caderneta) )
+        int iter = 0;
+
+        for( ; iter < tamanhoBufSaltos; iter++, endereco += sizeof( Caderneta ) )
         {
             EEPROM.get( endereco, tmp );
 
+            if( tmp.numero < 0 )
+            {
+                salto->numero = -tmp.numero;
+                EEPROM.put( endereco, *salto );
+                break;
+            }
+        }
+
+        if( iter < tamanhoBufSaltos )
+        {
+            tmp.numero--;
+
+            if( iter+1 >= tamanhoBufSaltos )
+                endereco = sizeof( dados );
+            else
+                endereco += sizeof( Caderneta );
+
+            EEPROM.put( endereco, tmp );
+        }
+    }
+
+    int dump()
+    {
+        struct Caderneta tmp;
+
+        int endereco = sizeof( dados ); // layout: alocado logo apos a membro dados
+
+        for( int iter = 0; iter < tamanhoBufSaltos; iter++, endereco += sizeof( Caderneta ) )
+        {
+            EEPROM.get( endereco, tmp );
+            tmp.print();
         }
     }
 
     int limpa( int nProximoSalto )
     {
+        struct Caderneta tmp;
 
+        tmp.limpa();
+        tmp.numero = -nProximoSalto;
+
+        EEPROM.put( sizeof(dados), tmp );
     }
 
     int carrega()
@@ -340,6 +378,8 @@ public:
         }
 
         anotacao.print();
+
+        eeprom.insere( &anotacao );
     }
 
     void limpa()
@@ -420,9 +460,10 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
         eeprom.carrega();
     else if( 0 == strncmp( token, CMD_DEFAULT, TAM_TOKEN ) )    // hard-coded
         eeprom.defaults();
-    else if( 0 == strncmp( token, CMD_BIP, TAM_TOKEN )  )
-    {
-    }
+    else if( 0 == strncmp( token, CMD_DUMP, TAM_TOKEN )  )
+        eeprom.dump();
+    else if( 0 == strncmp( token, CMD_CLEAR, TAM_TOKEN )  )
+        eeprom.limpa( 1 );
     else
     {
         eco = true;
@@ -523,7 +564,7 @@ void loop()
 //    p = ( 1 - ganho ) * p;
 //    circular1s.insere( agora.altitude );
 
-    circular1s.insere( sensor );
+    circular1s.insere( agora.altitude );
 
     contadorLoop++;
 
@@ -602,7 +643,7 @@ void loop()
         {
             salto.trocaEstado( ESTADO_QUEDA );
         }
-        else if( agora.velocidade > -2 && agora.velocidade < 2) // pouso
+        else if( agora.velocidade > -2 && agora.velocidade < 2 ) // pouso
         {
             if( debouncePouso && debouncePouso < agora.timestamp )
             {
@@ -696,7 +737,7 @@ void loop()
 
         if( eeprom.dados.trace & TRACE_ALTURA )
         {
-            Serial.print( altura ); // Serial.print( agora.altitude - salto.decolagem.altitude, 2 );
+            Serial.print( agora.altitude - salto.decolagem.altitude, 2 ); // Serial.print( altura );
             Serial.print( androidGraphicsApp ? "," : " " );
         }
 
