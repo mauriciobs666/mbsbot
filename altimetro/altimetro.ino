@@ -43,7 +43,7 @@ Interpretador interpretador;
 #define THRESHOLD_ABERTURA  -60.0 // pes/s
 
 #define AVISO_SUBIDA_CINTO  1500
-#define AVISO_SUBIDA_CHECK 11500
+#define AVISO_SUBIDA_CHECK 12000
 
 #define AVISO_ALTA_1    6500
 #define AVISO_ALTA_2    5500
@@ -156,7 +156,7 @@ public:
     {
         struct Caderneta tmp;
 
-        int endereco = sizeof( dados ); // layout: alocado logo apos a membro dados
+        int endereco = sizeof( dados ); // layout: alocado na E2 logo apos a membro dados
 
         int iter = 0;
 
@@ -164,25 +164,49 @@ public:
         {
             EEPROM.get( endereco, tmp );
 
-            if( tmp.numero < 0 )
+            if( salto->numero > 0 )
             {
+                // update
+                if( salto->numero == tmp.numero )
+                {
+                    tmp.numero = -salto->numero;
+                    EEPROM.put( endereco, *salto );
+                    break;
+                }
+            }
+            else if( tmp.numero < 0 )
+            {
+                // insere em posicao vazia
                 salto->numero = -tmp.numero;
                 EEPROM.put( endereco, *salto );
                 break;
             }
         }
 
-        if( iter < tamanhoBufSaltos )
+        if( iter >= tamanhoBufSaltos )
         {
-            tmp.numero--;
+            // limpa
+            iter = 0;
+            endereco = sizeof( dados );
 
-            if( iter+1 >= tamanhoBufSaltos )
-                endereco = sizeof( dados );
-            else
-                endereco += sizeof( Caderneta );
+            if( salto->numero == 0 )
+                salto->numero = 1;
 
-            EEPROM.put( endereco, tmp );
+            tmp.numero = -salto->numero;
+
+            EEPROM.put( endereco, *salto );
         }
+
+        // prepara proximo salto
+
+        tmp.numero--;
+
+        if( iter+1 >= tamanhoBufSaltos )
+            endereco = sizeof( dados );
+        else
+            endereco += sizeof( Caderneta );
+
+        EEPROM.put( endereco, tmp );
     }
 
     int dump()
@@ -462,8 +486,22 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
         eeprom.defaults();
     else if( 0 == strncmp( token, CMD_DUMP, TAM_TOKEN )  )
         eeprom.dump();
+    else if( 0 == strncmp( token, CMD_RESET, TAM_TOKEN )  )
+    {
+        salto.estado = ESTADO_DZ;
+    }
     else if( 0 == strncmp( token, CMD_CLEAR, TAM_TOKEN )  )
-        eeprom.limpa( 1 );
+    {
+        int temp = 1;
+
+        // segundo token eh o numero do proximo salto
+        if( getToken() == NUMERO )
+        {
+            getInt( &temp );
+        }
+
+        eeprom.limpa( temp );
+    }
     else
     {
         eco = true;
@@ -605,15 +643,26 @@ void loop()
     case ESTADO_SUBIDA:
         if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
         {
+            debounceAbertura = 0;
+
             salto.saida.altitude = *circular10media.topo();
             salto.saida.timestamp = agora.timestamp;
 
             salto.trocaEstado( ESTADO_QUEDA );
         }
-        else if( agora.velocidade < -2 ) // abertura subterminal
+        else if( agora.velocidade < -3 ) // abertura subterminal
         {
-            if( debounceAbertura && debounceAbertura < agora.timestamp )
+            if( debounceAbertura == 0 )
             {
+                debounceAbertura = agora.timestamp + 10000;
+            }
+            else if( debounceAbertura < agora.timestamp )
+            {
+                debounceAbertura = 0;
+
+                salto.saida.altitude = *circular10media.topo();
+                salto.saida.timestamp = agora.timestamp - 10000;
+
                 salto.abertura.altitude = circular1s.media();
                 salto.abertura.timestamp = agora.timestamp;
 
@@ -622,7 +671,7 @@ void loop()
         }
         else // subindo ou estavel
         {
-            debounceAbertura = agora.timestamp + 10000;
+            debounceAbertura = 0;
         }
         break;
 
@@ -631,8 +680,6 @@ void loop()
         {
             salto.abertura.altitude = circular1s.media();
             salto.abertura.timestamp = agora.timestamp;
-
-            debouncePouso = agora.timestamp + 10000;
 
             salto.trocaEstado( ESTADO_NAVEGACAO );
         }
@@ -643,10 +690,17 @@ void loop()
         {
             salto.trocaEstado( ESTADO_QUEDA );
         }
-        else if( agora.velocidade > -2 && agora.velocidade < 2 ) // pouso
+        //else if( agora.velocidade > -2 && agora.velocidade < 2 ) // pouso
+        else if( fabs( agora.velocidade ) < 2 ) // pouso
         {
-            if( debouncePouso && debouncePouso < agora.timestamp )
+            if( debouncePouso == 0)
             {
+                debouncePouso = agora.timestamp + 10000;
+            }
+            else if ( debouncePouso < agora.timestamp )
+            {
+                debouncePouso = 0;
+
                 salto.pouso.altitude = *circular10media.topo();
                 salto.pouso.timestamp = agora.timestamp - 10000;
 
@@ -655,7 +709,7 @@ void loop()
         }
         else
         {
-            debouncePouso = agora.timestamp + 10000;
+            debouncePouso = 0;
         }
         break;
     }
