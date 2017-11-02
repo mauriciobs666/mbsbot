@@ -6,7 +6,8 @@
 #include <EEPROM.h>
 
 #define BMP180
-#define DEBUG 1
+
+//#define DEBUG 1
 
 #include "impressora.hpp"
 
@@ -41,6 +42,7 @@ Interpretador interpretador;
 #define THRESHOLD_DECOLAGEM   6.0 // pes/s
 #define THRESHOLD_QUEDA    -150.0 // pes/s
 #define THRESHOLD_ABERTURA  -60.0 // pes/s
+#define THRESHOLD_POUSO       0.5
 
 #define AVISO_SUBIDA_CINTO  1500
 #define AVISO_SUBIDA_CHECK 12000
@@ -64,6 +66,7 @@ Interpretador interpretador;
 #define THRESHOLD_DECOLAGEM  0.8
 #define THRESHOLD_QUEDA     -0.8
 #define THRESHOLD_ABERTURA   0.8
+#define THRESHOLD_POUSO      0.5
 
 #define AVISO_SUBIDA_CINTO  6
 #define AVISO_SUBIDA_CHECK 12
@@ -276,6 +279,11 @@ public:
         timestamp = 0;
         altitude = velocidade = aceleracao = 0.0;
     }
+
+    void print()
+    {
+
+    }
 }
 antes, agora;
 
@@ -332,7 +340,7 @@ typedef struct
                 break;
 
             case TipoAviso::SIRENE:
-                repeticoes+=7;
+                repeticoes+=4;
             case TipoAviso::SIRENE_TRIPLO: //fall trough
                 repeticoes++;
             case TipoAviso::SIRENE_DUPLO:  //fall trough
@@ -401,7 +409,13 @@ public:
             break;
         }
 
-        anotacao.print();
+        if( eeprom.dados.trace & ( TRACE_AVISOS | TRACE_MASTER_EN ) )
+        {
+            SERIALX.print("<");
+            SERIALX.print( (int) estado );
+            SERIALX.print(">");
+            anotacao.print();
+        }
 
         eeprom.insere( &anotacao );
     }
@@ -413,6 +427,7 @@ public:
         saida.limpa();
         abertura.limpa();
         pouso.limpa();
+        anotacao.limpa();
     }
 }
 salto;
@@ -486,6 +501,19 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
         eeprom.defaults();
     else if( 0 == strncmp( token, CMD_DUMP, TAM_TOKEN )  )
         eeprom.dump();
+    else if( 0 == strncmp( token, CMD_UNAME, TAM_TOKEN )  )
+        eeprom.dump();
+    else if( 0 == strncmp( token, CMD_BIP, TAM_TOKEN )  )
+    {
+        int n = 1;
+
+        if( getToken() == NUMERO )
+        {
+            getInt( &n );
+        }
+
+        tocadorToneAC.bipe( n );
+    }
     else if( 0 == strncmp( token, CMD_RESET, TAM_TOKEN )  )
     {
         salto.estado = ESTADO_DZ;
@@ -501,6 +529,17 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
         }
 
         eeprom.limpa( temp );
+    }
+    else if( 0 == strncmp( token, CMD_AVISOS, TAM_TOKEN )  )
+    {
+        for( int i = 0;  i < nAvisos; i++ )
+        {
+            SERIALX.print("[");
+            SERIALX.print(i);
+            SERIALX.print("]");
+            avisos[i].print();
+            SERIALX.println();
+        }
     }
     else
     {
@@ -628,7 +667,9 @@ void loop()
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
             salto.decolagem.timestamp = agora.timestamp;
-            salto.decolagem.velocidade = agora.velocidade;
+
+            debounceAbertura = 0;
+            debouncePouso = 0;
 
             salto.anotacao.limpa();
 
@@ -690,8 +731,7 @@ void loop()
         {
             salto.trocaEstado( ESTADO_QUEDA );
         }
-        //else if( agora.velocidade > -2 && agora.velocidade < 2 ) // pouso
-        else if( fabs( agora.velocidade ) < 2 ) // pouso
+        else if( fabs( agora.velocidade ) < THRESHOLD_POUSO ) // pouso
         {
             if( debouncePouso == 0)
             {
@@ -705,6 +745,8 @@ void loop()
                 salto.pouso.timestamp = agora.timestamp - 10000;
 
                 salto.trocaEstado( ESTADO_DZ );
+
+                salto.estado = ESTADO_NAVEGACAO; // rollback
             }
         }
         else
@@ -729,6 +771,17 @@ void loop()
                 {
                     avisos[i].atingido = agora.timestamp;
                     avisos[i].tocar();
+
+                    if( eeprom.dados.trace & ( TRACE_AVISOS | TRACE_MASTER_EN ) )
+                    {
+                        SERIALX.print("[");
+                        SERIALX.print(i);
+                        SERIALX.print("]<");
+                        SERIALX.print( (int) salto.estado );
+                        SERIALX.print(">");
+                        avisos[i].print();
+                        SERIALX.println();
+                    }
                 }
             }
         }
@@ -770,19 +823,8 @@ void loop()
     {
         tTrace = agora.timestamp + eeprom.dados.delayTrace;
 
-        if( eeprom.dados.trace & TRACE_AVISOS )
-        {
-             for( int i = 0;  i < nAvisos; i++ )
-             {
-                SERIALX.print("[");
-                SERIALX.print(i);
-                SERIALX.print("]");
-                avisos[i].print();
-                SERIALX.println();
-             }
-        }
-
         bool androidGraphicsApp = ( eeprom.dados.trace & TRACE_ANDROID_GRAPHICS_APP );
+        bool qquerCoisa = false;
 
         if( androidGraphicsApp )
         {
@@ -791,27 +833,30 @@ void loop()
 
         if( eeprom.dados.trace & TRACE_ALTURA )
         {
+            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
             Serial.print( agora.altitude - salto.decolagem.altitude, 2 ); // Serial.print( altura );
-            Serial.print( androidGraphicsApp ? "," : " " );
+            qquerCoisa = true;
         }
 
         if( eeprom.dados.trace & TRACE_ALTITUDE )
         {
+            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
             Serial.print( agora.altitude, 2 );
-            Serial.print( androidGraphicsApp ? "," : " " );
+            qquerCoisa = true;
         }
 
         if( eeprom.dados.trace & TRACE_VELOCIDADE )
         {
+            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
             Serial.print( agora.velocidade, 2  );
-            Serial.print( androidGraphicsApp ? "," : " " );
+            qquerCoisa = true;
         }
 
         if( eeprom.dados.trace & TRACE_SENSOR )
         {
-            //Serial.print( sensor, 2  );
+            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
             Serial.print( sensor - salto.decolagem.altitude, 2  );
-            Serial.print( androidGraphicsApp ? "," : " " );
+            qquerCoisa = true;
         }
 
     //        Serial.print( deltaT * 1000 );
@@ -823,7 +868,8 @@ void loop()
     //        Serial.print( circular1s.media() - salto.decolagem.altitude, 2 );
     //        Serial.print( circular1s.desvio(), 2 );
 
-        Serial.println();
+        if( qquerCoisa )
+            Serial.println();
     }
 
     antes = agora;
