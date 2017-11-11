@@ -5,14 +5,31 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
+//#include <SPI.h>
+//#include <SD.h>
+//Sd2Card card;
+//SdVolume volume;
+//SdFile root;
+
 #define BMP180
 
 //#define DEBUG 1
 
-#include "impressora.hpp"
+#define SERIALX Serial
+#define SERIALX_SPD 115200
+
+#define DFT_DELAY_TRACE 100
+
+// mascara
+#define TRACE_MASTER_EN             0x01
+#define TRACE_SENSOR                0x02
+#define TRACE_ALTURA                0x04
+#define TRACE_VELOCIDADE            0x08
+#define TRACE_ALTITUDE              0x10
+#define TRACE_AVISOS                0x20
+#define TRACE_ANDROID_GRAPHICS_APP  0x40
 
 #include "circular.hpp"
-
 #include "tocador.hpp"
 TocadorToneAC tocadorToneAC;
 
@@ -115,21 +132,21 @@ public:
         {
             SERIALX.print( "#" );
             SERIALX.print( numero );
-            SERIALX.print( " alt=" );
+            SERIALX.print( " dz=" );
             SERIALX.print( altitudeDZ );
-            SERIALX.print( " sub=" );
+            SERIALX.print( " tSub=" );
             SERIALX.print( tempoSubida );
-            SERIALX.print( " ps=" );
+            SERIALX.print( "s ps=" );
             SERIALX.print( alturaSaida );
-            SERIALX.print( " tql=" );
+            SERIALX.print( "agl tQL=" );
             SERIALX.print( tempoQueda );
-            SERIALX.print( " vmq=" );
+            SERIALX.print( "s maxQL=" );
             SERIALX.print( velocidadeMaxQueda );
-            SERIALX.print( " opn=" );
+            SERIALX.print( "km/h hCmd=" );
             SERIALX.print( alturaAbertura );
-            SERIALX.print( " tnav=" );
+            SERIALX.print( "ft tNav=" );
             SERIALX.print( tempoNavegacao );
-            SERIALX.print( " vmn=" );
+            SERIALX.print( "s maxNav=" );
             SERIALX.println( velocidadeMaxNavegacao );
         }
 
@@ -417,6 +434,15 @@ public:
             anotacao.print();
         }
 
+//        #184 alt=1951 sub=945 ps=11817 tql=90 vmq=0 opn=3733 tnav=273 vmn=0
+//        #185 alt=1977 sub=919 ps=12189 tql=39 vmq=0 opn=3936 tnav=229 vmn=0
+//        #186 alt=1986 sub=985 ps=12254 tql=141 vmq=0 opn=5425 tnav=297 vmn=0
+//        #187 alt=2040 sub=989 ps=12135 tql=54 vmq=0 opn=2148 tnav=113 vmn=0
+//        #188 alt=2039 sub=995 ps=12257 tql=33 vmq=0 opn=4414 tnav=275 vmn=0
+//        #189 alt=2085 sub=908 ps=12087 tql=117 vmq=0 opn=3152 tnav=199 vmn=0
+//        #190 alt=2048 sub=879 ps=12147 tql=83 vmq=0 opn=2713 tnav=165 vmn=0
+//        #-191 alt=2048 sub=879 ps=12147 tql=83 vmq=0 opn=2713 tnav=155 vmn=0
+
         eeprom.insere( &anotacao );
     }
 
@@ -574,7 +600,7 @@ void setup()
 
     if( ! barometro.begin() )
     {
-        Serial.println("Erro inicializando modulo BMP180\n");
+        Serial.println("Erro init BMP180");
         toneAC( 4000, 10, 200 );
         delay( 200 );
         toneAC( 4000, 10, 200 );

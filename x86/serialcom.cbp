@@ -93,7 +93,6 @@
 		<Unit filename="../PinChangeInt.h" />
 		<Unit filename="../altimetro/altimetro.ino" />
 		<Unit filename="../altimetro/circular.hpp" />
-		<Unit filename="../altimetro/impressora.hpp" />
 		<Unit filename="../altimetro/interpretador.hpp" />
 		<Unit filename="../altimetro/protocolo.h" />
 		<Unit filename="../altimetro/tocador.hpp" />

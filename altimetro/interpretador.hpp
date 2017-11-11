@@ -6,8 +6,6 @@
 
 #include "Arduino.h"
 
-#include "matematica.h"
-
 void printErro( int err )
 {
     SERIALX.print( "Erro ");
@@ -20,7 +18,6 @@ typedef enum
     VAR_CHAR,   // signed  8
     VAR_INT,    // signed 16
     VAR_LONG,   // signed 32
-    VAR_FIXO,   // 16.16
     VAR_BOOL,
     VAR_DOUBLE
 }
@@ -69,10 +66,7 @@ public:
                 siz = sizeof( int );
                 break;            case VAR_LONG:
                 siz = sizeof( long );
-                break;            case VAR_FIXO:
-                siz = sizeof( Fixo );
-                break;
-            case VAR_BOOL:
+                break;            case VAR_BOOL:
                 siz = sizeof( bool );
                 break;
             case VAR_PID:
@@ -103,8 +97,6 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-        case VAR_FIXO:
-            return ((Fixo*)dados)->getInt();
         case VAR_BOOL:
             return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
@@ -123,38 +115,12 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-        case VAR_FIXO:
-            return ((Fixo*)dados)->getLong();
         case VAR_BOOL:
             return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
             return *((double*)dados);
         }
         return 0;
-    }
-
-    Fixo getFixo() const
-    {
-        void* var = dados;
-        Fixo retorno;
-
-        switch( tipo )
-        {
-        case VAR_INT:
-            retorno = *((int*)var);
-        case VAR_LONG:
-            retorno = (int)*((long*)var);
-        case VAR_FIXO:
-            retorno = *((Fixo*)var);
-        case VAR_BOOL:
-            retorno.setInt( *((bool*)dados) ? 1 : 0 );
-        case VAR_DOUBLE:
-            retorno.setFloat( *((double*)dados) );
-        default:
-            break;
-        }
-
-        return retorno;
     }
 
     double getDouble() const
@@ -167,8 +133,6 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-        case VAR_FIXO:
-            return ((Fixo*)dados)->getFloat();
         case VAR_BOOL:
             return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
@@ -186,9 +150,6 @@ public:
             break;
         case VAR_LONG:
             *((long*)dados) += var.getLong();
-            break;
-        case VAR_FIXO:
-            ((Fixo*)dados)->operator+=(var.getFixo());
             break;
         case VAR_DOUBLE:
             *((double*)dados) += var.getDouble();
@@ -209,9 +170,6 @@ public:
         case VAR_LONG:
             *((long*)dados) -= var.getLong();
             break;
-        case VAR_FIXO:
-            ((Fixo*)dados)->operator-=(var.getFixo());
-            break;
         case VAR_DOUBLE:
             *((double*)dados) -= var.getDouble();
             break;
@@ -231,9 +189,6 @@ public:
         case VAR_LONG:
             *((long*)dados) *= var.getLong();
             break;
-        case VAR_FIXO:
-            ((Fixo*)dados)->operator*=(var.getFixo());
-            break;
         case VAR_DOUBLE:
             *((double*)dados) *= var.getDouble();
             break;
@@ -252,9 +207,6 @@ public:
             break;
         case VAR_LONG:
             *((long*)dados) /= var.getLong();
-            break;
-        case VAR_FIXO:
-            ((Fixo*)dados)->operator/=(var.getFixo());
             break;
         case VAR_DOUBLE:
             *((double*)dados) /= var.getDouble();
@@ -278,9 +230,6 @@ public:
         case VAR_BOOL:
             *((bool*)dados) = ! (*((bool*)dados));
             break;
-        case VAR_FIXO:
-            ((Fixo*)dados)->setLong( - ((Fixo*)dados)->getLong() );
-            break;
         case VAR_DOUBLE:
             *((double*)dados) = - (*((double*)dados));
             break;
@@ -302,9 +251,6 @@ public:
             return SUCESSO;
         case VAR_LONG:
             *( (long*) dados ) = v.getLong();
-            return SUCESSO;
-        case VAR_FIXO:
-            *( (Fixo*) dados ) = v.getFixo();
             return SUCESSO;
         case VAR_BOOL:
             *( (bool*) dados ) = v.getInt();
@@ -331,9 +277,6 @@ public:
         case VAR_LONG:
             *( (long*) dados ) = atol( str );
             break;
-        case VAR_FIXO:
-             ( (Fixo*) dados )->setFloat( atof( str ) );
-            break;
         case VAR_BOOL:
             *( (bool*) dados ) = atoi( str );
             break;
@@ -356,9 +299,6 @@ public:
             break;
         case VAR_LONG:
             SERIALX.print( (long) *( (long*) dados ) );
-            break;
-        case VAR_FIXO:
-            SERIALX.print( ( (Fixo*) dados )->getFloat(), 5 );
             break;
         case VAR_BOOL:
             SERIALX.print( (bool) *( (bool*) dados ) );
