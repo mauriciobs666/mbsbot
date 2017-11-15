@@ -56,10 +56,11 @@ Interpretador interpretador;
 
 // PRODUCAO !
 
-#define THRESHOLD_DECOLAGEM   6.0 // pes/s
-#define THRESHOLD_QUEDA    -150.0 // pes/s
-#define THRESHOLD_ABERTURA  -60.0 // pes/s
-#define THRESHOLD_POUSO       0.5
+#define THRESHOLD_DECOLAGEM    6.0
+#define THRESHOLD_QUEDA     -130.0
+#define THRESHOLD_ABERTURA   -80.0
+#define THRESHOLD_SUBTERMINAL -3.0
+#define THRESHOLD_POUSO        0.5
 
 #define AVISO_SUBIDA_CINTO  1500
 #define AVISO_SUBIDA_CHECK 12000
@@ -80,10 +81,11 @@ Interpretador interpretador;
 
 // DEBUG
 
-#define THRESHOLD_DECOLAGEM  0.8
-#define THRESHOLD_QUEDA     -0.8
-#define THRESHOLD_ABERTURA   0.8
-#define THRESHOLD_POUSO      0.5
+#define THRESHOLD_DECOLAGEM    0.8
+#define THRESHOLD_QUEDA       -0.8
+#define THRESHOLD_ABERTURA     0.8
+#define THRESHOLD_SUBTERMINAL -3.0
+#define THRESHOLD_POUSO        0.5
 
 #define AVISO_SUBIDA_CINTO  6
 #define AVISO_SUBIDA_CHECK 12
@@ -283,18 +285,16 @@ class Ponto
 public:
     Ponto() : altitude(0),
               velocidade(0.0),
-              timestamp(0.0),
-              aceleracao(0.0) {}
+              timestamp(0.0) {}
 
     unsigned long timestamp;
     double altitude;
     double velocidade;
-    double aceleracao;
 
     void limpa()
     {
         timestamp = 0;
-        altitude = velocidade = aceleracao = 0.0;
+        altitude = velocidade = 0.0;
     }
 
     void print()
@@ -399,41 +399,22 @@ public:
     Ponto saida;
     Ponto abertura;
     Ponto pouso;
+
     Eeprom::Caderneta anotacao;
 
     void trocaEstado( char novoEstado )
     {
         estado = novoEstado;
 
-        tocadorToneAC.limpa();
-        tocadorToneAC.bipe( );
+        anotacao.altitudeDZ = decolagem.altitude;
+        anotacao.alturaSaida = saida.altitude - decolagem.altitude;
+        anotacao.alturaAbertura = abertura.altitude - decolagem.altitude;
 
-        switch( estado )
-        {
-        case ESTADO_SUBIDA:
-            anotacao.altitudeDZ = decolagem.altitude;
-            break;
-        case ESTADO_QUEDA:
-            anotacao.alturaSaida = saida.altitude - decolagem.altitude;
-            anotacao.tempoSubida = ( saida.timestamp - decolagem.timestamp ) / 1000;
-            break;
-        case ESTADO_NAVEGACAO:
-            anotacao.alturaAbertura = abertura.altitude - decolagem.altitude;
-            anotacao.tempoQueda = ( abertura.timestamp - saida.timestamp ) / 1000;
-            break;
-        case ESTADO_DZ:
-            anotacao.tempoNavegacao = ( pouso.timestamp - abertura.timestamp ) / 1000;
-            break;
-        }
+        anotacao.tempoSubida = ( saida.timestamp - decolagem.timestamp ) / 1000;
+        anotacao.tempoQueda = ( abertura.timestamp - saida.timestamp ) / 1000;
+        anotacao.tempoNavegacao = ( pouso.timestamp - abertura.timestamp ) / 1000;
 
-        if( eeprom.dados.trace & ( TRACE_AVISOS | TRACE_MASTER_EN ) )
-        {
-            SERIALX.print("<");
-            SERIALX.print( (int) estado );
-            SERIALX.print(">");
-            anotacao.print();
-        }
-
+/**
 //        #184 alt=1951 sub=945 ps=11817 tql=90 vmq=0 opn=3733 tnav=273 vmn=0
 //        #185 alt=1977 sub=919 ps=12189 tql=39 vmq=0 opn=3936 tnav=229 vmn=0
 //        #186 alt=1986 sub=985 ps=12254 tql=141 vmq=0 opn=5425 tnav=297 vmn=0
@@ -442,8 +423,22 @@ public:
 //        #189 alt=2085 sub=908 ps=12087 tql=117 vmq=0 opn=3152 tnav=199 vmn=0
 //        #190 alt=2048 sub=879 ps=12147 tql=83 vmq=0 opn=2713 tnav=165 vmn=0
 //        #-191 alt=2048 sub=879 ps=12147 tql=83 vmq=0 opn=2713 tnav=155 vmn=0
-
+//        #191 alt=1993 sub=0 ps=0 tql=10 vmq=0 opn=5944 tnav=356 vmn=0
+//        #192 alt=1983 sub=467 ps=5974 tql=10 vmq=0 opn=3936 tnav=237 vmn=0
+//        #193 alt=2007 sub=439 ps=5508 tql=25 vmq=0 opn=2610 tnav=0 vmn=0
+*/
         eeprom.insere( &anotacao );
+
+        tocadorToneAC.limpa();
+        tocadorToneAC.bipe();
+
+        if( eeprom.dados.trace & ( TRACE_AVISOS | TRACE_MASTER_EN ) )
+        {
+            SERIALX.print("<");
+            SERIALX.print( (int) estado );
+            SERIALX.print(">");
+            anotacao.print();
+        }
     }
 
     void limpa()
@@ -694,11 +689,6 @@ void loop()
         {
             salto.decolagem.timestamp = agora.timestamp;
 
-            debounceAbertura = 0;
-            debouncePouso = 0;
-
-            salto.anotacao.limpa();
-
             // reset alarmes
             for( int i = 0; i < nAvisos ; i++ )
                 avisos[i].atingido = 0;
@@ -710,29 +700,18 @@ void loop()
     case ESTADO_SUBIDA:
         if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
         {
-            debounceAbertura = 0;
-
-            salto.saida.altitude = *circular10media.topo();
-            salto.saida.timestamp = agora.timestamp;
-
+            salto.saida = agora;
             salto.trocaEstado( ESTADO_QUEDA );
         }
-        else if( agora.velocidade < -3 ) // abertura subterminal
+        else if( agora.velocidade < THRESHOLD_SUBTERMINAL ) // abertura subterminal
         {
             if( debounceAbertura == 0 )
             {
                 debounceAbertura = agora.timestamp + 10000;
+                salto.abertura = salto.saida = agora;
             }
-            else if( debounceAbertura < agora.timestamp )
+            else if( debounceAbertura <= agora.timestamp )
             {
-                debounceAbertura = 0;
-
-                salto.saida.altitude = *circular10media.topo();
-                salto.saida.timestamp = agora.timestamp - 10000;
-
-                salto.abertura.altitude = circular1s.media();
-                salto.abertura.timestamp = agora.timestamp;
-
                 salto.trocaEstado( ESTADO_NAVEGACAO );
             }
         }
@@ -743,36 +722,34 @@ void loop()
         break;
 
     case ESTADO_QUEDA:
+        if( agora.velocidade < salto.anotacao.velocidadeMaxQueda )
+        {
+            salto.anotacao.velocidadeMaxQueda = agora.velocidade;
+        }
+
         if( agora.velocidade > THRESHOLD_ABERTURA )
         {
-            salto.abertura.altitude = circular1s.media();
-            salto.abertura.timestamp = agora.timestamp;
-
+            salto.abertura = agora;
             salto.trocaEstado( ESTADO_NAVEGACAO );
         }
         break;
 
     case ESTADO_NAVEGACAO:
-        if( agora.velocidade < THRESHOLD_QUEDA )
+        if( agora.velocidade < salto.anotacao.velocidadeMaxNavegacao )
         {
-            salto.trocaEstado( ESTADO_QUEDA );
+            salto.anotacao.velocidadeMaxNavegacao = agora.velocidade;
         }
-        else if( fabs( agora.velocidade ) < THRESHOLD_POUSO ) // pouso
+
+        if( agora.velocidade > THRESHOLD_POUSO ) // pouso
         {
             if( debouncePouso == 0)
             {
                 debouncePouso = agora.timestamp + 10000;
+                salto.pouso = agora;
             }
-            else if ( debouncePouso < agora.timestamp )
+            else if ( debouncePouso <= agora.timestamp )
             {
-                debouncePouso = 0;
-
-                salto.pouso.altitude = *circular10media.topo();
-                salto.pouso.timestamp = agora.timestamp - 10000;
-
                 salto.trocaEstado( ESTADO_DZ );
-
-                salto.estado = ESTADO_NAVEGACAO; // rollback
             }
         }
         else
