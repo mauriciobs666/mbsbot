@@ -60,7 +60,7 @@ Interpretador interpretador;
 #define THRESHOLD_QUEDA     -130.0
 #define THRESHOLD_ABERTURA   -80.0
 #define THRESHOLD_SUBTERMINAL -3.0
-#define THRESHOLD_POUSO        0.5
+#define THRESHOLD_POUSO       -0.5
 
 #define AVISO_SUBIDA_CINTO  1500
 #define AVISO_SUBIDA_CHECK 12000
@@ -85,7 +85,7 @@ Interpretador interpretador;
 #define THRESHOLD_QUEDA       -0.8
 #define THRESHOLD_ABERTURA     0.8
 #define THRESHOLD_SUBTERMINAL -3.0
-#define THRESHOLD_POUSO        0.5
+#define THRESHOLD_POUSO       -0.5
 
 #define AVISO_SUBIDA_CINTO  6
 #define AVISO_SUBIDA_CHECK 12
@@ -136,20 +136,21 @@ public:
             SERIALX.print( numero );
             SERIALX.print( " dz=" );
             SERIALX.print( altitudeDZ );
-            SERIALX.print( " tSub=" );
+            SERIALX.print( "msl sub=" );
             SERIALX.print( tempoSubida );
             SERIALX.print( "s ps=" );
             SERIALX.print( alturaSaida );
-            SERIALX.print( "agl tQL=" );
+            SERIALX.print( "agl ql=" );
             SERIALX.print( tempoQueda );
-            SERIALX.print( "s maxQL=" );
+            SERIALX.print( "s max=" );
             SERIALX.print( velocidadeMaxQueda );
-            SERIALX.print( "km/h hCmd=" );
+            SERIALX.print( "ft/s cmd=" );
             SERIALX.print( alturaAbertura );
-            SERIALX.print( "ft tNav=" );
+            SERIALX.print( "agl nav=" );
             SERIALX.print( tempoNavegacao );
-            SERIALX.print( "s maxNav=" );
-            SERIALX.println( velocidadeMaxNavegacao );
+            SERIALX.print( "s max=" );
+            SERIALX.print( velocidadeMaxNavegacao );
+            SERIALX.println( "ft/s" );
         }
 
         void limpa()
@@ -688,6 +689,7 @@ void loop()
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
             salto.decolagem.timestamp = agora.timestamp;
+            salto.saida = salto.abertura = salto.pouso = salto.decolagem;
 
             // reset alarmes
             for( int i = 0; i < nAvisos ; i++ )
@@ -750,6 +752,7 @@ void loop()
             else if ( debouncePouso <= agora.timestamp )
             {
                 salto.trocaEstado( ESTADO_DZ );
+                salto.limpa();
             }
         }
         else
