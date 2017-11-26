@@ -59,8 +59,8 @@ Interpretador interpretador;
 #define THRESHOLD_DECOLAGEM    6.0
 #define THRESHOLD_QUEDA     -130.0
 #define THRESHOLD_ABERTURA   -80.0
-#define THRESHOLD_SUBTERMINAL -3.0
-#define THRESHOLD_POUSO       -0.5
+#define THRESHOLD_SUBTERMINAL -7.0
+#define THRESHOLD_POUSO       -1.0
 
 #define AVISO_SUBIDA_CINTO  1500
 #define AVISO_SUBIDA_CHECK 12000
@@ -427,6 +427,19 @@ public:
 //        #191 alt=1993 sub=0 ps=0 tql=10 vmq=0 opn=5944 tnav=356 vmn=0
 //        #192 alt=1983 sub=467 ps=5974 tql=10 vmq=0 opn=3936 tnav=237 vmn=0
 //        #193 alt=2007 sub=439 ps=5508 tql=25 vmq=0 opn=2610 tnav=0 vmn=0
+//
+//        #196 dz=1867msl sub=1324s ps=12359agl ql=0s max=0ft/s cmd=12359agl nav=238s max=-233ft/s
+//        #197 dz=2140msl sub=1099s ps=10825agl ql=53s max=-233ft/s cmd=1720agl nav=128s max=-79ft/s
+//        #198 dz=1955msl sub=841s ps=11835agl ql=0s max=0ft/s cmd=11835agl nav=29s max=-5ft/s
+//        #199 dz=13709msl sub=37s ps=-902agl ql=47s max=-234ft/s cmd=-9127agl nav=151s max=-79ft/s
+//        #200 dz=1977msl sub=1175s ps=13078agl ql=0s max=0ft/s cmd=13078agl nav=26s max=-10ft/s
+//        #201 dz=14970msl sub=81s ps=-980agl ql=53s max=-241ft/s cmd=-10650agl nav=120s max=-79ft/s
+//        #202 dz=2003msl sub=930s ps=12591agl ql=0s max=0ft/s cmd=12591agl nav=13s max=-9ft/s
+//        #203 dz=14476msl sub=10s ps=-808agl ql=52s max=-244ft/s cmd=-10155agl nav=137s max=-79ft/s
+//        #204 dz=2032msl sub=1016s ps=11005agl ql=49s max=-244ft/s cmd=2413agl nav=-31475s max=0ft/s
+//        #205 dz=2046msl sub=909s ps=11980agl ql=0s max=0ft/s cmd=11980agl nav=201s max=-230ft/s
+//        #-206 dz=2046msl sub=909s ps=11980agl ql=0s max=0ft/s cmd=11980agl nav=-31319s max=0ft/s
+//        #-1 dz=-1msl sub=-1s ps=-1agl ql=-1s max=-1ft/s cmd=-1agl nav=-1s max=-1ft/s
 */
         eeprom.insere( &anotacao );
 
