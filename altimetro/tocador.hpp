@@ -86,7 +86,7 @@ private:
     int escrita;
     unsigned long tocando;
 
-    #define SZ_NOTAS 30
+    #define SZ_NOTAS 20
     struct Nota
     {
         int frequencia;

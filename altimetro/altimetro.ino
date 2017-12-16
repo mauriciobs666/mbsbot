@@ -5,12 +5,6 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
-//#include <SPI.h>
-//#include <SD.h>
-//Sd2Card card;
-//SdVolume volume;
-//SdFile root;
-
 #define BMP180
 
 //#define DEBUG 1
@@ -101,6 +95,17 @@ Interpretador interpretador;
 #define AVISO_NAVEGACAO_D       36
 
 #define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR | TRACE_ALTURA | TRACE_VELOCIDADE )
+
+#define CARTAO_SD
+
+#ifdef CARTAO_SD
+    #include <SPI.h>
+    #include <SD.h>
+//    Sd2Card card;
+//    SdVolume volume;
+//    SdFile root;
+    bool sdOk = false;
+#endif // CARTAO_SD
 
 #endif
 
@@ -439,7 +444,13 @@ public:
 //        #204 dz=2032msl sub=1016s ps=11005agl ql=49s max=-244ft/s cmd=2413agl nav=-31475s max=0ft/s
 //        #205 dz=2046msl sub=909s ps=11980agl ql=0s max=0ft/s cmd=11980agl nav=201s max=-230ft/s
 //        #-206 dz=2046msl sub=909s ps=11980agl ql=0s max=0ft/s cmd=11980agl nav=-31319s max=0ft/s
-//        #-1 dz=-1msl sub=-1s ps=-1agl ql=-1s max=-1ft/s cmd=-1agl nav=-1s max=-1ft/s
+
+//        #203 dz=1983msl sub=919s ps=11093agl ql=44s max=-245ft/s cmd=3498agl nav=165s max=-79ft/s
+//        #204 dz=2032msl sub=1192s ps=11039agl ql=43s max=-235ft/s cmd=3469agl nav=167s max=-79ft/s
+//        #205 dz=2053msl sub=893s ps=11171agl ql=48s max=-235ft/s cmd=2823agl nav=171s max=-79ft/s
+//        #206 dz=2057msl sub=879s ps=11259agl ql=46s max=-226ft/s cmd=3039agl nav=156s max=-79ft/s
+//        #-207 dz=2057msl sub=879s ps=11259agl ql=46s max=-226ft/s cmd=3039agl nav=-31335s max=0ft/s
+
 */
         eeprom.insere( &anotacao );
 
@@ -467,9 +478,7 @@ public:
 }
 salto;
 
-CircularStats<double,30> circular1s;        // ultimas 30 leituras ( ~1 segundo )
-CircularStats<double,10> circular10;        // medias dos ultimos 10 segundos
-CircularStats<double,10> circular10media;   // delay line das medias dos ultimos 10 segundos
+CircularStats<int,10> circular10;        // medias dos ultimos 10 segundos
 
 unsigned long tUmSegundo = 0;
 unsigned long tTrace = 0;
@@ -609,7 +618,7 @@ void setup()
 
     if( ! barometro.begin() )
     {
-        Serial.println("Erro init BMP180");
+        Serial.println("Err ini BMP180");
         toneAC( 4000, 10, 200 );
         delay( 200 );
         toneAC( 4000, 10, 200 );
@@ -627,19 +636,19 @@ void setup()
 
     for( int z = 0; z < 100; z++ )
     {
-        double alti = readAltitudeFtBmp();
-
-        circular1s.insere( alti );
-        circular10.insere( circular1s.media() );
-        circular10media.insere( circular10.media() );
+        circular10.insere( readAltitudeFtBmp() );
     }
 
     salto.limpa();
-    salto.saida.altitude = salto.decolagem.altitude = salto.abertura.altitude = agora.altitude = antes.altitude = circular10.media();
+    salto.saida.altitude = salto.decolagem.altitude = salto.abertura.altitude = agora.altitude = antes.altitude = *circular10.topo();
 
     tocadorToneAC.insere( 250, 2700, 10 );
 
     antes.timestamp = millis();
+
+    #ifdef CARTAO_SD
+        sdOk = SD.begin( 4 );
+    #endif // CARTAO_SD
 }
 
 void loop()
@@ -676,17 +685,13 @@ void loop()
 //    p = ( 1 - ganho ) * p;
 //    circular1s.insere( agora.altitude );
 
-    circular1s.insere( agora.altitude );
-
     contadorLoop++;
 
     if( agora.timestamp >= tUmSegundo )
     {
         tUmSegundo = agora.timestamp + 1000;
 
-        circular10.insere( circular1s.media() );
-
-        circular10media.insere( circular10.media() );
+        circular10.insere( agora.altitude );
 
         loopsSeg = contadorLoop;
         contadorLoop = 0;
@@ -697,7 +702,7 @@ void loop()
     switch( salto.estado )
     {
     case ESTADO_DZ:
-        salto.decolagem.altitude = *circular10media.topo();
+        salto.decolagem.altitude = *circular10.topo();
 
         if( agora.velocidade > THRESHOLD_DECOLAGEM )
         {
@@ -889,6 +894,27 @@ void loop()
 
         if( qquerCoisa )
             Serial.println();
+
+        #ifdef CARTAO_SD
+            File dataFile = SD.open( "datalog.txt", FILE_WRITE);
+
+            if (dataFile)
+            {
+                /*
+                String dataString = "";
+
+                dataString += String( agora.altitude - salto.decolagem.altitude );
+                dataString += String( agora.altitude );
+                dataString += String( agora.velocidade );
+                dataString += String( sensor - salto.decolagem.altitude );
+
+                dataFile.println( dataString );
+                */
+                dataFile.close();
+            }
+            else
+                Serial.println("error datalog.txt");
+        #endif
     }
 
     antes = agora;
