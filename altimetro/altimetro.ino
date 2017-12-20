@@ -96,18 +96,18 @@ Interpretador interpretador;
 
 #define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR | TRACE_ALTURA | TRACE_VELOCIDADE )
 
-#define CARTAO_SD
+#endif
+
+//#define CARTAO_SD
 
 #ifdef CARTAO_SD
-    #include <SPI.h>
+//    #include <SPI.h>
     #include <SD.h>
 //    Sd2Card card;
 //    SdVolume volume;
 //    SdFile root;
     bool sdOk = false;
 #endif // CARTAO_SD
-
-#endif
 
 class Eeprom
 {
@@ -428,7 +428,6 @@ public:
 //        #188 alt=2039 sub=995 ps=12257 tql=33 vmq=0 opn=4414 tnav=275 vmn=0
 //        #189 alt=2085 sub=908 ps=12087 tql=117 vmq=0 opn=3152 tnav=199 vmn=0
 //        #190 alt=2048 sub=879 ps=12147 tql=83 vmq=0 opn=2713 tnav=165 vmn=0
-//        #-191 alt=2048 sub=879 ps=12147 tql=83 vmq=0 opn=2713 tnav=155 vmn=0
 //        #191 alt=1993 sub=0 ps=0 tql=10 vmq=0 opn=5944 tnav=356 vmn=0
 //        #192 alt=1983 sub=467 ps=5974 tql=10 vmq=0 opn=3936 tnav=237 vmn=0
 //        #193 alt=2007 sub=439 ps=5508 tql=25 vmq=0 opn=2610 tnav=0 vmn=0
@@ -443,13 +442,23 @@ public:
 //        #203 dz=14476msl sub=10s ps=-808agl ql=52s max=-244ft/s cmd=-10155agl nav=137s max=-79ft/s
 //        #204 dz=2032msl sub=1016s ps=11005agl ql=49s max=-244ft/s cmd=2413agl nav=-31475s max=0ft/s
 //        #205 dz=2046msl sub=909s ps=11980agl ql=0s max=0ft/s cmd=11980agl nav=201s max=-230ft/s
-//        #-206 dz=2046msl sub=909s ps=11980agl ql=0s max=0ft/s cmd=11980agl nav=-31319s max=0ft/s
-
+//
 //        #203 dz=1983msl sub=919s ps=11093agl ql=44s max=-245ft/s cmd=3498agl nav=165s max=-79ft/s
 //        #204 dz=2032msl sub=1192s ps=11039agl ql=43s max=-235ft/s cmd=3469agl nav=167s max=-79ft/s
 //        #205 dz=2053msl sub=893s ps=11171agl ql=48s max=-235ft/s cmd=2823agl nav=171s max=-79ft/s
 //        #206 dz=2057msl sub=879s ps=11259agl ql=46s max=-226ft/s cmd=3039agl nav=156s max=-79ft/s
-//        #-207 dz=2057msl sub=879s ps=11259agl ql=46s max=-226ft/s cmd=3039agl nav=-31335s max=0ft/s
+//
+//        #207 dz=1896msl sub=1081s ps=11336agl ql=48s max=-227ft/s cmd=3056agl nav=145s max=-79ft/s
+//        #208 dz=1965msl sub=948s ps=10929agl ql=42s max=-273ft/s cmd=3160agl nav=166s max=-79ft/s
+//        #209 dz=1978msl sub=773s ps=11085agl ql=43s max=-256ft/s cmd=3091agl nav=152s max=-79ft/s
+//        #210 dz=1968msl sub=1264s ps=11685agl ql=46s max=-253ft/s cmd=3436agl nav=162s max=-79ft/s
+
+//      1m = 3.28 ft
+//      1 ft/s = 1,09 km/h
+//      g = 9.81 m/s = 32.18 ft/s
+//      v^2 = v0 + 2 * g * deltaH :. deltaH = 130^2 / ( 2 * 32.18 ) =  262 ft
+//      v = v0 + gt :. t = 130 / 32.18 = 4.03 s
+//      h = h0 + v0 * t + g * t^2 / 2 :. 262 = 32.18 * 4^2 /2
 
 */
         eeprom.insere( &anotacao );

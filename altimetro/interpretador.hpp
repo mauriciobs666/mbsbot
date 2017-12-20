@@ -18,7 +18,7 @@ typedef enum
     VAR_CHAR,   // signed  8
     VAR_INT,    // signed 16
     VAR_LONG,   // signed 32
-    VAR_BOOL,
+//    VAR_BOOL,
     VAR_DOUBLE
 }
 TipoVariavel;
@@ -28,8 +28,8 @@ class Variavel
 public:
     char nome[TAM_NOME];
     char tipo;
-    int linhas;
-    int colunas;
+//    int linhas;
+//    int colunas;
     void* dados;
 
     Variavel( TipoVariavel tipo_=VAR_NULO, const char* nome_=NULL, void* dados_=NULL, int linhas_=1, int colunas_=1 )
@@ -42,50 +42,50 @@ public:
         tipo = tipo_;
         strncpy( nome, nome_, TAM_NOME );
         dados = dados_;
-        linhas = linhas_;
-        colunas = colunas_;
+//        linhas = linhas_;
+//        colunas = colunas_;
     }
 
-    Variavel operator[]( size_t i )
-    {
-        void* pos = NULL;
-        size_t siz;
-
-        if( i >= linhas )
-            printErro( ERRO_VAR_ARRAY );
-        else
-        {
-                /*
-            switch( tipo )
-            {
-            case VAR_CHAR:
-                pos = (void*)(((char*)dados) + i);
-                break;
-            case VAR_INT:
-                pos = (void*)(((int*)dados) + i);
-                siz = sizeof( int );
-                break;            case VAR_LONG:
-                siz = sizeof( long );
-                break;            case VAR_BOOL:
-                siz = sizeof( bool );
-                break;
-            case VAR_PID:
-                siz = sizeof( PID );
-                break;
-            case VAR_SENSOR:
-                siz = sizeof( Sensor );
-                break;
-            case VAR_MOTOR:
-                siz = sizeof( Motor );
-                break;
-            case VAR_GAMEPAD:
-                siz = sizeof( MbsGamePad );
-                break;
-            }
-                */
-        }
-        return Variavel( (TipoVariavel)tipo, nome, pos );;
-    }
+//    Variavel operator[]( size_t i )
+//    {
+//        void* pos = NULL;
+//        size_t siz;
+//
+//        if( i >= linhas )
+//            printErro( ERRO_VAR_ARRAY );
+//        else
+//        {
+//                /*
+//            switch( tipo )
+//            {
+//            case VAR_CHAR:
+//                pos = (void*)(((char*)dados) + i);
+//                break;
+//            case VAR_INT:
+//                pos = (void*)(((int*)dados) + i);
+//                siz = sizeof( int );
+//                break;//            case VAR_LONG:
+//                siz = sizeof( long );
+//                break;//            case VAR_BOOL:
+//                siz = sizeof( bool );
+//                break;
+//            case VAR_PID:
+//                siz = sizeof( PID );
+//                break;
+//            case VAR_SENSOR:
+//                siz = sizeof( Sensor );
+//                break;
+//            case VAR_MOTOR:
+//                siz = sizeof( Motor );
+//                break;
+//            case VAR_GAMEPAD:
+//                siz = sizeof( MbsGamePad );
+//                break;
+//            }
+//                */
+//        }
+//        return Variavel( (TipoVariavel)tipo, nome, pos );;
+//    }
 
     int getInt() const
     {
@@ -97,8 +97,8 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-        case VAR_BOOL:
-            return *((bool*)dados) ? 1 : 0;
+//        case VAR_BOOL:
+//            return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
             return *((double*)dados);
         }
@@ -115,8 +115,8 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-        case VAR_BOOL:
-            return *((bool*)dados) ? 1 : 0;
+//        case VAR_BOOL:
+//            return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
             return *((double*)dados);
         }
@@ -133,8 +133,8 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-        case VAR_BOOL:
-            return *((bool*)dados) ? 1 : 0;
+//        case VAR_BOOL:
+//            return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
             return *((double*)dados);
         }
@@ -227,9 +227,9 @@ public:
         case VAR_LONG:
             *((long*)dados) = - (*((long*)dados));
             break;
-        case VAR_BOOL:
-            *((bool*)dados) = ! (*((bool*)dados));
-            break;
+//        case VAR_BOOL:
+//            *((bool*)dados) = ! (*((bool*)dados));
+//            break;
         case VAR_DOUBLE:
             *((double*)dados) = - (*((double*)dados));
             break;
@@ -252,9 +252,9 @@ public:
         case VAR_LONG:
             *( (long*) dados ) = v.getLong();
             return SUCESSO;
-        case VAR_BOOL:
-            *( (bool*) dados ) = v.getInt();
-            return SUCESSO;
+//        case VAR_BOOL:
+//            *( (bool*) dados ) = v.getInt();
+//            return SUCESSO;
         case VAR_DOUBLE:
             *( (double*) dados ) = v.getDouble();
             return SUCESSO;
@@ -277,9 +277,9 @@ public:
         case VAR_LONG:
             *( (long*) dados ) = atol( str );
             break;
-        case VAR_BOOL:
-            *( (bool*) dados ) = atoi( str );
-            break;
+//        case VAR_BOOL:
+//            *( (bool*) dados ) = atoi( str );
+//            break;
         case VAR_DOUBLE:
             *( (double*) dados ) = atof( str );
             break;
@@ -300,9 +300,9 @@ public:
         case VAR_LONG:
             SERIALX.print( (long) *( (long*) dados ) );
             break;
-        case VAR_BOOL:
-            SERIALX.print( (bool) *( (bool*) dados ) );
-            break;
+//        case VAR_BOOL:
+//            SERIALX.print( (bool) *( (bool*) dados ) );
+//            break;
         case VAR_DOUBLE:
             SERIALX.print( (double) *( (double*) dados ), 5 );
             break;
