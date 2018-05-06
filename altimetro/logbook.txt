@@ -1,0 +1,69 @@
+#184 alt=1951 sub=945 ps=11817 tql=90 vmq=0 opn=3733 tnav=273 vmn=0
+#185 alt=1977 sub=919 ps=12189 tql=39 vmq=0 opn=3936 tnav=229 vmn=0
+#186 alt=1986 sub=985 ps=12254 tql=141 vmq=0 opn=5425 tnav=297 vmn=0
+#187 alt=2040 sub=989 ps=12135 tql=54 vmq=0 opn=2148 tnav=113 vmn=0
+#188 alt=2039 sub=995 ps=12257 tql=33 vmq=0 opn=4414 tnav=275 vmn=0
+#189 alt=2085 sub=908 ps=12087 tql=117 vmq=0 opn=3152 tnav=199 vmn=0
+#190 alt=2048 sub=879 ps=12147 tql=83 vmq=0 opn=2713 tnav=165 vmn=0
+#191 alt=1993 sub=0 ps=0 tql=10 vmq=0 opn=5944 tnav=356 vmn=0
+#192 alt=1983 sub=467 ps=5974 tql=10 vmq=0 opn=3936 tnav=237 vmn=0
+#193 alt=2007 sub=439 ps=5508 tql=25 vmq=0 opn=2610 tnav=0 vmn=0
+
+#196 dz=1867msl sub=1324s ps=12359agl ql=0s max=0ft/s cmd=12359agl nav=238s max=-233ft/s
+#197 dz=2140msl sub=1099s ps=10825agl ql=53s max=-233ft/s cmd=1720agl nav=128s max=-79ft/s
+#198 dz=1955msl sub=841s ps=11835agl ql=0s max=0ft/s cmd=11835agl nav=29s max=-5ft/s
+#199 dz=13709msl sub=37s ps=-902agl ql=47s max=-234ft/s cmd=-9127agl nav=151s max=-79ft/s
+#200 dz=1977msl sub=1175s ps=13078agl ql=0s max=0ft/s cmd=13078agl nav=26s max=-10ft/s
+#201 dz=14970msl sub=81s ps=-980agl ql=53s max=-241ft/s cmd=-10650agl nav=120s max=-79ft/s
+#202 dz=2003msl sub=930s ps=12591agl ql=0s max=0ft/s cmd=12591agl nav=13s max=-9ft/s
+#203 dz=14476msl sub=10s ps=-808agl ql=52s max=-244ft/s cmd=-10155agl nav=137s max=-79ft/s
+#204 dz=2032msl sub=1016s ps=11005agl ql=49s max=-244ft/s cmd=2413agl nav=-31475s max=0ft/s
+#205 dz=2046msl sub=909s ps=11980agl ql=0s max=0ft/s cmd=11980agl nav=201s max=-230ft/s
+
+#203 dz=1983msl sub=919s ps=11093agl ql=44s max=-245ft/s cmd=3498agl nav=165s max=-79ft/s
+#204 dz=2032msl sub=1192s ps=11039agl ql=43s max=-235ft/s cmd=3469agl nav=167s max=-79ft/s
+#205 dz=2053msl sub=893s ps=11171agl ql=48s max=-235ft/s cmd=2823agl nav=171s max=-79ft/s
+#206 dz=2057msl sub=879s ps=11259agl ql=46s max=-226ft/s cmd=3039agl nav=156s max=-79ft/s
+
+#207 dz=1896msl sub=1081s ps=11336agl ql=48s max=-227ft/s cmd=3056agl nav=145s max=-79ft/s
+#208 dz=1965msl sub=948s ps=10929agl ql=42s max=-273ft/s cmd=3160agl nav=166s max=-79ft/s
+#209 dz=1978msl sub=773s ps=11085agl ql=43s max=-256ft/s cmd=3091agl nav=152s max=-79ft/s
+#210 dz=1968msl sub=1264s ps=11685agl ql=46s max=-253ft/s cmd=3436agl nav=162s max=-79ft/s
+
+#211 dz=1963msl sub=405s ps=5167agl ql=3s max=-132ft/s cmd=5010agl nav=253s max=-79ft/s
+#212 dz=1962msl sub=518s ps=6107agl ql=0s max=0ft/s cmd=6107agl nav=312s max=-41ft/s
+#213 dz=1981msl sub=999s ps=10865agl ql=42s max=-267ft/s cmd=2612agl nav=131s max=-79ft/s
+#214 dz=1998msl sub=936s ps=12321agl ql=0s max=0ft/s cmd=12321agl nav=201s max=-274ft/s
+#215 dz=2033msl sub=939s ps=11199agl ql=40s max=-290ft/s cmd=3246agl nav=169s max=-79ft/s
+#216 dz=2028msl sub=868s ps=11173agl ql=46s max=-280ft/s cmd=2587agl nav=-31324s max=0ft/s
+
+#217 dz=1895msl sub=580s ps=6200agl ql=1s max=-158ft/s cmd=6153agl nav=180s max=-242ft/s
+#218 dz=1986msl sub=343s ps=4622agl ql=11s max=-193ft/s cmd=3066agl nav=143s max=-79ft/s
+#219 dz=2006msl sub=1017s ps=11001agl ql=39s max=-279ft/s cmd=3109agl nav=178s max=-79ft/s
+#220 dz=2022msl sub=1116s ps=11166agl ql=48s max=-240ft/s cmd=2791agl nav=183s max=-79ft/s
+#221 dz=2037msl sub=1123s ps=10844agl ql=46s max=-237ft/s cmd=2654agl nav=151s max=-79ft/s
+
+#222 dz=1914msl sub=1229s ps=11893agl ql=0s max=0ft/s cmd=11893agl nav=226s max=-220ft/s
+#223 dz=1967msl sub=1044s ps=12205agl ql=0s max=0ft/s cmd=12205agl nav=25s max=-10ft/s
+#224 dz=13956msl sub=69s ps=-1160agl ql=47s max=-235ft/s cmd=-9417agl nav=162s max=-79ft/s
+#225 dz=2000msl sub=1043s ps=11353agl ql=47s max=-238ft/s cmd=3158agl nav=165s max=-79ft/s
+
+#226 dz=1948msl sub=1105s ps=12071agl ql=0s max=0ft/s cmd=12071agl nav=233s max=-229ft/s
+#227 dz=1952msl sub=903s ps=10931agl ql=40s max=-308ft/s cmd=3106agl nav=151s max=-79ft/s
+#228 dz=1985msl sub=1075s ps=11290agl ql=45s max=-307ft/s cmd=2152agl nav=137s max=-79ft/s
+#229 dz=1971msl sub=876s ps=10891agl ql=48s max=-222ft/s cmd=2628agl nav=165s max=-79ft/s
+#230 dz=1992msl sub=906s ps=11635agl ql=37s max=-220ft/s cmd=5051agl nav=164s max=-228ft/s
+#231 dz=2009msl sub=964s ps=11094agl ql=48s max=-243ft/s cmd=2771agl nav=171s max=-79ft/s
+#232 dz=1901msl sub=981s ps=10819agl ql=46s max=-234ft/s cmd=2771agl nav=178s max=-79ft/s
+#233 dz=1932msl sub=840s ps=11488agl ql=49s max=-260ft/s cmd=2548agl nav=169s max=-79ft/s
+
+#234 dz=2011msl sub=1112s ps=11005agl ql=46s max=-258ft/s cmd=3226agl nav=188s max=-79ft/s
+#235 dz=2021msl sub=890s ps=11183agl ql=36s max=-191ft/s cmd=5006agl nav=197s max=-239ft/s
+#236 dz=2034msl sub=1208s ps=11942agl ql=0s max=0ft/s cmd=11942agl nav=15s max=-20ft/s
+#237 dz=13826msl sub=16s ps=-1011agl ql=45s max=-225ft/s cmd=-8766agl nav=157s max=-79ft/s
+#238 dz=2071msl sub=895s ps=11883agl ql=0s max=0ft/s cmd=11883agl nav=280s max=-233ft/s
+
+#239 dz=1877msl sub=995s ps=12371agl ql=0s max=0ft/s cmd=12371agl nav=293s max=-270ft/s
+#240 dz=1915msl sub=1081s ps=11018agl ql=36s max=-270ft/s cmd=3252agl nav=183s max=-79ft/s
+#241 dz=1961msl sub=1273s ps=11159agl ql=42s max=-261ft/s cmd=2995agl nav=224s max=-79ft/s
+#242 dz=1993msl sub=978s ps=11006agl ql=39s max=-265ft/s cmd=2814agl nav=173s max=-78ft/s
