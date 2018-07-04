@@ -679,6 +679,8 @@ void loop()
 //    p = ( 1 - ganho ) * p;
 //    circular1s.insere( agora.altitude );
 
+    int altura = int( agora.altitude - salto.decolagem.altitude );
+
     contadorLoop++;
 
     if( agora.timestamp >= tUmSegundo )
@@ -724,6 +726,7 @@ void loop()
         {
             salto.saida = agora;
             salto.trocaEstado( ESTADO_QUEDA );
+            debounceAbertura = 0;
         }
         else if( agora.velocidade < THRESHOLD_SUBTERMINAL ) // abertura subterminal
         {
@@ -770,19 +773,23 @@ void loop()
         {
             salto.saida = agora;
             salto.trocaEstado( ESTADO_QUEDA );
+            debouncePouso = 0;
         }
         else if( agora.velocidade > THRESHOLD_POUSO ) // pouso
         {
-            if( debouncePouso == 0)
+            if( altura < 1000 ) // gambi: mil pes de tolerancia pra nao ter mais alarme falso de pouso
             {
-                debouncePouso = agora.timestamp + DEBOUNCE_POUSO;
-                salto.pouso = agora;
-            }
-            else if ( debouncePouso <= agora.timestamp )
-            {
-                salto.trocaEstado( ESTADO_DZ );
-                // salto.limpa();
-                debouncePouso = 0;
+                if( debouncePouso == 0)
+                {
+                    debouncePouso = agora.timestamp + DEBOUNCE_POUSO;
+                    salto.pouso = agora;
+                }
+                else if ( debouncePouso <= agora.timestamp )
+                {
+                    salto.trocaEstado( ESTADO_DZ );
+                    // salto.limpa();
+                    debouncePouso = 0;
+                }
             }
         }
         else
@@ -794,8 +801,6 @@ void loop()
     }
 
     // avisos de altura
-
-    int altura = int( agora.altitude - salto.decolagem.altitude );
 
     for( int i = 0;  i < nAvisos; i++ )
     {
