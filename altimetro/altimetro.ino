@@ -695,6 +695,8 @@ void loop()
 
     // regras de negocio
 
+    static unsigned long debounceVelMaxNav = 0;
+
     switch( salto.estado )
     {
     case ESTADO_DZ:
@@ -725,6 +727,8 @@ void loop()
         if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
         {
             salto.saida = agora;
+            salto.saida.altitude = *circular10.topo(); // despreza variacao durante aceleracao e usa alt de 10s atras
+
             salto.trocaEstado( ESTADO_QUEDA );
             debounceAbertura = 0;
         }
@@ -733,10 +737,16 @@ void loop()
             if( debounceAbertura == 0 )
             {
                 debounceAbertura = agora.timestamp + DEBOUNCE_SUBTERMINAL;
-                salto.abertura = salto.saida = agora;
+
+                salto.saida = agora;
+                salto.saida.altitude = *circular10.topo(); // despreza variacao durante aceleracao e usa alt de 10s atras
+
+                salto.abertura = agora;
             }
             else if( debounceAbertura <= agora.timestamp )
             {
+                debounceVelMaxNav = agora.timestamp;
+
                 salto.trocaEstado( ESTADO_NAVEGACAO );
                 debounceAbertura = 0;
             }
@@ -755,6 +765,8 @@ void loop()
 
         if( agora.velocidade > THRESHOLD_ABERTURA )
         {
+            debounceVelMaxNav = agora.timestamp + 10000;
+
             salto.abertura = agora;
             salto.trocaEstado( ESTADO_NAVEGACAO );
         }
@@ -764,7 +776,7 @@ void loop()
 
         static unsigned long debouncePouso = 0;
 
-        if( agora.velocidade < salto.anotacao.velocidadeMaxNavegacao )
+        if( agora.velocidade < salto.anotacao.velocidadeMaxNavegacao && debounceVelMaxNav < agora.timestamp )
         {
             salto.anotacao.velocidadeMaxNavegacao = agora.velocidade;
         }
