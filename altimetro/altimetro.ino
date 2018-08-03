@@ -46,6 +46,10 @@ SFE_BMP180 barometro;
 #include "interpretador.hpp"
 Interpretador interpretador;
 
+#define DEBOUNCE_POUSO       10000
+#define DEBOUNCE_SUBTERMINAL 15000
+#define DEBOUNCE_VEL_MAX_NAV 10000
+
 #ifndef DEBUG
 
 // PRODUCAO !
@@ -55,9 +59,6 @@ Interpretador interpretador;
 #define THRESHOLD_ABERTURA   -80.0
 #define THRESHOLD_SUBTERMINAL -7.0
 #define THRESHOLD_POUSO       -1.0
-
-#define DEBOUNCE_POUSO       10000
-#define DEBOUNCE_SUBTERMINAL 15000
 
 #define AVISO_SUBIDA_CINTO  1500
 #define AVISO_SUBIDA_CHECK 12000
@@ -741,9 +742,9 @@ void loop()
                 salto.saida = agora;
                 salto.saida.altitude = *circular10.topo(); // despreza variacao durante aceleracao e usa alt de 10s atras
 
-                salto.abertura = agora;
+                salto.abertura = salto.saida;
             }
-            else if( debounceAbertura <= agora.timestamp )
+            else if( agora.timestamp > debounceAbertura )
             {
                 debounceVelMaxNav = agora.timestamp;
 
@@ -765,7 +766,7 @@ void loop()
 
         if( agora.velocidade > THRESHOLD_ABERTURA )
         {
-            debounceVelMaxNav = agora.timestamp + 10000;
+            debounceVelMaxNav = agora.timestamp + DEBOUNCE_VEL_MAX_NAV;
 
             salto.abertura = agora;
             salto.trocaEstado( ESTADO_NAVEGACAO );
