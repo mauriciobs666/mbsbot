@@ -5,11 +5,19 @@
 #include <Wire.h>
 #include <EEPROM.h>
 
-#define BMP180
-
 //#define DEBUG 1
 
-#define SERIALX Serial
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    // memoria infinita
+    #define CARTAO_SD
+    #define SERIALX Serial2
+#else
+    #define SERIALX Serial
+#endif
+
+#define BMP180
+
+
 #define SERIALX_SPD 115200
 
 #define DFT_DELAY_TRACE 100
@@ -22,6 +30,7 @@
 #define TRACE_ALTITUDE              0x10
 #define TRACE_AVISOS                0x20
 #define TRACE_ANDROID_GRAPHICS_APP  0x40
+#define TRACE_MICROSD               0x80
 
 #include "circular.hpp"
 #include "tocador.hpp"
@@ -36,6 +45,15 @@ MPL3115A2 altimetro;
 #include <SFE_BMP180.h>
 SFE_BMP180 barometro;
 #endif
+
+#ifdef CARTAO_SD
+//    #include <SPI.h>
+    #include <SD.h>
+//    Sd2Card card;
+//    SdVolume volume;
+//    SdFile root;
+    bool sdOk = false;
+#endif // CARTAO_SD
 
 #define ESTADO_DZ           0x00
 #define ESTADO_SUBIDA       0x01
@@ -102,17 +120,6 @@ Interpretador interpretador;
 
 #endif
 
-//#define CARTAO_SD
-
-#ifdef CARTAO_SD
-//    #include <SPI.h>
-    #include <SD.h>
-//    Sd2Card card;
-//    SdVolume volume;
-//    SdFile root;
-    bool sdOk = false;
-#endif // CARTAO_SD
-
 class Eeprom
 {
     int tamanhoBufSaltos;
@@ -141,22 +148,6 @@ public:
 
         void print()
         {
-//#define TESTE_SPRINTF
-
-#ifdef  TESTE_SPRINTF
-            char temp[100];
-            sprintf_P( temp, PSTR("N: #%d dz=%dmsl sub=%ds ps=%dagl ql=%ds max=%dft/s cmd=%dagl nav=%ds max=%dft/s"),
-                            numero,
-                            altitudeDZ,
-                            tempoSubida,
-                            alturaSaida,
-                            tempoQueda,
-                            velocidadeMaxQueda,
-                            alturaAbertura,
-                            tempoNavegacao,
-                            velocidadeMaxNavegacao );
-            SERIALX.println( temp );
-#else
             SERIALX.print( "A: #" );
             SERIALX.print( numero );
             SERIALX.print( " dz=" );
@@ -176,7 +167,6 @@ public:
             SERIALX.print( "s max=" );
             SERIALX.print( velocidadeMaxNavegacao );
             SERIALX.println( "ft/s" );
-#endif // TESTE_SPRINTF
         }
 
         void limpa()
@@ -604,9 +594,9 @@ void setup()
 
     eeprom.init();
 
-    interpretador.declaraVar( VAR_CHAR, NOME_TRACE, &eeprom.dados.trace );
-    interpretador.declaraVar( VAR_INT,  NOME_T_TRC, &eeprom.dados.delayTrace );
-    interpretador.declaraVar( VAR_INT,  NOME_LOOPS, &loopsSeg );
+    interpretador.declaraVar( VAR_INT, NOME_TRACE, &eeprom.dados.trace );
+    interpretador.declaraVar( VAR_INT, NOME_T_TRC, &eeprom.dados.delayTrace );
+    interpretador.declaraVar( VAR_INT, NOME_LOOPS, &loopsSeg );
     interpretador.declaraVar( VAR_DOUBLE, NOME_ALPHA, &eeprom.dados.alpha );
     interpretador.declaraVar( VAR_DOUBLE, NOME_BETA, &eeprom.dados.beta );
     interpretador.declaraVar( VAR_LONG, NOME_TIMESTAMP,  &agora.timestamp );
@@ -642,7 +632,7 @@ void setup()
     antes.timestamp = millis();
 
     #ifdef CARTAO_SD
-        sdOk = SD.begin( 4 );
+        sdOk = SD.begin( 53 );
     #endif // CARTAO_SD
 }
 
@@ -883,55 +873,57 @@ void loop()
 
         if( androidGraphicsApp )
         {
-            Serial.print( "E" );
+            SERIALX.print( "E" );
+            qquerCoisa = true;
         }
 
         if( eeprom.dados.trace & TRACE_ALTURA )
         {
-            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
-            Serial.print( agora.altitude - salto.decolagem.altitude, 2 ); // Serial.print( altura );
+            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
+            SERIALX.print( agora.altitude - salto.decolagem.altitude, 2 ); // Serial.print( altura );
             qquerCoisa = true;
         }
 
         if( eeprom.dados.trace & TRACE_ALTITUDE )
         {
-            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
-            Serial.print( agora.altitude, 2 );
+            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
+            SERIALX.print( agora.altitude, 2 );
             qquerCoisa = true;
         }
 
         if( eeprom.dados.trace & TRACE_VELOCIDADE )
         {
-            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
-            Serial.print( agora.velocidade, 2  );
+            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
+            SERIALX.print( agora.velocidade, 2  );
             qquerCoisa = true;
         }
 
         if( eeprom.dados.trace & TRACE_SENSOR )
         {
-            if( qquerCoisa ) Serial.print( androidGraphicsApp ? "," : " " );
-            Serial.print( sensor - salto.decolagem.altitude, 2  );
+            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
+            SERIALX.print( sensor - salto.decolagem.altitude, 2  );
             qquerCoisa = true;
         }
 
-    //        Serial.print( deltaT * 1000 );
-    //        Serial.print( circular10.media() , 2  );
-    //        Serial.print( circular10.media() - decolagem.altitude, 2  );
-    //        Serial.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
-    //        Serial.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
-    //        Serial.print( circular1s.media() , 2 );
-    //        Serial.print( circular1s.media() - salto.decolagem.altitude, 2 );
-    //        Serial.print( circular1s.desvio(), 2 );
+    //        SERIALX.print( deltaT * 1000 );
+    //        SERIALX.print( circular10.media() , 2  );
+    //        SERIALX.print( circular10.media() - decolagem.altitude, 2  );
+    //        SERIALX.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
+    //        SERIALX.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
+    //        SERIALX.print( circular1s.media() , 2 );
+    //        SERIALX.print( circular1s.media() - salto.decolagem.altitude, 2 );
+    //        SERIALX.print( circular1s.desvio(), 2 );
 
         if( qquerCoisa )
-            Serial.println();
+            SERIALX.println();
 
         #ifdef CARTAO_SD
+        if( eeprom.dados.trace & TRACE_MICROSD)
+        {
             File dataFile = SD.open( "datalog.txt", FILE_WRITE);
 
             if (dataFile)
             {
-                /*
                 String dataString = "";
 
                 dataString += String( agora.altitude - salto.decolagem.altitude );
@@ -940,11 +932,12 @@ void loop()
                 dataString += String( sensor - salto.decolagem.altitude );
 
                 dataFile.println( dataString );
-                */
+
                 dataFile.close();
             }
             else
-                Serial.println("error datalog.txt");
+                SERIALX.println("error datalog.txt");
+        }
         #endif
     }
 
