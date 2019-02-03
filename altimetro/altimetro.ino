@@ -9,14 +9,14 @@
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
     // memoria infinita
-    #define CARTAO_SD
-    #define SERIALX Serial2
+//    #define CARTAO_SD
+//    #define SERIALX Serial2
+    #define SERIALX Serial
 #else
     #define SERIALX Serial
 #endif
 
 #define BMP180
-
 
 #define SERIALX_SPD 115200
 
@@ -152,21 +152,21 @@ public:
             SERIALX.print( numero );
             SERIALX.print( " dz=" );
             SERIALX.print( altitudeDZ );
-            SERIALX.print( "msl sub=" );
+            SERIALX.print( "msl up=" );
             SERIALX.print( tempoSubida );
             SERIALX.print( "s ps=" );
             SERIALX.print( alturaSaida );
             SERIALX.print( "agl ql=" );
             SERIALX.print( tempoQueda );
             SERIALX.print( "s max=" );
-            SERIALX.print( velocidadeMaxQueda );
-            SERIALX.print( "ft/s cmd=" );
+            SERIALX.print( velocidadeMaxQueda * 1.09728 );
+            SERIALX.print( "km/h cmd=" );
             SERIALX.print( alturaAbertura );
             SERIALX.print( "agl nav=" );
             SERIALX.print( tempoNavegacao );
             SERIALX.print( "s max=" );
-            SERIALX.print( velocidadeMaxNavegacao );
-            SERIALX.println( "ft/s" );
+            SERIALX.print( velocidadeMaxNavegacao * 1.09728 );
+            SERIALX.println( "km/h" );
         }
 
         void limpa()
@@ -586,8 +586,62 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     return rc;
 }
 
+class Led
+{
+public:
+    int t1;
+    int t2;
+    void inicia( int pinoled )
+    {
+        pino = pinoled;
+        pinMode( pino, OUTPUT );
+    }
+    void liga()
+    {
+        estado = true;
+        digitalWrite( pino, estado );
+    }
+    void desliga()
+    {
+        estado = false;
+        digitalWrite( pino, estado );
+    }
+    void loop( unsigned long agora )
+    {
+        if( tProx && tProx < agora )
+        {
+            if( estado )
+                tProx += t2;
+            else
+                tProx += t1;
+
+            estado = !estado;
+            digitalWrite( pino, estado );
+        }
+    }
+    void start( unsigned long agora, int lt1, int lt2 )
+    {
+        t1 = lt1;
+        t2 = lt2;
+        tProx = agora + t1;
+        liga();
+    }
+    void stop()
+    {
+        tProx = 0;
+        desliga();
+    }
+private:
+    bool estado;
+    unsigned long tProx;
+    int pino;
+} led;
+
 void setup()
 {
+    led.inicia( LED_BUILTIN );
+    led.liga();
+
     toneAC( 3200, 5, 100 );
 
     SERIALX.begin( SERIALX_SPD );
@@ -631,9 +685,13 @@ void setup()
 
     antes.timestamp = millis();
 
+    led.start( antes.timestamp, 20, 980 );
+
     #ifdef CARTAO_SD
         sdOk = SD.begin( 53 );
     #endif // CARTAO_SD
+
+
 }
 
 void loop()
@@ -703,6 +761,8 @@ void loop()
                 avisos[i].atingido = 0;
 
             salto.trocaEstado( ESTADO_SUBIDA );
+
+            led.start( agora.timestamp, 200, 200 );
         }
         else if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
         {
@@ -792,6 +852,8 @@ void loop()
                     salto.trocaEstado( ESTADO_DZ );
                     // salto.limpa();
                     debouncePouso = 0;
+
+                    led.start( agora.timestamp, 20, 980 );
                 }
             }
         }
@@ -926,9 +988,13 @@ void loop()
             {
                 String dataString = "";
 
+
                 dataString += String( agora.altitude - salto.decolagem.altitude );
+                dataString += ",";
                 dataString += String( agora.altitude );
+                dataString += ",";
                 dataString += String( agora.velocidade );
+                dataString += ",";
                 dataString += String( sensor - salto.decolagem.altitude );
 
                 dataFile.println( dataString );
@@ -942,4 +1008,6 @@ void loop()
     }
 
     antes = agora;
+
+    led.loop( agora.timestamp );
 }
