@@ -95,6 +95,7 @@
 		<Unit filename="../altimetro/circular.hpp" />
 		<Unit filename="../altimetro/interpretador.hpp" />
 		<Unit filename="../altimetro/logbook.txt" />
+		<Unit filename="../altimetro/placa.h" />
 		<Unit filename="../altimetro/protocolo.h" />
 		<Unit filename="../altimetro/tocador.hpp" />
 		<Unit filename="../dados.h" />

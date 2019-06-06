@@ -31,7 +31,7 @@ Formato geral do pacote:
 <comando> [argumentos] CMD_EOL
 */
 
-#define CMD_EOL '\n'
+#define CMD_EOL ';'
 #define MAX_CMD 50      // bytes, tamanho maximo de um comando serial
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token

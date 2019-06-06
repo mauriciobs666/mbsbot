@@ -17,7 +17,7 @@ Formato geral do pacote:
 <comando> [argumentos] CMD_EOL
 */
 
-#define CMD_EOL '\n'
+#define CMD_EOL ';'
 #define MAX_CMD 20      // bytes, tamanho maximo de um comando serial
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
@@ -55,6 +55,12 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define CMD_WHO "who" /* mostra lista de variaveis */
 
 #define CMD_AVISOS "avs"
+
+// cartao de memoria
+
+#define CMD_LST "ls"
+#define CMD_REC "rec"
+#define CMD_STOP "stp"
 
 #define NOME_TRACE    "trc"
 #define NOME_T_TRC    "trcd" // intervalo envio trace

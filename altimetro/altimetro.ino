@@ -1,28 +1,15 @@
 
-// (c) 2017-2018 MBS - Mauricio Bieze Stefani
+// ==========================================
+// (c) 2017-2019 MBS - Mauricio Bieze Stefani
+// ==========================================
 
 #include <math.h>
 #include <Wire.h>
 #include <EEPROM.h>
 
-//#define DEBUG 1
+#include "placa.h"
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-    // memoria infinita
-//    #define CARTAO_SD
-//    #define SERIALX Serial2
-    #define SERIALX Serial
-#else
-    #define SERIALX Serial
-#endif
-
-#define BMP180
-
-#define SERIALX_SPD 115200
-
-#define DFT_DELAY_TRACE 100
-
-// mascara
+// mascara bitmap
 #define TRACE_MASTER_EN             0x01
 #define TRACE_SENSOR                0x02
 #define TRACE_ALTURA                0x04
@@ -49,9 +36,10 @@ SFE_BMP180 barometro;
 #ifdef CARTAO_SD
 //    #include <SPI.h>
     #include <SD.h>
-//    Sd2Card card;
-//    SdVolume volume;
-//    SdFile root;
+
+    Sd2Card card;
+    SdVolume volume;
+    SdFile root;
     bool sdOk = false;
 #endif // CARTAO_SD
 
@@ -159,13 +147,13 @@ public:
             SERIALX.print( "agl ql=" );
             SERIALX.print( tempoQueda );
             SERIALX.print( "s max=" );
-            SERIALX.print( velocidadeMaxQueda * 1.09728 );
+            SERIALX.print( (int) (velocidadeMaxQueda * 1.09728) );
             SERIALX.print( "km/h cmd=" );
             SERIALX.print( alturaAbertura );
             SERIALX.print( "agl nav=" );
             SERIALX.print( tempoNavegacao );
             SERIALX.print( "s max=" );
-            SERIALX.print( velocidadeMaxNavegacao * 1.09728 );
+            SERIALX.print( (int) ( velocidadeMaxNavegacao * 1.09728 ) );
             SERIALX.println( "km/h" );
         }
 
@@ -316,7 +304,7 @@ public:
 
     void print()
     {
-
+//        SERIALX.print
     }
 }
 antes, agora;
@@ -507,6 +495,74 @@ double readAltitudeFtBmp()
     return -666;
 }
 
+
+class CartaoSD
+{
+
+};
+
+class Arquivo
+{
+
+};
+
+class Led
+{
+public:
+    Led()
+    {
+        t1 = t2 = 0;
+        estado = false;
+        tProx = 0;
+    }
+    void setup( int pinoled )
+    {
+        pino = pinoled;
+        pinMode( pino, OUTPUT );
+    }
+    void acende()
+    {
+        estado = true;
+        digitalWrite( pino, estado );
+    }
+    void apaga()
+    {
+        estado = false;
+        digitalWrite( pino, estado );
+    }
+    void loop( unsigned long agora )
+    {
+        if( tProx && tProx < agora )
+        {
+            if( estado )
+                tProx += t2;
+            else
+                tProx += t1;
+
+            estado = !estado;
+            digitalWrite( pino, estado );
+        }
+    }
+    void start( unsigned long agora, int lt1, int lt2 )
+    {
+        t1 = lt1;
+        t2 = lt2;
+        tProx = agora + t1;
+        acende();
+    }
+    void stop()
+    {
+        tProx = 0;
+        apaga();
+    }
+private:
+    int t1;
+    int t2;
+    bool estado;
+    unsigned long tProx;
+    int pino;
+} led;
+
 Erros Interpretador::evalHardCoded( Variavel* resultado )
 {
     #ifdef TRACE_INTERPRETADOR
@@ -570,6 +626,16 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
             SERIALX.println();
         }
     }
+    else if( 0 == strncmp( token, CMD_LST, TAM_TOKEN )  )
+    {
+        led.start( agora.timestamp, 200, 200 );
+    }
+    else if( 0 == strncmp( token, CMD_STOP, TAM_TOKEN )  )
+    {
+    }
+    else if( 0 == strncmp( token, CMD_STOP, TAM_TOKEN )  )
+    {
+    }
     else
     {
         eco = true;
@@ -586,61 +652,10 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     return rc;
 }
 
-class Led
-{
-public:
-    int t1;
-    int t2;
-    void inicia( int pinoled )
-    {
-        pino = pinoled;
-        pinMode( pino, OUTPUT );
-    }
-    void liga()
-    {
-        estado = true;
-        digitalWrite( pino, estado );
-    }
-    void desliga()
-    {
-        estado = false;
-        digitalWrite( pino, estado );
-    }
-    void loop( unsigned long agora )
-    {
-        if( tProx && tProx < agora )
-        {
-            if( estado )
-                tProx += t2;
-            else
-                tProx += t1;
-
-            estado = !estado;
-            digitalWrite( pino, estado );
-        }
-    }
-    void start( unsigned long agora, int lt1, int lt2 )
-    {
-        t1 = lt1;
-        t2 = lt2;
-        tProx = agora + t1;
-        liga();
-    }
-    void stop()
-    {
-        tProx = 0;
-        desliga();
-    }
-private:
-    bool estado;
-    unsigned long tProx;
-    int pino;
-} led;
-
 void setup()
 {
-    led.inicia( LED_BUILTIN );
-    led.liga();
+    led.setup( LED_BUILTIN );
+    led.acende();
 
     toneAC( 3200, 5, 100 );
 
@@ -658,10 +673,13 @@ void setup()
     if( ! barometro.begin() )
     {
         Serial.println("Err ini BMP180");
-        toneAC( 4000, 10, 200 );
-        delay( 200 );
-        toneAC( 4000, 10, 200 );
-        return;
+
+        for(int x=0; x<5; x++)
+        {
+            toneAC( 4000, 10, 200 );
+            delay( 300 );
+        }
+
         while(1);
     }
 
@@ -690,8 +708,6 @@ void setup()
     #ifdef CARTAO_SD
         sdOk = SD.begin( 53 );
     #endif // CARTAO_SD
-
-
 }
 
 void loop()
@@ -982,7 +998,7 @@ void loop()
         #ifdef CARTAO_SD
         if( eeprom.dados.trace & TRACE_MICROSD)
         {
-            File dataFile = SD.open( "datalog.txt", FILE_WRITE);
+            File dataFile = SD.open( "datalog.csv", FILE_WRITE);
 
             if (dataFile)
             {
@@ -1002,7 +1018,7 @@ void loop()
                 dataFile.close();
             }
             else
-                SERIALX.println("error datalog.txt");
+                SERIALX.println("error datalog.csv");
         }
         #endif
     }
