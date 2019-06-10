@@ -23,6 +23,9 @@
 #include "tocador.hpp"
 TocadorToneAC tocadorToneAC;
 
+#include "led.hpp"
+Led led;
+
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
 MPL3115A2 altimetro;
@@ -36,11 +39,6 @@ SFE_BMP180 barometro;
 #ifdef CARTAO_SD
 //    #include <SPI.h>
     #include <SD.h>
-
-    Sd2Card card;
-    SdVolume volume;
-    SdFile root;
-    bool sdOk = false;
 #endif // CARTAO_SD
 
 #define ESTADO_DZ           0x00
@@ -52,10 +50,6 @@ SFE_BMP180 barometro;
 #include "interpretador.hpp"
 Interpretador interpretador;
 
-#define DEBOUNCE_POUSO       10000
-#define DEBOUNCE_SUBTERMINAL 15000
-#define DEBOUNCE_VEL_MAX_NAV 10000
-
 #ifndef DEBUG
 
 // PRODUCAO !
@@ -65,6 +59,10 @@ Interpretador interpretador;
 #define THRESHOLD_ABERTURA   -80.0
 #define THRESHOLD_SUBTERMINAL -7.0
 #define THRESHOLD_POUSO       -1.0
+
+#define DEBOUNCE_POUSO       10000
+#define DEBOUNCE_SUBTERMINAL 15000
+#define DEBOUNCE_VEL_MAX_NAV 10000
 
 #define AVISO_SUBIDA_CINTO  1500
 #define AVISO_SUBIDA_CHECK 12000
@@ -91,6 +89,10 @@ Interpretador interpretador;
 #define THRESHOLD_SUBTERMINAL -3.0
 #define THRESHOLD_POUSO       -0.5
 
+#define DEBOUNCE_POUSO       10000
+#define DEBOUNCE_SUBTERMINAL 3000
+#define DEBOUNCE_VEL_MAX_NAV 10000
+
 #define AVISO_SUBIDA_CINTO  6
 #define AVISO_SUBIDA_CHECK 12
 
@@ -107,6 +109,15 @@ Interpretador interpretador;
 #define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR | TRACE_ALTURA | TRACE_VELOCIDADE )
 
 #endif
+
+class SensorPressao
+{
+    public:
+        double altitude;
+        double temperatura;
+        double pressao;
+}
+sensor;
 
 class Eeprom
 {
@@ -462,7 +473,7 @@ int loopsSeg = 0;
 
 double readAltitudeFtBmp()
 {
-    double temperatura = 0;
+    sensor.temperatura = 0;
 
     char atraso = barometro.startTemperature();
 
@@ -470,7 +481,7 @@ double readAltitudeFtBmp()
     {
         delay( atraso );
 
-        barometro.getTemperature( temperatura );
+        barometro.getTemperature( sensor.temperatura );
 
         atraso = barometro.startPressure( 3 ); // oversampling 0-3
 
@@ -478,16 +489,18 @@ double readAltitudeFtBmp()
         {
             delay( atraso );
 
-            double pressao;
-
-            atraso = barometro.getPressure( pressao, temperatura );
+            atraso = barometro.getPressure( sensor.pressao, sensor.temperatura );
 
     //        pressao -= 2.9; // offset erro sensor
 
             if( atraso != 0 )
             {
                 delay( atraso );
-                return( barometro.altitude( pressao, 1013.25 ) * 3.28084 ); // MSL Mean Sea Level
+
+                // MSL Mean Sea Level
+                sensor.altitude = barometro.altitude( sensor.pressao, 1013.25 ) * 3.28084;
+
+                return( sensor.altitude );
             }
         }
     }
@@ -495,73 +508,78 @@ double readAltitudeFtBmp()
     return -666;
 }
 
-
 class CartaoSD
 {
-
-};
-
-class Arquivo
-{
-
-};
-
-class Led
-{
+    bool sdOk;
+    File arquivo;
 public:
-    Led()
+    CartaoSD() : sdOk(false)
+        {}
+    bool setup( int pinoCS )
     {
-        t1 = t2 = 0;
-        estado = false;
-        tProx = 0;
+        #ifdef CARTAO_SD
+            sdOk = SD.begin( pinoCS );
+        #endif // CARTAO_SD
     }
-    void setup( int pinoled )
+    bool criarJmp( int numero )
     {
-        pino = pinoled;
-        pinMode( pino, OUTPUT );
-    }
-    void acende()
-    {
-        estado = true;
-        digitalWrite( pino, estado );
-    }
-    void apaga()
-    {
-        estado = false;
-        digitalWrite( pino, estado );
-    }
-    void loop( unsigned long agora )
-    {
-        if( tProx && tProx < agora )
-        {
-            if( estado )
-                tProx += t2;
-            else
-                tProx += t1;
+        char nome[13]; // 8.3z
+        char linha[50];
 
-            estado = !estado;
-            digitalWrite( pino, estado );
+        sprintf( nome, "jmp%05d.csv", numero );
+
+        arquivo = SD.open( nome, FILE_WRITE);
+
+        if( arquivo )
+        {
+            arquivo.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura" );
+            SERIALX.print( "Arquivo criado: ");
+        }
+        else
+        {
+            sdOk = false;
+            SERIALX.print( "Erro ao criar arquivo: " );
+        }
+
+        SERIALX.println( nome );
+
+        if(sdOk)
+            SERIALX.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura" );
+
+        return sdOk;
+    }
+    bool println( Ponto &ponto, SensorPressao &sensor, int altura )
+    {
+        char linha[50];
+
+        if( sdOk && arquivo )
+        {
+            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d",
+                     ponto.timestamp,
+                     (int)sensor.altitude,
+                     (int)ponto.altitude,
+                     altura,
+                     (int)ponto.velocidade,
+                     (int)sensor.pressao,
+                     (int)sensor.temperatura );
+            arquivo.println( linha );
+        }
+        else
+            SERIALX.println( "Erro no arquivo" );
+
+        SERIALX.println( linha );
+    }
+    void fechaJmp()
+    {
+        if( arquivo )
+        {
+            arquivo.close();
+            SERIALX.println( "Arquivo fechado" );
         }
     }
-    void start( unsigned long agora, int lt1, int lt2 )
-    {
-        t1 = lt1;
-        t2 = lt2;
-        tProx = agora + t1;
-        acende();
-    }
-    void stop()
-    {
-        tProx = 0;
-        apaga();
-    }
-private:
-    int t1;
-    int t2;
-    bool estado;
-    unsigned long tProx;
-    int pino;
-} led;
+} cartao;
+
+
 
 Erros Interpretador::evalHardCoded( Variavel* resultado )
 {
@@ -628,13 +646,27 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     }
     else if( 0 == strncmp( token, CMD_LST, TAM_TOKEN )  )
     {
-        led.start( agora.timestamp, 200, 200 );
+
+    }
+    else if( 0 == strncmp( token, CMD_REC, TAM_TOKEN )  )
+    {
+        int temp = 1;
+
+        // segundo token eh o numero do proximo salto
+        if( getToken() == NUMERO )
+        {
+            getInt( &temp );
+        }
+
+        cartao.criarJmp( temp );
+
+        eeprom.dados.trace = TRACE_MASTER_EN | TRACE_MICROSD;
+        eeprom.dados.delayTrace = 1000;
     }
     else if( 0 == strncmp( token, CMD_STOP, TAM_TOKEN )  )
     {
-    }
-    else if( 0 == strncmp( token, CMD_STOP, TAM_TOKEN )  )
-    {
+        eeprom.dados.trace = 0;
+        cartao.fechaJmp();
     }
     else
     {
@@ -705,9 +737,7 @@ void setup()
 
     led.start( antes.timestamp, 20, 980 );
 
-    #ifdef CARTAO_SD
-        sdOk = SD.begin( 53 );
-    #endif // CARTAO_SD
+    cartao.setup( 53 );
 }
 
 void loop()
@@ -715,11 +745,11 @@ void loop()
     // atualiza sensores
 
     #ifdef BMP180
-    double sensor = readAltitudeFtBmp();
+    sensor.altitude = readAltitudeFtBmp();
     #endif
 
     #ifdef MPL3115A2
-    agora.sensor = altimetro.readAltitudeFt();
+    sensor = altimetro.readAltitudeFt();
     #endif
 
     agora.timestamp = millis();
@@ -730,7 +760,7 @@ void loop()
     agora.altitude = antes.altitude + antes.velocidade * deltaT;
     agora.velocidade = antes.velocidade;
 
-    double desvio = sensor - agora.altitude;
+    double desvio = sensor.altitude - agora.altitude;
 
     agora.altitude += eeprom.dados.alpha * desvio;
     agora.velocidade += ( eeprom.dados.beta * desvio ) / deltaT;
@@ -979,7 +1009,7 @@ void loop()
         if( eeprom.dados.trace & TRACE_SENSOR )
         {
             if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
-            SERIALX.print( sensor - salto.decolagem.altitude, 2  );
+            SERIALX.print( sensor.altitude - salto.decolagem.altitude, 2  );
             qquerCoisa = true;
         }
 
@@ -998,27 +1028,7 @@ void loop()
         #ifdef CARTAO_SD
         if( eeprom.dados.trace & TRACE_MICROSD)
         {
-            File dataFile = SD.open( "datalog.csv", FILE_WRITE);
-
-            if (dataFile)
-            {
-                String dataString = "";
-
-
-                dataString += String( agora.altitude - salto.decolagem.altitude );
-                dataString += ",";
-                dataString += String( agora.altitude );
-                dataString += ",";
-                dataString += String( agora.velocidade );
-                dataString += ",";
-                dataString += String( sensor - salto.decolagem.altitude );
-
-                dataFile.println( dataString );
-
-                dataFile.close();
-            }
-            else
-                SERIALX.println("error datalog.csv");
+            cartao.println( agora, sensor, altura );
         }
         #endif
     }

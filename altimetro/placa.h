@@ -6,7 +6,7 @@
 
 #define SERIALX_SPD 115200
 
-#define DFT_DELAY_TRACE 100
+#define DFT_DELAY_TRACE 500
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
     #define CARTAO_SD
