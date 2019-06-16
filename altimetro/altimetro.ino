@@ -9,16 +9,6 @@
 
 #include "placa.h"
 
-// mascara bitmap
-#define TRACE_MASTER_EN             0x01
-#define TRACE_SENSOR                0x02
-#define TRACE_ALTURA                0x04
-#define TRACE_VELOCIDADE            0x08
-#define TRACE_ALTITUDE              0x10
-#define TRACE_AVISOS                0x20
-#define TRACE_ANDROID_GRAPHICS_APP  0x40
-#define TRACE_MICROSD               0x80
-
 #include "circular.hpp"
 #include "tocador.hpp"
 TocadorToneAC tocadorToneAC;
@@ -29,17 +19,20 @@ Led led;
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
 MPL3115A2 altimetro;
+Wire.begin();
+altimetro.begin();
+altimetro.setModeAltimeter();
+altimetro.setOversampleRate(7);
+altimetro.enableEventFlags();
 #endif
 
 #ifdef BMP180
 #include <SFE_BMP180.h>
-SFE_BMP180 barometro;
 #endif
 
 #ifdef CARTAO_SD
-//    #include <SPI.h>
-    #include <SD.h>
-#endif // CARTAO_SD
+#include <SD.h>
+#endif
 
 #define ESTADO_DZ           0x00
 #define ESTADO_SUBIDA       0x01
@@ -116,6 +109,51 @@ class SensorPressao
         double altitude;
         double temperatura;
         double pressao;
+};
+
+class SensorPressaoBMP : public SensorPressao
+{
+    SFE_BMP180 barometro;
+public:
+    int setup()
+    {
+        return barometro.begin();
+    }
+    int refresh()
+    {
+        temperatura = 0;
+
+        char atraso = barometro.startTemperature();
+
+        if( atraso > 0 )
+        {
+            delay( atraso );
+
+            barometro.getTemperature( temperatura );
+
+            atraso = barometro.startPressure( 3 ); // oversampling 0-3
+
+            if( atraso > 0 )
+            {
+                delay( atraso );
+
+                atraso = barometro.getPressure( pressao, temperatura );
+
+        //        pressao -= 2.9; // offset erro sensor
+
+                if( atraso != 0 )
+                {
+                    delay( atraso );
+
+                    // MSL Mean Sea Level
+                    altitude = barometro.altitude( pressao, 1013.25 ) * 3.28084;
+
+                    return( altitude );
+                }
+            }
+        }
+        return -666;
+    }
 }
 sensor;
 
@@ -129,7 +167,7 @@ public:
         int delayTrace;
         double alpha;
         double beta;
-        double gama;
+        //double gama;
     }
     dados;
 
@@ -175,7 +213,7 @@ public:
         }
     };
 
-    int init()
+    int setup()
     {
         int carregados = carrega();
 
@@ -299,9 +337,14 @@ eeprom;
 class Ponto
 {
 public:
-    Ponto() : altitude(0),
-              velocidade(0.0),
-              timestamp(0.0) {}
+    Ponto(  unsigned long t = 0,
+            double a = 0,
+            double v = 0 )
+            : altitude( a ),
+              velocidade( v ),
+              timestamp( t )
+    {
+    }
 
     unsigned long timestamp;
     double altitude;
@@ -315,10 +358,8 @@ public:
 
     void print()
     {
-//        SERIALX.print
     }
-}
-antes, agora;
+};
 
 typedef struct
 {
@@ -406,6 +447,13 @@ Aviso avisos[] =
 
 const unsigned int nAvisos = ( sizeof(avisos)/sizeof(avisos[0]) );
 
+CircularStats<int,10> circularAltitude;        // medias dos ultimos 10 segundos
+
+unsigned long tUmSegundo = 0;
+unsigned long tTrace = 0;
+int contadorLoop = 0;
+int loopsSeg = 0;
+
 class Salto
 {
 public:
@@ -417,6 +465,136 @@ public:
     Ponto pouso;
 
     Eeprom::Caderneta anotacao;
+
+    int processaPonto( Ponto &agora )
+    {
+        if( ESTADO_DZ == estado )
+            processaDropzone( agora );
+        else if( ESTADO_SUBIDA == estado )
+            processaSubida( agora );
+        else if( ESTADO_QUEDA == estado )
+            processaQueda( agora );
+        else if( ESTADO_NAVEGACAO == estado )
+            processaNavegacao( agora );
+        return 0;
+    }
+
+    int processaDropzone( Ponto &agora )
+    {
+        decolagem.altitude = *circularAltitude.topo();
+
+        if( agora.velocidade > THRESHOLD_DECOLAGEM )
+        {
+            decolagem.timestamp = agora.timestamp;
+
+            saida = abertura = pouso = decolagem;
+
+            // reset alarmes
+            for( int i = 0; i < nAvisos ; i++ )
+                avisos[i].atingido = 0;
+
+            trocaEstado( ESTADO_SUBIDA );
+        }
+        else if( agora.velocidade < THRESHOLD_QUEDA )
+        {
+            // gambiarra caso estado esteja cagado (resiliencia)
+            saida = agora;
+            trocaEstado( ESTADO_QUEDA );
+        }
+
+        return 0;
+    }
+
+    int processaSubida( Ponto &agora)
+    {
+        if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
+        {
+            saida = agora;
+            saida.altitude = *circularAltitude.topo(); // despreza variacao durante aceleracao e usa alt de 10s atras
+
+            trocaEstado( ESTADO_QUEDA );
+            debounceAbertura = 0;
+        }
+        else if( agora.velocidade < THRESHOLD_SUBTERMINAL ) // abertura subterminal
+        {
+            if( debounceAbertura == 0 )
+            {
+                debounceAbertura = agora.timestamp + DEBOUNCE_SUBTERMINAL;
+
+                saida = agora;
+                saida.altitude = *circularAltitude.topo(); // despreza variacao durante aceleracao e usa alt de 10s atras
+
+                abertura = saida;
+            }
+            else if( agora.timestamp > debounceAbertura )
+            {
+                debounceVelMaxNav = agora.timestamp;
+
+                trocaEstado( ESTADO_NAVEGACAO );
+                debounceAbertura = 0;
+            }
+        }
+        else // subindo ou estavel
+        {
+            debounceAbertura = 0;
+        }
+
+        return 0;
+    }
+
+    int processaQueda( Ponto &agora )
+    {
+        if( agora.velocidade < anotacao.velocidadeMaxQueda )
+        {
+            anotacao.velocidadeMaxQueda = agora.velocidade;
+        }
+
+        if( agora.velocidade > THRESHOLD_ABERTURA )
+        {
+            debounceVelMaxNav = agora.timestamp + DEBOUNCE_VEL_MAX_NAV;
+
+            abertura = agora;
+            trocaEstado( ESTADO_NAVEGACAO );
+        }
+        return 0;
+    }
+
+    int processaNavegacao( Ponto &agora )
+    {
+        if( agora.velocidade < anotacao.velocidadeMaxNavegacao && debounceVelMaxNav < agora.timestamp )
+        {
+            anotacao.velocidadeMaxNavegacao = agora.velocidade;
+        }
+
+        if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
+        {
+            saida = agora;
+            trocaEstado( ESTADO_QUEDA );
+            debouncePouso = 0;
+        }
+        else if( agora.velocidade > THRESHOLD_POUSO ) // pouso
+        {
+            if( ( agora.altitude - decolagem.altitude ) < 1000 ) // gambi: mil pes de tolerancia pra nao ter mais alarme falso de pouso
+            {
+                if( debouncePouso == 0 )
+                {
+                    debouncePouso = agora.timestamp + DEBOUNCE_POUSO;
+                    pouso = agora;
+                }
+                else if ( debouncePouso <= agora.timestamp )
+                {
+                    trocaEstado( ESTADO_DZ );
+                    // salto.limpa();
+                    debouncePouso = 0;
+                }
+            }
+        }
+        else
+        {
+            debouncePouso = 0;
+        }
+        return 0;
+    }
 
     void trocaEstado( char novoEstado )
     {
@@ -452,81 +630,78 @@ public:
         }
     }
 
-    void limpa()
+    void limpa( Ponto *ponto = NULL )
     {
         estado = ESTADO_DZ;
+
         decolagem.limpa();
         saida.limpa();
         abertura.limpa();
         pouso.limpa();
+
+        if( ponto )
+        {
+            saida = decolagem = abertura = pouso = *ponto;
+        }
+
         anotacao.limpa();
     }
+private:
+    unsigned long debounceVelMaxNav;
+    unsigned long debounceAbertura;
+    unsigned long debouncePouso;
 }
 salto;
 
-CircularStats<int,10> circular10;        // medias dos ultimos 10 segundos
-
-unsigned long tUmSegundo = 0;
-unsigned long tTrace = 0;
-int contadorLoop = 0;
-int loopsSeg = 0;
-
-double readAltitudeFtBmp()
-{
-    sensor.temperatura = 0;
-
-    char atraso = barometro.startTemperature();
-
-    if( atraso > 0 )
-    {
-        delay( atraso );
-
-        barometro.getTemperature( sensor.temperatura );
-
-        atraso = barometro.startPressure( 3 ); // oversampling 0-3
-
-        if( atraso > 0 )
-        {
-            delay( atraso );
-
-            atraso = barometro.getPressure( sensor.pressao, sensor.temperatura );
-
-    //        pressao -= 2.9; // offset erro sensor
-
-            if( atraso != 0 )
-            {
-                delay( atraso );
-
-                // MSL Mean Sea Level
-                sensor.altitude = barometro.altitude( sensor.pressao, 1013.25 ) * 3.28084;
-
-                return( sensor.altitude );
-            }
-        }
-    }
-
-    return -666;
-}
-
 class CartaoSD
 {
-    bool sdOk;
-    File arquivo;
 public:
     CartaoSD() : sdOk(false)
         {}
     bool setup( int pinoCS )
     {
-        #ifdef CARTAO_SD
-            sdOk = SD.begin( pinoCS );
-        #endif // CARTAO_SD
+        return ( sdOk = SD.begin( pinoCS ) );
     }
+
+    bool ls()
+    {
+        File dir = SD.open("/");
+
+        for( File entry = dir.openNextFile() ;
+                entry ;
+                entry = dir.openNextFile() )
+        {
+            SERIALX.print(entry.name());
+            if (entry.isDirectory())
+            {
+                SERIALX.println("/");
+            }
+            else
+            {
+                // files have sizes, directories do not
+                Serial.print("\t\t");
+                Serial.println(entry.size(), DEC);
+            }
+            entry.close();
+        }
+    }
+
     bool criarJmp( int numero )
     {
         char nome[13]; // 8.3z
         char linha[50];
 
-        sprintf( nome, "jmp%05d.csv", numero );
+        bool existe = false;
+
+        do
+        {
+            sprintf( nome, "jmp%05d.csv", numero );
+
+            existe = SD.exists( nome );
+
+            if( existe )
+                numero++;
+        } while( existe );
 
         arquivo = SD.open( nome, FILE_WRITE);
 
@@ -577,9 +752,75 @@ public:
             SERIALX.println( "Arquivo fechado" );
         }
     }
-} cartao;
+private:
+    bool sdOk;
+    File arquivo;
+}
+cartao;
 
+class Altimetro
+{
+public:
+    Ponto agora;
 
+    int setup( Ponto &pontoSetup )
+    {
+        agora = antes = pontoSetup;
+        return 0;
+    }
+
+    int refresh( unsigned long timestamp, double altitudeSensor )
+    {
+        antes = agora;
+
+        agora.timestamp = timestamp;
+        double deltaT = ( (double) ( agora.timestamp - antes.timestamp ) ) / 1000.0;
+
+        // predicao
+
+        agora.altitude = antes.altitude + antes.velocidade * deltaT;
+        agora.velocidade = antes.velocidade;
+
+        double desvio = altitudeSensor - agora.altitude;
+
+        agora.altitude += eeprom.dados.alpha * desvio;
+        agora.velocidade += ( eeprom.dados.beta * desvio ) / deltaT;
+
+    //    // Kalman
+    //
+    //    static double ganho= 0;
+    //    static double p = 1;
+    //    ganho = p + 0.05 / (p + variancia);
+    //    altimetro.agora.altitude = altimetro.antes.altitude + ganho * ( altitude - altimetro.antes.altitude );
+    //    p = ( 1 - ganho ) * p;
+    //    circular1s.insere( altimetro.agora.altitude );
+
+        return 0;
+    }
+
+    unsigned long getTimestamp()
+    {
+        return agora.timestamp;
+    }
+
+    double getAltitude()
+    {
+        return agora.altitude;
+    }
+
+    double getVelocidade()
+    {
+        return agora.velocidade;
+    }
+
+    int getAltura()
+    {
+        return int( agora.altitude - salto.decolagem.altitude );
+    }
+private:
+    Ponto antes;
+}
+altimetro;
 
 Erros Interpretador::evalHardCoded( Variavel* resultado )
 {
@@ -646,7 +887,7 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     }
     else if( 0 == strncmp( token, CMD_LST, TAM_TOKEN )  )
     {
-
+        cartao.ls();
     }
     else if( 0 == strncmp( token, CMD_REC, TAM_TOKEN )  )
     {
@@ -660,12 +901,12 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
 
         cartao.criarJmp( temp );
 
-        eeprom.dados.trace = TRACE_MASTER_EN | TRACE_MICROSD;
+        eeprom.dados.trace |= TRACE_MASTER_EN | TRACE_MICROSD;
         eeprom.dados.delayTrace = 1000;
     }
     else if( 0 == strncmp( token, CMD_STOP, TAM_TOKEN )  )
     {
-        eeprom.dados.trace = 0;
+        eeprom.dados.trace &= ~TRACE_MICROSD;
         cartao.fechaJmp();
     }
     else
@@ -693,18 +934,18 @@ void setup()
 
     SERIALX.begin( SERIALX_SPD );
 
-    eeprom.init();
+    eeprom.setup();
 
     interpretador.declaraVar( VAR_INT, NOME_TRACE, &eeprom.dados.trace );
     interpretador.declaraVar( VAR_INT, NOME_T_TRC, &eeprom.dados.delayTrace );
     interpretador.declaraVar( VAR_INT, NOME_LOOPS, &loopsSeg );
     interpretador.declaraVar( VAR_DOUBLE, NOME_ALPHA, &eeprom.dados.alpha );
     interpretador.declaraVar( VAR_DOUBLE, NOME_BETA, &eeprom.dados.beta );
-    interpretador.declaraVar( VAR_LONG, NOME_TIMESTAMP,  &agora.timestamp );
+    interpretador.declaraVar( VAR_LONG, NOME_TIMESTAMP,  &altimetro.agora.timestamp );
 
-    if( ! barometro.begin() )
+    if( ! sensor.setup() )
     {
-        Serial.println("Err ini BMP180");
+        Serial.println("Erro sensor barometrico");
 
         for(int x=0; x<5; x++)
         {
@@ -715,203 +956,54 @@ void setup()
         while(1);
     }
 
-#ifdef MPL3115A2
-    Wire.begin();
-    altimetro.begin();
-    altimetro.setModeAltimeter();
-    altimetro.setOversampleRate(7);
-    altimetro.enableEventFlags();
-#endif
-
-    for( int z = 0; z < 100; z++ )
+    for( int z = 0; z < 30; z++ )
     {
-        circular10.insere( readAltitudeFtBmp() );
+        sensor.refresh();
+        circularAltitude.insere( sensor.altitude );
     }
 
-    salto.limpa();
-    salto.saida.altitude = salto.decolagem.altitude = salto.abertura.altitude = agora.altitude = antes.altitude = *circular10.topo();
+    Ponto pontoSetup( millis(), circularAltitude.media(), 0.0 );
+
+    salto.limpa( &pontoSetup );
+
+    tUmSegundo = tTrace = pontoSetup.timestamp;
+
+    led.start( pontoSetup.timestamp, 20, 980 );
 
     tocadorToneAC.insere( 250, 2700, 10 );
 
-    antes.timestamp = millis();
+    #ifdef CARTAO_SD
+        cartao.setup( CARTAO_SD_PINO_SS );
+    #endif
 
-    led.start( antes.timestamp, 20, 980 );
-
-    cartao.setup( 53 );
+    altimetro.setup( pontoSetup );
 }
 
 void loop()
 {
-    // atualiza sensores
+    sensor.refresh();
 
-    #ifdef BMP180
-    sensor.altitude = readAltitudeFtBmp();
-    #endif
+    unsigned long timestamp = millis();
 
-    #ifdef MPL3115A2
-    sensor = altimetro.readAltitudeFt();
-    #endif
-
-    agora.timestamp = millis();
-    double deltaT = ( (double) ( agora.timestamp - antes.timestamp ) ) / 1000.0;
-
-    // predicao
-
-    agora.altitude = antes.altitude + antes.velocidade * deltaT;
-    agora.velocidade = antes.velocidade;
-
-    double desvio = sensor.altitude - agora.altitude;
-
-    agora.altitude += eeprom.dados.alpha * desvio;
-    agora.velocidade += ( eeprom.dados.beta * desvio ) / deltaT;
-
-//    // Kalman
-//
-//    static double ganho= 0;
-//    static double p = 1;
-//    ganho = p + 0.05 / (p + variancia);
-//    agora.altitude = antes.altitude + ganho * ( sensor - antes.altitude );
-//    p = ( 1 - ganho ) * p;
-//    circular1s.insere( agora.altitude );
-
-    int altura = int( agora.altitude - salto.decolagem.altitude );
+    altimetro.refresh( timestamp, sensor.altitude );
 
     contadorLoop++;
 
-    if( agora.timestamp >= tUmSegundo )
+    if( timestamp >= tUmSegundo )
     {
-        tUmSegundo = agora.timestamp + 1000;
+        tUmSegundo += 1000;
 
-        circular10.insere( agora.altitude );
+        circularAltitude.insere( altimetro.getAltitude() );
 
         loopsSeg = contadorLoop;
         contadorLoop = 0;
     }
 
-    // regras de negocio
-
-    static unsigned long debounceVelMaxNav = 0;
-
-    switch( salto.estado )
-    {
-    case ESTADO_DZ:
-        salto.decolagem.altitude = *circular10.topo();
-
-        if( agora.velocidade > THRESHOLD_DECOLAGEM )
-        {
-            salto.decolagem.timestamp = agora.timestamp;
-            salto.saida = salto.abertura = salto.pouso = salto.decolagem;
-
-            // reset alarmes
-            for( int i = 0; i < nAvisos ; i++ )
-                avisos[i].atingido = 0;
-
-            salto.trocaEstado( ESTADO_SUBIDA );
-
-            led.start( agora.timestamp, 200, 200 );
-        }
-        else if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
-        {
-            salto.saida = agora;
-            salto.trocaEstado( ESTADO_QUEDA );
-        }
-        break;
-
-    case ESTADO_SUBIDA:
-
-        static unsigned long debounceAbertura = 0;
-
-        if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
-        {
-            salto.saida = agora;
-            salto.saida.altitude = *circular10.topo(); // despreza variacao durante aceleracao e usa alt de 10s atras
-
-            salto.trocaEstado( ESTADO_QUEDA );
-            debounceAbertura = 0;
-        }
-        else if( agora.velocidade < THRESHOLD_SUBTERMINAL ) // abertura subterminal
-        {
-            if( debounceAbertura == 0 )
-            {
-                debounceAbertura = agora.timestamp + DEBOUNCE_SUBTERMINAL;
-
-                salto.saida = agora;
-                salto.saida.altitude = *circular10.topo(); // despreza variacao durante aceleracao e usa alt de 10s atras
-
-                salto.abertura = salto.saida;
-            }
-            else if( agora.timestamp > debounceAbertura )
-            {
-                debounceVelMaxNav = agora.timestamp;
-
-                salto.trocaEstado( ESTADO_NAVEGACAO );
-                debounceAbertura = 0;
-            }
-        }
-        else // subindo ou estavel
-        {
-            debounceAbertura = 0;
-        }
-        break;
-
-    case ESTADO_QUEDA:
-        if( agora.velocidade < salto.anotacao.velocidadeMaxQueda )
-        {
-            salto.anotacao.velocidadeMaxQueda = agora.velocidade;
-        }
-
-        if( agora.velocidade > THRESHOLD_ABERTURA )
-        {
-            debounceVelMaxNav = agora.timestamp + DEBOUNCE_VEL_MAX_NAV;
-
-            salto.abertura = agora;
-            salto.trocaEstado( ESTADO_NAVEGACAO );
-        }
-        break;
-
-    case ESTADO_NAVEGACAO:
-
-        static unsigned long debouncePouso = 0;
-
-        if( agora.velocidade < salto.anotacao.velocidadeMaxNavegacao && debounceVelMaxNav < agora.timestamp )
-        {
-            salto.anotacao.velocidadeMaxNavegacao = agora.velocidade;
-        }
-
-        if( agora.velocidade < THRESHOLD_QUEDA ) // inicio da queda livre
-        {
-            salto.saida = agora;
-            salto.trocaEstado( ESTADO_QUEDA );
-            debouncePouso = 0;
-        }
-        else if( agora.velocidade > THRESHOLD_POUSO ) // pouso
-        {
-            if( altura < 1000 ) // gambi: mil pes de tolerancia pra nao ter mais alarme falso de pouso
-            {
-                if( debouncePouso == 0)
-                {
-                    debouncePouso = agora.timestamp + DEBOUNCE_POUSO;
-                    salto.pouso = agora;
-                }
-                else if ( debouncePouso <= agora.timestamp )
-                {
-                    salto.trocaEstado( ESTADO_DZ );
-                    // salto.limpa();
-                    debouncePouso = 0;
-
-                    led.start( agora.timestamp, 20, 980 );
-                }
-            }
-        }
-        else
-        {
-            debouncePouso = 0;
-        }
-
-        break;
-    }
+    salto.processaPonto( altimetro.agora );
 
     // avisos de altura
+
+    int altura = altimetro.getAltura();
 
     for( int i = 0;  i < nAvisos; i++ )
     {
@@ -922,7 +1014,7 @@ void loop()
                 if( ( ( altura > avisos[i].altura ) && ( avisos[i].estado & (ESTADO_SUBIDA) ) )
                  || ( ( altura < avisos[i].altura ) && ( avisos[i].estado & (ESTADO_NAVEGACAO|ESTADO_QUEDA) ) ) )
                 {
-                    avisos[i].atingido = agora.timestamp;
+                    avisos[i].atingido = timestamp;
                     avisos[i].tocar();
 
                     if( eeprom.dados.trace & ( TRACE_AVISOS | TRACE_MASTER_EN ) )
@@ -942,7 +1034,7 @@ void loop()
 
     // player
 
-    tocadorToneAC.loop( agora.timestamp );
+    tocadorToneAC.loop( timestamp );
 
     // interpretador de comandos via serial
 
@@ -971,69 +1063,74 @@ void loop()
         }
     }
 
-
-    if( ( eeprom.dados.trace & TRACE_MASTER_EN ) && ( agora.timestamp >= tTrace ) )
+    if( timestamp >= tTrace )
     {
-        tTrace = agora.timestamp + eeprom.dados.delayTrace;
+        tTrace += eeprom.dados.delayTrace;
 
-        bool androidGraphicsApp = ( eeprom.dados.trace & TRACE_ANDROID_GRAPHICS_APP );
-        bool qquerCoisa = false;
-
-        if( androidGraphicsApp )
+        if( eeprom.dados.trace & TRACE_MASTER_EN )
         {
-            SERIALX.print( "E" );
-            qquerCoisa = true;
+            #define TRACE_ANDROID_PREFIXO "E "
+            #define TRACE_ANDROID_SEPARADOR ","
+            #define TRACE_SEPARADOR " "
+            #define TRACE_PRECISAO 2
+
+            bool androidPlotterApp = ( eeprom.dados.trace & TRACE_ANDROID_PLOTTER );
+
+            if( androidPlotterApp )
+            {
+                SERIALX.print( TRACE_ANDROID_PREFIXO );
+            }
+
+            bool qquerCoisa = false;
+
+            if( eeprom.dados.trace & TRACE_ALTURA )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( altimetro.getAltura() );
+                qquerCoisa = true;
+            }
+
+            if( eeprom.dados.trace & TRACE_ALTITUDE )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( altimetro.getAltitude(), TRACE_PRECISAO );
+                qquerCoisa = true;
+            }
+
+            if( eeprom.dados.trace & TRACE_VELOCIDADE )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( altimetro.getVelocidade(), TRACE_PRECISAO  );
+                qquerCoisa = true;
+            }
+
+            if( eeprom.dados.trace & TRACE_SENSOR )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( sensor.altitude - salto.decolagem.altitude, TRACE_PRECISAO  );
+                qquerCoisa = true;
+            }
+
+        //        SERIALX.print( deltaT * 1000 );
+        //        SERIALX.print( circularAltitude.media() , 2  );
+        //        SERIALX.print( circularAltitude.media() - decolagem.altitude, 2  );
+        //        SERIALX.print( *circularAltitudemedia.topo() - salto.decolagem.altitude, 2 );
+        //        SERIALX.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
+        //        SERIALX.print( circular1s.media() , 2 );
+        //        SERIALX.print( circular1s.media() - salto.decolagem.altitude, 2 );
+        //        SERIALX.print( circular1s.desvio(), 2 );
+
+            if( qquerCoisa )
+                SERIALX.println();
+
+            if( eeprom.dados.trace & TRACE_MICROSD)
+            {
+                #ifdef CARTAO_SD
+                    cartao.println( altimetro.agora, sensor, altura );
+                #endif
+            }
         }
-
-        if( eeprom.dados.trace & TRACE_ALTURA )
-        {
-            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
-            SERIALX.print( agora.altitude - salto.decolagem.altitude, 2 ); // Serial.print( altura );
-            qquerCoisa = true;
-        }
-
-        if( eeprom.dados.trace & TRACE_ALTITUDE )
-        {
-            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
-            SERIALX.print( agora.altitude, 2 );
-            qquerCoisa = true;
-        }
-
-        if( eeprom.dados.trace & TRACE_VELOCIDADE )
-        {
-            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
-            SERIALX.print( agora.velocidade, 2  );
-            qquerCoisa = true;
-        }
-
-        if( eeprom.dados.trace & TRACE_SENSOR )
-        {
-            if( qquerCoisa ) SERIALX.print( androidGraphicsApp ? "," : " " );
-            SERIALX.print( sensor.altitude - salto.decolagem.altitude, 2  );
-            qquerCoisa = true;
-        }
-
-    //        SERIALX.print( deltaT * 1000 );
-    //        SERIALX.print( circular10.media() , 2  );
-    //        SERIALX.print( circular10.media() - decolagem.altitude, 2  );
-    //        SERIALX.print( *circular10media.topo() - salto.decolagem.altitude, 2 );
-    //        SERIALX.print( salto.saida.altitude - salto.decolagem.altitude, 2 );
-    //        SERIALX.print( circular1s.media() , 2 );
-    //        SERIALX.print( circular1s.media() - salto.decolagem.altitude, 2 );
-    //        SERIALX.print( circular1s.desvio(), 2 );
-
-        if( qquerCoisa )
-            SERIALX.println();
-
-        #ifdef CARTAO_SD
-        if( eeprom.dados.trace & TRACE_MICROSD)
-        {
-            cartao.println( agora, sensor, altura );
-        }
-        #endif
     }
 
-    antes = agora;
-
-    led.loop( agora.timestamp );
+    led.loop( timestamp );
 }

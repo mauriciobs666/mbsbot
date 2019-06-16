@@ -1,5 +1,5 @@
 
-// (c) 2017 MBS - Mauricio Bieze Stefani
+// (c) 2017-2019 MBS - Mauricio Bieze Stefani
 
 #ifndef INTERPRETADOR_HPP_INCLUDED
 #define INTERPRETADOR_HPP_INCLUDED

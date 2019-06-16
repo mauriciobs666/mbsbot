@@ -1,5 +1,5 @@
 
-// (c) 2017 MBS - Mauricio Bieze Stefani
+// (c) 2017-2019 MBS - Mauricio Bieze Stefani
 
 #ifndef PROTOCOLO_H_INCLUDED
 #define PROTOCOLO_H_INCLUDED
@@ -17,7 +17,7 @@ Formato geral do pacote:
 <comando> [argumentos] CMD_EOL
 */
 
-#define CMD_EOL ';'
+#define CMD_EOL       ';'
 #define MAX_CMD 20      // bytes, tamanho maximo de um comando serial
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
@@ -42,35 +42,37 @@ formato da resposta:
 S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA_DIR_T NOME_SERVO_X NOME_SERVO_Y NOME_SERVO_Z
 */
 
-#define CMD_UNAME "uname"
+#define CMD_UNAME   "uname"
 /* CMD_UNAME */
 
-#define CMD_BIP "bip"
+#define CMD_BIP     "bip"
 /* CMD_BIP [Hz] [ms] */
 
-#define CMD_DUMP "dmp"
-#define CMD_CLEAR "clr"
-#define CMD_RESET "rst"
+#define CMD_DUMP    "dmp"
+#define CMD_CLEAR   "clr"
+#define CMD_RESET   "rst"
 
-#define CMD_WHO "who" /* mostra lista de variaveis */
+#define CMD_WHO     "who" /* mostra lista de variaveis */
 
-#define CMD_AVISOS "avs"
+#define CMD_AVISOS  "avs"
 
 // cartao de memoria
 
-#define CMD_LST "ls"
-#define CMD_REC "rec"
-#define CMD_STOP "stp"
+#define CMD_LST     "ls"
+#define CMD_REC     "rec"
+#define CMD_STOP    "stp"
 
-#define NOME_TRACE    "trc"
-#define NOME_T_TRC    "trcd" // intervalo envio trace
-#define NOME_ALPHA    "alf"
-#define NOME_BETA     "bet"
+#define NOME_TRACE      "trc"
+#define NOME_T_TRC      "trcd" // intervalo envio trace
+#define NOME_ALPHA      "alf"
+#define NOME_BETA       "bet"
 
-#define NOME_LOOPS    "lps"
+#define NOME_LOOPS      "lps"
 
-#define NOME_ERRNO    "err"
-#define NOME_TIMESTAMP   "t"
+#define NOME_ERRNO      "err"
+#define NOME_TIMESTAMP  "t"
+#define NOME_ESTADO     "est"
+
 
 enum Erros
 {
@@ -84,5 +86,15 @@ enum Erros
     ERRO_INTERPRETADOR,
     SKIP
 };
+
+// mascara bitmap
+#define TRACE_MASTER_EN             0x01
+#define TRACE_SENSOR                0x02
+#define TRACE_ALTURA                0x04
+#define TRACE_VELOCIDADE            0x08
+#define TRACE_ALTITUDE              0x10
+#define TRACE_AVISOS                0x20
+#define TRACE_ANDROID_PLOTTER       0x40
+#define TRACE_MICROSD               0x80
 
 #endif // PROTOCOLO_H_INCLUDED
