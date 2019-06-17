@@ -22,7 +22,7 @@ Formato geral do pacote:
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
 #define TAM_NOME 5      // bytes, tamanho max de um nome de variavel
-#define NUM_VARS 6      // array de variaveis do interpretador
+#define NUM_VARS 10     // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */
@@ -68,6 +68,7 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define NOME_BETA       "bet"
 
 #define NOME_LOOPS      "lps"
+#define NOME_BAT        "bat"
 
 #define NOME_ERRNO      "err"
 #define NOME_TIMESTAMP  "t"

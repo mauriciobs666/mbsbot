@@ -925,6 +925,32 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     return rc;
 }
 
+
+class MonitorBateria
+{
+public:
+    int sensor;
+    MonitorBateria() : sensor(0), pino(-1)
+    {
+        #ifdef PINO_MONITOR_BATERIA
+            pino = PINO_MONITOR_BATERIA;
+        #endif // PINO_MONITOR_BATERIA
+    }
+    void refresh()
+    {
+        sensor = analogRead(pino);
+    }
+    void printStatus()
+    {
+        SERIALX.print( "Bat = ");
+        SERIALX.print( sensor );
+        SERIALX.println( " ");
+    }
+private:
+    int pino;
+}
+monitorBateria;
+
 void setup()
 {
     led.setup( LED_BUILTIN );
@@ -939,6 +965,7 @@ void setup()
     interpretador.declaraVar( VAR_INT, NOME_TRACE, &eeprom.dados.trace );
     interpretador.declaraVar( VAR_INT, NOME_T_TRC, &eeprom.dados.delayTrace );
     interpretador.declaraVar( VAR_INT, NOME_LOOPS, &loopsSeg );
+    interpretador.declaraVar( VAR_INT, NOME_BAT, &monitorBateria.sensor );
     interpretador.declaraVar( VAR_DOUBLE, NOME_ALPHA, &eeprom.dados.alpha );
     interpretador.declaraVar( VAR_DOUBLE, NOME_BETA, &eeprom.dados.beta );
     interpretador.declaraVar( VAR_LONG, NOME_TIMESTAMP,  &altimetro.agora.timestamp );
@@ -994,6 +1021,8 @@ void loop()
         tUmSegundo += 1000;
 
         circularAltitude.insere( altimetro.getAltitude() );
+
+        monitorBateria.refresh();
 
         loopsSeg = contadorLoop;
         contadorLoop = 0;

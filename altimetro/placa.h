@@ -21,7 +21,7 @@
     #define SERIALX Serial2
 //    #define SERIALX Serial
     #define DEBUG 1
-    #define MONITOR_BATERIA
+    #define PINO_MONITOR_BATERIA A0
 #else
     #define SERIALX Serial
 #endif
