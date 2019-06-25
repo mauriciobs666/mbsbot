@@ -72,8 +72,7 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 
 #define NOME_ERRNO      "err"
 #define NOME_TIMESTAMP  "t"
-#define NOME_ESTADO     "est"
-
+#define NOME_ESTADO     "std"
 
 enum Erros
 {
@@ -97,5 +96,10 @@ enum Erros
 #define TRACE_AVISOS                0x20
 #define TRACE_ANDROID_PLOTTER       0x40
 #define TRACE_MICROSD               0x80
+
+#define ESTADO_DZ           0x00
+#define ESTADO_SUBIDA       0x01
+#define ESTADO_QUEDA        0x02
+#define ESTADO_NAVEGACAO    0x04
 
 #endif // PROTOCOLO_H_INCLUDED

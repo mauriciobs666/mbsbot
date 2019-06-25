@@ -14,7 +14,18 @@
 TocadorToneAC tocadorToneAC;
 
 #include "led.hpp"
-Led led;
+
+#ifdef PINO_LED_R
+Led ledR;
+#endif
+
+#ifdef PINO_LED_G
+Led ledG;
+#endif
+
+#ifdef PINO_LED_B
+Led ledB;
+#endif
 
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
@@ -34,74 +45,9 @@ altimetro.enableEventFlags();
 #include <SD.h>
 #endif
 
-#define ESTADO_DZ           0x00
-#define ESTADO_SUBIDA       0x01
-#define ESTADO_QUEDA        0x02
-#define ESTADO_NAVEGACAO    0x04
-
 #include "protocolo.h"
 #include "interpretador.hpp"
 Interpretador interpretador;
-
-#ifndef DEBUG
-
-// PRODUCAO !
-
-#define THRESHOLD_DECOLAGEM    6.0
-#define THRESHOLD_QUEDA     -130.0
-#define THRESHOLD_ABERTURA   -80.0
-#define THRESHOLD_SUBTERMINAL -7.0
-#define THRESHOLD_POUSO       -1.0
-
-#define DEBOUNCE_POUSO       10000
-#define DEBOUNCE_SUBTERMINAL 15000
-#define DEBOUNCE_VEL_MAX_NAV 10000
-
-#define AVISO_SUBIDA_CINTO  1500
-#define AVISO_SUBIDA_CHECK 12000
-
-#define AVISO_ALTA_1    6500
-#define AVISO_ALTA_2    5500
-#define AVISO_ALTA_3    4500
-#define ALARME_ALTA     3500
-
-#define AVISO_NAVEGACAO_A      300
-#define AVISO_NAVEGACAO_B      600
-#define AVISO_NAVEGACAO_C      900
-#define AVISO_NAVEGACAO_D     1200
-
-#define TRACE 0
-
-#else
-
-// DEBUG
-
-#define THRESHOLD_DECOLAGEM    0.8
-#define THRESHOLD_QUEDA       -0.8
-#define THRESHOLD_ABERTURA     0.8
-#define THRESHOLD_SUBTERMINAL -3.0
-#define THRESHOLD_POUSO       -0.5
-
-#define DEBOUNCE_POUSO       10000
-#define DEBOUNCE_SUBTERMINAL 3000
-#define DEBOUNCE_VEL_MAX_NAV 10000
-
-#define AVISO_SUBIDA_CINTO  6
-#define AVISO_SUBIDA_CHECK 12
-
-#define AVISO_ALTA_1       9
-#define AVISO_ALTA_2       6
-#define AVISO_ALTA_3       3
-#define ALARME_ALTA        5
-
-#define AVISO_NAVEGACAO_A        6
-#define AVISO_NAVEGACAO_B       12
-#define AVISO_NAVEGACAO_C       24
-#define AVISO_NAVEGACAO_D       36
-
-#define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR | TRACE_ALTURA | TRACE_VELOCIDADE )
-
-#endif
 
 class SensorPressao
 {
@@ -113,14 +59,27 @@ class SensorPressao
 
 class SensorPressaoBMP : public SensorPressao
 {
+private:
+    bool inicializado;
     SFE_BMP180 barometro;
 public:
-    int setup()
+    SensorPressaoBMP()
     {
-        return barometro.begin();
+        inicializado = false;
+    }
+    bool setup()
+    {
+        inicializado = barometro.begin();
+        return inicializado;
     }
     int refresh()
     {
+        if( ! inicializado )
+        {
+            altitude = temperatura = pressao = 0;
+            return 0;
+        }
+
         temperatura = 0;
 
         char atraso = barometro.startTemperature();
@@ -653,6 +612,7 @@ private:
 }
 salto;
 
+#ifdef CARTAO_SD
 class CartaoSD
 {
 public:
@@ -757,6 +717,7 @@ private:
     File arquivo;
 }
 cartao;
+#endif // CARTAO_SD
 
 class Altimetro
 {
@@ -885,6 +846,7 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
             SERIALX.println();
         }
     }
+#ifdef CARTAO_SD
     else if( 0 == strncmp( token, CMD_LST, TAM_TOKEN )  )
     {
         cartao.ls();
@@ -909,6 +871,7 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
         eeprom.dados.trace &= ~TRACE_MICROSD;
         cartao.fechaJmp();
     }
+#endif // CARTAO_SD
     else
     {
         eco = true;
@@ -925,6 +888,59 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     return rc;
 }
 
+class Botao
+{
+public:
+    Botao() : pino(-1), estado(false), trocaEstado(false), debounce(0)
+    {
+    }
+    void setup( int pinob )
+    {
+        pino = pinob;
+        pinMode( pino, INPUT_PULLUP );
+        estado = ! digitalRead( pino );
+    }
+    bool getEstado()
+    {
+        return estado;
+    }
+    bool isTrocaEstado()
+    {
+        bool retorno = trocaEstado;
+        trocaEstado = false;
+        return retorno;
+    }
+    void refresh( unsigned long t )
+    {
+        bool leitura = ! digitalRead( pino );
+
+        if( leitura != estado )
+        {
+            if( debounce == 0 )
+            {
+                debounce = t + 100;
+            }
+            else if( debounce < t)
+            {
+                estado = leitura;
+                trocaEstado = true;
+                debounce = 0;
+            }
+        }
+        else
+            debounce = 0;
+    }
+private:
+    int pino;
+    bool estado;
+    bool trocaEstado;
+    unsigned long debounce;
+}
+;
+
+#ifdef PINO_BOTAO_POWER
+    Botao botaoPwr;
+#endif
 
 class MonitorBateria
 {
@@ -951,10 +967,20 @@ private:
 }
 monitorBateria;
 
+#ifdef PINO_ENERGIA_BLUETOOTH
+bool energiaBluetooth = false;
+#endif
+
 void setup()
 {
-    led.setup( LED_BUILTIN );
-    led.acende();
+    #ifdef PINO_ENERGIA_BLUETOOTH
+        pinMode( PINO_ENERGIA_BLUETOOTH, OUTPUT );
+        digitalWrite( PINO_ENERGIA_BLUETOOTH, !energiaBluetooth );
+    #endif
+
+    #ifdef PINO_BOTAO_POWER
+        botaoPwr.setup( PINO_BOTAO_POWER );
+    #endif
 
     toneAC( 3200, 5, 100 );
 
@@ -979,8 +1005,6 @@ void setup()
             toneAC( 4000, 10, 200 );
             delay( 300 );
         }
-
-        while(1);
     }
 
     for( int z = 0; z < 30; z++ )
@@ -995,12 +1019,25 @@ void setup()
 
     tUmSegundo = tTrace = pontoSetup.timestamp;
 
-    led.start( pontoSetup.timestamp, 20, 980 );
-
     tocadorToneAC.insere( 250, 2700, 10 );
 
     #ifdef CARTAO_SD
         cartao.setup( CARTAO_SD_PINO_SS );
+    #endif
+
+    #ifdef PINO_LED_R
+        ledR.setup( PINO_LED_R );
+        ledR.start( pontoSetup.timestamp, 1500, 500 );
+    #endif
+
+    #ifdef PINO_LED_G
+        ledG.setup( PINO_LED_G );
+        ledG.start( pontoSetup.timestamp, 666, 333 );
+    #endif
+
+    #ifdef PINO_LED_B
+        ledB.setup( PINO_LED_B );
+        ledB.start( pontoSetup.timestamp, 250, 250 );
     #endif
 
     altimetro.setup( pontoSetup );
@@ -1013,6 +1050,21 @@ void loop()
     unsigned long timestamp = millis();
 
     altimetro.refresh( timestamp, sensor.altitude );
+
+    #ifdef PINO_BOTAO_POWER
+        botaoPwr.refresh( timestamp );
+
+        if( botaoPwr.isTrocaEstado() )
+        {
+            if( botaoPwr.getEstado() )
+            {
+                #ifdef PINO_ENERGIA_BLUETOOTH
+                    energiaBluetooth = !energiaBluetooth;
+                    digitalWrite( PINO_ENERGIA_BLUETOOTH, !energiaBluetooth );
+                #endif
+            }
+        }
+    #endif
 
     contadorLoop++;
 
@@ -1150,7 +1202,7 @@ void loop()
         //        SERIALX.print( circular1s.desvio(), 2 );
 
             if( qquerCoisa )
-                SERIALX.println();
+                SERIALX.println(";");
 
             if( eeprom.dados.trace & TRACE_MICROSD)
             {
@@ -1161,5 +1213,15 @@ void loop()
         }
     }
 
-    led.loop( timestamp );
+#ifdef PINO_LED_R
+    ledR.loop( timestamp );
+#endif
+
+#ifdef PINO_LED_G
+    ledG.loop( timestamp );
+#endif
+
+#ifdef PINO_LED_B
+    ledB.loop( timestamp );
+#endif
 }
