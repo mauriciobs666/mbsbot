@@ -34,9 +34,9 @@
 
     #ifdef DEBUG
         #define PINO_MONITOR_BATERIA A0
-        #define PINO_BOTAO_POWER    16
-        #define PINO_BOTAO_OK       14
-        #define PINO_BOTAO_CANCEL   15
+        #define PINO_BOTAO_POWER    15
+        #define PINO_BOTAO_PROX     14
+        #define PINO_BOTAO_OK       16
         #define PINO_ENERGIA_BLUETOOTH 4
 //        #define PINO_ESTADO_BLUETOOTH
         #define PINO_LED_R 5

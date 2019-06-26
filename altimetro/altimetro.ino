@@ -942,6 +942,14 @@ private:
     Botao botaoPwr;
 #endif
 
+#ifdef PINO_BOTAO_PROX
+    Botao botaoProx;
+#endif
+
+#ifdef PINO_BOTAO_OK
+    Botao botaoOk;
+#endif
+
 class MonitorBateria
 {
 public:
@@ -982,6 +990,14 @@ void setup()
         botaoPwr.setup( PINO_BOTAO_POWER );
     #endif
 
+    #ifdef PINO_BOTAO_PROX
+        botaoProx.setup( PINO_BOTAO_PROX );
+    #endif
+
+    #ifdef PINO_BOTAO_OK
+        botaoOk.setup( PINO_BOTAO_OK );
+    #endif
+
     toneAC( 3200, 5, 100 );
 
     SERIALX.begin( SERIALX_SPD );
@@ -1002,8 +1018,10 @@ void setup()
 
         for(int x=0; x<5; x++)
         {
-            toneAC( 4000, 10, 200 );
-            delay( 300 );
+            #ifndef DEBUG
+                toneAC( 4000, 10, 200 );
+                delay( 300 );
+            #endif
         }
     }
 
@@ -1043,6 +1061,8 @@ void setup()
     altimetro.setup( pontoSetup );
 }
 
+int tom = 2000;
+
 void loop()
 {
     sensor.refresh();
@@ -1058,10 +1078,37 @@ void loop()
         {
             if( botaoPwr.getEstado() )
             {
-                #ifdef PINO_ENERGIA_BLUETOOTH
-                    energiaBluetooth = !energiaBluetooth;
-                    digitalWrite( PINO_ENERGIA_BLUETOOTH, !energiaBluetooth );
-                #endif
+                tom -= 100;
+                if( tom < 50 )
+                    tom = 50;
+                tocadorToneAC.insere( 100, tom, 5 );
+            }
+        }
+    #endif
+
+    #ifdef PINO_BOTAO_PROX
+        botaoProx.refresh( timestamp );
+
+        if( botaoProx.isTrocaEstado() )
+        {
+            if( botaoProx.getEstado() )
+            {
+                tocadorToneAC.insere( 250, tom, 10 );
+            }
+        }
+    #endif
+
+    #ifdef PINO_BOTAO_OK
+        botaoOk.refresh( timestamp );
+
+        if( botaoOk.isTrocaEstado() )
+        {
+            if( botaoOk.getEstado() )
+            {
+                tom += 100;
+                if( tom > 10000 )
+                    tom = 10000;
+                tocadorToneAC.insere( 100, tom, 5 );
             }
         }
     #endif
