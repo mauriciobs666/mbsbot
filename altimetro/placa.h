@@ -20,9 +20,9 @@
 */
     #define CARTAO_SD
     #define CARTAO_SD_PINO_SS 53
-    #define SERIALX Serial2
-//    #define SERIALX Serial
-    #define PINO_MONITOR_BATERIA A0
+    #define SERIALX Serial1
+    #define PINO_MONITOR_BATERIA A1
+    #define PINO_ENERGIA_BLUETOOTH 49
 #else
 /**
     Proto board Arduino Pro Micro 32u4

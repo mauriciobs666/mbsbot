@@ -976,7 +976,7 @@ private:
 monitorBateria;
 
 #ifdef PINO_ENERGIA_BLUETOOTH
-bool energiaBluetooth = false;
+bool energiaBluetooth = true;
 #endif
 
 void setup()
