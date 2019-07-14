@@ -1,44 +1,58 @@
 
 // (c) 2017-2019 MBS - Mauricio Bieze Stefani
 
+
+/*
+https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json
+*/
+
 #ifndef PLACA_H_INCLUDED
 #define PLACA_H_INCLUDED
 
-#define BMP180
+#define DEBUG 1
 
+#define SERIALX Serial
 #define SERIALX_SPD 115200
 
 #define DFT_DELAY_TRACE 500
 
-#define DEBUG 1
-
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 /**
-    Proto board Arduino Mega 2560
+    Arduino Mega 2560 - caixa preta
 
-
+    Sensor BMP280 pinos  (SDA) e  (SCL)
+    Piezo pinos 11 e 12
 */
-    #define CARTAO_SD
-    #define CARTAO_SD_PINO_SS 53
-    #define SERIALX Serial1
+    #define BMP280
+//    #define SERIALX Serial1
     #define PINO_MONITOR_BATERIA A1
     #define PINO_ENERGIA_BLUETOOTH 49
+    #define PINO_BOTAO_POWER    13
+    #define CARTAO_SD
+    #define CARTAO_SD_PINO_SS 53
+
+#elif defined( ARDUINO_ARCH_ESP32 )
+
+
 #else
 /**
     Proto board Arduino Pro Micro 32u4
 
+    https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json
+    https://dl.espressif.com/dl/package_esp32_index.json
+
     Sensor BMP180 pinos 2 (SDA) e 3 (SCL)
     Piezo pinos 9 e 10
 */
-    #define SERIALX Serial
+    #define BMP280
 
     #ifdef DEBUG
         #define PINO_MONITOR_BATERIA A0
+        #define PINO_ENERGIA_BLUETOOTH 4
+//        #define PINO_ESTADO_BLUETOOTH
         #define PINO_BOTAO_POWER    15
         #define PINO_BOTAO_PROX     14
         #define PINO_BOTAO_OK       16
-        #define PINO_ENERGIA_BLUETOOTH 4
-//        #define PINO_ESTADO_BLUETOOTH
         #define PINO_LED_R 5
         #define PINO_LED_G 6
         #define PINO_LED_B 7

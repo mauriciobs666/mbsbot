@@ -69,6 +69,8 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 
 #define NOME_LOOPS      "lps"
 #define NOME_BAT        "bat"
+#define NOME_BAT_OFF    "off"
+#define NOME_BAT_SLP    "slp"
 
 #define NOME_ERRNO      "err"
 #define NOME_TIMESTAMP  "t"
@@ -95,7 +97,7 @@ enum Erros
 #define TRACE_ALTITUDE              0x10
 #define TRACE_AVISOS                0x20
 #define TRACE_ANDROID_PLOTTER       0x40
-#define TRACE_MICROSD               0x80
+#define TRACE_BATERIA               0x80
 
 #define ESTADO_DZ           0x00
 #define ESTADO_SUBIDA       0x01

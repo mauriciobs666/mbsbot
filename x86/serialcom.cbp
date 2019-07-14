@@ -93,6 +93,7 @@
 		<Unit filename="../PinChangeInt.h" />
 		<Unit filename="../altimetro/altimetro.ino" />
 		<Unit filename="../altimetro/circular.hpp" />
+		<Unit filename="../altimetro/energia.hpp" />
 		<Unit filename="../altimetro/interpretador.hpp" />
 		<Unit filename="../altimetro/led.hpp" />
 		<Unit filename="../altimetro/logbook.txt" />

@@ -4,7 +4,9 @@
 #ifndef TOCADOR_HPP_INCLUDED
 #define TOCADOR_HPP_INCLUDED
 
+#ifndef ARDUINO_ARCH_ESP32
 #include <toneAC.h>
+#endif
 
 class TocadorToneAC
 {
@@ -28,22 +30,26 @@ public:
         {
             if( leitura != escrita )
             {
+                #ifndef ARDUINO_ARCH_ESP32
                 toneAC( notas[leitura].frequencia,
                         notas[leitura].volume,
                         notas[leitura].duracao,
                         true );
+                #endif
 
                 tocando = agora + notas[leitura].duracao;
 
                 incrementa( leitura );
 
-                mudoQdoTerminar = true;
+                //mudoQdoTerminar = true;
             }
             else
             {
                 if( mudoQdoTerminar )
                 {
+                    #ifndef ARDUINO_ARCH_ESP32
                     noToneAC();
+                    #endif
                     mudoQdoTerminar = false;
                 }
 
@@ -79,6 +85,13 @@ public:
             insere( dur, freq, vol );
             insere( inter );
         }
+    }
+
+    void bipeBlk( int freq, int vol, int dur )
+    {
+        #ifndef ARDUINO_ARCH_ESP32
+        toneAC( freq, vol, dur );
+        #endif
     }
 
 private:

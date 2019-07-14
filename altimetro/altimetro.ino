@@ -10,6 +10,7 @@
 #include "placa.h"
 
 #include "circular.hpp"
+
 #include "tocador.hpp"
 TocadorToneAC tocadorToneAC;
 
@@ -27,6 +28,17 @@ Led ledG;
 Led ledB;
 #endif
 
+#include "energia.hpp"
+
+#ifdef BMP180
+#include <SFE_BMP180.h>
+#endif
+
+#ifdef BMP280
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP280.h>
+#endif
+
 #ifdef MPL3115A2
 #include <SparkFunMPL3115A2.h>
 MPL3115A2 altimetro;
@@ -35,10 +47,6 @@ altimetro.begin();
 altimetro.setModeAltimeter();
 altimetro.setOversampleRate(7);
 altimetro.enableEventFlags();
-#endif
-
-#ifdef BMP180
-#include <SFE_BMP180.h>
 #endif
 
 #ifdef CARTAO_SD
@@ -52,21 +60,25 @@ Interpretador interpretador;
 class SensorPressao
 {
     public:
+        SensorPressao() : altitude(0), temperatura(0), pressao(0), inicializado(false)
+        {
+        }
         double altitude;
         double temperatura;
         double pressao;
+
+        bool setup() { return true; }
+        void refresh() {}
+    protected:
+        bool inicializado;
 };
 
-class SensorPressaoBMP : public SensorPressao
+#ifdef BMP180
+class SensorPressaoBMP180 : public SensorPressao
 {
 private:
-    bool inicializado;
     SFE_BMP180 barometro;
 public:
-    SensorPressaoBMP()
-    {
-        inicializado = false;
-    }
     bool setup()
     {
         inicializado = barometro.begin();
@@ -115,6 +127,39 @@ public:
     }
 }
 sensor;
+#endif // BMP180
+
+#ifdef BMP280
+class SensorPressaoBMP280 : public SensorPressao
+{
+private:
+    Adafruit_BMP280 barometro;
+public:
+    bool setup()
+    {
+        inicializado = barometro.begin(0x76);
+        return inicializado;
+    }
+    int refresh()
+    {
+        if( ! inicializado )
+        {
+            altitude = temperatura = pressao = 0;
+            return 0;
+        }
+
+        temperatura = barometro.readTemperature();
+        pressao = barometro.readPressure();
+        altitude = barometro.readAltitude( 1013.25 ) * 3.28084;
+        delay(10);
+    }
+}
+sensor;
+#endif // BMP280
+
+#ifdef ARDUINO_ARCH_ESP32
+SensorPressao sensor;
+#endif // ARDUINO_ARCH_ESP32
 
 class Eeprom
 {
@@ -127,6 +172,8 @@ public:
         double alpha;
         double beta;
         //double gama;
+        double bateriaOffset;
+        double bateriaSlope;
     }
     dados;
 
@@ -270,17 +317,21 @@ public:
     int carrega()
     {
         unsigned int addr = 0;
+        #ifndef ARDUINO_ARCH_ESP32
         char * dest = (char*) &dados;
         for( ; addr < sizeof(dados); addr++, dest++ )
             *dest = eeprom_read_byte(( unsigned char * ) addr );
+        #endif // ARDUINO_ARCH_ESP32
         return addr;
     }
 
     void salva()
     {
+        #ifndef ARDUINO_ARCH_ESP32
         char * dest = (char*) &dados;
         for( unsigned int addr = 0; addr < sizeof(dados); addr++, dest++ )
             eeprom_write_byte(( unsigned char  *) addr, *dest);
+        #endif
     }
 
     void defaults()
@@ -289,6 +340,8 @@ public:
         dados.delayTrace = DFT_DELAY_TRACE;
         dados.alpha = 0.1;
         dados.beta = 0.001;
+        dados.bateriaOffset = 0;
+        dados.bateriaSlope = 1;
     }
 }
 eeprom;
@@ -667,7 +720,7 @@ public:
 
         if( arquivo )
         {
-            arquivo.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura" );
+            arquivo.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria" );
             SERIALX.print( "Arquivo criado: ");
         }
         else
@@ -679,31 +732,35 @@ public:
         SERIALX.println( nome );
 
         if(sdOk)
-            SERIALX.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura" );
+            SERIALX.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria" );
 
         return sdOk;
     }
-    bool println( Ponto &ponto, SensorPressao &sensor, int altura )
+    bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria )
     {
         char linha[50];
 
         if( sdOk && arquivo )
         {
-            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d",
+            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d;%d",
                      ponto.timestamp,
                      (int)sensor.altitude,
                      (int)ponto.altitude,
                      altura,
                      (int)ponto.velocidade,
                      (int)sensor.pressao,
-                     (int)sensor.temperatura );
+                     (int)sensor.temperatura,
+                     (int)bateria );
             arquivo.println( linha );
         }
+/*
         else
             SERIALX.println( "Erro no arquivo" );
 
         SERIALX.println( linha );
+*/
     }
+
     void fechaJmp()
     {
         if( arquivo )
@@ -783,6 +840,54 @@ private:
 }
 altimetro;
 
+class GerenciadorEnergia
+{
+public:
+    Voltimetro bateria;
+
+    GerenciadorEnergia() : pinoEnergiaBT(-1)
+    {
+        #ifdef PINO_ENERGIA_BLUETOOTH
+            pinoEnergiaBT = PINO_ENERGIA_BLUETOOTH;
+            pinMode( pinoEnergiaBT, OUTPUT );
+        #endif
+
+        ligaBluetooth();
+
+        #ifdef PINO_MONITOR_BATERIA
+             bateria.setPino( PINO_MONITOR_BATERIA );
+        #endif
+    }
+    void refresh()
+    {
+        bateria.refresh();
+    }
+    void ligaBluetooth()
+    {
+        energiaBluetooth = true;
+        if( pinoEnergiaBT > 0 )
+        {
+            digitalWrite( pinoEnergiaBT, !energiaBluetooth );
+        }
+    }
+    void desligaBluetooth()
+    {
+        energiaBluetooth = false;
+        if( pinoEnergiaBT > 0 )
+        {
+            digitalWrite( pinoEnergiaBT, !energiaBluetooth );
+        }
+    }
+    bool isBluetoothEnergizado()
+    {
+        return energiaBluetooth;
+    }
+private:
+    int pinoEnergiaBT;
+    bool energiaBluetooth;
+}
+energia;
+
 Erros Interpretador::evalHardCoded( Variavel* resultado )
 {
     #ifdef TRACE_INTERPRETADOR
@@ -807,7 +912,11 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     else if( 0 == strncmp( token, CMD_DUMP, TAM_TOKEN )  )
         eeprom.dump();
     else if( 0 == strncmp( token, CMD_UNAME, TAM_TOKEN )  )
-        eeprom.dump();
+    {
+        SERIALX.print("vbat = ");
+        SERIALX.print( energia.bateria.getVolts() );
+        SERIALX.println(" V");
+    }
     else if( 0 == strncmp( token, CMD_BIP, TAM_TOKEN )  )
     {
         int n = 1;
@@ -862,16 +971,19 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
         }
 
         cartao.criarJmp( temp );
-
-        eeprom.dados.trace |= TRACE_MASTER_EN | TRACE_MICROSD;
-        eeprom.dados.delayTrace = 1000;
     }
     else if( 0 == strncmp( token, CMD_STOP, TAM_TOKEN )  )
     {
-        eeprom.dados.trace &= ~TRACE_MICROSD;
         cartao.fechaJmp();
     }
 #endif // CARTAO_SD
+    else if( 0 == strncmp( token, CMD_WHO, TAM_TOKEN ) )
+    {
+        for( int i = 0 ; i < nvars ; i++ )
+        {
+            SERIALX.println( var[i].nome );
+        }
+    }
     else
     {
         eco = true;
@@ -950,42 +1062,8 @@ private:
     Botao botaoOk;
 #endif
 
-class MonitorBateria
-{
-public:
-    int sensor;
-    MonitorBateria() : sensor(0), pino(-1)
-    {
-        #ifdef PINO_MONITOR_BATERIA
-            pino = PINO_MONITOR_BATERIA;
-        #endif // PINO_MONITOR_BATERIA
-    }
-    void refresh()
-    {
-        sensor = analogRead(pino);
-    }
-    void printStatus()
-    {
-        SERIALX.print( "Bat = ");
-        SERIALX.print( sensor );
-        SERIALX.println( " ");
-    }
-private:
-    int pino;
-}
-monitorBateria;
-
-#ifdef PINO_ENERGIA_BLUETOOTH
-bool energiaBluetooth = true;
-#endif
-
 void setup()
 {
-    #ifdef PINO_ENERGIA_BLUETOOTH
-        pinMode( PINO_ENERGIA_BLUETOOTH, OUTPUT );
-        digitalWrite( PINO_ENERGIA_BLUETOOTH, !energiaBluetooth );
-    #endif
-
     #ifdef PINO_BOTAO_POWER
         botaoPwr.setup( PINO_BOTAO_POWER );
     #endif
@@ -998,18 +1076,22 @@ void setup()
         botaoOk.setup( PINO_BOTAO_OK );
     #endif
 
-    toneAC( 3200, 5, 100 );
+    tocadorToneAC.bipeBlk( 3200, 5, 100 );
 
     SERIALX.begin( SERIALX_SPD );
 
     eeprom.setup();
 
+    energia.bateria.setFuncao( eeprom.dados.bateriaSlope, eeprom.dados.bateriaOffset );
+
     interpretador.declaraVar( VAR_INT, NOME_TRACE, &eeprom.dados.trace );
     interpretador.declaraVar( VAR_INT, NOME_T_TRC, &eeprom.dados.delayTrace );
     interpretador.declaraVar( VAR_INT, NOME_LOOPS, &loopsSeg );
-    interpretador.declaraVar( VAR_INT, NOME_BAT, &monitorBateria.sensor );
+    interpretador.declaraVar( VAR_INT, NOME_BAT, &energia.bateria.valorMedido );
     interpretador.declaraVar( VAR_DOUBLE, NOME_ALPHA, &eeprom.dados.alpha );
     interpretador.declaraVar( VAR_DOUBLE, NOME_BETA, &eeprom.dados.beta );
+    interpretador.declaraVar( VAR_DOUBLE, NOME_BAT_OFF, &eeprom.dados.bateriaOffset );
+    interpretador.declaraVar( VAR_DOUBLE, NOME_BAT_SLP, &eeprom.dados.bateriaSlope );
     interpretador.declaraVar( VAR_LONG, NOME_TIMESTAMP,  &altimetro.agora.timestamp );
 
     if( ! sensor.setup() )
@@ -1019,7 +1101,7 @@ void setup()
         for(int x=0; x<5; x++)
         {
             #ifndef DEBUG
-                toneAC( 4000, 10, 200 );
+                tocadorToneAC.bipeBlk( 4000, 10, 200 );
                 delay( 300 );
             #endif
         }
@@ -1065,6 +1147,8 @@ int tom = 2000;
 
 void loop()
 {
+    energia.refresh();
+
     sensor.refresh();
 
     unsigned long timestamp = millis();
@@ -1078,11 +1162,17 @@ void loop()
         {
             if( botaoPwr.getEstado() )
             {
+                if( energia.isBluetoothEnergizado() )
+                    energia.desligaBluetooth();
+/*
                 tom -= 100;
                 if( tom < 50 )
                     tom = 50;
                 tocadorToneAC.insere( 100, tom, 5 );
+*/
             }
+            else
+                energia.ligaBluetooth();
         }
     #endif
 
@@ -1120,8 +1210,6 @@ void loop()
         tUmSegundo += 1000;
 
         circularAltitude.insere( altimetro.getAltitude() );
-
-        monitorBateria.refresh();
 
         loopsSeg = contadorLoop;
         contadorLoop = 0;
@@ -1239,6 +1327,13 @@ void loop()
                 qquerCoisa = true;
             }
 
+            if( eeprom.dados.trace & TRACE_BATERIA )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( energia.bateria.valorMedido );
+                qquerCoisa = true;
+            }
+
         //        SERIALX.print( deltaT * 1000 );
         //        SERIALX.print( circularAltitude.media() , 2  );
         //        SERIALX.print( circularAltitude.media() - decolagem.altitude, 2  );
@@ -1249,16 +1344,14 @@ void loop()
         //        SERIALX.print( circular1s.desvio(), 2 );
 
             if( qquerCoisa )
-                SERIALX.println(";");
+                SERIALX.println( CMD_EOL );
 
-            if( eeprom.dados.trace & TRACE_MICROSD)
-            {
-                #ifdef CARTAO_SD
-                    cartao.println( altimetro.agora, sensor, altura );
-                #endif
-            }
         }
     }
+
+    #ifdef CARTAO_SD
+        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts() );
+    #endif
 
 #ifdef PINO_LED_R
     ledR.loop( timestamp );

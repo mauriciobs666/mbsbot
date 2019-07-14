@@ -6,10 +6,13 @@
 
 #include "Arduino.h"
 
+#include "protocolo.h"
+
 void printErro( int err )
 {
     SERIALX.print( "Erro ");
-    SERIALX.println( err );
+    SERIALX.print( err );
+    SERIALX.print( CMD_EOL );
 }
 
 typedef enum
@@ -18,7 +21,7 @@ typedef enum
     VAR_CHAR,   // signed  8
     VAR_INT,    // signed 16
     VAR_LONG,   // signed 32
-//    VAR_BOOL,
+    VAR_BOOL,
     VAR_DOUBLE
 }
 TipoVariavel;
@@ -28,8 +31,8 @@ class Variavel
 public:
     char nome[TAM_NOME];
     char tipo;
-//    int linhas;
-//    int colunas;
+    int linhas;
+    int colunas;
     void* dados;
 
     Variavel( TipoVariavel tipo_=VAR_NULO, const char* nome_=NULL, void* dados_=NULL, int linhas_=1, int colunas_=1 )
@@ -42,8 +45,8 @@ public:
         tipo = tipo_;
         strncpy( nome, nome_, TAM_NOME );
         dados = dados_;
-//        linhas = linhas_;
-//        colunas = colunas_;
+        linhas = linhas_;
+        colunas = colunas_;
     }
 
 //    Variavel operator[]( size_t i )
@@ -97,8 +100,8 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-//        case VAR_BOOL:
-//            return *((bool*)dados) ? 1 : 0;
+        case VAR_BOOL:
+            return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
             return *((double*)dados);
         }
@@ -115,8 +118,8 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-//        case VAR_BOOL:
-//            return *((bool*)dados) ? 1 : 0;
+        case VAR_BOOL:
+            return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
             return *((double*)dados);
         }
@@ -133,8 +136,8 @@ public:
             return *((int*)dados);
         case VAR_LONG:
             return *((long*)dados);
-//        case VAR_BOOL:
-//            return *((bool*)dados) ? 1 : 0;
+        case VAR_BOOL:
+            return *((bool*)dados) ? 1 : 0;
         case VAR_DOUBLE:
             return *((double*)dados);
         }
@@ -500,7 +503,7 @@ private:
         rc = evalTermo( resultado );
 
         char op;
-        while( rc == SUCESSO && ( ( op = token[0] ) == '+' || op == '-' ) )
+        while( rc == SUCESSO && ( (op = token[0]) == '+' || op == '-' ) )
         {
             double res;
             Variavel temp( VAR_DOUBLE, "tmp", &res );

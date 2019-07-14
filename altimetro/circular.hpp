@@ -29,11 +29,6 @@ template <class tipo, int tamanho> class CircularStats
     }
 
 public:
-    Circular()
-    {
-        limpa();
-    }
-
     void limpa()
     {
         soma = 0;
