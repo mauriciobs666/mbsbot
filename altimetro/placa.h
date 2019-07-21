@@ -23,6 +23,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     Sensor BMP280 pinos  (SDA) e  (SCL)
     Piezo pinos 11 e 12
 */
+//    #define BMP180
     #define BMP280
 //    #define SERIALX Serial1
     #define PINO_MONITOR_BATERIA A1
@@ -44,7 +45,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     Sensor BMP180 pinos 2 (SDA) e 3 (SCL)
     Piezo pinos 9 e 10
 */
-    #define BMP280
+    #define BMP180
 
     #ifdef DEBUG
         #define PINO_MONITOR_BATERIA A0
@@ -86,6 +87,9 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     #define AVISO_NAVEGACAO_C      900
     #define AVISO_NAVEGACAO_D     1200
 
+    #define VOLUME_QUEDA        10
+    #define VOLUME_NAVEGACAO    10
+
     #define TRACE 0
 
 #else
@@ -114,6 +118,9 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     #define AVISO_NAVEGACAO_B       12
     #define AVISO_NAVEGACAO_C       24
     #define AVISO_NAVEGACAO_D       36
+
+    #define VOLUME_QUEDA        3
+    #define VOLUME_NAVEGACAO    3
 
     #define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR | TRACE_ALTURA | TRACE_VELOCIDADE )
 

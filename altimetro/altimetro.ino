@@ -68,7 +68,7 @@ class SensorPressao
         double pressao;
 
         bool setup() { return true; }
-        void refresh() {}
+        int refresh() {}
     protected:
         bool inicializado;
 };
@@ -125,8 +125,7 @@ public:
         }
         return -666;
     }
-}
-sensor;
+};
 #endif // BMP180
 
 #ifdef BMP280
@@ -137,7 +136,14 @@ private:
 public:
     bool setup()
     {
-        inicializado = barometro.begin(0x76);
+        inicializado = barometro.begin( BMP280_ADDRESS_ALT );
+        if( inicializado )
+        {
+            barometro.setSampling( Adafruit_BMP280::MODE_NORMAL,
+                                   Adafruit_BMP280::SAMPLING_X16,
+                                   Adafruit_BMP280::SAMPLING_X16,
+                                   Adafruit_BMP280::FILTER_X16 );
+        }
         return inicializado;
     }
     int refresh()
@@ -151,11 +157,19 @@ public:
         temperatura = barometro.readTemperature();
         pressao = barometro.readPressure();
         altitude = barometro.readAltitude( 1013.25 ) * 3.28084;
-        delay(10);
+        delay(20);
     }
-}
-sensor;
+};
 #endif // BMP280
+
+#ifdef BMP280
+    SensorPressaoBMP280 sensor;
+    #ifdef BMP180
+        SensorPressaoBMP180 sensor2;
+    #endif
+#elif defined(BMP180)
+    SensorPressaoBMP180 sensor;
+#endif
 
 #ifdef ARDUINO_ARCH_ESP32
 SensorPressao sensor;
@@ -191,7 +205,7 @@ public:
 
         void print()
         {
-            SERIALX.print( "A: #" );
+            SERIALX.print( "#" );
             SERIALX.print( numero );
             SERIALX.print( " dz=" );
             SERIALX.print( altitudeDZ );
@@ -445,16 +459,17 @@ Aviso;
 
 Aviso avisos[] =
 {
-    { AVISO_SUBIDA_CINTO, ESTADO_SUBIDA, Aviso::BIP_UNICO, 10, 0 },
-    { AVISO_SUBIDA_CHECK, ESTADO_SUBIDA, Aviso::BIP_DUPLO, 10, 0 },
-    { AVISO_ALTA_1, ESTADO_QUEDA, Aviso::SIRENE_UNICO, 10, 0 },
-    { AVISO_ALTA_2, ESTADO_QUEDA, Aviso::SIRENE_DUPLO, 10, 0 },
-    { AVISO_ALTA_3, ESTADO_QUEDA, Aviso::SIRENE_TRIPLO, 10, 0 },
-    { ALARME_ALTA, ESTADO_QUEDA, Aviso::SIRENE, 10, 0 },
-    { AVISO_NAVEGACAO_A, ESTADO_NAVEGACAO, Aviso::BIP_TRIPLO, 10, 0 },
-    { AVISO_NAVEGACAO_B, ESTADO_NAVEGACAO, Aviso::BIP_DUPLO, 10, 0 },
-    { AVISO_NAVEGACAO_C, ESTADO_NAVEGACAO, Aviso::BIP_UNICO, 10, 0 },
-    { AVISO_NAVEGACAO_D, ESTADO_NAVEGACAO, Aviso::BIP_UNICO, 10, 0 }
+//    int altura,           char estado,        enum tipo,              char volume,        ul atingido
+    { AVISO_SUBIDA_CINTO,   ESTADO_SUBIDA,      Aviso::BIP_UNICO,       VOLUME_NAVEGACAO,   0 },
+    { AVISO_SUBIDA_CHECK,   ESTADO_SUBIDA,      Aviso::BIP_DUPLO,       VOLUME_NAVEGACAO,   0 },
+    { AVISO_ALTA_1,         ESTADO_QUEDA,       Aviso::SIRENE_UNICO,    VOLUME_QUEDA,       0 },
+    { AVISO_ALTA_2,         ESTADO_QUEDA,       Aviso::SIRENE_DUPLO,    VOLUME_QUEDA,       0 },
+    { AVISO_ALTA_3,         ESTADO_QUEDA,       Aviso::SIRENE_TRIPLO,   VOLUME_QUEDA,       0 },
+    { ALARME_ALTA,          ESTADO_QUEDA,       Aviso::SIRENE,          VOLUME_QUEDA,       0 },
+    { AVISO_NAVEGACAO_A,    ESTADO_NAVEGACAO,   Aviso::BIP_TRIPLO,      VOLUME_NAVEGACAO,   0 },
+    { AVISO_NAVEGACAO_B,    ESTADO_NAVEGACAO,   Aviso::BIP_DUPLO,       VOLUME_NAVEGACAO,   0 },
+    { AVISO_NAVEGACAO_C,    ESTADO_NAVEGACAO,   Aviso::BIP_UNICO,       VOLUME_NAVEGACAO,   0 },
+    { AVISO_NAVEGACAO_D,    ESTADO_NAVEGACAO,   Aviso::BIP_UNICO,       VOLUME_NAVEGACAO,   0 }
 };
 
 const unsigned int nAvisos = ( sizeof(avisos)/sizeof(avisos[0]) );
@@ -1050,17 +1065,9 @@ private:
 }
 ;
 
-#ifdef PINO_BOTAO_POWER
-    Botao botaoPwr;
-#endif
-
-#ifdef PINO_BOTAO_PROX
-    Botao botaoProx;
-#endif
-
-#ifdef PINO_BOTAO_OK
-    Botao botaoOk;
-#endif
+Botao botaoPwr;
+Botao botaoProx;
+Botao botaoOk;
 
 void setup()
 {
@@ -1076,7 +1083,7 @@ void setup()
         botaoOk.setup( PINO_BOTAO_OK );
     #endif
 
-    tocadorToneAC.bipeBlk( 3200, 5, 100 );
+    tocadorToneAC.bipeBlk( 3200, VOLUME_NAVEGACAO, 100 );
 
     SERIALX.begin( SERIALX_SPD );
 
@@ -1119,7 +1126,7 @@ void setup()
 
     tUmSegundo = tTrace = pontoSetup.timestamp;
 
-    tocadorToneAC.insere( 250, 2700, 10 );
+    tocadorToneAC.insere( 250, 2700, VOLUME_QUEDA );
 
     #ifdef CARTAO_SD
         cartao.setup( CARTAO_SD_PINO_SS );
@@ -1267,7 +1274,7 @@ void loop()
                 pos = 0;
                 //printErro( ERRO_TAM_MAX_CMD );
             }
-            else if( c == CMD_EOL )
+            else if( c == CMD_EOL || c == '\n' )
             {
                 comando[ pos ] = 0;
                 pos = 0;
@@ -1287,6 +1294,7 @@ void loop()
         {
             #define TRACE_ANDROID_PREFIXO "E "
             #define TRACE_ANDROID_SEPARADOR ","
+            #define TRACE_ANDROID_SUFIXO ";"
             #define TRACE_SEPARADOR " "
             #define TRACE_PRECISAO 2
 
@@ -1294,7 +1302,7 @@ void loop()
 
             if( androidPlotterApp )
             {
-                SERIALX.print( TRACE_ANDROID_PREFIXO );
+                //SERIALX.print( TRACE_ANDROID_PREFIXO );
             }
 
             bool qquerCoisa = false;
@@ -1334,6 +1342,13 @@ void loop()
                 qquerCoisa = true;
             }
 
+            if( eeprom.dados.trace & TRACE_TEMPERATURA )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( sensor.temperatura );
+                qquerCoisa = true;
+            }
+
         //        SERIALX.print( deltaT * 1000 );
         //        SERIALX.print( circularAltitude.media() , 2  );
         //        SERIALX.print( circularAltitude.media() - decolagem.altitude, 2  );
@@ -1344,8 +1359,14 @@ void loop()
         //        SERIALX.print( circular1s.desvio(), 2 );
 
             if( qquerCoisa )
-                SERIALX.println( CMD_EOL );
+            {
+                if( androidPlotterApp )
+                {
+                    SERIALX.print( TRACE_ANDROID_SUFIXO );
+                }
 
+                SERIALX.print( CMD_EOL );
+            }
         }
     }
 

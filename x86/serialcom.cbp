@@ -99,6 +99,9 @@
 		<Unit filename="../altimetro/logbook.txt" />
 		<Unit filename="../altimetro/placa.h" />
 		<Unit filename="../altimetro/protocolo.h" />
+		<Unit filename="../altimetro/sensor.hpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="../altimetro/tocador.hpp" />
 		<Unit filename="../dados.h" />
 		<Unit filename="../dimensoes.txt" />

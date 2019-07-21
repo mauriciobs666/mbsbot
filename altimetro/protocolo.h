@@ -17,7 +17,7 @@ Formato geral do pacote:
 <comando> [argumentos] CMD_EOL
 */
 
-#define CMD_EOL       ';'
+#define CMD_EOL       '\n'
 #define MAX_CMD 20      // bytes, tamanho maximo de um comando serial
 
 #define TAM_TOKEN 10    // bytes, tamanho max de um token
@@ -90,14 +90,27 @@ enum Erros
 };
 
 // mascara bitmap
-#define TRACE_MASTER_EN             0x01
-#define TRACE_SENSOR                0x02
-#define TRACE_ALTURA                0x04
-#define TRACE_VELOCIDADE            0x08
-#define TRACE_ALTITUDE              0x10
-#define TRACE_AVISOS                0x20
-#define TRACE_ANDROID_PLOTTER       0x40
-#define TRACE_BATERIA               0x80
+#define TRACE_MASTER_EN             0x0001  //    1
+#define TRACE_SENSOR                0x0002  //    2
+#define TRACE_ALTURA                0x0004  //    4
+#define TRACE_VELOCIDADE            0x0008  //    8
+#define TRACE_ALTITUDE              0x0010  //   16
+#define TRACE_AVISOS                0x0020  //   32
+#define TRACE_ANDROID_PLOTTER       0x0040  //   64
+#define TRACE_BATERIA               0x0080  //  128
+#define TRACE_TEMPERATURA           0x0100  //  256
+
+/*
+    master     = 1
+    sensor     = 2
+    altura     = 4
+    velocidade = 8
+    altitude   = 16
+    avisos     = 32
+    android    = 64
+    bateria    = 128
+*/
+
 
 #define ESTADO_DZ           0x00
 #define ESTADO_SUBIDA       0x01
