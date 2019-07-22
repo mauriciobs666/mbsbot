@@ -157,7 +157,7 @@ public:
         temperatura = barometro.readTemperature();
         pressao = barometro.readPressure();
         altitude = barometro.readAltitude( 1013.25 ) * 3.28084;
-        delay(20);
+//        delay(20);
     }
 };
 #endif // BMP280
@@ -165,6 +165,7 @@ public:
 #ifdef BMP280
     SensorPressaoBMP280 sensor;
     #ifdef BMP180
+    #define SENSOR2
         SensorPressaoBMP180 sensor2;
     #endif
 #elif defined(BMP180)
@@ -181,7 +182,7 @@ class Eeprom
 public:
     struct Configuracao
     {
-        char trace;
+        int trace;
         int delayTrace;
         double alpha;
         double beta;
@@ -714,6 +715,11 @@ public:
         }
     }
 
+    bool cat()
+    {
+
+    }
+
     bool criarJmp( int numero )
     {
         char nome[13]; // 8.3z
@@ -735,7 +741,7 @@ public:
 
         if( arquivo )
         {
-            arquivo.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria" );
+            arquivo.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria;sensor2;temp2" );
             SERIALX.print( "Arquivo criado: ");
         }
         else
@@ -747,17 +753,18 @@ public:
         SERIALX.println( nome );
 
         if(sdOk)
-            SERIALX.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria" );
+            SERIALX.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria;sensor2;temp2" );
 
         return sdOk;
     }
-    bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria )
+
+    bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria, SensorPressao &sensor2 )
     {
         char linha[50];
 
         if( sdOk && arquivo )
         {
-            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d;%d",
+            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d;%d;%d;%d",
                      ponto.timestamp,
                      (int)sensor.altitude,
                      (int)ponto.altitude,
@@ -765,15 +772,18 @@ public:
                      (int)ponto.velocidade,
                      (int)sensor.pressao,
                      (int)sensor.temperatura,
-                     (int)bateria );
+                     (int)bateria,
+                     (int)sensor2.altitude,
+                     (int)sensor2.temperatura );
             arquivo.println( linha );
         }
 /*
         else
             SERIALX.println( "Erro no arquivo" );
-
+TRACE_CARTAO
         SERIALX.println( linha );
 */
+
     }
 
     void fechaJmp()
@@ -1114,10 +1124,21 @@ void setup()
         }
     }
 
+    #ifdef SENSOR2
+    if( ! sensor2.setup() )
+    {
+        Serial.println("Erro sensor 2");
+    }
+    #endif // SENSOR2
+
     for( int z = 0; z < 30; z++ )
     {
         sensor.refresh();
         circularAltitude.insere( sensor.altitude );
+
+        #ifdef SENSOR2
+        sensor2.refresh();
+        #endif // SENSOR2
     }
 
     Ponto pontoSetup( millis(), circularAltitude.media(), 0.0 );
@@ -1157,6 +1178,10 @@ void loop()
     energia.refresh();
 
     sensor.refresh();
+
+    #ifdef SENSOR2
+    sensor2.refresh();
+    #endif // SENSOR2
 
     unsigned long timestamp = millis();
 
@@ -1331,7 +1356,14 @@ void loop()
             if( eeprom.dados.trace & TRACE_SENSOR )
             {
                 if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
-                SERIALX.print( sensor.altitude - salto.decolagem.altitude, TRACE_PRECISAO  );
+                SERIALX.print( sensor.altitude /*- salto.decolagem.altitude*/, TRACE_PRECISAO  );
+                qquerCoisa = true;
+            }
+
+            if( eeprom.dados.trace & TRACE_SENSOR2 )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( sensor2.altitude /*- salto.decolagem.altitude*/, TRACE_PRECISAO  );
                 qquerCoisa = true;
             }
 
@@ -1371,7 +1403,7 @@ void loop()
     }
 
     #ifdef CARTAO_SD
-        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts() );
+        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts(), sensor2 );
     #endif
 
 #ifdef PINO_LED_R

@@ -23,7 +23,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     Sensor BMP280 pinos  (SDA) e  (SCL)
     Piezo pinos 11 e 12
 */
-//    #define BMP180
+    #define BMP180
     #define BMP280
 //    #define SERIALX Serial1
     #define PINO_MONITOR_BATERIA A1
