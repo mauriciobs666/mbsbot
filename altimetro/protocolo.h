@@ -99,18 +99,8 @@ enum Erros
 #define TRACE_ANDROID_PLOTTER       0x0040  //   64
 #define TRACE_BATERIA               0x0080  //  128
 #define TRACE_TEMPERATURA           0x0100  //  256
-
-/*
-    master     = 1
-    sensor     = 2
-    altura     = 4
-    velocidade = 8
-    altitude   = 16
-    avisos     = 32
-    android    = 64
-    bateria    = 128
-*/
-
+#define TRACE_SENSOR2               0x0200  //  512
+#define TRACE_CARTAO                0x0400  // 1024
 
 #define ESTADO_DZ           0x00
 #define ESTADO_SUBIDA       0x01
