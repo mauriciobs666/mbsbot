@@ -11,8 +11,10 @@ public:
     Voltimetro( int pino = -1,
                 double A = 1,
                 double B = 0 )
-                :   pinoSensor( pino ),
-                    valorMedido(0)
+                :   valorMedido( 0 ),
+                    pinoSensor( pino ),
+                    a(A),
+                    b(B)
     {
     }
     void refresh()

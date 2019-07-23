@@ -67,9 +67,11 @@ public:
 //            case VAR_INT:
 //                pos = (void*)(((int*)dados) + i);
 //                siz = sizeof( int );
-//                break;//            case VAR_LONG:
+//                break;
+//            case VAR_LONG:
 //                siz = sizeof( long );
-//                break;//            case VAR_BOOL:
+//                break;
+//            case VAR_BOOL:
 //                siz = sizeof( bool );
 //                break;
 //            case VAR_PID:
@@ -341,7 +343,7 @@ public:
                 : NULL ;
     }
 
-    Variavel* declaraVar( TipoVariavel tipo, char *nome, void *dados, int linhas=1, int colunas=1 )
+    Variavel* declaraVar( TipoVariavel tipo, const char *nome, void *dados, int linhas=1, int colunas=1 )
     {
         Variavel nova( tipo, nome, dados, linhas, colunas );
 
@@ -580,7 +582,7 @@ private:
         // +/- unario
         char op = 0;
 
-        if( tipoToken == DELIMIT && token[0] == '+' || token[0] == '-' )
+        if( tipoToken == DELIMIT && ( token[0] == '+' || token[0] == '-' ) )
         {
             op = token[0];
             getToken();

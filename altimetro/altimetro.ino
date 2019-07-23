@@ -68,7 +68,7 @@ class SensorPressao
         double pressao;
 
         bool setup() { return true; }
-        int refresh() {}
+        int refresh() { return 0; }
     protected:
         bool inicializado;
 };
@@ -158,6 +158,7 @@ public:
         pressao = barometro.readPressure();
         altitude = barometro.readAltitude( 1013.25 ) * 3.28084;
 //        delay(20);
+        return 0;
     }
 };
 #endif // BMP280
@@ -165,7 +166,7 @@ public:
 #ifdef BMP280
     SensorPressaoBMP280 sensor;
     #ifdef BMP180
-    #define SENSOR2
+        #define SENSOR2
         SensorPressaoBMP180 sensor2;
     #endif
 #elif defined(BMP180)
@@ -247,6 +248,8 @@ public:
         SERIALX.print( carregados );
         SERIALX.print( "B disp=" );
         SERIALX.println( tamanhoBufSaltos );
+
+        return 0;
     }
 
     int insere( struct Caderneta *salto )
@@ -304,6 +307,8 @@ public:
             endereco += sizeof( Caderneta );
 
         EEPROM.put( endereco, tmp );
+
+        return 0;
     }
 
     int dump()
@@ -317,6 +322,8 @@ public:
             EEPROM.get( endereco, tmp );
             tmp.print();
         }
+
+        return 0;
     }
 
     int limpa( int nProximoSalto )
@@ -327,6 +334,8 @@ public:
         tmp.numero = -nProximoSalto;
 
         EEPROM.put( sizeof(dados), tmp );
+
+        return 0;
     }
 
     int carrega()
@@ -367,9 +376,9 @@ public:
     Ponto(  unsigned long t = 0,
             double a = 0,
             double v = 0 )
-            : altitude( a ),
-              velocidade( v ),
-              timestamp( t )
+            : timestamp( t ),
+              altitude( a ),
+              velocidade( v )
     {
     }
 
@@ -518,7 +527,7 @@ public:
             saida = abertura = pouso = decolagem;
 
             // reset alarmes
-            for( int i = 0; i < nAvisos ; i++ )
+            for( unsigned int i = 0; i < nAvisos ; i++ )
                 avisos[i].atingido = 0;
 
             trocaEstado( ESTADO_SUBIDA );
@@ -713,17 +722,14 @@ public:
             }
             entry.close();
         }
+        
+        return true;
     }
 
-    bool cat()
-    {
-
-    }
-
-    bool criarJmp( int numero )
+    bool criarJmp( int numero, bool trace )
     {
         char nome[13]; // 8.3z
-        char linha[50];
+        const char cabecalho[] = "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria;sensor2;temp2";
 
         bool existe = false;
 
@@ -741,24 +747,26 @@ public:
 
         if( arquivo )
         {
-            arquivo.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria;sensor2;temp2" );
-            SERIALX.print( "Arquivo criado: ");
+            sdOk = true;
+            arquivo.println( cabecalho );
         }
         else
         {
             sdOk = false;
-            SERIALX.print( "Erro ao criar arquivo: " );
         }
 
-        SERIALX.println( nome );
+        if( trace )
+        {
+            SERIALX.print( sdOk ? "Arquivo criado: " : "Erro ao criar arquivo: " );
+            SERIALX.println( nome );
 
-        if(sdOk)
-            SERIALX.println( "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria;sensor2;temp2" );
+            if( sdOk )
+                SERIALX.println( cabecalho );
+        }
 
         return sdOk;
     }
-
-    bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria, SensorPressao &sensor2 )
+    bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria, SensorPressao &sensor2, bool trace )
     {
         char linha[50];
 
@@ -777,13 +785,16 @@ public:
                      (int)sensor2.temperatura );
             arquivo.println( linha );
         }
-/*
         else
-            SERIALX.println( "Erro no arquivo" );
-TRACE_CARTAO
-        SERIALX.println( linha );
-*/
+        {
+//            SERIALX.println( "Erro no arquivo" );
+            return false;
+        }
 
+        if( trace )
+            SERIALX.println( linha );
+
+        return true;
     }
 
     void fechaJmp()
@@ -971,7 +982,7 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     }
     else if( 0 == strncmp( token, CMD_AVISOS, TAM_TOKEN )  )
     {
-        for( int i = 0;  i < nAvisos; i++ )
+        for( unsigned int i = 0;  i < nAvisos; i++ )
         {
             SERIALX.print("[");
             SERIALX.print(i);
@@ -995,7 +1006,7 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
             getInt( &temp );
         }
 
-        cartao.criarJmp( temp );
+        cartao.criarJmp( temp, true );
     }
     else if( 0 == strncmp( token, CMD_STOP, TAM_TOKEN )  )
     {
@@ -1139,6 +1150,7 @@ void setup()
         #ifdef SENSOR2
         sensor2.refresh();
         #endif // SENSOR2
+
     }
 
     Ponto pontoSetup( millis(), circularAltitude.media(), 0.0 );
@@ -1253,7 +1265,7 @@ void loop()
 
     int altura = altimetro.getAltura();
 
-    for( int i = 0;  i < nAvisos; i++ )
+    for( unsigned int i = 0;  i < nAvisos; i++ )
     {
         if( 0 == avisos[i].atingido )
         {
@@ -1360,6 +1372,7 @@ void loop()
                 qquerCoisa = true;
             }
 
+
             if( eeprom.dados.trace & TRACE_SENSOR2 )
             {
                 if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
@@ -1403,7 +1416,8 @@ void loop()
     }
 
     #ifdef CARTAO_SD
-        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts(), sensor2 );
+        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts(), sensor2,
+                      ( eeprom.dados.trace & ( TRACE_MASTER_EN | TRACE_CARTAO ) ) );
     #endif
 
 #ifdef PINO_LED_R
