@@ -18,11 +18,11 @@ Formato geral do pacote:
 */
 
 #define CMD_EOL       '\n'
-#define MAX_CMD 20      // bytes, tamanho maximo de um comando serial
+#define MAX_CMD 50      // bytes, tamanho maximo de um comando serial
 
-#define TAM_TOKEN 10    // bytes, tamanho max de um token
+#define TAM_TOKEN 20    // bytes, tamanho max de um token
 #define TAM_NOME 5      // bytes, tamanho max de um nome de variavel
-#define NUM_VARS 10     // array de variaveis do interpretador
+#define NUM_VARS 20     // array de variaveis do interpretador
 
 /* Lista de <comandos>
 */
@@ -61,6 +61,7 @@ S NOME_PROGRAMA ERRO FREIO NOME_RODA_ESQ NOME_RODA_DIR NOME_RODA_ESQ_T NOME_RODA
 #define CMD_LST     "ls"
 #define CMD_REC     "rec"
 #define CMD_STOP    "stp"
+#define CMD_CAT     "cat"
 
 #define NOME_TRACE      "trc"
 #define NOME_T_TRC      "trcd" // intervalo envio trace

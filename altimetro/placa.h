@@ -25,7 +25,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
 */
     #define BMP180
     #define BMP280
-//    #define SERIALX Serial1
+    #define SERIALX Serial1
     #define PINO_MONITOR_BATERIA A1
     #define PINO_ENERGIA_BLUETOOTH 49
     #define PINO_BOTAO_POWER    13

@@ -16,6 +16,8 @@ TocadorToneAC tocadorToneAC;
 
 #include "led.hpp"
 
+#include "sensor.hpp"
+
 #ifdef PINO_LED_R
 Led ledR;
 #endif
@@ -710,6 +712,7 @@ public:
                 entry = dir.openNextFile() )
         {
             SERIALX.print(entry.name());
+
             if (entry.isDirectory())
             {
                 SERIALX.println("/");
@@ -722,8 +725,26 @@ public:
             }
             entry.close();
         }
-        
         return true;
+    }
+
+    bool cat( char *nomeArquivo )
+    {
+        head( nomeArquivo, -1 );
+    }
+
+    bool head( char *nomeArquivo, int linhas )
+    {
+        File arquivo = SD.open( nomeArquivo );
+
+        if( arquivo )
+        {
+            while( arquivo.available() )
+            {
+                SERIALX.write( arquivo.read() );
+            }
+            arquivo.close();
+        }
     }
 
     bool criarJmp( int numero, bool trace )
@@ -743,12 +764,12 @@ public:
                 numero++;
         } while( existe );
 
-        arquivo = SD.open( nome, FILE_WRITE);
+        arquivoRaw = SD.open( nome, FILE_WRITE);
 
-        if( arquivo )
+        if( arquivoRaw )
         {
             sdOk = true;
-            arquivo.println( cabecalho );
+            arquivoRaw.println( cabecalho );
         }
         else
         {
@@ -770,7 +791,7 @@ public:
     {
         char linha[50];
 
-        if( sdOk && arquivo )
+        if( sdOk && arquivoRaw )
         {
             snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d;%d;%d;%d",
                      ponto.timestamp,
@@ -783,7 +804,7 @@ public:
                      (int)bateria,
                      (int)sensor2.altitude,
                      (int)sensor2.temperatura );
-            arquivo.println( linha );
+            arquivoRaw.println( linha );
         }
         else
         {
@@ -799,15 +820,15 @@ public:
 
     void fechaJmp()
     {
-        if( arquivo )
+        if( arquivoRaw )
         {
-            arquivo.close();
+            arquivoRaw.close();
             SERIALX.println( "Arquivo fechado" );
         }
     }
 private:
     bool sdOk;
-    File arquivo;
+    File arquivoRaw;
 }
 cartao;
 #endif // CARTAO_SD
@@ -1012,6 +1033,18 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
     {
         cartao.fechaJmp();
     }
+    else if( 0 == strncmp( token, CMD_CAT, TAM_TOKEN )  )
+    {
+        if( getToken() == NOME )
+        {
+            cartao.cat( token );
+        }
+        else
+        {
+            SERIALX.print( "cat: argumento invalido tipo=" );
+            SERIALX.println( (int) tipoToken );
+        }
+    }
 #endif // CARTAO_SD
     else if( 0 == strncmp( token, CMD_WHO, TAM_TOKEN ) )
     {
@@ -1035,56 +1068,6 @@ Erros Interpretador::evalHardCoded( Variavel* resultado )
 
     return rc;
 }
-
-class Botao
-{
-public:
-    Botao() : pino(-1), estado(false), trocaEstado(false), debounce(0)
-    {
-    }
-    void setup( int pinob )
-    {
-        pino = pinob;
-        pinMode( pino, INPUT_PULLUP );
-        estado = ! digitalRead( pino );
-    }
-    bool getEstado()
-    {
-        return estado;
-    }
-    bool isTrocaEstado()
-    {
-        bool retorno = trocaEstado;
-        trocaEstado = false;
-        return retorno;
-    }
-    void refresh( unsigned long t )
-    {
-        bool leitura = ! digitalRead( pino );
-
-        if( leitura != estado )
-        {
-            if( debounce == 0 )
-            {
-                debounce = t + 100;
-            }
-            else if( debounce < t)
-            {
-                estado = leitura;
-                trocaEstado = true;
-                debounce = 0;
-            }
-        }
-        else
-            debounce = 0;
-    }
-private:
-    int pino;
-    bool estado;
-    bool trocaEstado;
-    unsigned long debounce;
-}
-;
 
 Botao botaoPwr;
 Botao botaoProx;
@@ -1331,7 +1314,6 @@ void loop()
         {
             #define TRACE_ANDROID_PREFIXO "E "
             #define TRACE_ANDROID_SEPARADOR ","
-            #define TRACE_ANDROID_SUFIXO ";"
             #define TRACE_SEPARADOR " "
             #define TRACE_PRECISAO 2
 
@@ -1339,7 +1321,7 @@ void loop()
 
             if( androidPlotterApp )
             {
-                //SERIALX.print( TRACE_ANDROID_PREFIXO );
+                SERIALX.print( TRACE_ANDROID_PREFIXO );
             }
 
             bool qquerCoisa = false;
@@ -1371,7 +1353,6 @@ void loop()
                 SERIALX.print( sensor.altitude /*- salto.decolagem.altitude*/, TRACE_PRECISAO  );
                 qquerCoisa = true;
             }
-
 
             if( eeprom.dados.trace & TRACE_SENSOR2 )
             {
@@ -1405,11 +1386,6 @@ void loop()
 
             if( qquerCoisa )
             {
-                if( androidPlotterApp )
-                {
-                    SERIALX.print( TRACE_ANDROID_SUFIXO );
-                }
-
                 SERIALX.print( CMD_EOL );
             }
         }
@@ -1417,7 +1393,7 @@ void loop()
 
     #ifdef CARTAO_SD
         cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts(), sensor2,
-                      ( eeprom.dados.trace & ( TRACE_MASTER_EN | TRACE_CARTAO ) ) );
+                      ( eeprom.dados.trace & TRACE_MASTER_EN ) && ( eeprom.dados.trace & TRACE_CARTAO ) );
     #endif
 
 #ifdef PINO_LED_R
