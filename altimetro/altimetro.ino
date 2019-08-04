@@ -1292,7 +1292,9 @@ void loop()
         loopsSeg = contadorLoop;
         contadorLoop = 0;
 
-        cartao.flush();
+        #ifdef CARTAO_SD
+            cartao.flush();
+        #endif // CARTAO_SD
     }
 
     salto.processaPonto( altimetro.agora );
@@ -1410,7 +1412,11 @@ void loop()
             if( eeprom.dados.trace & TRACE_SENSOR2 )
             {
                 if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
-                SERIALX.print( sensor2.altitude /*- salto.decolagem.altitude*/, TRACE_PRECISAO  );
+                #ifdef SENSOR2
+                    SERIALX.print( sensor2.altitude /*- salto.decolagem.altitude*/, TRACE_PRECISAO  );
+                #else
+                    SERIALX.print( 0.0, TRACE_PRECISAO );
+                #endif
                 qquerCoisa = true;
             }
 
