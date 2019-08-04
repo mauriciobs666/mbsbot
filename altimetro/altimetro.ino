@@ -41,16 +41,6 @@ Led ledB;
 #include <Adafruit_BMP280.h>
 #endif
 
-#ifdef MPL3115A2
-#include <SparkFunMPL3115A2.h>
-MPL3115A2 altimetro;
-Wire.begin();
-altimetro.begin();
-altimetro.setModeAltimeter();
-altimetro.setOversampleRate(7);
-altimetro.enableEventFlags();
-#endif
-
 #ifdef CARTAO_SD
 #include <SD.h>
 #endif
@@ -438,7 +428,7 @@ public:
 
     bool cat( char *nomeArquivo )
     {
-        head( nomeArquivo, -1 );
+        return head( nomeArquivo, -1 );
     }
 
     bool head( char *nomeArquivo, int linhas )
@@ -452,7 +442,9 @@ public:
                 SERIALX.write( arquivo.read() );
             }
             arquivo.close();
+            return true;
         }
+        return false;
     }
 
     bool criarJmp( int numero, bool trace )
@@ -554,7 +546,7 @@ public:
 
     bool evento()
     {
-
+        return false;
     }
 
     void flush()

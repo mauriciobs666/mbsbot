@@ -25,6 +25,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
 */
     #define BMP180
     #define BMP280
+    #undef SERIALX
     #define SERIALX Serial1
     #define PINO_MONITOR_BATERIA A1
     #define PINO_ENERGIA_BLUETOOTH 49
@@ -33,8 +34,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     #define CARTAO_SD_PINO_SS 53
 
 #elif defined( ARDUINO_ARCH_ESP32 )
-
-
+    //#define BMP280
 #else
 /**
     Proto board Arduino Pro Micro 32u4
