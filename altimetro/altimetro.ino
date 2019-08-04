@@ -399,6 +399,199 @@ public:
     }
 };
 
+#ifdef CARTAO_SD
+class CartaoSD
+{
+public:
+    CartaoSD() : sdOk(false)
+        {}
+
+    bool setup( int pinoCS )
+    {
+        return ( sdOk = SD.begin( pinoCS ) );
+    }
+
+    bool ls()
+    {
+        File dir = SD.open("/");
+
+        for( File entry = dir.openNextFile() ;
+                entry ;
+                entry = dir.openNextFile() )
+        {
+            SERIALX.print(entry.name());
+
+            if (entry.isDirectory())
+            {
+                SERIALX.println("/");
+            }
+            else
+            {
+                // files have sizes, directories do not
+                Serial.print("\t\t");
+                Serial.println(entry.size(), DEC);
+            }
+            entry.close();
+        }
+        return true;
+    }
+
+    bool cat( char *nomeArquivo )
+    {
+        head( nomeArquivo, -1 );
+    }
+
+    bool head( char *nomeArquivo, int linhas )
+    {
+        File arquivo = SD.open( nomeArquivo );
+
+        if( arquivo )
+        {
+            while( arquivo.available() )
+            {
+                SERIALX.write( arquivo.read() );
+            }
+            arquivo.close();
+        }
+    }
+
+    bool criarJmp( int numero, bool trace )
+    {
+        char nome[13]; // 8.3z
+        const char cabecalhoRaw[] = "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria;sensor2;temp2;estado";
+        const char cabecalhoEventos[] = "timestamp;tipo";
+
+        bool existe = false;
+
+        do
+        {
+            sprintf( nome, "raw%05d.csv", numero );
+
+            existe = SD.exists( nome );
+
+            if( existe )
+                numero++;
+        } while( existe );
+
+        arquivoRaw = SD.open( nome, FILE_WRITE);
+
+        if( arquivoRaw )
+        {
+            sdOk = true;
+            arquivoRaw.println( cabecalhoRaw );
+        }
+        else
+        {
+            sdOk = false;
+        }
+
+        if( trace )
+        {
+            SERIALX.print( sdOk ? "Arquivo criado: " : "Erro ao criar arquivo: " );
+            SERIALX.println( nome );
+
+            if( sdOk )
+                SERIALX.println( cabecalhoRaw );
+        }
+
+        sprintf( nome, "evt%05d.csv", numero );
+
+        arquivoEventos = SD.open( nome, FILE_WRITE);
+
+        if( arquivoEventos )
+        {
+            sdOk = true;
+            arquivoEventos.println( cabecalhoEventos );
+        }
+        else
+        {
+            sdOk = false;
+        }
+
+        if( trace )
+        {
+            SERIALX.print( sdOk ? "Arquivo criado: " : "Erro ao criar arquivo: " );
+            SERIALX.println( nome );
+
+            if( sdOk )
+                SERIALX.println( cabecalhoEventos );
+        }
+
+        return sdOk;
+    }
+
+    bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria, SensorPressao &sensor2, bool trace, int estado )
+    {
+        char linha[50];
+
+        if( sdOk && arquivoRaw )
+        {
+            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d",
+                     ponto.timestamp,
+                     (int)sensor.altitude,
+                     (int)ponto.altitude,
+                     altura,
+                     (int)ponto.velocidade,
+                     (int)sensor.pressao,
+                     (int)sensor.temperatura,
+                     (int)bateria,
+                     (int)sensor2.altitude,
+                     (int)sensor2.temperatura,
+                     estado );
+            arquivoRaw.println( linha );
+        }
+        else
+        {
+//            SERIALX.println( "Erro no arquivo" );
+            return false;
+        }
+
+        if( trace )
+            SERIALX.println( linha );
+
+        return true;
+    }
+
+    bool evento()
+    {
+
+    }
+
+    void flush()
+    {
+        if( arquivoRaw )
+        {
+            arquivoRaw.flush();
+        }
+
+        if( arquivoEventos )
+        {
+            arquivoEventos.flush();
+        }
+    }
+
+    void fechaJmp()
+    {
+        if( arquivoRaw )
+        {
+            arquivoRaw.close();
+            SERIALX.println( "Arquivo fechado" );
+        }
+
+        if( arquivoEventos )
+        {
+            arquivoEventos.close();
+            SERIALX.println( "Arquivo fechado" );
+        }
+    }
+private:
+    bool sdOk;
+    File arquivoRaw;
+    File arquivoEventos;
+}
+cartao;
+#endif // CARTAO_SD
+
 typedef struct
 {
     int altura;
@@ -637,8 +830,6 @@ public:
 
     void trocaEstado( char novoEstado )
     {
-        estado = novoEstado;
-
         anotacao.altitudeDZ = decolagem.altitude;
         anotacao.alturaSaida = saida.altitude - decolagem.altitude;
         anotacao.alturaAbertura = abertura.altitude - decolagem.altitude;
@@ -647,6 +838,7 @@ public:
         anotacao.tempoQueda = ( abertura.timestamp - saida.timestamp ) / 1000;
         anotacao.tempoNavegacao = ( pouso.timestamp - abertura.timestamp ) / 1000;
 
+        estado = novoEstado;
 /**
 //      1m = 3.28 ft
 //      1 ft/s = 1,09 km/h
@@ -691,147 +883,6 @@ private:
     unsigned long debouncePouso;
 }
 salto;
-
-#ifdef CARTAO_SD
-class CartaoSD
-{
-public:
-    CartaoSD() : sdOk(false)
-        {}
-    bool setup( int pinoCS )
-    {
-        return ( sdOk = SD.begin( pinoCS ) );
-    }
-
-    bool ls()
-    {
-        File dir = SD.open("/");
-
-        for( File entry = dir.openNextFile() ;
-                entry ;
-                entry = dir.openNextFile() )
-        {
-            SERIALX.print(entry.name());
-
-            if (entry.isDirectory())
-            {
-                SERIALX.println("/");
-            }
-            else
-            {
-                // files have sizes, directories do not
-                Serial.print("\t\t");
-                Serial.println(entry.size(), DEC);
-            }
-            entry.close();
-        }
-        return true;
-    }
-
-    bool cat( char *nomeArquivo )
-    {
-        head( nomeArquivo, -1 );
-    }
-
-    bool head( char *nomeArquivo, int linhas )
-    {
-        File arquivo = SD.open( nomeArquivo );
-
-        if( arquivo )
-        {
-            while( arquivo.available() )
-            {
-                SERIALX.write( arquivo.read() );
-            }
-            arquivo.close();
-        }
-    }
-
-    bool criarJmp( int numero, bool trace )
-    {
-        char nome[13]; // 8.3z
-        const char cabecalho[] = "timestamp;sensor;altitude;altura;velocidade;pressao;temperatura;bateria;sensor2;temp2";
-
-        bool existe = false;
-
-        do
-        {
-            sprintf( nome, "jmp%05d.csv", numero );
-
-            existe = SD.exists( nome );
-
-            if( existe )
-                numero++;
-        } while( existe );
-
-        arquivoRaw = SD.open( nome, FILE_WRITE);
-
-        if( arquivoRaw )
-        {
-            sdOk = true;
-            arquivoRaw.println( cabecalho );
-        }
-        else
-        {
-            sdOk = false;
-        }
-
-        if( trace )
-        {
-            SERIALX.print( sdOk ? "Arquivo criado: " : "Erro ao criar arquivo: " );
-            SERIALX.println( nome );
-
-            if( sdOk )
-                SERIALX.println( cabecalho );
-        }
-
-        return sdOk;
-    }
-    bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria, SensorPressao &sensor2, bool trace )
-    {
-        char linha[50];
-
-        if( sdOk && arquivoRaw )
-        {
-            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d;%d;%d;%d",
-                     ponto.timestamp,
-                     (int)sensor.altitude,
-                     (int)ponto.altitude,
-                     altura,
-                     (int)ponto.velocidade,
-                     (int)sensor.pressao,
-                     (int)sensor.temperatura,
-                     (int)bateria,
-                     (int)sensor2.altitude,
-                     (int)sensor2.temperatura );
-            arquivoRaw.println( linha );
-        }
-        else
-        {
-//            SERIALX.println( "Erro no arquivo" );
-            return false;
-        }
-
-        if( trace )
-            SERIALX.println( linha );
-
-        return true;
-    }
-
-    void fechaJmp()
-    {
-        if( arquivoRaw )
-        {
-            arquivoRaw.close();
-            SERIALX.println( "Arquivo fechado" );
-        }
-    }
-private:
-    bool sdOk;
-    File arquivoRaw;
-}
-cartao;
-#endif // CARTAO_SD
 
 class Altimetro
 {
@@ -1240,6 +1291,8 @@ void loop()
 
         loopsSeg = contadorLoop;
         contadorLoop = 0;
+
+        cartao.flush();
     }
 
     salto.processaPonto( altimetro.agora );
@@ -1392,7 +1445,7 @@ void loop()
     }
 
     #ifdef CARTAO_SD
-        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts(), sensor2,
+        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts(), sensor2, salto.estado,
                       ( eeprom.dados.trace & TRACE_MASTER_EN ) && ( eeprom.dados.trace & TRACE_CARTAO ) );
     #endif
 
