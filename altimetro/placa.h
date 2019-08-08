@@ -1,7 +1,6 @@
 
 // (c) 2017-2019 MBS - Mauricio Bieze Stefani
 
-
 /*
 https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json
 */
@@ -25,8 +24,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
 */
     #define BMP180
     #define BMP280
-    #undef SERIALX
-    #define SERIALX Serial1
+//    #define SERIALX Serial1
     #define PINO_MONITOR_BATERIA A1
     #define PINO_ENERGIA_BLUETOOTH 49
     #define PINO_BOTAO_POWER    13
@@ -34,13 +32,13 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     #define CARTAO_SD_PINO_SS 53
 
 #elif defined( ARDUINO_ARCH_ESP32 )
+/**
+    https://dl.espressif.com/dl/package_esp32_index.json
+*/
     //#define BMP280
 #else
 /**
-    Proto board Arduino Pro Micro 32u4
-
     https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manager/package_sparkfun_index.json
-    https://dl.espressif.com/dl/package_esp32_index.json
 
     Sensor BMP180 pinos 2 (SDA) e 3 (SCL)
     Piezo pinos 9 e 10
@@ -48,6 +46,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     #define BMP180
 
     #ifdef DEBUG
+        // Proto board Arduino Pro Micro 32u4
         #define PINO_MONITOR_BATERIA A0
         #define PINO_ENERGIA_BLUETOOTH 4
 //        #define PINO_ESTADO_BLUETOOTH
@@ -122,7 +121,7 @@ https://raw.githubusercontent.com/sparkfun/Arduino_Boards/master/IDE_Board_Manag
     #define VOLUME_QUEDA        3
     #define VOLUME_NAVEGACAO    3
 
-    #define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR | TRACE_ALTURA | TRACE_VELOCIDADE )
+    #define TRACE ( TRACE_MASTER_EN | TRACE_SENSOR_ALTURA | TRACE_ALTURA | TRACE_VELOCIDADE )
 
 #endif
 

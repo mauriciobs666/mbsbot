@@ -92,7 +92,7 @@ enum Erros
 
 // mascara bitmap
 #define TRACE_MASTER_EN             0x0001  //    1
-#define TRACE_SENSOR                0x0002  //    2
+#define TRACE_SENSOR_ALTITUDE       0x0002  //    2
 #define TRACE_ALTURA                0x0004  //    4
 #define TRACE_VELOCIDADE            0x0008  //    8
 #define TRACE_ALTITUDE              0x0010  //   16
@@ -102,6 +102,7 @@ enum Erros
 #define TRACE_TEMPERATURA           0x0100  //  256
 #define TRACE_SENSOR2               0x0200  //  512
 #define TRACE_CARTAO                0x0400  // 1024
+#define TRACE_SENSOR_ALTURA         0x0800  // 2048
 
 #define ESTADO_DZ           0x00
 #define ESTADO_SUBIDA       0x01

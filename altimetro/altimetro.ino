@@ -132,9 +132,9 @@ public:
         if( inicializado )
         {
             barometro.setSampling( Adafruit_BMP280::MODE_NORMAL,
-                                   Adafruit_BMP280::SAMPLING_X16,
-                                   Adafruit_BMP280::SAMPLING_X16,
-                                   Adafruit_BMP280::FILTER_X16 );
+                                   Adafruit_BMP280::SAMPLING_X1,
+                                   Adafruit_BMP280::SAMPLING_X1,
+                                   Adafruit_BMP280::FILTER_X2 );
         }
         return inicializado;
     }
@@ -514,22 +514,22 @@ public:
 
     bool loop( Ponto &ponto, SensorPressao &sensor, int altura, int bateria, SensorPressao &sensor2, bool trace, int estado )
     {
-        char linha[50];
+        char linha[100];
 
         if( sdOk && arquivoRaw )
         {
-            snprintf( linha, 50, "%ld;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d",
+            snprintf( linha, 100, "%ld;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d",
                      ponto.timestamp,
                      (int)sensor.altitude,
                      (int)ponto.altitude,
-                     altura,
+                     (int)altura,
                      (int)ponto.velocidade,
                      (int)sensor.pressao,
                      (int)sensor.temperatura,
                      (int)bateria,
                      (int)sensor2.altitude,
                      (int)sensor2.temperatura,
-                     estado );
+                     (int)estado );
             arquivoRaw.println( linha );
         }
         else
@@ -690,7 +690,7 @@ public:
 
     Eeprom::Caderneta anotacao;
 
-    int processaPonto( Ponto &agora )
+    int processaPonto( Ponto &agora, int altura )
     {
         if( ESTADO_DZ == estado )
             processaDropzone( agora );
@@ -700,6 +700,36 @@ public:
             processaQueda( agora );
         else if( ESTADO_NAVEGACAO == estado )
             processaNavegacao( agora );
+
+        // avisos de altura
+
+        for( unsigned int i = 0;  i < nAvisos; i++ )
+        {
+            if( 0 == avisos[i].atingido )
+            {
+                if( avisos[i].estado & estado )
+                {
+                    if( ( ( altura > avisos[i].altura ) && ( avisos[i].estado & (ESTADO_SUBIDA) ) )
+                     || ( ( altura < avisos[i].altura ) && ( avisos[i].estado & (ESTADO_NAVEGACAO|ESTADO_QUEDA) ) ) )
+                    {
+                        avisos[i].atingido = agora.timestamp;
+                        avisos[i].tocar();
+
+                        if( eeprom.dados.trace & ( TRACE_AVISOS | TRACE_MASTER_EN ) )
+                        {
+                            SERIALX.print("[");
+                            SERIALX.print(i);
+                            SERIALX.print("]<");
+                            SERIALX.print( (int) estado );
+                            SERIALX.print(">");
+                            avisos[i].print();
+                            SERIALX.println();
+                        }
+                    }
+                }
+            }
+        }
+
         return 0;
     }
 
@@ -1118,6 +1148,8 @@ Botao botaoOk;
 
 void setup()
 {
+    SERIALX.begin( SERIALX_SPD );
+
     #ifdef PINO_BOTAO_POWER
         botaoPwr.setup( PINO_BOTAO_POWER );
     #endif
@@ -1131,8 +1163,6 @@ void setup()
     #endif
 
     tocadorToneAC.bipeBlk( 3200, VOLUME_NAVEGACAO, 100 );
-
-    SERIALX.begin( SERIALX_SPD );
 
     eeprom.setup();
 
@@ -1289,38 +1319,7 @@ void loop()
         #endif // CARTAO_SD
     }
 
-    salto.processaPonto( altimetro.agora );
-
-    // avisos de altura
-
-    int altura = altimetro.getAltura();
-
-    for( unsigned int i = 0;  i < nAvisos; i++ )
-    {
-        if( 0 == avisos[i].atingido )
-        {
-            if( avisos[i].estado & salto.estado )
-            {
-                if( ( ( altura > avisos[i].altura ) && ( avisos[i].estado & (ESTADO_SUBIDA) ) )
-                 || ( ( altura < avisos[i].altura ) && ( avisos[i].estado & (ESTADO_NAVEGACAO|ESTADO_QUEDA) ) ) )
-                {
-                    avisos[i].atingido = timestamp;
-                    avisos[i].tocar();
-
-                    if( eeprom.dados.trace & ( TRACE_AVISOS | TRACE_MASTER_EN ) )
-                    {
-                        SERIALX.print("[");
-                        SERIALX.print(i);
-                        SERIALX.print("]<");
-                        SERIALX.print( (int) salto.estado );
-                        SERIALX.print(">");
-                        avisos[i].print();
-                        SERIALX.println();
-                    }
-                }
-            }
-        }
-    }
+    salto.processaPonto( altimetro.agora, altimetro.getAltura() );
 
     // player
 
@@ -1394,10 +1393,17 @@ void loop()
                 qquerCoisa = true;
             }
 
-            if( eeprom.dados.trace & TRACE_SENSOR )
+            if( eeprom.dados.trace & TRACE_SENSOR_ALTITUDE )
             {
                 if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
                 SERIALX.print( sensor.altitude /*- salto.decolagem.altitude*/, TRACE_PRECISAO  );
+                qquerCoisa = true;
+            }
+
+            if( eeprom.dados.trace & TRACE_SENSOR_ALTURA )
+            {
+                if( qquerCoisa ) SERIALX.print( androidPlotterApp ? TRACE_ANDROID_SEPARADOR : TRACE_SEPARADOR );
+                SERIALX.print( sensor.altitude - salto.decolagem.altitude, TRACE_PRECISAO  );
                 qquerCoisa = true;
             }
 
@@ -1443,7 +1449,7 @@ void loop()
     }
 
     #ifdef CARTAO_SD
-        cartao.loop( altimetro.agora, sensor, altura, energia.bateria.getVolts(), sensor2, salto.estado,
+        cartao.loop( altimetro.agora, sensor, altimetro.getAltura(), energia.bateria.getVolts(), sensor2, salto.estado,
                       ( eeprom.dados.trace & TRACE_MASTER_EN ) && ( eeprom.dados.trace & TRACE_CARTAO ) );
     #endif
 
