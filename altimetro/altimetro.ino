@@ -538,8 +538,8 @@ public:
             return false;
         }
 
-        if( trace )
-            SERIALX.println( linha );
+//        if( trace )
+//            SERIALX.println( linha );
 
         return true;
     }
@@ -1219,6 +1219,7 @@ void setup()
 
     #ifdef CARTAO_SD
         cartao.setup( CARTAO_SD_PINO_SS );
+        cartao.criarJmp( 1, true );
     #endif
 
     #ifdef PINO_LED_R
